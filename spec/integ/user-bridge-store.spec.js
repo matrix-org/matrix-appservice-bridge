@@ -1,7 +1,12 @@
 "use strict";
 
+var UserBridgeStore = require("../..").UserBridgeStore;
+
 describe("UserBridgeStore", function() {
+    var store;
+
     beforeEach(function(done) {
+        store = new UserBridgeStore();
         done();
     });
 

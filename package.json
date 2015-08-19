@@ -8,7 +8,7 @@
     "lint": "eslint lib/",
     "test": "jasmine-node spec --verbose --forceexit --captureExceptions",
     "check": "npm run lint && npm test",
-    "ci-test": "istanbul cover --report cobertura -i lib/**/*.js jasmine-node -- spec --verbose --junitreport --forceexit --captureExceptions || true",
+    "ci-test": "istanbul cover --report cobertura -i \"lib/**/*.js\" jasmine-node -- spec --verbose --junitreport --forceexit --captureExceptions || true",
     "ci-lint": "eslint lib/ --format checkstyle > ci-lint.xml || true",
     "ci": "npm run ci-lint; npm run ci-test"
   },

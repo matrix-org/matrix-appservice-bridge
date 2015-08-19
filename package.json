@@ -6,7 +6,7 @@
   "scripts": {
     "gendoc": "jsdoc -r lib -R README.md -P package.json -d .jsdoc",
     "lint": "eslint lib/",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jasmine-node spec --verbose --forceexit --captureExceptions",
     "check": "npm run lint && npm test"
   },
   "repository": {
@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "jsdoc": "^3.3.2",
+    "jasmine-node": "^1.14.5",
     "eslint": "^1.2.0"
   }
 }

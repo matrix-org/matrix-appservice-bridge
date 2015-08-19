@@ -1,4 +1,6 @@
 .jsdoc
+ci-lint.xml
+reports
 
 # Logs
 logs

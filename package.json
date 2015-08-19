@@ -7,7 +7,10 @@
     "gendoc": "jsdoc -r lib -R README.md -P package.json -d .jsdoc",
     "lint": "eslint lib/",
     "test": "jasmine-node spec --verbose --forceexit --captureExceptions",
-    "check": "npm run lint && npm test"
+    "check": "npm run lint && npm test",
+    "ci-test": "istanbul cover --report cobertura jasmine-node -- spec --verbose --junitreport --forceexit --captureExceptions || true",
+    "ci-lint": "eslint lib/ --format checkstyle > ci-lint.xml || true",
+    "ci": "npm run ci-lint; npm run ci-test"
   },
   "repository": {
     "type": "git",
@@ -28,6 +31,7 @@
   },
   "devDependencies": {
     "jsdoc": "^3.3.2",
+    "istanbul": "^0.3.18",
     "jasmine-node": "^1.14.5",
     "eslint": "^1.2.0"
   }

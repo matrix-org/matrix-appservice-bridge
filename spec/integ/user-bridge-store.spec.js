@@ -244,6 +244,17 @@ describe("UserBridgeStore", function() {
                 done();
             });
         });
+
+        describe("getMatrixLinks", function() {
+            it("should return a single element list for a single match",
+            function(done) {
+                store.getMatrixLinks("a_1").done(function(res) {
+                    expect(res.length).toEqual(1);
+                    expect(res[0]).toEqual("@a:bar");
+                    done();
+                });
+            });
+        });
     });
 
     describe("getJungleUsersFromMatrixId", function() {
@@ -295,6 +306,17 @@ describe("UserBridgeStore", function() {
                 expect(res.length).toEqual(1);
                 expect(res[0].getId()).toEqual("b_1");
                 done();
+            });
+        });
+
+        describe("getJungleLinks", function() {
+            it("should return a single element list for a single match",
+            function(done) {
+                store.getJungleLinks("@b:bar").done(function(res) {
+                    expect(res.length).toEqual(1);
+                    expect(res[0]).toEqual("b_1");
+                    done();
+                });
             });
         });
     });

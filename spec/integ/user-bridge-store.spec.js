@@ -170,12 +170,12 @@ describe("UserBridgeStore", function() {
         });
     });
 
-    describe("linkUserIds", function() {
+    describe("linkUsers", function() {
         it("should link a matrix and jungle ID which can be retrieved via getXFromY",
         function(done) {
             var mx = new MatrixUser("@foo:bar");
             var jng = new JungleUser("jungle.id");
-            store.linkUsers(mx, jng, true).then(function() {
+            store.linkUsers(mx, jng).then(function() {
                 return store.getMatrixUsersFromJungleId("jungle.id");
             }).done(function(results) {
                 expect(results.length).toEqual(1);
@@ -191,26 +191,26 @@ describe("UserBridgeStore", function() {
             //                      @bb:bar _ /              \_____ c_2
             //                     @bbb:bar _/
 
-            store.linkUsers(new MatrixUser("@a:bar"), new JungleUser("a_1"), true).then(
+            store.linkUsers(new MatrixUser("@a:bar"), new JungleUser("a_1")).then(
             function() {
                 return store.linkUsers(
-                    new MatrixUser("@b:bar"), new JungleUser("b_1"), true
+                    new MatrixUser("@b:bar"), new JungleUser("b_1")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@bb:bar"), new JungleUser("b_1"), true
+                    new MatrixUser("@bb:bar"), new JungleUser("b_1")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@bbb:bar"), new JungleUser("b_1"), true
+                    new MatrixUser("@bbb:bar"), new JungleUser("b_1")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@c:bar"), new JungleUser("c_1"), true
+                    new MatrixUser("@c:bar"), new JungleUser("c_1")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@c:bar"), new JungleUser("c_2"), true
+                    new MatrixUser("@c:bar"), new JungleUser("c_2")
                 );
             }).done(function() {
                 done();
@@ -264,18 +264,18 @@ describe("UserBridgeStore", function() {
             //         \_ a_2
             //         \_ a_3
 
-            store.linkUsers(new MatrixUser("@a:bar"), new JungleUser("a_1"), true).then(
+            store.linkUsers(new MatrixUser("@a:bar"), new JungleUser("a_1")).then(
             function() {
                 return store.linkUsers(
-                    new MatrixUser("@a:bar"), new JungleUser("a_2"), true
+                    new MatrixUser("@a:bar"), new JungleUser("a_2")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@a:bar"), new JungleUser("a_3"), true
+                    new MatrixUser("@a:bar"), new JungleUser("a_3")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@b:bar"), new JungleUser("b_1"), true
+                    new MatrixUser("@b:bar"), new JungleUser("b_1")
                 );
             }).done(function() {
                 done();

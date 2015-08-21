@@ -31,14 +31,14 @@ describe("UserBridgeStore", function() {
         fs.unlinkSync(TEST_DB_PATH);
     });
 
-    describe("storeMatrixUser", function() {
-        it("should be able to store a Matrix user, retrievable again via getByMatrixId",
+    describe("setMatrixUser", function() {
+        it("should be able to store a Matrix user, retrievable again via getMatrixUser",
         function(done) {
             var userId = "@foo:bar";
             var user = new MatrixUser(userId);
             user.setDisplayName("Foo");
-            store.storeMatrixUser(user).then(function() {
-                return store.getByMatrixId(userId);
+            store.setMatrixUser(user).then(function() {
+                return store.getMatrixUser(userId);
             }).done(function(userFromStore) {
                 expect(userFromStore.getId()).toEqual(userId);
                 expect(userFromStore.getDisplayName()).toEqual("Foo");
@@ -47,13 +47,13 @@ describe("UserBridgeStore", function() {
         });
     });
 
-    describe("storeJungleUser", function() {
-        it("should be able to store a Jungle user, retrievable again via getByJungleId",
+    describe("setJungleUser", function() {
+        it("should be able to store a Jungle user, retrievable again via getJungleUser",
         function(done) {
             var jungleId = "some_unique_id";
             var user = new JungleUser(jungleId);
-            store.storeJungleUser(user).then(function() {
-                return store.getByJungleId(jungleId);
+            store.setJungleUser(user).then(function() {
+                return store.getJungleUser(jungleId);
             }).done(function(userFromStore) {
                 expect(userFromStore.getId()).toEqual(jungleId);
                 done();
@@ -72,8 +72,8 @@ describe("UserBridgeStore", function() {
                     buzz: true
                 }
             });
-            store.storeJungleUser(user).then(function() {
-                return store.getByJungleId(jungleId);
+            store.setJungleUser(user).then(function() {
+                return store.getJungleUser(jungleId);
             }).done(function(userFromStore) {
                 expect(userFromStore.getId()).toEqual(jungleId);
                 expect(userFromStore.get("int")).toEqual(42);
@@ -95,8 +95,8 @@ describe("UserBridgeStore", function() {
             user.set("fn", function(foo) {
                 return 42;
             });
-            store.storeJungleUser(user).then(function() {
-                return store.getByJungleId(jungleId);
+            store.setJungleUser(user).then(function() {
+                return store.getJungleUser(jungleId);
             }).done(function(userFromStore) {
                 expect(userFromStore.getId()).toEqual(jungleId);
                 expect(userFromStore.get("fn")).toBeUndefined();
@@ -117,7 +117,7 @@ describe("UserBridgeStore", function() {
                     buzz: true
                 }
             });
-            store.storeJungleUser(user).done(function() {
+            store.setJungleUser(user).done(function() {
                 done();
             });
         });

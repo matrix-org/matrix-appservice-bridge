@@ -168,6 +168,12 @@ describe("UserBridgeStore", function() {
                 done();
             });
         });
+
+        it("should throw if the data query isn't an object", function() {
+            expect(function() {
+                store.getByJungleData("nested.key");
+            }).toThrow();
+        });
     });
 
     describe("linkUsers", function() {

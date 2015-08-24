@@ -190,6 +190,46 @@ describe("UserBridgeStore", function() {
         });
     });
 
+    describe("unlinkUsers", function() {
+        it("should remove a previously linked matrix and jungle user",
+        function(done) {
+            var mx = new MatrixUser("@foo:bar");
+            var jng = new JungleUser("jungle.id");
+            store.linkUsers(mx, jng).then(function() {
+                return store.unlinkUsers(mx, jng);
+            }).then(function() {
+                return store.getMatrixUsersFromJungleId("jungle.id");
+            }).done(function(results) {
+                expect(results.length).toEqual(0);
+                done();
+            });
+        });
+
+        it("should no-op if the link doesn't exist", function(done) {
+            var mx = new MatrixUser("@foo:bar");
+            var jng = new JungleUser("jungle.id");
+            store.unlinkUsers(mx, jng).then(function() {
+                return store.getMatrixUsersFromJungleId("jungle.id");
+            }).done(function(results) {
+                expect(results.length).toEqual(0);
+                done();
+            });
+        });
+    });
+
+    describe("getByMatrixLocalpart", function() {
+        it("should be able to get a stored matrix user by the user localpart",
+        function(done) {
+            var mx = new MatrixUser("@foo:bar");
+            store.setMatrixUser(mx).then(function() {
+                return store.getByMatrixLocalpart("foo");
+            }).done(function(m) {
+                expect(m.getId()).toEqual("@foo:bar");
+                done();
+            });
+        });
+    });
+
     describe("getMatrixUsersFromJungleId", function() {
 
         beforeEach(function(done) {

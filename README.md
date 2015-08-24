@@ -1,7 +1,8 @@
 # Matrix Application Service Bridging Infrastructure
 This library sits on top of the
 [core application service library](https://github.com/matrix-org/matrix-appservice-node)
-and provides an API for setting up bridges quickly.
+and provides an API for setting up bridges quickly. Check out the [HOW-TO](HOWTO.md) for
+a step-by-step tutorial on setting up a new bridge.
 
 # Architecture
 
@@ -71,7 +72,9 @@ many virtual / real users are in each, etc.
 
 # API
 
-A hosted reference can be found on GitHub Pages (TODO).
+A hosted reference can be found on GitHub Pages (TODO). Each component's class
+constructor is exposed on `require("matrix-appservice-bridge")` so check each
+class for more information on how to use each component.
 
 ## A word on terminology
 

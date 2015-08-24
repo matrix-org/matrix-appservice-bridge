@@ -26,8 +26,8 @@
   },
   "homepage": "https://github.com/matrix-org/matrix-appservice-bridge#readme",
   "dependencies": {
-    "nedb": "^1.1.3",
-    "q": "^1.4.1"
+    "bluebird": "^2.9.34",
+    "nedb": "^1.1.3"
   },
   "devDependencies": {
     "jsdoc": "^3.3.2",

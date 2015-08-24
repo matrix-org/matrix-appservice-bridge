@@ -60,7 +60,7 @@
     "consistent-this": [1, "self"],
     "eol-last": 1,
     "linebreak-style": [1, "unix"],
-    "new-cap": 1,
+    "new-cap": 0,
     "new-parens": 1,
     "no-mixed-spaces-and-tabs": 1,
     "no-nested-ternary": 1,

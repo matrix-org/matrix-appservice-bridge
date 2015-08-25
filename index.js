@@ -1,2 +1,2 @@
 "use strict";
-module.exports = require("./lib/bridge.js");
+module.exports = require("./lib/imports.js");

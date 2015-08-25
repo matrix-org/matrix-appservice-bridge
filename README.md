@@ -43,9 +43,10 @@ mapping between different types of users.
 Provides storage for matrix and jungle rooms. Provides CRUD operations and
 mapping between different types of rooms.
 
-### `ClientFactory` [TODO]
+### `ClientFactory`
 Provides a method to obtain a JS SDK `MatrixClient` in the context of a
-particular `user_id`. This is used to send messages as other users.
+particular `user_id` and/or `Request`. This is used to send messages as other
+users.
 
 ### `Request` / `RequestFactory`
 An abstraction provided to identify a single request through the bridge.
@@ -77,7 +78,7 @@ dependencies on `UserBridgeStore`, `RoomBridgeStore`, `AppServiceBot`,
 # API
 
 A hosted reference can be found on
-[GitHub Pages](http://matrix-org.github.io/matrix-appservice-bridge/index.html).
+[GitHub Pages](http://matrix-org.github.io/matrix-appservice-bridge/0.1.0).
 Alternatively, build the docs using `npm run gendoc`. Each component's class
 constructor is exposed on `require("matrix-appservice-bridge")` so check each
 class for more information on how to use each component.

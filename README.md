@@ -29,8 +29,11 @@ virtual users and provides many useful helper functions bridges may desire.
 ## Components
 The bridge is formed around "components". You can pick and choose which
 components you use, though some components depend upon other components.
-All components operate on data models defined in the bridge. You directly
+All components operate on data models defined in the bridge. You can directly
 construct components: the bridge exposes the class constructor.
+
+### `BridgeStore`
+Provides basic document store (key-value) CRUD operations.
 
 ### `UserBridgeStore`
 Provides storage for matrix and jungle users. Provides CRUD operations and
@@ -43,10 +46,6 @@ mapping between different types of rooms.
 ### `ClientFactory` [TODO]
 Provides a method to obtain a JS SDK `MatrixClient` in the context of a
 particular `user_id`. This is used to send messages as other users.
-
-### `Bridge` [TODO]
-Provides a way to start the bridge. Wraps the `ApplicationService` and
-`AppServiceRegistration` classes of `matrix-appservice`.
 
 ### `Request` [TODO]
 An abstraction provided to identify a single request through the bridge.
@@ -63,11 +62,19 @@ A wrapper around the JS SDK `MatrixClient` designed for use by the application
 service *itself*. Contains helper methods to get all rooms the AS is in, how
 many virtual / real users are in each, etc.
 
+### `Bridge` [TODO]
+The component which orchestrates other components: a "glue" component. Provides
+a way to start the bridge. This is the component most examples use. Has
+dependencies on `UserBridgeStore`, `RoomBridgeStore`, `AppServiceBot`,
+`Request` and `ClientFactory`.
+
 ### Data Models
  * `MatrixRoom` - A representation of a matrix room.
  * `JungleRoom` - A representation of a third-party room.
  * `MatrixUser` - A representation of a matrix user.
  * `JungleUser` - A representation of a third-party user.
+ 
+
 
 
 # API

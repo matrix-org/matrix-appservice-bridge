@@ -28,7 +28,9 @@ describe("RoomBridgeStore", function() {
     });
 
     afterEach(function() {
-        fs.unlinkSync(TEST_DB_PATH);
+        try {
+            fs.unlinkSync(TEST_DB_PATH);
+        } catch(e) {}
     });
 
     describe("setMatrixRoom", function() {

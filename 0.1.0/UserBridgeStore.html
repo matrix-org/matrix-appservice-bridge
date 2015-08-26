@@ -214,193 +214,6 @@
 
     
 
-    <h4 class="name" id="getByJungleData"><span class="type-signature"></span>getByJungleData<span class="signature">(dataQuery)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="JungleUser.html">JungleUser</a>>, Error>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Get jungle users by some data about them, previously stored via the set
-method on the Jungle user.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>dataQuery</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The keys and matching values the jungle users share.
-This should use dot notation for nested types. For example:
-<code> { "topLevel.midLevel.leaf": 42, "otherTopLevel": "foo" } </code></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_user-bridge-store.js.html">components/user-bridge-store.js</a>, <a href="components_user-bridge-store.js.html#line188">line 188</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-<h5>Throws:</h5>
-
-        
-
-    <div class="param-desc">
-    
-        If dataQuery isn't an object.
-    
-    </div>
-
-
-    
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    Resolves to a possibly empty list of
-JungleUsers. Rejects with an error if there was a problem querying the store.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;Array.&lt;<a href="JungleUser.html">JungleUser</a>>, Error></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-    <h5>Example</h5>
-    
-    <pre class="prettyprint"><code>jungleUser.set({
-  toplevel: "foo",
-  nested: {
-    bar: {
-      baz: 43
-    }
-  }
-});
-store.setJungleUser(jungleUser).then(function() {
-  store.getByJungleData({
-    "toplevel": "foo",
-    "nested.bar.baz": 43
-  })
-});</code></pre>
-
-
-
-        
-            
-
-    
-
     <h4 class="name" id="getByMatrixLocalpart"><span class="type-signature"></span>getByMatrixLocalpart<span class="signature">(localpart)</span><span class="type-signature"> &rarr; {Promise.&lt;?<a href="MatrixUser.html">MatrixUser</a>, Error>}</span></h4>
 
     
@@ -556,14 +369,15 @@ arbitrary matching user.
 
     
 
-    <h4 class="name" id="getJungleLinks"><span class="type-signature"></span>getJungleLinks<span class="signature">(matrixId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;String>, Error>}</span></h4>
+    <h4 class="name" id="getByRemoteData"><span class="type-signature"></span>getByRemoteData<span class="signature">(dataQuery)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="RemoteUser.html">RemoteUser</a>>, Error>}</span></h4>
 
     
 
 
 
 <div class="description">
-    Retrieve a list of jungle IDs linked to this matrix user ID.
+    Get remote users by some data about them, previously stored via the set
+method on the Remote user.
 </div>
 
 
@@ -599,13 +413,13 @@ arbitrary matching user.
 
         <tr>
             
-                <td class="name"><code>matrixId</code></td>
+                <td class="name"><code>dataQuery</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type">Object</span>
 
 
             
@@ -615,7 +429,9 @@ arbitrary matching user.
 
             
 
-            <td class="description last">The matrix user ID</td>
+            <td class="description last">The keys and matching values the remote users share.
+This should use dot notation for nested types. For example:
+<code> { "topLevel.midLevel.leaf": 42, "otherTopLevel": "foo" } </code></td>
         </tr>
 
     
@@ -656,7 +472,7 @@ arbitrary matching user.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_user-bridge-store.js.html">components/user-bridge-store.js</a>, <a href="components_user-bridge-store.js.html#line303">line 303</a>
+        <a href="components_user-bridge-store.js.html">components/user-bridge-store.js</a>, <a href="components_user-bridge-store.js.html#line188">line 188</a>
     </li></ul></dd>
     
 
@@ -677,13 +493,26 @@ arbitrary matching user.
 
 
 
+<h5>Throws:</h5>
+
+        
+
+    <div class="param-desc">
+    
+        If dataQuery isn't an object.
+    
+    </div>
+
+
+    
 
 
 <h5>Returns:</h5>
 
         
 <div class="param-desc">
-    A list of jungle IDs.
+    Resolves to a possibly empty list of
+RemoteUsers. Rejects with an error if there was a problem querying the store.
 </div>
 
 
@@ -694,7 +523,7 @@ arbitrary matching user.
     </dt>
     <dd>
         
-<span class="param-type">Promise.&lt;Array.&lt;String>, Error></span>
+<span class="param-type">Promise.&lt;Array.&lt;<a href="RemoteUser.html">RemoteUser</a>>, Error></span>
 
 
     </dd>
@@ -703,20 +532,38 @@ arbitrary matching user.
     
 
 
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>remoteUser.set({
+  toplevel: "foo",
+  nested: {
+    bar: {
+      baz: 43
+    }
+  }
+});
+store.setRemoteUser(remoteUser).then(function() {
+  store.getByRemoteData({
+    "toplevel": "foo",
+    "nested.bar.baz": 43
+  })
+});</code></pre>
+
+
 
         
             
 
     
 
-    <h4 class="name" id="getJungleUser"><span class="type-signature"></span>getJungleUser<span class="signature">(id)</span><span class="type-signature"> &rarr; {Promise.&lt;?<a href="JungleUser.html">JungleUser</a>, Error>}</span></h4>
+    <h4 class="name" id="getMatrixLinks"><span class="type-signature"></span>getMatrixLinks<span class="signature">(remoteId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;String>, Error>}</span></h4>
 
     
 
 
 
 <div class="description">
-    Get a jungle user by their jungle ID.
+    Retrieve a list of matrix user IDs linked to this remote ID.
 </div>
 
 
@@ -752,7 +599,7 @@ arbitrary matching user.
 
         <tr>
             
-                <td class="name"><code>id</code></td>
+                <td class="name"><code>remoteId</code></td>
             
 
             <td class="type">
@@ -768,314 +615,7 @@ arbitrary matching user.
 
             
 
-            <td class="description last">The jungle ID</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_user-bridge-store.js.html">components/user-bridge-store.js</a>, <a href="components_user-bridge-store.js.html#line154">line 154</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    Resolves to the user or null if they
-do not exist. Rejects with an error if there was a problem querying the store.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;?<a href="JungleUser.html">JungleUser</a>, Error></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getJungleUsersFromMatrixId"><span class="type-signature"></span>getJungleUsersFromMatrixId<span class="signature">(userId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="JungleUser.html">JungleUser</a>>, Error>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Retrieve a list of corresponding jungle users for the given matrix user ID.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>userId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The Matrix user ID</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_user-bridge-store.js.html">components/user-bridge-store.js</a>, <a href="components_user-bridge-store.js.html#line61">line 61</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    Resolves to a list of Jungle users.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;Array.&lt;<a href="JungleUser.html">JungleUser</a>>, Error></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getMatrixLinks"><span class="type-signature"></span>getMatrixLinks<span class="signature">(jungleId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;String>, Error>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Retrieve a list of matrix user IDs linked to this jungle ID.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>jungleId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The jungle ID</td>
+            <td class="description last">The remote ID</td>
         </tr>
 
     
@@ -1323,14 +863,14 @@ do not exist. Rejects with an error if there was a problem querying the store.
 
     
 
-    <h4 class="name" id="getMatrixUsersFromJungleId"><span class="type-signature"></span>getMatrixUsersFromJungleId<span class="signature">(jungleId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="MatrixUser.html">MatrixUser</a>>, Error>}</span></h4>
+    <h4 class="name" id="getMatrixUsersFromRemoteId"><span class="type-signature"></span>getMatrixUsersFromRemoteId<span class="signature">(remoteId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="MatrixUser.html">MatrixUser</a>>, Error>}</span></h4>
 
     
 
 
 
 <div class="description">
-    Retrieve a list of corresponding matrix users for the given jungle ID.
+    Retrieve a list of corresponding matrix users for the given remote ID.
 </div>
 
 
@@ -1366,7 +906,7 @@ do not exist. Rejects with an error if there was a problem querying the store.
 
         <tr>
             
-                <td class="name"><code>jungleId</code></td>
+                <td class="name"><code>remoteId</code></td>
             
 
             <td class="type">
@@ -1382,7 +922,7 @@ do not exist. Rejects with an error if there was a problem querying the store.
 
             
 
-            <td class="description last">The Jungle ID</td>
+            <td class="description last">The Remote ID</td>
         </tr>
 
     
@@ -1476,14 +1016,474 @@ do not exist. Rejects with an error if there was a problem querying the store.
 
     
 
-    <h4 class="name" id="linkUsers"><span class="type-signature"></span>linkUsers<span class="signature">(matrixUser, jungleUser)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="getRemoteLinks"><span class="type-signature"></span>getRemoteLinks<span class="signature">(matrixId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;String>, Error>}</span></h4>
 
     
 
 
 
 <div class="description">
-    Create a link between a matrix and jungle user. If either user does not exist,
+    Retrieve a list of remote IDs linked to this matrix user ID.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>matrixId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The matrix user ID</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_user-bridge-store.js.html">components/user-bridge-store.js</a>, <a href="components_user-bridge-store.js.html#line303">line 303</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A list of remote IDs.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Array.&lt;String>, Error></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getRemoteUser"><span class="type-signature"></span>getRemoteUser<span class="signature">(id)</span><span class="type-signature"> &rarr; {Promise.&lt;?<a href="RemoteUser.html">RemoteUser</a>, Error>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Get a remote user by their remote ID.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The remote ID</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_user-bridge-store.js.html">components/user-bridge-store.js</a>, <a href="components_user-bridge-store.js.html#line154">line 154</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    Resolves to the user or null if they
+do not exist. Rejects with an error if there was a problem querying the store.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;?<a href="RemoteUser.html">RemoteUser</a>, Error></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getRemoteUsersFromMatrixId"><span class="type-signature"></span>getRemoteUsersFromMatrixId<span class="signature">(userId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="RemoteUser.html">RemoteUser</a>>, Error>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Retrieve a list of corresponding remote users for the given matrix user ID.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>userId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The Matrix user ID</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_user-bridge-store.js.html">components/user-bridge-store.js</a>, <a href="components_user-bridge-store.js.html#line61">line 61</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    Resolves to a list of Remote users.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Array.&lt;<a href="RemoteUser.html">RemoteUser</a>>, Error></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="linkUsers"><span class="type-signature"></span>linkUsers<span class="signature">(matrixUser, remoteUser)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Create a link between a matrix and remote user. If either user does not exist,
 they will be inserted prior to linking. This is done to ensure foreign key
 constraints are satisfied (so you cannot have a mapping to a user ID which
 does not exist).
@@ -1545,13 +1545,13 @@ does not exist).
 
         <tr>
             
-                <td class="name"><code>jungleUser</code></td>
+                <td class="name"><code>remoteUser</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="JungleUser.html">JungleUser</a></span>
+<span class="param-type"><a href="RemoteUser.html">RemoteUser</a></span>
 
 
             
@@ -1561,7 +1561,7 @@ does not exist).
 
             
 
-            <td class="description last">The jungle user</td>
+            <td class="description last">The remote user</td>
         </tr>
 
     
@@ -1603,156 +1603,6 @@ does not exist).
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
         <a href="components_user-bridge-store.js.html">components/user-bridge-store.js</a>, <a href="components_user-bridge-store.js.html#line229">line 229</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="setJungleUser"><span class="type-signature"></span>setJungleUser<span class="signature">(jungleUser)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Store a Jungle user. If they already exist, they will be updated. Equivalence
-is determined by the Jungle ID.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>jungleUser</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="JungleUser.html">JungleUser</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The jungle user</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_user-bridge-store.js.html">components/user-bridge-store.js</a>, <a href="components_user-bridge-store.js.html#line209">line 209</a>
     </li></ul></dd>
     
 
@@ -1951,14 +1801,164 @@ is determined by their user ID.
 
     
 
-    <h4 class="name" id="unlinkUserIds"><span class="type-signature"></span>unlinkUserIds<span class="signature">(matrixUserId, jungleUserId)</span><span class="type-signature"> &rarr; {Promise.&lt;Number, Error>}</span></h4>
+    <h4 class="name" id="setRemoteUser"><span class="type-signature"></span>setRemoteUser<span class="signature">(remoteUser)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
 
 
 <div class="description">
-    Delete a link between a matrix user ID and a jungle user ID.
+    Store a Remote user. If they already exist, they will be updated. Equivalence
+is determined by the Remote ID.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>remoteUser</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="RemoteUser.html">RemoteUser</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The remote user</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_user-bridge-store.js.html">components/user-bridge-store.js</a>, <a href="components_user-bridge-store.js.html#line209">line 209</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="unlinkUserIds"><span class="type-signature"></span>unlinkUserIds<span class="signature">(matrixUserId, remoteUserId)</span><span class="type-signature"> &rarr; {Promise.&lt;Number, Error>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Delete a link between a matrix user ID and a remote user ID.
 </div>
 
 
@@ -2017,7 +2017,7 @@ is determined by their user ID.
 
         <tr>
             
-                <td class="name"><code>jungleUserId</code></td>
+                <td class="name"><code>remoteUserId</code></td>
             
 
             <td class="type">
@@ -2033,7 +2033,7 @@ is determined by their user ID.
 
             
 
-            <td class="description last">The jungle user ID</td>
+            <td class="description last">The remote user ID</td>
         </tr>
 
     
@@ -2127,14 +2127,14 @@ is determined by their user ID.
 
     
 
-    <h4 class="name" id="unlinkUsers"><span class="type-signature"></span>unlinkUsers<span class="signature">(matrixUser, jungleUser)</span><span class="type-signature"> &rarr; {Promise.&lt;Number, Error>}</span></h4>
+    <h4 class="name" id="unlinkUsers"><span class="type-signature"></span>unlinkUsers<span class="signature">(matrixUser, remoteUser)</span><span class="type-signature"> &rarr; {Promise.&lt;Number, Error>}</span></h4>
 
     
 
 
 
 <div class="description">
-    Delete a link between a matrix user and a jungle user.
+    Delete a link between a matrix user and a remote user.
 </div>
 
 
@@ -2193,13 +2193,13 @@ is determined by their user ID.
 
         <tr>
             
-                <td class="name"><code>jungleUser</code></td>
+                <td class="name"><code>remoteUser</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="JungleUser.html">JungleUser</a></span>
+<span class="param-type"><a href="RemoteUser.html">RemoteUser</a></span>
 
 
             
@@ -2209,7 +2209,7 @@ is determined by their user ID.
 
             
 
-            <td class="description last">The jungle user</td>
+            <td class="description last">The remote user</td>
         </tr>
 
     
@@ -2314,13 +2314,13 @@ is determined by their user ID.
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="JungleRoom.html">JungleRoom</a></li><li><a href="JungleUser.html">JungleUser</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 10:02:42 GMT+0100 (BST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 17:37:15 GMT+0100 (BST)
 </footer>
 
 <script> prettyPrint(); </script>

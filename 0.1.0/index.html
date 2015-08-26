@@ -66,9 +66,9 @@ components you use, though some components depend upon other components.
 All components operate on data models defined in the bridge. You can directly
 construct components: the bridge exposes the class constructor.</p>
 <h3><code>BridgeStore</code></h3><p>Provides basic document store (key-value) CRUD operations.</p>
-<h3><code>UserBridgeStore</code></h3><p>Provides storage for matrix and jungle users. Provides CRUD operations and
+<h3><code>UserBridgeStore</code></h3><p>Provides storage for matrix and remote users. Provides CRUD operations and
 mapping between different types of users.</p>
-<h3><code>RoomBridgeStore</code></h3><p>Provides storage for matrix and jungle rooms. Provides CRUD operations and
+<h3><code>RoomBridgeStore</code></h3><p>Provides storage for matrix and remote rooms. Provides CRUD operations and
 mapping between different types of rooms.</p>
 <h3><code>ClientFactory</code></h3><p>Provides a method to obtain a JS SDK <code>MatrixClient</code> in the context of a
 particular <code>user_id</code> and/or <code>Request</code>. This is used to send messages as other
@@ -77,6 +77,16 @@ users.</p>
 Can be used for request-context logging (each request has a unique ID)
 and metrics (each request can succeed or fail and has timers for how long
 they take to go through the bridge).</p>
+<h3><code>Intent</code></h3><p>Provides a way to perform Matrix actions by <em>intent</em> rather than by raw
+API calls. This can be thought of as an extension to the client-server JS SDK.
+For example, <code>intent.invite(roomId, invitee)</code> would make sure that you are
+actually joined to the room <code>roomId</code> first (and will automatically join it if
+you aren't) before trying to send the invite.</p>
+<p>Performing actions by <em>intent</em> makes creating bridges a lot easier. For example,
+if your bridge has no concept of inviting or joining rooms, then you don't need
+to care about it either in the bridge. Simply calling
+<code>intent.sendMessage(roomId, text)</code> would make sure that you are joined to the
+room first before sending the message.</p>
 <h3><code>ConfigValidator</code> [TODO]</h3><p>Provides a way to validate a YAML file when provided with a schema file.
 Useful for setting your bridge-specific configuration information.</p>
 <h3><code>AppServiceBot</code> [TODO]</h3><p>A wrapper around the JS SDK <code>MatrixClient</code> designed for use by the application
@@ -88,22 +98,15 @@ dependencies on <code>UserBridgeStore</code>, <code>RoomBridgeStore</code>, <cod
 <code>Request</code> and <code>ClientFactory</code>.</p>
 <h2>Data Models</h2><ul>
 <li><code>MatrixRoom</code> - A representation of a matrix room.</li>
-<li><code>JungleRoom</code> - A representation of a third-party room.</li>
+<li><code>RemoteRoom</code> - A representation of a third-party room.</li>
 <li><code>MatrixUser</code> - A representation of a matrix user.</li>
-<li><code>JungleUser</code> - A representation of a third-party user.</li>
+<li><code>RemoteUser</code> - A representation of a third-party user.</li>
 </ul>
 <h1>API</h1><p>A hosted reference can be found on
 <a href="http://matrix-org.github.io/matrix-appservice-bridge/0.1.0">GitHub Pages</a>.
 Alternatively, build the docs using <code>npm run gendoc</code>. Each component's class
 constructor is exposed on <code>require(&quot;matrix-appservice-bridge&quot;)</code> so check each
-class for more information on how to use each component.</p>
-<h2>A word on terminology</h2><p>This library can be used to bridge with many different networks. This makes it
-hard to identify the &quot;outside network&quot; via a single consistent name for types
-and function names. This library refers to the &quot;outside network&quot; as the
-<code>Jungle</code>: after all, it <em>is</em> a jungle out there. This name makes it easier to
-intuit what <code>getJungleId</code> means, versus the alternative <code>getBridgedUserId</code> which
-could be confused with Matrix's <code>user_id</code>. This also makes it a lot easier to
-<code>grep</code>!</p></article>
+class for more information on how to use each component.</p></article>
     </section>
 
 
@@ -114,13 +117,13 @@ could be confused with Matrix's <code>user_id</code>. This also makes it a lot e
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="JungleRoom.html">JungleRoom</a></li><li><a href="JungleUser.html">JungleUser</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 10:02:42 GMT+0100 (BST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 17:37:15 GMT+0100 (BST)
 </footer>
 
 <script> prettyPrint(); </script>

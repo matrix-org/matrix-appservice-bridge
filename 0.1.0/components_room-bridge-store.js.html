@@ -29,23 +29,23 @@
             <pre class="prettyprint source linenums"><code>/*
  * Room storage format:
  * {
- *   type: "matrix|jungle",
- *   id: "room_id|jungle_id",
+ *   type: "matrix|remote",
+ *   id: "room_id|remote_id",
  *   data: {
  *     .. matrix-specific info e.g. room name ..
- *     .. jungle specific info e.g. IRC channel modes ..
+ *     .. remote specific info e.g. IRC channel modes ..
  *   }
  * }
  *
  * There is also a third type, the "union" type. This binds together a single
- * matrix &lt;--> jungle pairing. A single jungle ID can have many matrix_id and
+ * matrix &lt;--> remote pairing. A single remote ID can have many matrix_id and
  * vice versa, via mutliple union entries. Each union entry has an optional
  * 'data' attribute which functions in the same way as data for rooms.
  *
  * Example:
  * {
  *   type: "union",
- *   jungle_id: "#foo irc.domain.com",
+ *   remote_id: "#foo irc.domain.com",
  *   matrix_id: "!wefouh94w34rw:matrix.org",
  *   data: {
  *     from_config_file: true
@@ -55,7 +55,7 @@
 "use strict";
 var BridgeStore = require("./bridge-store");
 var MatrixRoom = require("../models/rooms/matrix");
-var JungleRoom = require("../models/rooms/jungle");
+var RemoteRoom = require("../models/rooms/remote");
 var util = require("util");
 
 /**
@@ -82,15 +82,15 @@ RoomBridgeStore.prototype.setMatrixRoom = function(matrixRoom, updateQuery) {
 };
 
 /**
- * Store a Jungle room. If it already exists, it will be updated. Equivalence
+ * Store a Remote room. If it already exists, it will be updated. Equivalence
  * is determined by the room ID.
- * @param {JungleRoom} jungleRoom The jungle room
+ * @param {RemoteRoom} remoteRoom The remote room
  * @param {Object} updateQuery Update the room based on the data values given in this
- * object rather than the jungle ID.
+ * object rather than the remote ID.
  * @return {Promise}
  */
-RoomBridgeStore.prototype.setJungleRoom = function(jungleRoom, updateQuery) {
-    return setRoom(this, "jungle", jungleRoom, updateQuery);
+RoomBridgeStore.prototype.setRemoteRoom = function(remoteRoom, updateQuery) {
+    return setRoom(this, "remote", remoteRoom, updateQuery);
 };
 
 /**
@@ -105,14 +105,14 @@ RoomBridgeStore.prototype.getMatrixRoom = function(roomIdOrDataQuery) {
 };
 
 /**
- * Get a jungle room by its' room ID.
+ * Get a remote room by its' room ID.
  * @param {string|Object} roomIdOrDataQuery The room id or a data query object.
  * If the data query returns multiple entries, only 1 will be returned.
- * @return {Promise&lt;?JungleRoom, Error>} Resolves to the room or null if it
+ * @return {Promise&lt;?RemoteRoom, Error>} Resolves to the room or null if it
  * does not exist. Rejects with an error if there was a problem querying the store.
  */
-RoomBridgeStore.prototype.getJungleRoom = function(roomIdOrDataQuery) {
-    return getRoom(this, "jungle", JungleRoom, roomIdOrDataQuery, false);
+RoomBridgeStore.prototype.getRemoteRoom = function(roomIdOrDataQuery) {
+    return getRoom(this, "remote", RemoteRoom, roomIdOrDataQuery, false);
 };
 
 /**
@@ -125,12 +125,12 @@ RoomBridgeStore.prototype.getMatrixRooms = function(dataQuery) {
 };
 
 /**
- * Get a list of jungle rooms by a data query.
+ * Get a list of remote rooms by a data query.
  * @param {Object} dataQuery A data query object.
- * @return {Promise&lt;JungleRoom[], Error>}
+ * @return {Promise&lt;RemoteRoom[], Error>}
  */
-RoomBridgeStore.prototype.getJungleRooms = function(dataQuery) {
-    return getRoom(this, "jungle", JungleRoom, dataQuery, true);
+RoomBridgeStore.prototype.getRemoteRooms = function(dataQuery) {
+    return getRoom(this, "remote", RemoteRoom, dataQuery, true);
 };
 
 // ************
@@ -138,25 +138,25 @@ RoomBridgeStore.prototype.getJungleRooms = function(dataQuery) {
 // ************
 
 /**
- * Create a link between a matrix room and jungle room. This will insert the
+ * Create a link between a matrix room and remote room. This will insert the
  * given rooms if they do not exist before creating the mapping. This is done to
  * ensure foreign key constraints are satisfied (so you cannot have a mapping to
  * a room ID which does not exist).
  * @param {MatrixRoom} matrixRoom The matrix room
- * @param {JungleRoom} jungleRoom The jungle room
+ * @param {RemoteRoom} remoteRoom The remote room
  * @param {Object=} data Information about this mapping.
  * @return {Promise}
  */
-RoomBridgeStore.prototype.linkRooms = function(matrixRoom, jungleRoom, data) {
+RoomBridgeStore.prototype.linkRooms = function(matrixRoom, remoteRoom, data) {
     data = data || {};
     var self = this;
     return self.insertIfNotExists({
-        type: "jungle",
-        id: jungleRoom.getId()
+        type: "remote",
+        id: remoteRoom.getId()
     }, {
-        type: "jungle",
-        id: jungleRoom.getId(),
-        data: jungleRoom.serialize()
+        type: "remote",
+        id: remoteRoom.getId(),
+        data: remoteRoom.serialize()
     }).then(function() {
         return self.insertIfNotExists({
             type: "matrix",
@@ -169,11 +169,11 @@ RoomBridgeStore.prototype.linkRooms = function(matrixRoom, jungleRoom, data) {
     }).then(function() {
         return self.upsert({
             type: "union",
-            jungle_id: jungleRoom.getId(),
+            remote_id: remoteRoom.getId(),
             matrix_id: matrixRoom.getId()
         }, {
             type: "union",
-            jungle_id: jungleRoom.getId(),
+            remote_id: remoteRoom.getId(),
             matrix_id: matrixRoom.getId(),
             data: data
         });
@@ -181,25 +181,25 @@ RoomBridgeStore.prototype.linkRooms = function(matrixRoom, jungleRoom, data) {
 };
 
 /**
- * Delete a link between a matrix room and a jungle room.
+ * Delete a link between a matrix room and a remote room.
  * @param {MatrixUser} matrixRoom The matrix user
- * @param {JungleUser} jungleRoom The jungle user
+ * @param {RemoteUser} remoteRoom The remote user
  * @return {Promise&lt;Number, Error>} Resolves to the number of entries removed.
  */
-RoomBridgeStore.prototype.unlinkRooms = function(matrixRoom, jungleRoom) {
-    return this.unlinkRoomIds(matrixRoom.getId(), jungleRoom.getId());
+RoomBridgeStore.prototype.unlinkRooms = function(matrixRoom, remoteRoom) {
+    return this.unlinkRoomIds(matrixRoom.getId(), remoteRoom.getId());
 };
 
 /**
- * Delete a link between a matrix room ID and a jungle room ID.
+ * Delete a link between a matrix room ID and a remote room ID.
  * @param {string} matrixRoomId The matrix room ID
- * @param {string} jungleRoomId The jungle room ID
+ * @param {string} remoteRoomId The remote room ID
  * @return {Promise&lt;Number, Error>} Resolves to the number of entries removed.
  */
-RoomBridgeStore.prototype.unlinkRoomIds = function(matrixRoomId, jungleRoomId) {
+RoomBridgeStore.prototype.unlinkRoomIds = function(matrixRoomId, remoteRoomId) {
     return this.delete({
         type: "union",
-        jungle_id: jungleRoomId,
+        remote_id: remoteRoomId,
         matrix_id: matrixRoomId
     });
 };
@@ -237,51 +237,51 @@ RoomBridgeStore.prototype.getLinksByData = function(dataQuery) {
     return this.select(query, this.convertTo(function(doc) {
         return {
             matrix: doc.matrix_id,
-            jungle: doc.jungle_id,
+            remote: doc.remote_id,
             data: doc.data
         };
     }));
 };
 
 /**
- * Retrieve a list of matrix room IDs linked to this jungle ID.
- * @param {string} jungleId The jungle ID
+ * Retrieve a list of matrix room IDs linked to this remote ID.
+ * @param {string} remoteId The remote ID
  * @return {Promise&lt;RoomBridgeStore~Link[], Error>} A list of room IDs.
  */
-RoomBridgeStore.prototype.getMatrixLinks = function(jungleId) {
+RoomBridgeStore.prototype.getMatrixLinks = function(remoteId) {
     return this.select({
         type: "union",
-        jungle_id: jungleId
+        remote_id: remoteId
     }, this.convertTo(function(doc) {
         return {
             matrix: doc.matrix_id,
-            jungle: doc.jungle_id,
+            remote: doc.remote_id,
             data: doc.data
         };
     }));
 };
 
 /**
- * Retrieve a list of jungle IDs linked to this matrix room ID.
+ * Retrieve a list of remote IDs linked to this matrix room ID.
  * @param {string} matrixId The matrix room ID
- * @return {Promise&lt;RoomBridgeStore~Link[], Error>} A list of jungle IDs.
+ * @return {Promise&lt;RoomBridgeStore~Link[], Error>} A list of remote IDs.
  */
-RoomBridgeStore.prototype.getJungleLinks = function(matrixId) {
+RoomBridgeStore.prototype.getRemoteLinks = function(matrixId) {
     return this.select({
         type: "union",
         matrix_id: matrixId
     }, this.convertTo(function(doc) {
         return {
             matrix: doc.matrix_id,
-            jungle: doc.jungle_id,
+            remote: doc.remote_id,
             data: doc.data
         };
     }));
 };
 
-RoomBridgeStore.prototype.getLinkedMatrixRooms = function(jungleId, dataQuery) {
+RoomBridgeStore.prototype.getLinkedMatrixRooms = function(remoteId, dataQuery) {
     var self = this;
-    return this.getMatrixLinks(jungleId, dataQuery).then(function(links) {
+    return this.getMatrixLinks(remoteId, dataQuery).then(function(links) {
         var matrixIds = links.map(function(link) {
             return link.matrix;
         });
@@ -294,17 +294,17 @@ RoomBridgeStore.prototype.getLinkedMatrixRooms = function(jungleId, dataQuery) {
     })
 };
 
-RoomBridgeStore.prototype.getLinkedJungleRooms = function(matrixId, dataQuery) {
+RoomBridgeStore.prototype.getLinkedRemoteRooms = function(matrixId, dataQuery) {
     var self = this;
-    return this.getJungleLinks(matrixId, dataQuery).then(function(links) {
-        var jungleIds = links.map(function(link) {
-            return link.jungle;
+    return this.getRemoteLinks(matrixId, dataQuery).then(function(links) {
+        var remoteIds = links.map(function(link) {
+            return link.remote;
         });
         return self.select({
-            type: "jungle",
-            id: { $in: jungleIds }
+            type: "remote",
+            id: { $in: remoteIds }
         }, self.convertTo(function(doc) {
-            return new JungleRoom(doc.id, doc.data);
+            return new RemoteRoom(doc.id, doc.data);
         }));
     })
 };
@@ -356,7 +356,7 @@ module.exports = RoomBridgeStore;
  * @typedef RoomBridgeStore~Link
  * @type {Object}
  * @property {string} matrix The matrix room ID
- * @property {string} jungle The jungle room ID
+ * @property {string} remote The remote room ID
  * @property {Object} data Information about this mapping, which may be an empty
  * object.
  */
@@ -370,13 +370,13 @@ module.exports = RoomBridgeStore;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="JungleRoom.html">JungleRoom</a></li><li><a href="JungleUser.html">JungleUser</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 10:02:42 GMT+0100 (BST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 17:37:15 GMT+0100 (BST)
 </footer>
 
 <script> prettyPrint(); </script>

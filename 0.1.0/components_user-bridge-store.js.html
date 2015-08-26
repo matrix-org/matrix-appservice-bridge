@@ -29,11 +29,11 @@
             <pre class="prettyprint source linenums"><code>/*
  * User storage format:
  * {
- *   type: "matrix|jungle",
- *   id: "user_id|jungle_id",
+ *   type: "matrix|remote",
+ *   id: "user_id|remote_id",
  *   data: {
  *     .. matrix-specific info e.g. display name ..
- *     .. jungle specific info e.g. IRC username ..
+ *     .. remote specific info e.g. IRC username ..
  *   }
  * }
  * Examples:
@@ -47,7 +47,7 @@
  * }
  *
  * {
- *   type: "jungle",
+ *   type: "remote",
  *   id: "foobar@irc.freenode.net",
  *   data: {
  *     nickChoices: ["foobar", "foobar_", "foobar__"]
@@ -55,19 +55,19 @@
  * }
  *
  * There is also a third type, the "union" type. This binds together a single
- * matrix &lt;--> jungle pairing. A single jungle ID can have many matrix_id and
+ * matrix &lt;--> remote pairing. A single remote ID can have many matrix_id and
  * vice versa, via mutliple union entries.
  *
  * {
  *   type: "union",
- *   jungle_id: "foobar@irc.freenode.net",
+ *   remote_id: "foobar@irc.freenode.net",
  *   matrix_id: "@foo:bar"
  * }
  */
 "use strict";
 var BridgeStore = require("./bridge-store");
 var MatrixUser = require("../models/users/matrix");
-var JungleUser = require("../models/users/jungle");
+var RemoteUser = require("../models/users/remote");
 var util = require("util");
 
 /**
@@ -82,37 +82,37 @@ function UserBridgeStore(db, opts) {
 util.inherits(UserBridgeStore, BridgeStore);
 
 /**
- * Retrieve a list of corresponding jungle users for the given matrix user ID.
+ * Retrieve a list of corresponding remote users for the given matrix user ID.
  * @param {string} userId The Matrix user ID
- * @return {Promise&lt;JungleUser[], Error>} Resolves to a list of Jungle users.
+ * @return {Promise&lt;RemoteUser[], Error>} Resolves to a list of Remote users.
  */
-UserBridgeStore.prototype.getJungleUsersFromMatrixId = function(userId) {
+UserBridgeStore.prototype.getRemoteUsersFromMatrixId = function(userId) {
     var self = this;
     return this.select({
         type: "union",
         matrix_id: userId
     }, self.convertTo(function(doc) {
-        return doc.jungle_id;
-    })).then(function(jungleIds) {
+        return doc.remote_id;
+    })).then(function(remoteIds) {
         return self.select({
-            type: "jungle",
-            id: { $in: jungleIds }
+            type: "remote",
+            id: { $in: remoteIds }
         }, self.convertTo(function(doc) {
-            return new JungleUser(doc.id, doc.data);
+            return new RemoteUser(doc.id, doc.data);
         }));
     });
 };
 
 /**
- * Retrieve a list of corresponding matrix users for the given jungle ID.
- * @param {string} jungleId The Jungle ID
+ * Retrieve a list of corresponding matrix users for the given remote ID.
+ * @param {string} remoteId The Remote ID
  * @return {Promise&lt;MatrixUser[], Error>} Resolves to a list of Matrix users.
  */
-UserBridgeStore.prototype.getMatrixUsersFromJungleId = function(jungleId) {
+UserBridgeStore.prototype.getMatrixUsersFromRemoteId = function(remoteId) {
     var self = this;
     return this.select({
         type: "union",
-        jungle_id: jungleId
+        remote_id: remoteId
     }, self.convertTo(function(doc) {
         return doc.matrix_id;
     })).then(function(matrixUserIds) {
@@ -174,31 +174,31 @@ UserBridgeStore.prototype.setMatrixUser = function(matrixUser) {
 };
 
 /**
- * Get a jungle user by their jungle ID.
- * @param {string} id The jungle ID
- * @return {Promise&lt;?JungleUser, Error>} Resolves to the user or null if they
+ * Get a remote user by their remote ID.
+ * @param {string} id The remote ID
+ * @return {Promise&lt;?RemoteUser, Error>} Resolves to the user or null if they
  * do not exist. Rejects with an error if there was a problem querying the store.
  */
-UserBridgeStore.prototype.getJungleUser = function(id) {
+UserBridgeStore.prototype.getRemoteUser = function(id) {
     return this.selectOne({
-        type: "jungle",
+        type: "remote",
         id: id
     }, this.convertTo(function(doc) {
-        return new JungleUser(doc.id, doc.data);
+        return new RemoteUser(doc.id, doc.data);
     }));
 };
 
 /**
- * Get jungle users by some data about them, previously stored via the set
- * method on the Jungle user.
- * @param {Object} dataQuery The keys and matching values the jungle users share.
+ * Get remote users by some data about them, previously stored via the set
+ * method on the Remote user.
+ * @param {Object} dataQuery The keys and matching values the remote users share.
  * This should use dot notation for nested types. For example:
  * &lt;code> { "topLevel.midLevel.leaf": 42, "otherTopLevel": "foo" } &lt;/code>
- * @return {Promise&lt;JungleUser[], Error>} Resolves to a possibly empty list of
- * JungleUsers. Rejects with an error if there was a problem querying the store.
+ * @return {Promise&lt;RemoteUser[], Error>} Resolves to a possibly empty list of
+ * RemoteUsers. Rejects with an error if there was a problem querying the store.
  * @throws If dataQuery isn't an object.
  * @example
- * jungleUser.set({
+ * remoteUser.set({
  *   toplevel: "foo",
  *   nested: {
  *     bar: {
@@ -206,14 +206,14 @@ UserBridgeStore.prototype.getJungleUser = function(id) {
  *     }
  *   }
  * });
- * store.setJungleUser(jungleUser).then(function() {
- *   store.getByJungleData({
+ * store.setRemoteUser(remoteUser).then(function() {
+ *   store.getByRemoteData({
  *     "toplevel": "foo",
  *     "nested.bar.baz": 43
  *   })
  * });
  */
-UserBridgeStore.prototype.getByJungleData = function(dataQuery) {
+UserBridgeStore.prototype.getByRemoteData = function(dataQuery) {
     if (typeof dataQuery !== "object") {
         throw new Error("Data query must be an object.");
     }
@@ -221,48 +221,48 @@ UserBridgeStore.prototype.getByJungleData = function(dataQuery) {
     Object.keys(dataQuery).forEach(function(key) {
         query["data." + key] = dataQuery[key];
     });
-    query.type = "jungle";
+    query.type = "remote";
 
     return this.select(query, this.convertTo(function(doc) {
-        return new JungleUser(doc.id, doc.data);
+        return new RemoteUser(doc.id, doc.data);
     }));
 };
 
 /**
- * Store a Jungle user. If they already exist, they will be updated. Equivalence
- * is determined by the Jungle ID.
- * @param {JungleUser} jungleUser The jungle user
+ * Store a Remote user. If they already exist, they will be updated. Equivalence
+ * is determined by the Remote ID.
+ * @param {RemoteUser} remoteUser The remote user
  * @return {Promise}
  */
-UserBridgeStore.prototype.setJungleUser = function(jungleUser) {
+UserBridgeStore.prototype.setRemoteUser = function(remoteUser) {
     return this.upsert({
-        type: "jungle",
-        id: jungleUser.getId()
+        type: "remote",
+        id: remoteUser.getId()
     }, {
-        type: "jungle",
-        id: jungleUser.getId(),
-        data: jungleUser.serialize()
+        type: "remote",
+        id: remoteUser.getId(),
+        data: remoteUser.serialize()
     });
 };
 
 /**
- * Create a link between a matrix and jungle user. If either user does not exist,
+ * Create a link between a matrix and remote user. If either user does not exist,
  * they will be inserted prior to linking. This is done to ensure foreign key
  * constraints are satisfied (so you cannot have a mapping to a user ID which
  * does not exist).
  * @param {MatrixUser} matrixUser The matrix user
- * @param {JungleUser} jungleUser The jungle user
+ * @param {RemoteUser} remoteUser The remote user
  * @return {Promise}
  */
-UserBridgeStore.prototype.linkUsers = function(matrixUser, jungleUser) {
+UserBridgeStore.prototype.linkUsers = function(matrixUser, remoteUser) {
     var self = this;
     return self.insertIfNotExists({
-        type: "jungle",
-        id: jungleUser.getId()
+        type: "remote",
+        id: remoteUser.getId()
     }, {
-        type: "jungle",
-        id: jungleUser.getId(),
-        data: jungleUser.serialize()
+        type: "remote",
+        id: remoteUser.getId(),
+        data: remoteUser.serialize()
     }).then(function() {
         return self.insertIfNotExists({
             type: "matrix",
@@ -275,65 +275,65 @@ UserBridgeStore.prototype.linkUsers = function(matrixUser, jungleUser) {
     }).then(function() {
         return self.upsert({
             type: "union",
-            jungle_id: jungleUser.getId(),
+            remote_id: remoteUser.getId(),
             matrix_id: matrixUser.getId()
         }, {
             type: "union",
-            jungle_id: jungleUser.getId(),
+            remote_id: remoteUser.getId(),
             matrix_id: matrixUser.getId()
         });
     });
 };
 
 /**
- * Delete a link between a matrix user and a jungle user.
+ * Delete a link between a matrix user and a remote user.
  * @param {MatrixUser} matrixUser The matrix user
- * @param {JungleUser} jungleUser The jungle user
+ * @param {RemoteUser} remoteUser The remote user
  * @return {Promise&lt;Number, Error>} Resolves to the number of entries removed.
  */
-UserBridgeStore.prototype.unlinkUsers = function(matrixUser, jungleUser) {
-    return this.unlinkUserIds(matrixUser.getId(), jungleUser.getId());
+UserBridgeStore.prototype.unlinkUsers = function(matrixUser, remoteUser) {
+    return this.unlinkUserIds(matrixUser.getId(), remoteUser.getId());
 };
 
 /**
- * Delete a link between a matrix user ID and a jungle user ID.
+ * Delete a link between a matrix user ID and a remote user ID.
  * @param {string} matrixUserId The matrix user ID
- * @param {string} jungleUserId The jungle user ID
+ * @param {string} remoteUserId The remote user ID
  * @return {Promise&lt;Number, Error>} Resolves to the number of entries removed.
  */
-UserBridgeStore.prototype.unlinkUserIds = function(matrixUserId, jungleUserId) {
+UserBridgeStore.prototype.unlinkUserIds = function(matrixUserId, remoteUserId) {
     return this.delete({
         type: "union",
-        jungle_id: jungleUserId,
+        remote_id: remoteUserId,
         matrix_id: matrixUserId
     });
 };
 
 /**
- * Retrieve a list of matrix user IDs linked to this jungle ID.
- * @param {string} jungleId The jungle ID
+ * Retrieve a list of matrix user IDs linked to this remote ID.
+ * @param {string} remoteId The remote ID
  * @return {Promise&lt;String[], Error>} A list of user IDs.
  */
-UserBridgeStore.prototype.getMatrixLinks = function(jungleId) {
+UserBridgeStore.prototype.getMatrixLinks = function(remoteId) {
     return this.select({
         type: "union",
-        jungle_id: jungleId
+        remote_id: remoteId
     }, this.convertTo(function(doc) {
         return doc.matrix_id;
     }));
 };
 
 /**
- * Retrieve a list of jungle IDs linked to this matrix user ID.
+ * Retrieve a list of remote IDs linked to this matrix user ID.
  * @param {string} matrixId The matrix user ID
- * @return {Promise&lt;String[], Error>} A list of jungle IDs.
+ * @return {Promise&lt;String[], Error>} A list of remote IDs.
  */
-UserBridgeStore.prototype.getJungleLinks = function(matrixId) {
+UserBridgeStore.prototype.getRemoteLinks = function(matrixId) {
     return this.select({
         type: "union",
         matrix_id: matrixId
     }, this.convertTo(function(doc) {
-        return doc.jungle_id;
+        return doc.remote_id;
     }));
 };
 
@@ -349,13 +349,13 @@ module.exports = UserBridgeStore;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="JungleRoom.html">JungleRoom</a></li><li><a href="JungleUser.html">JungleUser</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 10:02:42 GMT+0100 (BST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 17:37:15 GMT+0100 (BST)
 </footer>
 
 <script> prettyPrint(); </script>

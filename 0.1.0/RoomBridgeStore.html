@@ -214,466 +214,6 @@
 
     
 
-    <h4 class="name" id="getJungleLinks"><span class="type-signature"></span>getJungleLinks<span class="signature">(matrixId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="RoomBridgeStore.html#~Link">RoomBridgeStore~Link</a>>, Error>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Retrieve a list of jungle IDs linked to this matrix room ID.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>matrixId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The matrix room ID</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_room-bridge-store.js.html">components/room-bridge-store.js</a>, <a href="components_room-bridge-store.js.html#line241">line 241</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    A list of jungle IDs.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;Array.&lt;<a href="RoomBridgeStore.html#~Link">RoomBridgeStore~Link</a>>, Error></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getJungleRoom"><span class="type-signature"></span>getJungleRoom<span class="signature">(roomIdOrDataQuery)</span><span class="type-signature"> &rarr; {Promise.&lt;?<a href="JungleRoom.html">JungleRoom</a>, Error>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Get a jungle room by its' room ID.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>roomIdOrDataQuery</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-|
-
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The room id or a data query object.
-If the data query returns multiple entries, only 1 will be returned.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_room-bridge-store.js.html">components/room-bridge-store.js</a>, <a href="components_room-bridge-store.js.html#line86">line 86</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    Resolves to the room or null if it
-does not exist. Rejects with an error if there was a problem querying the store.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;?<a href="JungleRoom.html">JungleRoom</a>, Error></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getJungleRooms"><span class="type-signature"></span>getJungleRooms<span class="signature">(dataQuery)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="JungleRoom.html">JungleRoom</a>>, Error>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Get a list of jungle rooms by a data query.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>dataQuery</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">A data query object.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_room-bridge-store.js.html">components/room-bridge-store.js</a>, <a href="components_room-bridge-store.js.html#line104">line 104</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;Array.&lt;<a href="JungleRoom.html">JungleRoom</a>>, Error></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
     <h4 class="name" id="getLinksByData"><span class="type-signature"></span>getLinksByData<span class="signature">(dataQuery)</span><span class="type-signature"></span></h4>
 
     
@@ -844,14 +384,14 @@ store.getLinksByData({
 
     
 
-    <h4 class="name" id="getMatrixLinks"><span class="type-signature"></span>getMatrixLinks<span class="signature">(jungleId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="RoomBridgeStore.html#~Link">RoomBridgeStore~Link</a>>, Error>}</span></h4>
+    <h4 class="name" id="getMatrixLinks"><span class="type-signature"></span>getMatrixLinks<span class="signature">(remoteId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="RoomBridgeStore.html#~Link">RoomBridgeStore~Link</a>>, Error>}</span></h4>
 
     
 
 
 
 <div class="description">
-    Retrieve a list of matrix room IDs linked to this jungle ID.
+    Retrieve a list of matrix room IDs linked to this remote ID.
 </div>
 
 
@@ -887,7 +427,7 @@ store.getLinksByData({
 
         <tr>
             
-                <td class="name"><code>jungleId</code></td>
+                <td class="name"><code>remoteId</code></td>
             
 
             <td class="type">
@@ -903,7 +443,7 @@ store.getLinksByData({
 
             
 
-            <td class="description last">The jungle ID</td>
+            <td class="description last">The remote ID</td>
         </tr>
 
     
@@ -1304,14 +844,474 @@ does not exist. Rejects with an error if there was a problem querying the store.
 
     
 
-    <h4 class="name" id="linkRooms"><span class="type-signature"></span>linkRooms<span class="signature">(matrixRoom, jungleRoom, data<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    <h4 class="name" id="getRemoteLinks"><span class="type-signature"></span>getRemoteLinks<span class="signature">(matrixId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="RoomBridgeStore.html#~Link">RoomBridgeStore~Link</a>>, Error>}</span></h4>
 
     
 
 
 
 <div class="description">
-    Create a link between a matrix room and jungle room. This will insert the
+    Retrieve a list of remote IDs linked to this matrix room ID.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>matrixId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The matrix room ID</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_room-bridge-store.js.html">components/room-bridge-store.js</a>, <a href="components_room-bridge-store.js.html#line241">line 241</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A list of remote IDs.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Array.&lt;<a href="RoomBridgeStore.html#~Link">RoomBridgeStore~Link</a>>, Error></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getRemoteRoom"><span class="type-signature"></span>getRemoteRoom<span class="signature">(roomIdOrDataQuery)</span><span class="type-signature"> &rarr; {Promise.&lt;?<a href="RemoteRoom.html">RemoteRoom</a>, Error>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Get a remote room by its' room ID.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>roomIdOrDataQuery</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The room id or a data query object.
+If the data query returns multiple entries, only 1 will be returned.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_room-bridge-store.js.html">components/room-bridge-store.js</a>, <a href="components_room-bridge-store.js.html#line86">line 86</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    Resolves to the room or null if it
+does not exist. Rejects with an error if there was a problem querying the store.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;?<a href="RemoteRoom.html">RemoteRoom</a>, Error></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getRemoteRooms"><span class="type-signature"></span>getRemoteRooms<span class="signature">(dataQuery)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="RemoteRoom.html">RemoteRoom</a>>, Error>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Get a list of remote rooms by a data query.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>dataQuery</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">A data query object.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_room-bridge-store.js.html">components/room-bridge-store.js</a>, <a href="components_room-bridge-store.js.html#line104">line 104</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Array.&lt;<a href="RemoteRoom.html">RemoteRoom</a>>, Error></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="linkRooms"><span class="type-signature"></span>linkRooms<span class="signature">(matrixRoom, remoteRoom, data<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Create a link between a matrix room and remote room. This will insert the
 given rooms if they do not exist before creating the mapping. This is done to
 ensure foreign key constraints are satisfied (so you cannot have a mapping to
 a room ID which does not exist).
@@ -1383,13 +1383,13 @@ a room ID which does not exist).
 
         <tr>
             
-                <td class="name"><code>jungleRoom</code></td>
+                <td class="name"><code>remoteRoom</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="JungleRoom.html">JungleRoom</a></span>
+<span class="param-type"><a href="RemoteRoom.html">RemoteRoom</a></span>
 
 
             
@@ -1407,7 +1407,7 @@ a room ID which does not exist).
 
             
 
-            <td class="description last">The jungle room</td>
+            <td class="description last">The remote room</td>
         </tr>
 
     
@@ -1482,180 +1482,6 @@ a room ID which does not exist).
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
         <a href="components_room-bridge-store.js.html">components/room-bridge-store.js</a>, <a href="components_room-bridge-store.js.html#line122">line 122</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="setJungleRoom"><span class="type-signature"></span>setJungleRoom<span class="signature">(jungleRoom, updateQuery)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Store a Jungle room. If it already exists, it will be updated. Equivalence
-is determined by the room ID.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>jungleRoom</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="JungleRoom.html">JungleRoom</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The jungle room</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>updateQuery</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">Update the room based on the data values given in this
-object rather than the jungle ID.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_room-bridge-store.js.html">components/room-bridge-store.js</a>, <a href="components_room-bridge-store.js.html#line64">line 64</a>
     </li></ul></dd>
     
 
@@ -1878,14 +1704,188 @@ object rather than the matrix room ID.</td>
 
     
 
-    <h4 class="name" id="unlinkRoomIds"><span class="type-signature"></span>unlinkRoomIds<span class="signature">(matrixRoomId, jungleRoomId)</span><span class="type-signature"> &rarr; {Promise.&lt;Number, Error>}</span></h4>
+    <h4 class="name" id="setRemoteRoom"><span class="type-signature"></span>setRemoteRoom<span class="signature">(remoteRoom, updateQuery)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
 
     
 
 
 
 <div class="description">
-    Delete a link between a matrix room ID and a jungle room ID.
+    Store a Remote room. If it already exists, it will be updated. Equivalence
+is determined by the room ID.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>remoteRoom</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="RemoteRoom.html">RemoteRoom</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The remote room</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>updateQuery</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Update the room based on the data values given in this
+object rather than the remote ID.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_room-bridge-store.js.html">components/room-bridge-store.js</a>, <a href="components_room-bridge-store.js.html#line64">line 64</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="unlinkRoomIds"><span class="type-signature"></span>unlinkRoomIds<span class="signature">(matrixRoomId, remoteRoomId)</span><span class="type-signature"> &rarr; {Promise.&lt;Number, Error>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Delete a link between a matrix room ID and a remote room ID.
 </div>
 
 
@@ -1944,7 +1944,7 @@ object rather than the matrix room ID.</td>
 
         <tr>
             
-                <td class="name"><code>jungleRoomId</code></td>
+                <td class="name"><code>remoteRoomId</code></td>
             
 
             <td class="type">
@@ -1960,7 +1960,7 @@ object rather than the matrix room ID.</td>
 
             
 
-            <td class="description last">The jungle room ID</td>
+            <td class="description last">The remote room ID</td>
         </tr>
 
     
@@ -2054,14 +2054,14 @@ object rather than the matrix room ID.</td>
 
     
 
-    <h4 class="name" id="unlinkRooms"><span class="type-signature"></span>unlinkRooms<span class="signature">(matrixRoom, jungleRoom)</span><span class="type-signature"> &rarr; {Promise.&lt;Number, Error>}</span></h4>
+    <h4 class="name" id="unlinkRooms"><span class="type-signature"></span>unlinkRooms<span class="signature">(matrixRoom, remoteRoom)</span><span class="type-signature"> &rarr; {Promise.&lt;Number, Error>}</span></h4>
 
     
 
 
 
 <div class="description">
-    Delete a link between a matrix room and a jungle room.
+    Delete a link between a matrix room and a remote room.
 </div>
 
 
@@ -2120,13 +2120,13 @@ object rather than the matrix room ID.</td>
 
         <tr>
             
-                <td class="name"><code>jungleRoom</code></td>
+                <td class="name"><code>remoteRoom</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="JungleUser.html">JungleUser</a></span>
+<span class="param-type"><a href="RemoteUser.html">RemoteUser</a></span>
 
 
             
@@ -2136,7 +2136,7 @@ object rather than the matrix room ID.</td>
 
             
 
-            <td class="description last">The jungle user</td>
+            <td class="description last">The remote user</td>
         </tr>
 
     
@@ -2303,7 +2303,7 @@ object rather than the matrix room ID.</td>
 
         <tr>
             
-                <td class="name"><code>jungle</code></td>
+                <td class="name"><code>remote</code></td>
             
 
             <td class="type">
@@ -2319,7 +2319,7 @@ object rather than the matrix room ID.</td>
 
             
 
-            <td class="description last">The jungle room ID</td>
+            <td class="description last">The remote room ID</td>
         </tr>
 
     
@@ -2412,13 +2412,13 @@ object.</td>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="JungleRoom.html">JungleRoom</a></li><li><a href="JungleUser.html">JungleUser</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 10:02:42 GMT+0100 (BST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 17:37:15 GMT+0100 (BST)
 </footer>
 
 <script> prettyPrint(); </script>

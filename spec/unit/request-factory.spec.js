@@ -17,7 +17,7 @@ describe("RequestFactory", function() {
                 expect(resolve).toEqual("foobar");
                 r2.resolve("flibble");
             }
-            else if(req.getId() === r2.getId()) {
+            else if (req.getId() === r2.getId()) {
                 expect(resolve).toEqual("flibble");
                 done();
             }
@@ -40,7 +40,7 @@ describe("RequestFactory", function() {
                 expect(reject).toEqual("foobar");
                 r2.reject("flibble");
             }
-            else if(req.getId() === r2.getId()) {
+            else if (req.getId() === r2.getId()) {
                 expect(reject).toEqual("flibble");
                 done();
             }
@@ -56,7 +56,6 @@ describe("RequestFactory", function() {
 
     it("addDefaultTimeoutCallback should be invoked after a set time",
     function() {
-        var r1, r2;
         jasmine.Clock.useMock();
 
         var fired = false;
@@ -72,7 +71,7 @@ describe("RequestFactory", function() {
 
     it("addDefaultTimeoutCallback should not be invoked on resolved requests",
     function() {
-        var r1, r2;
+        var r1;
         jasmine.Clock.useMock();
 
         var fired = false;

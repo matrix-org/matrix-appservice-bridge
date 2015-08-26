@@ -54,6 +54,19 @@ Can be used for request-context logging (each request has a unique ID)
 and metrics (each request can succeed or fail and has timers for how long
 they take to go through the bridge).
 
+### `Intent`
+Provides a way to perform Matrix actions by *intent* rather than by raw
+API calls. This can be thought of as an extension to the client-server JS SDK.
+For example, `intent.invite(roomId, invitee)` would make sure that you are
+actually joined to the room `roomId` first (and will automatically join it if
+you aren't) before trying to send the invite.
+
+Performing actions by *intent* makes creating bridges a lot easier. For example,
+if your bridge has no concept of inviting or joining rooms, then you don't need
+to care about it either in the bridge. Simply calling
+`intent.sendMessage(roomId, text)` would make sure that you are joined to the
+room first before sending the message.
+
 ### `ConfigValidator` [TODO]
 Provides a way to validate a YAML file when provided with a schema file.
 Useful for setting your bridge-specific configuration information.

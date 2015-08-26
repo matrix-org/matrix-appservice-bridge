@@ -11,7 +11,9 @@ var TEST_DB_PATH = __dirname + "/test.db";
 describe("RoomBridgeStore", function() {
     var store, db;
 
-    beforeEach(function(done) {
+    beforeEach(
+    /** @this */
+    function(done) {
         log.beforeEach(this);
         db = new Datastore({
             filename: TEST_DB_PATH,
@@ -30,7 +32,10 @@ describe("RoomBridgeStore", function() {
     afterEach(function() {
         try {
             fs.unlinkSync(TEST_DB_PATH);
-        } catch(e) {}
+        }
+        catch(e) {
+            // do nothing
+        }
     });
 
     describe("setMatrixRoom", function() {

@@ -62,7 +62,7 @@ describe("RequestFactory", function() {
         factory.addDefaultTimeoutCallback(function(req) {
             fired = true;
         }, 1500);
-        r1 = factory.newRequest();
+        factory.newRequest();
         jasmine.Clock.tick(1000);
         expect(fired).toBe(false);
         jasmine.Clock.tick(500);

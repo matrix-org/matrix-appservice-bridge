@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: Request</title>
+    <title>JSDoc: Class: ClientFactory</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: Request</h1>
+    <h1 class="page-title">Class: ClientFactory</h1>
 
     
 
@@ -29,7 +29,7 @@
 <header>
     
         <h2>
-        Request
+        ClientFactory
         </h2>
         
     
@@ -42,15 +42,11 @@
 
     
 
-    <h4 class="name" id="Request"><span class="type-signature"></span>new Request<span class="signature">(opts)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="ClientFactory"><span class="type-signature"></span>new ClientFactory<span class="signature">(opts)</span><span class="type-signature"></span></h4>
 
     
 
 
-
-<div class="description">
-    Construct a new Request.
-</div>
 
 
 
@@ -101,7 +97,7 @@
 
             
 
-            <td class="description last">Options for this request.
+            <td class="description last">Options for this factory
                 <h6>Properties</h6>
                 
 
@@ -129,41 +125,7 @@
 
         <tr>
             
-                <td class="name"><code>id</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">Optional ID to set on this request. One will be
-generated if this is not provided.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>data</code></td>
+                <td class="name"><code>sdk</code></td>
             
 
             <td class="type">
@@ -189,7 +151,73 @@ generated if this is not provided.</td>
 
             
 
-            <td class="description last">Optional data to associate with this request.</td>
+            <td class="description last">The Matrix JS SDK require() to use.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>url</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The Client-Server base HTTP URL</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>token</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The application service token to use.</td>
         </tr>
 
     
@@ -237,7 +265,7 @@ generated if this is not provided.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_request.js.html">components/request.js</a>, <a href="components_request.js.html#line16">line 16</a>
+        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line11">line 11</a>
     </li></ul></dd>
     
 
@@ -286,432 +314,14 @@ generated if this is not provided.</td>
 
     
 
-    <h4 class="name" id="getData"><span class="type-signature"></span>getData<span class="signature">()</span><span class="type-signature"> &rarr; {*}</span></h4>
+    <h4 class="name" id="configure"><span class="type-signature"></span>configure<span class="signature">(baseUrl, appServiceToken)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    Get any optional data set on this request.
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_request.js.html">components/request.js</a>, <a href="components_request.js.html#line28">line 28</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    The data
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">*</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getDuration"><span class="type-signature"></span>getDuration<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Get the number of elapsed milliseconds since this request was created.
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_request.js.html">components/request.js</a>, <a href="components_request.js.html#line44">line 44</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    The number of milliseconds since this request was made.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">number</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getId"><span class="type-signature"></span>getId<span class="signature">()</span><span class="type-signature"> &rarr; {String}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Get this request's ID.
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_request.js.html">components/request.js</a>, <a href="components_request.js.html#line36">line 36</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    The ID.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">String</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getPromise"><span class="type-signature"></span>getPromise<span class="signature">()</span><span class="type-signature"> &rarr; {Promise}</span></h4>
-
-    
-
-
-
-<div class="description">
-    Retrieve a promise for this request which will be resolved/rejected when the
-respective methods are called on this Request.
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_request.js.html">components/request.js</a>, <a href="components_request.js.html#line53">line 53</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    A promise
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="reject"><span class="type-signature"></span>reject<span class="signature">(msg)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    Reject a request. This should be invoked for requests which <i>failed to be
-processed correctly</i>.
+    Configure the factory for generating clients.
 </div>
 
 
@@ -747,13 +357,13 @@ processed correctly</i>.
 
         <tr>
             
-                <td class="name"><code>msg</code></td>
+                <td class="name"><code>baseUrl</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">*</span>
+<span class="param-type">string</span>
 
 
             
@@ -763,7 +373,30 @@ processed correctly</i>.
 
             
 
-            <td class="description last">The thing to reject with.</td>
+            <td class="description last">The base URL to create clients with.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>appServiceToken</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The AS token to use as the access_token</td>
         </tr>
 
     
@@ -804,7 +437,7 @@ processed correctly</i>.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_request.js.html">components/request.js</a>, <a href="components_request.js.html#line72">line 72</a>
+        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line131">line 131</a>
     </li></ul></dd>
     
 
@@ -835,16 +468,15 @@ processed correctly</i>.
 
     
 
-    <h4 class="name" id="resolve"><span class="type-signature"></span>resolve<span class="signature">(msg)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getClientAs"><span class="type-signature"></span>getClientAs<span class="signature">(userId<span class="signature-attributes">nullable</span>, request<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    Resolve a request. This should be invoked for the <i>successful processing</i>
-of this request. This doesn't necessarily mean that the request was sent
-through, e.g. suppressing AS virtual users' messages is still a success.
+    Construct a new Matrix JS SDK Client. Calling this twice with the same args
+will return the *same* client instance.
 </div>
 
 
@@ -868,6 +500,8 @@ through, e.g. suppressing AS virtual users' messages is still a success.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -880,23 +514,71 @@ through, e.g. suppressing AS virtual users' messages is still a success.
 
         <tr>
             
-                <td class="name"><code>msg</code></td>
+                <td class="name"><code>userId</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">*</span>
+<span class="param-type">string</span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">The thing to resolve with.</td>
+            <td class="description last">Required. The user_id to scope the client to. A new
+client will be created per user ID. If this is null, a client scoped to the
+application service *itself* will be created.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>request</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="Request.html">Request</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional. The request ID to additionally scope the
+client to. If set, this will create a new client per user ID / request combo.
+This factory will dispose the created client instance when the request is
+resolved.</td>
         </tr>
 
     
@@ -937,7 +619,139 @@ through, e.g. suppressing AS virtual users' messages is still a success.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_request.js.html">components/request.js</a>, <a href="components_request.js.html#line63">line 63</a>
+        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line83">line 83</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="setLogFunction"><span class="type-signature"></span>setLogFunction<span class="signature">(func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    Set a function to be called when logging requests and responses.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The function to invoke. The first arg is the string to
+log. The second arg is a boolean which is 'true' if the log is an error.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line28">line 28</a>
     </li></ul></dd>
     
 

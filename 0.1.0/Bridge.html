@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: models/rooms/jungle.js</title>
+    <title>JSDoc: Class: Bridge</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,68 +17,127 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: models/rooms/jungle.js</h1>
+    <h1 class="page-title">Class: Bridge</h1>
 
     
 
 
 
+
+<section>
+
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>"use strict";
+        <h2>
+        Bridge
+        </h2>
+        
+    
+</header>
 
-/**
- * Create a jungle room.
- * @constructor
- * @param {string} identifier The ID for this room
- * @param {Object=} data The key-value data object to assign to this room.
- */
-function JungleRoom(identifier, data) {
-    this.roomId = identifier;
-    this.data = data || {};
-}
+<article>
+    <div class="container-overview">
+    
+        
 
-/**
- * Get the room ID.
- * @return {string} The room ID
- */
-JungleRoom.prototype.getId = function() {
-    return this.roomId;
-};
+    
 
-/**
- * Serialize all the data about this room, excluding the room ID.
- * @return {Object} The serialised data
- */
-JungleRoom.prototype.serialize = function() {
-    return this.data;
-};
+    <h4 class="name" id="Bridge"><span class="type-signature"></span>new Bridge<span class="signature">()</span><span class="type-signature"></span></h4>
 
-/**
- * Get the data value for the given key.
- * @param {string} key An arbitrary bridge-specific key.
- * @return {*} Stored data for this key. May be undefined.
- */
-JungleRoom.prototype.get = function(key) {
-    return this.data[key];
-};
+    
 
-/**
- * Set an arbitrary bridge-specific data value for this room.
- * @param {string} key The key to store the data value under.
- * @param {*} val The data value. This value should be serializable via
- * &lt;code>JSON.stringify(data)&lt;/code>.
- */
-JungleRoom.prototype.set = function(key, val) {
-    this.data[key] = val;
-};
 
-/** The JungleRoom class. */
-module.exports = JungleRoom;
-</code></pre>
-        </article>
-    </section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bridge.js.html">bridge.js</a>, <a href="bridge.js.html#line6">line 6</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
 
 
 

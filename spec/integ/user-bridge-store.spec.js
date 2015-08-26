@@ -5,7 +5,7 @@ var log = require("../log");
 
 var UserBridgeStore = require("../..").UserBridgeStore;
 var MatrixUser = require("../..").MatrixUser;
-var JungleUser = require("../..").JungleUser;
+var RemoteUser = require("../..").RemoteUser;
 var TEST_DB_PATH = __dirname + "/test.db";
 
 describe("UserBridgeStore", function() {
@@ -54,22 +54,22 @@ describe("UserBridgeStore", function() {
         });
     });
 
-    describe("setJungleUser", function() {
-        it("should be able to store a Jungle user, retrievable again via getJungleUser",
+    describe("setRemoteUser", function() {
+        it("should be able to store a Remote user, retrievable again via getRemoteUser",
         function(done) {
-            var jungleId = "some_unique_id";
-            var user = new JungleUser(jungleId);
-            store.setJungleUser(user).then(function() {
-                return store.getJungleUser(jungleId);
+            var remoteId = "some_unique_id";
+            var user = new RemoteUser(remoteId);
+            store.setRemoteUser(user).then(function() {
+                return store.getRemoteUser(remoteId);
             }).done(function(userFromStore) {
-                expect(userFromStore.getId()).toEqual(jungleId);
+                expect(userFromStore.getId()).toEqual(remoteId);
                 done();
             });
         });
 
         it("should fully persist all types of primitive data", function(done) {
-            var jungleId = "some_unique_id";
-            var user = new JungleUser(jungleId);
+            var remoteId = "some_unique_id";
+            var user = new RemoteUser(remoteId);
             user.set("int", 42);
             user.set("str", "the answer");
             user.set("bool", true);
@@ -79,10 +79,10 @@ describe("UserBridgeStore", function() {
                     buzz: true
                 }
             });
-            store.setJungleUser(user).then(function() {
-                return store.getJungleUser(jungleId);
+            store.setRemoteUser(user).then(function() {
+                return store.getRemoteUser(remoteId);
             }).done(function(userFromStore) {
-                expect(userFromStore.getId()).toEqual(jungleId);
+                expect(userFromStore.getId()).toEqual(remoteId);
                 expect(userFromStore.get("int")).toEqual(42);
                 expect(userFromStore.get("str")).toEqual("the answer");
                 expect(userFromStore.get("bool")).toEqual(true);
@@ -97,26 +97,26 @@ describe("UserBridgeStore", function() {
         });
 
         it("should not persist functions", function(done) {
-            var jungleId = "some_unique_id";
-            var user = new JungleUser(jungleId);
+            var remoteId = "some_unique_id";
+            var user = new RemoteUser(remoteId);
             user.set("fn", function(foo) {
                 return 42;
             });
-            store.setJungleUser(user).then(function() {
-                return store.getJungleUser(jungleId);
+            store.setRemoteUser(user).then(function() {
+                return store.getRemoteUser(remoteId);
             }).done(function(userFromStore) {
-                expect(userFromStore.getId()).toEqual(jungleId);
+                expect(userFromStore.getId()).toEqual(remoteId);
                 expect(userFromStore.get("fn")).toBeUndefined();
                 done();
             });
         });
     });
 
-    describe("getByJungleData", function() {
-        var jungleId = "some_unique_id";
+    describe("getByRemoteData", function() {
+        var remoteId = "some_unique_id";
 
         beforeEach(function(done) {
-            var user = new JungleUser(jungleId);
+            var user = new RemoteUser(remoteId);
             user.set("topLevel", 7);
             user.set("nested", {
                 foo: "bar",
@@ -124,13 +124,13 @@ describe("UserBridgeStore", function() {
                     buzz: true
                 }
             });
-            store.setJungleUser(user).done(function() {
+            store.setRemoteUser(user).done(function() {
                 done();
             });
         });
 
         it("should be able to retrieve via top level keys", function(done) {
-            store.getByJungleData({
+            store.getByRemoteData({
                 topLevel: 7
             }).done(function(users) {
                 expect(users.length).toEqual(1);
@@ -139,13 +139,13 @@ describe("UserBridgeStore", function() {
                     done();
                     return;
                 }
-                expect(u.getId()).toEqual(jungleId);
+                expect(u.getId()).toEqual(remoteId);
                 done();
             });
         });
 
         it("should be able to retrieve via nested keys", function(done) {
-            store.getByJungleData({
+            store.getByRemoteData({
                 "nested.baz.buzz": true
             }).done(function(users) {
                 expect(users.length).toEqual(1);
@@ -154,13 +154,13 @@ describe("UserBridgeStore", function() {
                     done();
                     return;
                 }
-                expect(u.getId()).toEqual(jungleId);
+                expect(u.getId()).toEqual(remoteId);
                 done();
             });
         });
 
         it("should be able to use basic NoSQL $commands", function(done) {
-            store.getByJungleData({
+            store.getByRemoteData({
                 topLevel: {
                     $gt: 3 // greater than 3
                 }
@@ -171,25 +171,25 @@ describe("UserBridgeStore", function() {
                     done();
                     return;
                 }
-                expect(u.getId()).toEqual(jungleId);
+                expect(u.getId()).toEqual(remoteId);
                 done();
             });
         });
 
         it("should throw if the data query isn't an object", function() {
             expect(function() {
-                store.getByJungleData("nested.key");
+                store.getByRemoteData("nested.key");
             }).toThrow();
         });
     });
 
     describe("linkUsers", function() {
-        it("should link a matrix and jungle ID which can be retrieved via getXFromY",
+        it("should link a matrix and remote ID which can be retrieved via getXFromY",
         function(done) {
             var mx = new MatrixUser("@foo:bar");
-            var jng = new JungleUser("jungle.id");
+            var jng = new RemoteUser("remote.id");
             store.linkUsers(mx, jng).then(function() {
-                return store.getMatrixUsersFromJungleId("jungle.id");
+                return store.getMatrixUsersFromRemoteId("remote.id");
             }).done(function(results) {
                 expect(results.length).toEqual(1);
                 done();
@@ -198,14 +198,14 @@ describe("UserBridgeStore", function() {
     });
 
     describe("unlinkUsers", function() {
-        it("should remove a previously linked matrix and jungle user",
+        it("should remove a previously linked matrix and remote user",
         function(done) {
             var mx = new MatrixUser("@foo:bar");
-            var jng = new JungleUser("jungle.id");
+            var jng = new RemoteUser("remote.id");
             store.linkUsers(mx, jng).then(function() {
                 return store.unlinkUsers(mx, jng);
             }).then(function() {
-                return store.getMatrixUsersFromJungleId("jungle.id");
+                return store.getMatrixUsersFromRemoteId("remote.id");
             }).done(function(results) {
                 expect(results.length).toEqual(0);
                 done();
@@ -214,9 +214,9 @@ describe("UserBridgeStore", function() {
 
         it("should no-op if the link doesn't exist", function(done) {
             var mx = new MatrixUser("@foo:bar");
-            var jng = new JungleUser("jungle.id");
+            var jng = new RemoteUser("remote.id");
             store.unlinkUsers(mx, jng).then(function() {
-                return store.getMatrixUsersFromJungleId("jungle.id");
+                return store.getMatrixUsersFromRemoteId("remote.id");
             }).done(function(results) {
                 expect(results.length).toEqual(0);
                 done();
@@ -237,33 +237,33 @@ describe("UserBridgeStore", function() {
         });
     });
 
-    describe("getMatrixUsersFromJungleId", function() {
+    describe("getMatrixUsersFromRemoteId", function() {
 
         beforeEach(function(done) {
             // @a:bar --- a_1        @b:bar ----- b_1   @c:bar ---- c_1
             //                      @bb:bar _ /              \_____ c_2
             //                     @bbb:bar _/
 
-            store.linkUsers(new MatrixUser("@a:bar"), new JungleUser("a_1")).then(
+            store.linkUsers(new MatrixUser("@a:bar"), new RemoteUser("a_1")).then(
             function() {
                 return store.linkUsers(
-                    new MatrixUser("@b:bar"), new JungleUser("b_1")
+                    new MatrixUser("@b:bar"), new RemoteUser("b_1")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@bb:bar"), new JungleUser("b_1")
+                    new MatrixUser("@bb:bar"), new RemoteUser("b_1")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@bbb:bar"), new JungleUser("b_1")
+                    new MatrixUser("@bbb:bar"), new RemoteUser("b_1")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@c:bar"), new JungleUser("c_1")
+                    new MatrixUser("@c:bar"), new RemoteUser("c_1")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@c:bar"), new JungleUser("c_2")
+                    new MatrixUser("@c:bar"), new RemoteUser("c_2")
                 );
             }).done(function() {
                 done();
@@ -272,14 +272,14 @@ describe("UserBridgeStore", function() {
 
 
         it("should return an empty array if there are no matches", function(done) {
-            store.getMatrixUsersFromJungleId("nothing").done(function(res) {
+            store.getMatrixUsersFromRemoteId("nothing").done(function(res) {
                 expect(res.length).toEqual(0);
                 done();
             });
         });
 
         it("should return a list of users for multiple matches", function(done) {
-            store.getMatrixUsersFromJungleId("b_1").done(function(res) {
+            store.getMatrixUsersFromRemoteId("b_1").done(function(res) {
                 expect(res.length).toEqual(3);
                 res.forEach(function(usr) {
                     expect(
@@ -291,7 +291,7 @@ describe("UserBridgeStore", function() {
         });
 
         it("should return a single element list for a single match", function(done) {
-            store.getMatrixUsersFromJungleId("a_1").done(function(res) {
+            store.getMatrixUsersFromRemoteId("a_1").done(function(res) {
                 expect(res.length).toEqual(1);
                 expect(res[0].getId()).toEqual("@a:bar");
                 done();
@@ -310,25 +310,25 @@ describe("UserBridgeStore", function() {
         });
     });
 
-    describe("getJungleUsersFromMatrixId", function() {
+    describe("getRemoteUsersFromMatrixId", function() {
 
         beforeEach(function(done) {
             // @a:bar --- a_1        @b:bar ----- b_1
             //         \_ a_2
             //         \_ a_3
 
-            store.linkUsers(new MatrixUser("@a:bar"), new JungleUser("a_1")).then(
+            store.linkUsers(new MatrixUser("@a:bar"), new RemoteUser("a_1")).then(
             function() {
                 return store.linkUsers(
-                    new MatrixUser("@a:bar"), new JungleUser("a_2")
+                    new MatrixUser("@a:bar"), new RemoteUser("a_2")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@a:bar"), new JungleUser("a_3")
+                    new MatrixUser("@a:bar"), new RemoteUser("a_3")
                 );
             }).then(function() {
                 return store.linkUsers(
-                    new MatrixUser("@b:bar"), new JungleUser("b_1")
+                    new MatrixUser("@b:bar"), new RemoteUser("b_1")
                 );
             }).done(function() {
                 done();
@@ -336,14 +336,14 @@ describe("UserBridgeStore", function() {
         });
 
         it("should return an empty array if there are no matches", function(done) {
-            store.getJungleUsersFromMatrixId("nothing").done(function(res) {
+            store.getRemoteUsersFromMatrixId("nothing").done(function(res) {
                 expect(res.length).toEqual(0);
                 done();
             });
         });
 
         it("should return a list of users for multiple matches", function(done) {
-            store.getJungleUsersFromMatrixId("@a:bar").done(function(res) {
+            store.getRemoteUsersFromMatrixId("@a:bar").done(function(res) {
                 expect(res.length).toEqual(3);
                 res.forEach(function(usr) {
                     expect(
@@ -355,17 +355,17 @@ describe("UserBridgeStore", function() {
         });
 
         it("should return a single element list for a single match", function(done) {
-            store.getJungleUsersFromMatrixId("@b:bar").done(function(res) {
+            store.getRemoteUsersFromMatrixId("@b:bar").done(function(res) {
                 expect(res.length).toEqual(1);
                 expect(res[0].getId()).toEqual("b_1");
                 done();
             });
         });
 
-        describe("getJungleLinks", function() {
+        describe("getRemoteLinks", function() {
             it("should return a single element list for a single match",
             function(done) {
-                store.getJungleLinks("@b:bar").done(function(res) {
+                store.getRemoteLinks("@b:bar").done(function(res) {
                     expect(res.length).toEqual(1);
                     expect(res[0]).toEqual("b_1");
                     done();

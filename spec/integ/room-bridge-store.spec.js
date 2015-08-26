@@ -5,7 +5,7 @@ var log = require("../log");
 
 var RoomBridgeStore = require("../..").RoomBridgeStore;
 var MatrixRoom = require("../..").MatrixRoom;
-var JungleRoom = require("../..").JungleRoom;
+var RemoteRoom = require("../..").RemoteRoom;
 var TEST_DB_PATH = __dirname + "/test.db";
 
 describe("RoomBridgeStore", function() {
@@ -51,16 +51,16 @@ describe("RoomBridgeStore", function() {
         });
     });
 
-    describe("setJungleRoom", function() {
-        it("should be able to store a Jungle room, retrievable again via getJungleRoom",
+    describe("setRemoteRoom", function() {
+        it("should be able to store a Remote room, retrievable again via getRemoteRoom",
         function(done) {
-            var room = new JungleRoom("some id");
+            var room = new RemoteRoom("some id");
             room.set("thing", "here");
             room.set("nested", {
                 foo: "bar"
             });
-            store.setJungleRoom(room).then(function() {
-                return store.getJungleRoom("some id");
+            store.setRemoteRoom(room).then(function() {
+                return store.getRemoteRoom("some id");
             }).done(function(r) {
                 expect(r.getId()).toEqual("some id");
                 expect(r.get("thing")).toEqual("here");
@@ -76,12 +76,12 @@ describe("RoomBridgeStore", function() {
         it("should create both rooms if they didn't exist previously",
         function(done) {
             var matrixRoom = new MatrixRoom("!foo:bar");
-            var jungleRoom = new JungleRoom("foo_bar");
-            store.linkRooms(matrixRoom, jungleRoom).then(function() {
+            var remoteRoom = new RemoteRoom("foo_bar");
+            store.linkRooms(matrixRoom, remoteRoom).then(function() {
                 return store.getMatrixRoom("!foo:bar");
             }).then(function(m) {
                 expect(m.getId()).toEqual("!foo:bar");
-                return store.getJungleRoom("foo_bar");
+                return store.getRemoteRoom("foo_bar");
             }).done(function(j) {
                 expect(j.getId()).toEqual("foo_bar");
                 done();
@@ -91,9 +91,9 @@ describe("RoomBridgeStore", function() {
         it("should create a matrix room if they didn't exist previously",
         function(done) {
             var matrixRoom = new MatrixRoom("!foo:bar");
-            var jungleRoom = new JungleRoom("foo_bar");
-            store.setJungleRoom(jungleRoom).then(function() {
-                return store.linkRooms(matrixRoom, jungleRoom);
+            var remoteRoom = new RemoteRoom("foo_bar");
+            store.setRemoteRoom(remoteRoom).then(function() {
+                return store.linkRooms(matrixRoom, remoteRoom);
             }).then(function() {
                 return store.getMatrixRoom("!foo:bar");
             }).done(function(m) {
@@ -102,14 +102,14 @@ describe("RoomBridgeStore", function() {
             });
         });
 
-        it("should create a jungle room if they didn't exist previously",
+        it("should create a remote room if they didn't exist previously",
         function(done) {
             var matrixRoom = new MatrixRoom("!foo:bar");
-            var jungleRoom = new JungleRoom("foo_bar");
+            var remoteRoom = new RemoteRoom("foo_bar");
             store.setMatrixRoom(matrixRoom).then(function() {
-                return store.linkRooms(matrixRoom, jungleRoom);
+                return store.linkRooms(matrixRoom, remoteRoom);
             }).then(function() {
-                return store.getJungleRoom("foo_bar");
+                return store.getRemoteRoom("foo_bar");
             }).done(function(j) {
                 expect(j.getId()).toEqual("foo_bar");
                 done();
@@ -119,13 +119,13 @@ describe("RoomBridgeStore", function() {
         it("should not clobber rooms if they exist",
         function(done) {
             var matrixRoom = new MatrixRoom("!foo:bar");
-            var storedJungleRoom = new JungleRoom("foo_bar");
-            storedJungleRoom.set("sentinel", 42);
-            store.setJungleRoom(storedJungleRoom).then(function() {
-                var newJungleRoom = new JungleRoom("foo_bar");
-                return store.linkRooms(matrixRoom, newJungleRoom);
+            var storedRemoteRoom = new RemoteRoom("foo_bar");
+            storedRemoteRoom.set("sentinel", 42);
+            store.setRemoteRoom(storedRemoteRoom).then(function() {
+                var newRemoteRoom = new RemoteRoom("foo_bar");
+                return store.linkRooms(matrixRoom, newRemoteRoom);
             }).then(function() {
-                return store.getJungleRoom("foo_bar");
+                return store.getRemoteRoom("foo_bar");
             }).done(function(j) {
                 expect(j.getId()).toEqual("foo_bar");
                 expect(j.get("sentinel")).toEqual(42);
@@ -137,9 +137,9 @@ describe("RoomBridgeStore", function() {
     describe("unlinkRooms", function() {
         it("should delete a link made previously with linkRooms", function(done) {
             var matrixRoom = new MatrixRoom("!foo:bar");
-            var jungleRoom = new JungleRoom("foo_bar");
-            store.linkRooms(matrixRoom, jungleRoom).then(function() {
-                return store.unlinkRooms(matrixRoom, jungleRoom);
+            var remoteRoom = new RemoteRoom("foo_bar");
+            store.linkRooms(matrixRoom, remoteRoom).then(function() {
+                return store.unlinkRooms(matrixRoom, remoteRoom);
             }).then(function() {
                 return store.getMatrixLinks("foo_bar");
             }).done(function(links) {
@@ -153,20 +153,20 @@ describe("RoomBridgeStore", function() {
         it("should be able to retrieve links based off nested data keys",
         function(done) {
             var matrixRoom = new MatrixRoom("!foo:bar");
-            var jungleRoom = new JungleRoom("foo_bar");
+            var remoteRoom = new RemoteRoom("foo_bar");
             var data = {
                 nested: {
                     key: "value"
                 }
             };
-            store.linkRooms(matrixRoom, jungleRoom, data).then(function() {
+            store.linkRooms(matrixRoom, remoteRoom, data).then(function() {
                 return store.getLinksByData({
                     "nested.key": "value"
                 });
             }).done(function(links) {
                 expect(links.length).toEqual(1);
                 expect(links[0].matrix).toEqual("!foo:bar");
-                expect(links[0].jungle).toEqual("foo_bar");
+                expect(links[0].remote).toEqual("foo_bar");
                 expect(links[0].data).toEqual(data);
                 done();
             });
@@ -181,10 +181,10 @@ describe("RoomBridgeStore", function() {
 
     describe("getMatrixLinks", function() {
         var matrixRoom = new MatrixRoom("!foo:bar");
-        var jungleRoom = new JungleRoom("foo_bar");
+        var remoteRoom = new RemoteRoom("foo_bar");
 
         beforeEach(function(done) {
-            store.linkRooms(matrixRoom, jungleRoom).done(function() {
+            store.linkRooms(matrixRoom, remoteRoom).done(function() {
                 done();
             });
         });
@@ -199,14 +199,14 @@ describe("RoomBridgeStore", function() {
             store.getMatrixLinks("foo_bar").done(function(links) {
                 expect(links.length).toEqual(1);
                 expect(links[0].matrix).toEqual("!foo:bar");
-                expect(links[0].jungle).toEqual("foo_bar");
+                expect(links[0].remote).toEqual("foo_bar");
                 expect(links[0].data).toEqual({});
                 done();
             })
         });
         it("should return a list for multiple links", function(done) {
             var matrixTwo = new MatrixRoom("!baz:bar");
-            store.linkRooms(matrixTwo, jungleRoom).then(function() {
+            store.linkRooms(matrixTwo, remoteRoom).then(function() {
                 return store.getMatrixLinks("foo_bar");
             }).done(function(links) {
                 expect(links.length).toEqual(2);
@@ -215,41 +215,41 @@ describe("RoomBridgeStore", function() {
         });
     });
 
-    describe("getJungleLinks", function() {
+    describe("getRemoteLinks", function() {
         var matrixRoom = new MatrixRoom("!foo:bar");
-        var jungleRoom = new JungleRoom("foo_bar");
+        var remoteRoom = new RemoteRoom("foo_bar");
 
         beforeEach(function(done) {
-            store.linkRooms(matrixRoom, jungleRoom).done(function() {
+            store.linkRooms(matrixRoom, remoteRoom).done(function() {
                 done();
             });
         });
 
         it("should return an empty list if there are no links", function(done) {
-            store.getJungleLinks("nothing").done(function(links) {
+            store.getRemoteLinks("nothing").done(function(links) {
                 expect(links.length).toEqual(0);
                 done();
             });
         });
         it("should return a one element list for a single link", function(done) {
-            store.getJungleLinks("!foo:bar").done(function(links) {
+            store.getRemoteLinks("!foo:bar").done(function(links) {
                 expect(links.length).toEqual(1);
                 expect(links[0].matrix).toEqual("!foo:bar");
-                expect(links[0].jungle).toEqual("foo_bar");
+                expect(links[0].remote).toEqual("foo_bar");
                 expect(links[0].data).toEqual({});
                 done();
             })
         });
         it("should return a list for multiple links", function(done) {
-            var jungleTwo = new JungleRoom("foo_bar_2");
-            store.linkRooms(matrixRoom, jungleTwo).then(function() {
-                return store.getJungleLinks("!foo:bar");
+            var remoteTwo = new RemoteRoom("foo_bar_2");
+            store.linkRooms(matrixRoom, remoteTwo).then(function() {
+                return store.getRemoteLinks("!foo:bar");
             }).done(function(links) {
                 expect(links.length).toEqual(2);
                 links.forEach(function(link) {
                     expect(["foo_bar", "foo_bar_2"].indexOf(
-                        link.jungle
-                    )).not.toEqual(-1, "Bad jungle ID returned");
+                        link.remote
+                    )).not.toEqual(-1, "Bad remote ID returned");
                 });
                 done();
             });

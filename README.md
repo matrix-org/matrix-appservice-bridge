@@ -36,11 +36,11 @@ construct components: the bridge exposes the class constructor.
 Provides basic document store (key-value) CRUD operations.
 
 ### `UserBridgeStore`
-Provides storage for matrix and jungle users. Provides CRUD operations and
+Provides storage for matrix and remote users. Provides CRUD operations and
 mapping between different types of users.
 
 ### `RoomBridgeStore`
-Provides storage for matrix and jungle rooms. Provides CRUD operations and
+Provides storage for matrix and remote rooms. Provides CRUD operations and
 mapping between different types of rooms.
 
 ### `ClientFactory`
@@ -84,9 +84,9 @@ dependencies on `UserBridgeStore`, `RoomBridgeStore`, `AppServiceBot`,
 
 ## Data Models
  * `MatrixRoom` - A representation of a matrix room.
- * `JungleRoom` - A representation of a third-party room.
+ * `RemoteRoom` - A representation of a third-party room.
  * `MatrixUser` - A representation of a matrix user.
- * `JungleUser` - A representation of a third-party user.
+ * `RemoteUser` - A representation of a third-party user.
 
 # API
 
@@ -96,12 +96,3 @@ Alternatively, build the docs using `npm run gendoc`. Each component's class
 constructor is exposed on `require("matrix-appservice-bridge")` so check each
 class for more information on how to use each component.
 
-## A word on terminology
-
-This library can be used to bridge with many different networks. This makes it
-hard to identify the "outside network" via a single consistent name for types
-and function names. This library refers to the "outside network" as the
-`Jungle`: after all, it *is* a jungle out there. This name makes it easier to
-intuit what `getJungleId` means, versus the alternative `getBridgedUserId` which
-could be confused with Matrix's `user_id`. This also makes it a lot easier to
-`grep`!

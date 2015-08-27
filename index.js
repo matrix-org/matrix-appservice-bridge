@@ -1,2 +1,2 @@
 "use strict";
-module.exports = require("./lib/imports.js");
+module.exports = require("./lib/exports.js");

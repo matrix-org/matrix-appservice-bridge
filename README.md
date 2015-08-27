@@ -67,9 +67,12 @@ to care about it either in the bridge. Simply calling
 `intent.sendMessage(roomId, text)` would make sure that you are joined to the
 room first before sending the message.
 
-### `ConfigValidator` [TODO]
+### `ConfigValidator`
 Provides a way to validate a YAML file when provided with a schema file.
 Useful for setting your bridge-specific configuration information.
+
+### `Cli`
+Processes command line arguments and runs the `Bridge`.
 
 ### `AppServiceBot` [TODO]
 A wrapper around the JS SDK `MatrixClient` designed for use by the application

@@ -74,7 +74,7 @@ Useful for setting your bridge-specific configuration information.
 ### `Cli`
 Processes command line arguments and runs the `Bridge`.
 
-### `AppServiceBot` [TODO]
+### `AppServiceBot`
 A wrapper around the JS SDK `MatrixClient` designed for use by the application
 service *itself*. Contains helper methods to get all rooms the AS is in, how
 many virtual / real users are in each, etc.
@@ -82,8 +82,7 @@ many virtual / real users are in each, etc.
 ### `Bridge` [TODO]
 The component which orchestrates other components: a "glue" component. Provides
 a way to start the bridge. This is the component most examples use. Has
-dependencies on `UserBridgeStore`, `RoomBridgeStore`, `AppServiceBot`,
-`Request` and `ClientFactory`.
+dependencies on most of the components listed above.
 
 ## Data Models
  * `MatrixRoom` - A representation of a matrix room.

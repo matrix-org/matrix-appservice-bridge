@@ -45,6 +45,8 @@ var bridgeInst = new Bridge({
 
 bridgeInst.on("run", function(port, config) {
     console.log("Bridge now running on port %s", port);
+    // You can do some custom bridge logic here with the parsed and validated
+    // config object.
 })
 
 var c = new Cli({

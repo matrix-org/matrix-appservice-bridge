@@ -12,14 +12,15 @@ var bridgeInst = new Bridge({
 
     // optional function to automatically create users and set display names
     // and link to remote users in the store. Can also return a Promise here.
-    provisionUser: function(userId, userLocalpart) {
-        var remoteUsername = userLocalpart.replace("example_", "");
+    provisionUser: function(matrixUserQueried) {
+        var remoteUsername = matrixUserQueried.localpart.replace("example_", "");
         var remoteUser = new RemoteUser(remoteUsername);
         remoteUser.set("arbitrary key", {
             "arbitrary value": "here"
         });
         console.log(
-            "provisionUser user_id=%s remote_id=%s", userId, remoteUser.getId()
+            "provisionUser user_id=%s remote_id=%s",
+            matrixUserQueried.getId(), remoteUser.getId()
         );
         return {
             name: remoteUsername,

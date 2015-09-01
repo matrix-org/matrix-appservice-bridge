@@ -3,11 +3,31 @@ var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration
 var bridgeLib = require("./");
 var Cli = bridgeLib.Cli;
 var Bridge = bridgeLib.Bridge;
+var RemoteUser = bridgeLib.RemoteUser;
 
 var bridgeInst = new Bridge({
     homeserverUrl: "http://localhost:8008",
     domain: "localhost",
     registration: "my-bridge-registration.yaml",
+
+    // optional function to automatically create users and set display names
+    // and link to remote users in the store. Can also return a Promise here.
+    provisionUser: function(userId, userLocalpart) {
+        var remoteUsername = userLocalpart.replace("example_", "");
+        var remoteUser = new RemoteUser(remoteUsername);
+        remoteUser.set("arbitrary key", {
+            "arbitrary value": "here"
+        });
+        console.log(
+            "provisionUser user_id=%s remote_id=%s", userId, remoteUser.getId()
+        );
+        return {
+            name: remoteUsername,
+            url: null,
+            user: remoteUser
+        };
+    },
+
     controller: null // TODO: something relevant here?
 });
 

@@ -29,6 +29,7 @@ var c = new Cli({
         reg.setAppServiceToken(AppServiceRegistration.generateToken());
         reg.setSenderLocalpart("bridge-example");
         reg.addRegexPattern("users", "@example_.*", true);
+        console.log("Generating registration to 'my-bridge-registration.yaml'");
         callback(reg);
     }
 });

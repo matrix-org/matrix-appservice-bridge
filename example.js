@@ -29,6 +29,15 @@ var bridgeInst = new Bridge({
         };
     },
 
+    provisionRoom: function(alias, aliasLocalpart) {
+        return {
+            creationOpts: {
+                room_alias_name: aliasLocalpart,
+                name: aliasLocalpart
+            }
+        };
+    },
+
     controller: null // TODO: something relevant here?
 });
 

@@ -9,6 +9,8 @@ var bridgeInst = new Bridge({
     homeserverUrl: "http://localhost:8008",
     domain: "localhost",
     registration: "my-bridge-registration.yaml",
+    userStore: "store-users.db",
+    roomStore: "store-rooms.db",
 
     // optional function to automatically create users and set display names
     // and link to remote users in the store. Can also return a Promise here.

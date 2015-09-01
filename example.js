@@ -43,9 +43,16 @@ var bridgeInst = new Bridge({
     controller: null // TODO: something relevant here?
 });
 
+bridgeInst.on("run", function(port, config) {
+    console.log("Bridge now running on port %s", port);
+})
+
 var c = new Cli({
     // Required. the thing which will be called with run(port,config)
     bridge: bridgeInst,
+
+    // this little example has no config file, so disable it from the CLI.
+    enableConfig: false,
 
     // Optional: where --generate-registration will dump to
     registrationPath: "my-bridge-registration.yaml",

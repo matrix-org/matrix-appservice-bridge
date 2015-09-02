@@ -14,6 +14,8 @@ var UserBridgeStore = require("../..").UserBridgeStore;
 var RoomBridgeStore = require("../..").RoomBridgeStore;
 var MatrixUser = require("../..").MatrixUser;
 var RemoteUser = require("../..").RemoteUser;
+var MatrixRoom = require("../..").MatrixRoom;
+var RemoteRoom = require("../..").RemoteRoom;
 var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
 var Bridge = require("../..").Bridge;
 
@@ -219,16 +221,94 @@ describe("Bridge", function() {
             });
         });
 
-        it("should include remote senders in the context if applicable", function() {
+        it("should include remote senders in the context if applicable",
+        function(done) {
+            var event = {
+                content: {
+                    body: "oh noes!",
+                    msgtype: "m.text"
+                },
+                user_id: "@alice:bar",
+                room_id: "!flibble:bar",
+                type: "m.room.message"
+            };
+            bridge.run(101, {}, appService);
 
+            bridge.getUserStore().linkUsers(
+                new MatrixUser("@alice:bar"),
+                new RemoteUser("__alice__")
+            ).then(function() {
+                return appService.emit("event", event);
+            }).done(function() {
+                expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+                var call = bridgeCtrl.onEvent.calls[0];
+                var req = call.args[0];
+                var ctx = call.args[1];
+                expect(req.getData()).toEqual(event);
+                expect(ctx.senders.remote.getId()).toEqual("__alice__");
+                expect(ctx.senders.remotes.length).toEqual(1);
+                done();
+            });
         });
 
-        it("should include remote targets in the context if applicable", function() {
+        it("should include remote targets in the context if applicable",
+        function(done) {
+            var event = {
+                content: {
+                    membership: "invite"
+                },
+                state_key: "@bob:bar",
+                user_id: "@alice:bar",
+                room_id: "!flibble:bar",
+                type: "m.room.member"
+            };
+            bridge.run(101, {}, appService);
 
+            bridge.getUserStore().linkUsers(
+                new MatrixUser("@bob:bar"),
+                new RemoteUser("__bob__")
+            ).then(function() {
+                return appService.emit("event", event);
+            }).done(function() {
+                expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+                var call = bridgeCtrl.onEvent.calls[0];
+                var req = call.args[0];
+                var ctx = call.args[1];
+                expect(req.getData()).toEqual(event);
+                expect(ctx.targets.remote.getId()).toEqual("__bob__");
+                expect(ctx.targets.remotes.length).toEqual(1);
+                done();
+            });
         });
 
-        it("should include remote rooms in the context if applicable", function() {
+        it("should include remote rooms in the context if applicable",
+        function(done) {
+            var event = {
+                content: {
+                    membership: "invite"
+                },
+                state_key: "@bob:bar",
+                user_id: "@alice:bar",
+                room_id: "!flibble:bar",
+                type: "m.room.member"
+            };
+            bridge.run(101, {}, appService);
 
+            bridge.getRoomStore().linkRooms(
+                new MatrixRoom("!flibble:bar"),
+                new RemoteRoom("roomy")
+            ).then(function() {
+                return appService.emit("event", event);
+            }).done(function() {
+                expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+                var call = bridgeCtrl.onEvent.calls[0];
+                var req = call.args[0];
+                var ctx = call.args[1];
+                expect(req.getData()).toEqual(event);
+                expect(ctx.rooms.remote.getId()).toEqual("roomy");
+                expect(ctx.rooms.remotes.length).toEqual(1);
+                done();
+            });
         });
     });
 

@@ -12,35 +12,39 @@ var bridgeInst = new Bridge({
     userStore: "store-users.db",
     roomStore: "store-rooms.db",
 
-    // optional function to automatically create users and set display names
-    // and link to remote users in the store. Can also return a Promise here.
-    provisionUser: function(matrixUserQueried) {
-        var remoteUsername = matrixUserQueried.localpart.replace("example_", "");
-        var remoteUser = new RemoteUser(remoteUsername);
-        remoteUser.set("arbitrary key", {
-            "arbitrary value": "here"
-        });
-        console.log(
-            "provisionUser user_id=%s remote_id=%s",
-            matrixUserQueried.getId(), remoteUser.getId()
-        );
-        return {
-            name: remoteUsername,
-            url: null,
-            user: remoteUser
-        };
-    },
+    controller: {
+        // optional function to automatically create users and set display names
+        // and link to remote users in the store. Can also return a Promise here.
+        onUserQuery: function(matrixUserQueried) {
+            var remoteUsername = matrixUserQueried.localpart.replace("example_", "");
+            var remoteUser = new RemoteUser(remoteUsername);
+            remoteUser.set("arbitrary key", {
+                "arbitrary value": "here"
+            });
+            console.log(
+                "provisionUser user_id=%s remote_id=%s",
+                matrixUserQueried.getId(), remoteUser.getId()
+            );
+            return {
+                name: remoteUsername,
+                url: null,
+                user: remoteUser
+            };
+        },
 
-    provisionRoom: function(alias, aliasLocalpart) {
-        return {
-            creationOpts: {
-                room_alias_name: aliasLocalpart,
-                name: aliasLocalpart
-            }
-        };
-    },
+        onAliasQuery: function(alias, aliasLocalpart) {
+            return {
+                creationOpts: {
+                    room_alias_name: aliasLocalpart,
+                    name: aliasLocalpart
+                }
+            };
+        },
 
-    controller: null // TODO: something relevant here?
+        onEvent: function(request, context) {
+
+        }
+    }
 });
 
 bridgeInst.on("run", function(port, config) {

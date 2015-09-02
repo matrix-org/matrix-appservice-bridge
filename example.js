@@ -42,7 +42,8 @@ var bridgeInst = new Bridge({
         },
 
         onEvent: function(request, context) {
-
+            console.log(JSON.stringify(request.getData()));
+            console.log("Remote Sender: %s", context.senders.remote);
         }
     }
 });

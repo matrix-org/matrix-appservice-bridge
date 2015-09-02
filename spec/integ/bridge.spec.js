@@ -12,18 +12,32 @@ var TEST_USER_DB_PATH = __dirname + "/test-users.db";
 var TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
 var UserBridgeStore = require("../..").UserBridgeStore;
 var RoomBridgeStore = require("../..").RoomBridgeStore;
+var MatrixUser = require("../..").MatrixUser;
+var RemoteUser = require("../..").RemoteUser;
 var Bridge = require("../..").Bridge;
 
 describe("Bridge", function() {
     var bridge, bridgeCtrl, appService, clientFactory, appServiceRegistration;
+    var roomStore, userStore, clients;
 
     beforeEach(
     /** @this */
     function(done) {
         log.beforeEach(this);
+        // Setup mock client factory to avoid making real outbound HTTP conns
+        clients = {};
         clientFactory = jasmine.createSpyObj("ClientFactory", [
             "setLogFunction", "getClientAs", "configure"
         ]);
+        clientFactory.getClientAs.andCallFake(function(uid, req) {
+            return clients[
+                (uid ? uid : "bot") + (req ? req.getId() : "")];
+        });
+        clients["bot"] = mkMockMatrixClient(
+            "@" + BOT_LOCALPART + ":" + HS_DOMAIN
+        );
+
+        // Setup mock AppService to avoid listening on a real port
         appService = jasmine.createSpyObj("AppService", [
             "onAliasQuery", "onUserQuery", "listen", "on"
         ]);
@@ -34,12 +48,20 @@ describe("Bridge", function() {
             }
             appService._events[name].push(fn);
         });
+        appService.emit = function(name, obj) {
+            var list = appService._events[name] || [];
+            list.forEach(function(fn) {
+                fn(obj);
+            });
+        };
         bridgeCtrl = jasmine.createSpyObj("controller", [
             "onEvent", "onAliasQuery", "onUserQuery"
         ]);
         appServiceRegistration = jasmine.createSpyObj("AppServiceRegistration", [
-            "getOutput", "isUserMatch", "isAliasMatch", "isRoomMatch"
+            "getOutput", "isUserMatch", "isAliasMatch", "isRoomMatch",
+            "getHomeserverToken"
         ]);
+        appServiceRegistration.getHomeserverToken.andReturn("h5_t0k3n");
         appServiceRegistration.getOutput.andReturn({
             hs_token: "h5_t0k3n",
             as_token: "a5_t0k3n",
@@ -77,6 +99,8 @@ describe("Bridge", function() {
             loadDatabase(TEST_USER_DB_PATH, UserBridgeStore),
             loadDatabase(TEST_ROOM_DB_PATH, RoomBridgeStore)
         ]).spread(function(userDb, roomDb) {
+            userStore = userDb;
+            roomStore = roomDb;
             bridge = new Bridge({
                 homeserverUrl: HS_URL,
                 domain: HS_DOMAIN,
@@ -197,65 +221,166 @@ describe("Bridge", function() {
         });
 
         it("should invoke listen(port) on the AppService instance", function() {
-
+            bridge.run(101, {}, appService);
+            expect(appService.listen).toHaveBeenCalledWith(101);
         });
     });
 
     describe("getters", function() {
         it("should be able to getRoomStore", function() {
-
+            expect(bridge.getRoomStore()).toEqual(roomStore);
         });
 
         it("should be able to getUserStore", function() {
-
+            expect(bridge.getUserStore()).toEqual(userStore);
         });
 
         it("should be able to getRequestFactory", function() {
-
+            expect(bridge.getRequestFactory()).toBeDefined();
         });
 
         it("should be able to getBot", function() {
-
+            expect(bridge.getBot()).toBeDefined();
         });
     });
 
     describe("getIntent", function() {
         it("should return the same intent on multiple invokations", function() {
-
+            var intent = bridge.getIntent("@foo:bar");
+            intent._test = 42; // sentinel
+            var intent2 = bridge.getIntent("@foo:bar");
+            expect(intent).toEqual(intent2);
         });
 
-        it("should keep the Intent up-to-date with incoming events", function() {
+        it("should keep the Intent up-to-date with incoming events", function(done) {
+            var client = mkMockMatrixClient("@foo:bar");
+            client.joinRoom.andReturn(Promise.resolve({})); // shouldn't be called
+            clients["@foo:bar"] = client;
 
+            var intent = bridge.getIntent("@foo:bar");
+            var joinEvent = {
+                content: {
+                    membership: "join"
+                },
+                state_key: "@foo:bar",
+                user_id: "@foo:bar",
+                room_id: "!flibble:bar",
+                type: "m.room.member"
+            };
+            bridge.run(101, {}, appService);
+            appService.emit("event", joinEvent);
+            intent.join("!flibble:bar").done(function() {
+                expect(client.joinRoom).not.toHaveBeenCalled();
+                done();
+            });
         });
 
         it("should scope Intents to a request if provided", function() {
-
-        });
-
-        it("should provision a user with the specified user ID", function() {
-
+            var intent = bridge.getIntent("@foo:bar");
+            intent._test = 42; // sentinel
+            var intent2 = bridge.getIntent("@foo:bar", {
+                getId: function() { return "request id here"; }
+            });
+            expect(intent2).toBeDefined();
+            expect(intent).not.toEqual(intent2);
         });
     });
 
     describe("provisionUser", function() {
-        it("should provision a user with the specified user ID", function() {
-
+        it("should provision a user with the specified user ID", function(done) {
+            var mxUser = new MatrixUser("@foo:bar");
+            var provisionedUser = {};
+            var botClient = clients["bot"];
+            botClient.register.andReturn(Promise.resolve({}));
+            bridge.provisionUser(mxUser, provisionedUser).then(function() {
+                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
+                // should also be persisted in storage
+                return bridge.getUserStore().getMatrixUser("@foo:bar");
+            }).done(function(usr) {
+                expect(usr).toBeDefined();
+                expect(usr.getId()).toEqual("@foo:bar");
+                done();
+            });
         });
 
-        it("should set the display name if one was provided", function() {
-
+        it("should set the display name if one was provided", function(done) {
+            var mxUser = new MatrixUser("@foo:bar");
+            var provisionedUser = {
+                name: "Foo Bar"
+            };
+            var botClient = clients["bot"];
+            botClient.register.andReturn(Promise.resolve({}));
+            var client = mkMockMatrixClient("@foo:bar");
+            client.setDisplayName.andReturn(Promise.resolve({}));
+            clients["@foo:bar"] = client;
+            bridge.provisionUser(mxUser, provisionedUser).done(function() {
+                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
+                expect(client.setDisplayName).toHaveBeenCalledWith("Foo Bar");
+                done();
+            });
         });
 
-        it("should set the avatar URL if one was provided", function() {
-
+        it("should set the avatar URL if one was provided", function(done) {
+            var mxUser = new MatrixUser("@foo:bar");
+            var provisionedUser = {
+                url: "http://avatar.jpg"
+            };
+            var botClient = clients["bot"];
+            botClient.register.andReturn(Promise.resolve({}));
+            var client = mkMockMatrixClient("@foo:bar");
+            client.setAvatarUrl.andReturn(Promise.resolve({}));
+            clients["@foo:bar"] = client;
+            bridge.provisionUser(mxUser, provisionedUser).done(function() {
+                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
+                expect(client.setAvatarUrl).toHaveBeenCalledWith("http://avatar.jpg");
+                done();
+            });
         });
 
-        it("should link the user with a remote user if one was provided", function() {
-
+        it("should link the user with a remote user if one was provided",
+        function(done) {
+            var mxUser = new MatrixUser("@foo:bar");
+            var provisionedUser = {
+                user: new RemoteUser("__remote__")
+            };
+            var botClient = clients["bot"];
+            botClient.register.andReturn(Promise.resolve({}));
+            var client = mkMockMatrixClient("@foo:bar");
+            clients["@foo:bar"] = client;
+            bridge.provisionUser(mxUser, provisionedUser).then(function() {
+                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
+                return bridge.getUserStore().getRemoteUsersFromMatrixId("@foo:bar");
+            }).done(function(users) {
+                expect(users.length).toEqual(1);
+                if (users.length > 0) {
+                    expect(users[0].getId()).toEqual("__remote__");
+                }
+                done();
+            });
         });
 
-        it("should fail if the HTTP registration fails", function() {
-
+        it("should fail if the HTTP registration fails", function(done) {
+            var mxUser = new MatrixUser("@foo:bar");
+            var provisionedUser = {};
+            var botClient = clients["bot"];
+            botClient.register.andReturn(Promise.reject({
+                errcode: "M_FORBIDDEN"
+            }));
+            bridge.provisionUser(mxUser, provisionedUser).catch(function() {
+                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
+                done();
+            });
         });
     });
 });
+
+function mkMockMatrixClient(uid) {
+    var client = jasmine.createSpyObj(
+        "MatrixClient", [
+            "register", "joinRoom", "credentials", "createRoom", "setDisplayName",
+            "setAvatarUrl"
+        ]
+    );
+    client.credentials.userId = uid;
+    return client;
+}

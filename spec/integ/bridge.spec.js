@@ -14,6 +14,7 @@ var UserBridgeStore = require("../..").UserBridgeStore;
 var RoomBridgeStore = require("../..").RoomBridgeStore;
 var MatrixUser = require("../..").MatrixUser;
 var RemoteUser = require("../..").RemoteUser;
+var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
 var Bridge = require("../..").Bridge;
 
 describe("Bridge", function() {
@@ -50,19 +51,15 @@ describe("Bridge", function() {
         });
         appService.emit = function(name, obj) {
             var list = appService._events[name] || [];
-            list.forEach(function(fn) {
-                fn(obj);
+            var promises = list.map(function(fn) {
+                return fn(obj);
             });
+            return Promise.all(promises);
         };
         bridgeCtrl = jasmine.createSpyObj("controller", [
             "onEvent", "onAliasQuery", "onUserQuery"
         ]);
-        appServiceRegistration = jasmine.createSpyObj("AppServiceRegistration", [
-            "getOutput", "isUserMatch", "isAliasMatch", "isRoomMatch",
-            "getHomeserverToken"
-        ]);
-        appServiceRegistration.getHomeserverToken.andReturn("h5_t0k3n");
-        appServiceRegistration.getOutput.andReturn({
+        appServiceRegistration = AppServiceRegistration.fromObject({
             hs_token: "h5_t0k3n",
             as_token: "a5_t0k3n",
             url: "http://app-service-url",
@@ -181,13 +178,45 @@ describe("Bridge", function() {
 
     describe("onEvent", function() {
         it("should suppress the event if it is an echo and suppressEcho=true",
-        function() {
-
+        function(done) {
+            var event = {
+                content: {
+                    body: "oh noes!",
+                    msgtype: "m.text"
+                },
+                user_id: "@virtual_foo:bar",
+                room_id: "!flibble:bar",
+                type: "m.room.message"
+            };
+            bridge.run(101, {}, appService);
+            appService.emit("event", event).done(function() {
+                expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
+                done();
+            });
         });
 
         it("should invoke the user-supplied onEvent function with the right args",
-        function() {
-
+        function(done) {
+            var event = {
+                content: {
+                    body: "oh noes!",
+                    msgtype: "m.text"
+                },
+                user_id: "@foo:bar",
+                room_id: "!flibble:bar",
+                type: "m.room.message"
+            };
+            bridge.run(101, {}, appService);
+            appService.emit("event", event).done(function() {
+                expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+                var call = bridgeCtrl.onEvent.calls[0];
+                var req = call.args[0];
+                var ctx = call.args[1];
+                expect(req.getData()).toEqual(event);
+                expect(ctx.senders.matrix.getId()).toEqual("@foo:bar");
+                expect(ctx.rooms.matrix.getId()).toEqual("!flibble:bar");
+                done();
+            });
         });
 
         it("should include remote senders in the context if applicable", function() {
@@ -199,10 +228,6 @@ describe("Bridge", function() {
         });
 
         it("should include remote rooms in the context if applicable", function() {
-
-        });
-
-        it("should update cached Intents", function() {
 
         });
     });

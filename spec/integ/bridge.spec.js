@@ -256,8 +256,9 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
-            bridge.run(101, {}, appService);
-            appService.emit("event", event).done(function() {
+            bridge.run(101, {}, appService).then(function() {
+                return appService.emit("event", event);
+            }).done(function() {
                 expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
                 done();
             });
@@ -274,8 +275,9 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
-            bridge.run(101, {}, appService);
-            appService.emit("event", event).done(function() {
+            bridge.run(101, {}, appService).then(function() {
+                return appService.emit("event", event);
+            }).done(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
                 var call = bridgeCtrl.onEvent.calls[0];
                 var req = call.args[0];
@@ -298,12 +300,12 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
-            bridge.run(101, {}, appService);
-
-            bridge.getUserStore().linkUsers(
-                new MatrixUser("@alice:bar"),
-                new RemoteUser("__alice__")
-            ).then(function() {
+            bridge.run(101, {}, appService).then(function() {
+                return bridge.getUserStore().linkUsers(
+                    new MatrixUser("@alice:bar"),
+                    new RemoteUser("__alice__")
+                );
+            }).then(function() {
                 return appService.emit("event", event);
             }).done(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
@@ -328,12 +330,12 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.member"
             };
-            bridge.run(101, {}, appService);
-
-            bridge.getUserStore().linkUsers(
-                new MatrixUser("@bob:bar"),
-                new RemoteUser("__bob__")
-            ).then(function() {
+            bridge.run(101, {}, appService).then(function() {
+                return bridge.getUserStore().linkUsers(
+                    new MatrixUser("@bob:bar"),
+                    new RemoteUser("__bob__")
+                );
+            }).then(function() {
                 return appService.emit("event", event);
             }).done(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
@@ -358,12 +360,12 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.member"
             };
-            bridge.run(101, {}, appService);
-
-            bridge.getRoomStore().linkRooms(
-                new MatrixRoom("!flibble:bar"),
-                new RemoteRoom("roomy")
-            ).then(function() {
+            bridge.run(101, {}, appService).then(function() {
+                return bridge.getRoomStore().linkRooms(
+                    new MatrixRoom("!flibble:bar"),
+                    new RemoteRoom("roomy")
+                );
+            }).then(function() {
                 return appService.emit("event", event);
             }).done(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
@@ -398,24 +400,43 @@ describe("Bridge", function() {
     });
 
     describe("getters", function() {
-        it("should be able to getRoomStore", function() {
-            expect(bridge.getRoomStore()).toEqual(roomStore);
+        it("should be able to getRoomStore", function(done) {
+            bridge.run(101, {}, appService).done(function() {
+                expect(bridge.getRoomStore()).toEqual(roomStore);
+                done();
+            });
         });
 
-        it("should be able to getUserStore", function() {
-            expect(bridge.getUserStore()).toEqual(userStore);
+        it("should be able to getUserStore", function(done) {
+            bridge.run(101, {}, appService).done(function() {
+                expect(bridge.getUserStore()).toEqual(userStore);
+                done();
+            });
         });
 
-        it("should be able to getRequestFactory", function() {
-            expect(bridge.getRequestFactory()).toBeDefined();
+        it("should be able to getRequestFactory", function(done) {
+            bridge.run(101, {}, appService).done(function() {
+                expect(bridge.getRequestFactory()).toBeDefined();
+                done();
+            });
         });
 
-        it("should be able to getBot", function() {
-            expect(bridge.getBot()).toBeDefined();
+        it("should be able to getBot", function(done) {
+            bridge.run(101, {}, appService).done(function() {
+                expect(bridge.getBot()).toBeDefined();
+                done();
+            });
         });
     });
 
     describe("getIntent", function() {
+
+        beforeEach(function(done) {
+            bridge.run(101, {}, appService).done(function() {
+                done();
+            });
+        });
+
         it("should return the same intent on multiple invokations", function() {
             var intent = bridge.getIntent("@foo:bar");
             intent._test = 42; // sentinel
@@ -438,7 +459,6 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.member"
             };
-            bridge.run(101, {}, appService);
             appService.emit("event", joinEvent);
             intent.join("!flibble:bar").done(function() {
                 expect(client.joinRoom).not.toHaveBeenCalled();
@@ -458,6 +478,13 @@ describe("Bridge", function() {
     });
 
     describe("provisionUser", function() {
+
+        beforeEach(function(done) {
+            bridge.run(101, {}, appService).done(function() {
+                done();
+            });
+        });
+
         it("should provision a user with the specified user ID", function(done) {
             var mxUser = new MatrixUser("@foo:bar");
             var provisionedUser = {};

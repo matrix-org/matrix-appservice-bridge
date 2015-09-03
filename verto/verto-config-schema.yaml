@@ -1,0 +1,48 @@
+type: object
+required: ["homeserver"]
+properties:
+  homeserver:
+    type: object
+    properties:
+      url:
+        type: string
+      domain:
+        type: string
+    required: ["url", "domain"]
+  verto-bot:
+    type: object
+    properties:
+      host:
+        type: string
+      service:
+        type: integer
+      url:
+        type: string
+  verto-config:
+    type: object
+    properties:
+      passwd:
+        type: string
+  verto-dialog-params:
+    type: object
+    properties:
+      useVideo:
+        type: boolean
+      useStereo:
+        type: boolean
+      tag:
+        type: string
+      login:
+        type: string
+      destination_number:
+        type: string
+      caller_id_name:
+        type: string
+      caller_id_number:
+        type: string
+      callID:
+        type: string
+      remote_caller_id_name:
+        type: string
+      remote_caller_id_number:
+        type: string

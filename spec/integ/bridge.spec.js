@@ -130,51 +130,117 @@ describe("Bridge", function() {
 
     describe("onUserQuery", function() {
         it("should invoke the user-supplied onUserQuery function with the right args",
-        function() {
-
+        function(done) {
+            bridge.run(101, {}, appService);
+            appService.onUserQuery("@alice:bar").finally(function() {
+                expect(bridgeCtrl.onUserQuery).toHaveBeenCalled();
+                var call = bridgeCtrl.onUserQuery.calls[0];
+                var mxUser = call.args[0];
+                expect(mxUser.getId()).toEqual("@alice:bar");
+                done();
+            });
         });
 
         it("should not provision a user if null is returned from the function",
-        function() {
-
+        function(done) {
+            bridgeCtrl.onUserQuery.andReturn(null);
+            bridge.run(101, {}, appService);
+            appService.onUserQuery("@alice:bar").finally(function() {
+                expect(clients["bot"].register).not.toHaveBeenCalled();
+                done();
+            });
         });
 
-        it("should provision the user from the return object", function() {
-
-        });
-
-        it("should store the new matrix user", function() {
-
-        });
-
-        it("should store and link the new matrix user if a remote user was supplied",
-        function() {
-
+        it("should provision the user from the return object", function(done) {
+            bridgeCtrl.onUserQuery.andReturn({});
+            clients["bot"].register.andReturn(Promise.resolve({}));
+            bridge.run(101, {}, appService);
+            appService.onUserQuery("@alice:bar").done(function() {
+                expect(clients["bot"].register).toHaveBeenCalledWith("alice");
+                done();
+            });
         });
     });
 
     describe("onAliasQuery", function() {
         it("should invoke the user-supplied onAliasQuery function with the right args",
-        function() {
-
+        function(done) {
+            bridge.run(101, {}, appService);
+            appService.onAliasQuery("#foo:bar").finally(function() {
+                expect(bridgeCtrl.onAliasQuery).toHaveBeenCalledWith("#foo:bar", "foo");
+                done();
+            });
         });
 
         it("should not provision a room if null is returned from the function",
-        function() {
-
+        function(done) {
+            bridgeCtrl.onAliasQuery.andReturn(null);
+            bridge.run(101, {}, appService);
+            appService.onAliasQuery("#foo:bar").catch(function() {
+                expect(clients["bot"].createRoom).not.toHaveBeenCalled();
+                done();
+            });
         });
 
-        it("should provision the room from the return object", function() {
-
+        it("should provision the room from the returned object", function(done) {
+            var provisionedRoom = {
+                creationOpts: {
+                    room_alias_name: "foo"
+                }
+            };
+            clients["bot"].createRoom.andReturn({
+                room_id: "!abc123:bar"
+            });
+            bridgeCtrl.onAliasQuery.andReturn(provisionedRoom);
+            bridge.run(101, {}, appService);
+            appService.onAliasQuery("#foo:bar").done(function() {
+                expect(clients["bot"].createRoom).toHaveBeenCalledWith(
+                    provisionedRoom.creationOpts
+                );
+                done();
+            });
         });
 
-        it("should store the new matrix room", function() {
-
+        it("should store the new matrix room", function(done) {
+            clients["bot"].createRoom.andReturn({
+                room_id: "!abc123:bar"
+            });
+            bridgeCtrl.onAliasQuery.andReturn({
+                creationOpts: {
+                    room_alias_name: "foo"
+                }
+            });
+            bridge.run(101, {}, appService);
+            appService.onAliasQuery("#foo:bar").then(function() {
+                return bridge.getRoomStore().getMatrixRoom("!abc123:bar");
+            }).done(function(room) {
+                expect(room).toBeDefined();
+                if (!room) { done(); return; }
+                expect(room.getId()).toEqual("!abc123:bar");
+                done();
+            });
         });
 
         it("should store and link the new matrix room if a remote room was supplied",
-        function() {
-
+        function(done) {
+            clients["bot"].createRoom.andReturn({
+                room_id: "!abc123:bar"
+            });
+            bridgeCtrl.onAliasQuery.andReturn({
+                creationOpts: {
+                    room_alias_name: "foo"
+                },
+                remote: new RemoteRoom("__abc__")
+            });
+            bridge.run(101, {}, appService);
+            appService.onAliasQuery("#foo:bar").then(function() {
+                return bridge.getRoomStore().getLinkedRemoteRooms("!abc123:bar");
+            }).done(function(rooms) {
+                expect(rooms.length).toEqual(1);
+                if (!rooms.length) { done(); return; }
+                expect(rooms[0].getId()).toEqual("__abc__");
+                done();
+            });
         });
     });
 
@@ -446,7 +512,7 @@ describe("Bridge", function() {
         function(done) {
             var mxUser = new MatrixUser("@foo:bar");
             var provisionedUser = {
-                user: new RemoteUser("__remote__")
+                remote: new RemoteUser("__remote__")
             };
             var botClient = clients["bot"];
             botClient.register.andReturn(Promise.resolve({}));

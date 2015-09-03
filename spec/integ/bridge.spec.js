@@ -381,18 +381,6 @@ describe("Bridge", function() {
     });
 
     describe("run", function() {
-        it("should emit a 'run' event with (port, config)", function(done) {
-            var testConfig = {
-                foo: "bar"
-            };
-            bridge.on("run", function(port, config) {
-                expect(port).toEqual(101);
-                expect(config).toEqual(testConfig);
-                done();
-            })
-            bridge.run(101, testConfig, appService);
-        });
-
         it("should invoke listen(port) on the AppService instance", function() {
             bridge.run(101, {}, appService);
             expect(appService.listen).toHaveBeenCalledWith(101);

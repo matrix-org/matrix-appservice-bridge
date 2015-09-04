@@ -111,7 +111,8 @@ function runBridge(port, config) {
                         roomId: event.room_id,
                         offer: event.content.offer.sdp,
                         candidates: [],
-                        timer: null
+                        timer: null,
+                        sentInvite: false
                     };
                     calls[event.room_id + event.content.call_id] = callStruct;
                     callsById[callStruct.callId] = callStruct;
@@ -245,12 +246,16 @@ VertoEndpoint.prototype.attemptInvite = function(callStruct, force) {
     if (callStruct.timer) {  // cancel pending timers
         clearTimeout(callStruct.timer);
     }
+    if (callStruct.sentInvite) {  // e.g. timed out and then got more candidates
+        return Promise.resolve("Invite already sent");
+    }
 
     // TODO de-trickle candidates
 
 
     var dialogParams = JSON.parse(JSON.stringify(this.dialogParams));
     dialogParams.callID = callStruct.callId;
+    callStruct.sentInvite = true;
     return this.sendRequest("verto.invite", {
         sdp: callStruct.offer,
         dialogParams: dialogParams,

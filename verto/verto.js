@@ -3,7 +3,6 @@ var Promise = require("bluebird");
 var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
 var Cli = require("..").Cli;
 var Bridge = require("..").Bridge;
-var RemoteUser = require("..").RemoteUser;
 var MatrixRoom = require("..").MatrixRoom;
 var WebSocket = require('ws');
 var uuid = require("uuid");
@@ -13,11 +12,12 @@ var CONFIG_SCHEMA_FILE = "verto-config-schema.yaml";
 var USER_PREFIX = "fs_";
 
 function runBridge(port, config) {
+    var verto, bridgeInst;
     var calls = {}; // room_id+call_id: CallStruct
     var callsById = {}; // call_id: room_id
 
     // Create a verto instance and login, then listen on the bridge.
-    var verto = new VertoEndpoint(config["verto-bot"].url, config["verto-dialog-params"],
+    verto = new VertoEndpoint(config.verto.url, config["verto-dialog-params"],
     function(msg) { // handle the incoming verto request
         switch (msg.method) {
             case "verto.answer":
@@ -70,7 +70,7 @@ function runBridge(port, config) {
         }
     });
 
-    var bridgeInst = new Bridge({
+    bridgeInst = new Bridge({
         homeserverUrl: config.homeserver.url,
         domain: config.homeserver.domain,
         registration: REGISTRATION_FILE,
@@ -92,7 +92,8 @@ function runBridge(port, config) {
                     JSON.stringify(event.content)
                 );
                 // auto-accept invites directed to @fs_ users
-                if (event.type === "m.room.member" && event.content.membership === "invite" &&
+                if (event.type === "m.room.member" &&
+                        event.content.membership === "invite" &&
                         context.targets.matrix.localpart.indexOf(USER_PREFIX) === 0) {
                     var intent = bridgeInst.getIntent(context.targets.matrix.getId());
                     request.outcomeFrom(intent.join(event.room_id).then(function() {
@@ -141,17 +142,13 @@ function runBridge(port, config) {
                     request.outcomeFrom(verto.sendBye(callStruct));
                     delete calls[event.room_id + event.content.call_id];
                 }
-            },
-
-            onLog: function(text, isError) {
-                console.log(text);
             }
         }
     });
 
     verto.login(
         config["verto-dialog-params"].login,
-        config["verto-config"].passwd
+        config.verto.passwd
     ).done(function() {
         bridgeInst.run(port, config);
         console.log("Running bridge on port %s", port);

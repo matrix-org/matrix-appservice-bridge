@@ -8,21 +8,17 @@ properties:
         type: string
       domain:
         type: string
+    additionalProperties: false
     required: ["url", "domain"]
-  verto-bot:
+  verto:
     type: object
     properties:
-      host:
-        type: string
-      service:
-        type: integer
       url:
         type: string
-  verto-config:
-    type: object
-    properties:
       passwd:
         type: string
+    additionalProperties: false
+    required: ["url", "passwd"]
   verto-dialog-params:
     type: object
     properties:

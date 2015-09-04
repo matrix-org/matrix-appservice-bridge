@@ -1,12 +1,14 @@
 "use strict";
 var Promise = require("bluebird");
 var AppServiceBot = require("../..").AppServiceBot;
+var log = require("../log");
 
 describe("AppServiceBot", function() {
     var bot, client, reg;
     var botUserId = "@bot:bar";
 
     beforeEach(function() {
+        log.beforeEach(this);
         client = jasmine.createSpyObj("MatrixClient", ["credentials", "_http"]);
         client.credentials = {
             userId: botUserId

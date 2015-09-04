@@ -1,6 +1,7 @@
 "use strict";
 var Intent = require("../..").Intent;
 var Promise = require("bluebird");
+var log = require("../log");
 
 describe("Intent", function() {
     var intent, client, botClient;
@@ -9,6 +10,7 @@ describe("Intent", function() {
     var roomId = "!foo:bar";
 
     beforeEach(function() {
+        log.beforeEach(this);
         var clientFields = [
             "credentials", "joinRoom", "invite", "leave", "ban", "unban",
             "kick", "getStateEvent", "setPowerLevel", "sendTyping", "sendEvent",
@@ -207,7 +209,7 @@ describe("Intent", function() {
         it("should get the power levels before sending if it doesn't know them",
         function(done) {
             client.sendStateEvent.andReturn(Promise.resolve({}));
-            client.getStateEvent.andReturn(Promise.resolve(validPowerLevels));
+            client.getStateEvent.andReturn(Promise.resolve(validPowerLevels.content));
 
             intent.setRoomTopic(roomId, "Hello world").done(function() {
                 expect(client.getStateEvent).toHaveBeenCalledWith(

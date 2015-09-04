@@ -1,10 +1,12 @@
 "use strict";
 var ConfigValidator = require("../..").ConfigValidator;
+var log = require("../log");
 
 describe("ConfigValidator", function() {
     var validator;
 
     beforeEach(function() {
+        log.beforeEach(this);
         validator = new ConfigValidator({
             type: "object",
             properties: {

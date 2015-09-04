@@ -13,19 +13,19 @@ var CONFIG_SCHEMA_FILE = "verto-config-schema.yaml";
 var USER_PREFIX = "fs_";
 
 function runBridge(port, config) {
+    var calls = {}; // room_id+call_id: CallStruct
+    var callsById = {}; // call_id: room_id
+
     // Create a verto instance and login, then listen on the bridge.
     var verto = new VertoEndpoint(config["verto-bot"].url, config["verto-dialog-params"],
-    function(msg) {
-        if (!msg.method) {
-            return;
-        }
+    function(msg) { // handle the incoming verto request
         switch (msg.method) {
             case "verto.answer":
                 if (!msg.params || !msg.params.sdp || msg.params.callID === undefined) {
                     console.error("Missing SDP and/or CallID");
                     return;
                 }
-                var callStruct = callsByVertoCallId[msg.params.callID];
+                var callStruct = callsById[msg.params.callID];
                 if (!callStruct) {
                     console.error("No call with ID '%s' exists.", msg.params.callID);
                     return;
@@ -43,7 +43,7 @@ function runBridge(port, config) {
                     }
                     var intent = bridgeInst.getIntent(sender);
                     return intent.sendEvent(callStruct.roomId, "m.call.answer", {
-                        call_id: callStruct.mxCallId,
+                        call_id: callStruct.callId,
                         version: 0,
                         answer: {
                             sdp: msg.params.sdp,
@@ -69,9 +69,6 @@ function runBridge(port, config) {
                 break;
         }
     });
-
-    var calls = {}; // room_id+call_id: Call Struct
-    var callsByVertoCallId = {}; // call_id: room_id
 
     var bridgeInst = new Bridge({
         homeserverUrl: config.homeserver.url,
@@ -108,15 +105,14 @@ function runBridge(port, config) {
                 }
                 else if (event.type === "m.call.invite") {
                     callStruct = {
-                        mxCallId: event.content.call_id,
-                        vertoCallId: uuid.v4(),
+                        callId: event.content.call_id,
                         roomId: event.room_id,
                         offer: event.content.offer.sdp,
                         candidates: [],
                         bridgeUserId: null
                     };
                     calls[event.room_id + event.content.call_id] = callStruct;
-                    callsByVertoCallId[callStruct.vertoCallId] = callStruct;
+                    callsById[callStruct.callId] = callStruct;
                     verto.attemptInvite(callStruct).done(function(res) {
                         request.resolve();
                     });
@@ -202,20 +198,22 @@ VertoEndpoint.prototype.login = function(user, pass) {
             console.error("Failed to parse: %s", e);
             return;
         }
-        var req = self.requests[jsonMessage.id];
-        if (req) {
+        var existingRequest = self.requests[jsonMessage.id];
+        if (existingRequest) {  // check for promises to resolve/reject
             if (jsonMessage.error) {
-                req.reject(jsonMessage.error);
+                existingRequest.reject(jsonMessage.error);
             }
             else if (jsonMessage.result) {
-                req.resolve(jsonMessage.result);
+                existingRequest.resolve(jsonMessage.result);
             }
             else {
                 console.error("[%s]: Response is malformed.", self.url);
-                req.resolve(jsonMessage); // I guess?
+                existingRequest.resolve(jsonMessage); // I guess?
             }
         }
-        self.callback(jsonMessage);
+        else if (jsonMessage.method) {
+            self.callback(jsonMessage);
+        }
     });
     return defer.promise;
 };
@@ -227,7 +225,7 @@ VertoEndpoint.prototype.attemptInvite = function(callStruct) {
     // de-trickle candidates
 
     var dialogParams = JSON.parse(JSON.stringify(this.dialogParams));
-    dialogParams.callID = callStruct.vertoCallId;
+    dialogParams.callID = callStruct.callId;
     return this.sendRequest("verto.invite", {
         sdp: callStruct.offer,
         dialogParams: dialogParams,
@@ -237,7 +235,7 @@ VertoEndpoint.prototype.attemptInvite = function(callStruct) {
 
 VertoEndpoint.prototype.sendBye = function(callStruct) {
     var dialogParams = JSON.parse(JSON.stringify(this.dialogParams));
-    dialogParams.callID = callStruct.vertoCallId;
+    dialogParams.callID = callStruct.callId;
     return this.sendRequest("verto.bye", {
         dialogParams: dialogParams,
         sessid: this.sessionId

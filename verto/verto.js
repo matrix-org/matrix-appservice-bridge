@@ -29,7 +29,8 @@ function runBridge(port, config) {
         }
     });
 
-    var calls = {}; // call_id: 
+    var calls = {}; // room_id+call_id: Call Struct
+    var callsByVertoCallId = {}; // call_id: room_id
 
     var bridgeInst = new Bridge({
         homeserverUrl: config.homeserver.url,
@@ -38,9 +39,9 @@ function runBridge(port, config) {
 
         controller: {
             onUserQuery: function(queriedUser) {
-                // auto-create "users" when queried. @fs_#matrix:foo -> "#matrix"
+                // auto-create "users" when queried. @fs_#matrix:foo -> "#matrix (Room)"
                 return {
-                    name: queriedUser.localpart.replace(USER_PREFIX, "")
+                    name: queriedUser.localpart.replace(USER_PREFIX, "") + " (Room)"
                 };
             },
 
@@ -51,11 +52,22 @@ function runBridge(port, config) {
                     event.type, event.user_id, event.room_id,
                     JSON.stringify(event.content)
                 );
-                if (event.type === "m.room.member") {
-
+                // auto-accept invites directed to @fs_ users
+                if (event.type === "m.room.member" && event.content.membership === "invite" &&
+                        context.targets.matrix.localpart.indexOf(USER_PREFIX) === 0) {
+                    var intent = bridgeInst.getIntent(context.targets.matrix.getId());
+                    request.outcomeFrom(intent.join(event.room_id));
                 }
                 else if (event.type === "m.call.invite") {
-                    // store event.content.offer.sdp and call ID
+                    var callStruct = {
+                        mxCallId: event.content.call_id,
+                        vertoCallId: Date.now(),
+                        roomId: event.room_id,
+                        offer: event.content.offer.sdp,
+                        candidates: null
+                    };
+                    calls[event.room_id + event.content.call_id] = callStruct;
+                    callsByVertoCallId[callStruct.vertoCallId] = callStruct;
                     // got enough candidates when SDP has a server-reflexive
                     // candidates (SRFLX or RELAY or 5s)
                     // de-trickle candidates
@@ -89,6 +101,7 @@ function runBridge(port, config) {
         console.log("Running bridge on port %s", port);
     }, function(err) {
         console.error("Failed to login to verto: %s", JSON.stringify(err));
+        process.exit(1);
     });
 }
 
@@ -194,6 +207,7 @@ var c = new Cli({
         reg.setHomeserverToken(AppServiceRegistration.generateToken());
         reg.setAppServiceToken(AppServiceRegistration.generateToken());
         reg.setSenderLocalpart("vertobot");
+        reg.addRegexPattern("users", "@" + USER_PREFIX + ".*", true);
         console.log(
             "Generating registration to '%s' for the AS accessible from: %s",
             REGISTRATION_FILE, appServiceUrl

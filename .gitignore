@@ -3,6 +3,7 @@ ci-lint.xml
 reports
 *.db
 verto/config.yaml
+verto/verto-registration.yaml
 
 # Logs
 logs

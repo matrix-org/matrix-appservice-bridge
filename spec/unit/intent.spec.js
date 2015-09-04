@@ -27,7 +27,9 @@ describe("Intent", function() {
         function(done) {
             client.joinRoom.andReturn(Promise.resolve({}));
             intent.join(roomId).done(function() {
-                expect(client.joinRoom).toHaveBeenCalledWith(roomId);
+                expect(client.joinRoom).toHaveBeenCalledWith(
+                    roomId, { syncRoom: false }
+                );
                 done();
             });
         });
@@ -75,7 +77,9 @@ describe("Intent", function() {
                 botClient.invite.andReturn(Promise.resolve({}));
 
                 intent.join(roomId).done(function() {
-                    expect(client.joinRoom).toHaveBeenCalledWith(roomId);
+                    expect(client.joinRoom).toHaveBeenCalledWith(
+                        roomId, { syncRoom: false }
+                    );
                     expect(botClient.invite).toHaveBeenCalledWith(roomId, userId);
                     done();
                 });
@@ -105,9 +109,13 @@ describe("Intent", function() {
                     botClient.joinRoom.andReturn(Promise.resolve({}));
 
                     intent.join(roomId).done(function() {
-                        expect(client.joinRoom).toHaveBeenCalledWith(roomId);
+                        expect(client.joinRoom).toHaveBeenCalledWith(
+                            roomId, { syncRoom: false }
+                        );
                         expect(botClient.invite).toHaveBeenCalledWith(roomId, userId);
-                        expect(botClient.joinRoom).toHaveBeenCalledWith(roomId);
+                        expect(botClient.joinRoom).toHaveBeenCalledWith(
+                            roomId, { syncRoom: false }
+                        );
                         done();
                     });
                 });
@@ -127,9 +135,13 @@ describe("Intent", function() {
                     }));
 
                     intent.join(roomId).catch(function() {
-                        expect(client.joinRoom).toHaveBeenCalledWith(roomId);
+                        expect(client.joinRoom).toHaveBeenCalledWith(
+                            roomId, { syncRoom: false }
+                        );
                         expect(botClient.invite).toHaveBeenCalledWith(roomId, userId);
-                        expect(botClient.joinRoom).toHaveBeenCalledWith(roomId);
+                        expect(botClient.joinRoom).toHaveBeenCalledWith(
+                            roomId, { syncRoom: false }
+                        );
                         done();
                     });
                 });

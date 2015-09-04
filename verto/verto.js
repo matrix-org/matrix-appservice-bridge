@@ -10,6 +10,7 @@ var uuid = require("uuid");
 var REGISTRATION_FILE = "verto-registration.yaml";
 var CONFIG_SCHEMA_FILE = "verto-config-schema.yaml";
 var USER_PREFIX = "fs_";
+var CANDIDATE_TIMEOUT_MS = 1000 * 3; // 3s
 
 function runBridge(port, config) {
     var verto, bridgeInst;
@@ -110,13 +111,11 @@ function runBridge(port, config) {
                         roomId: event.room_id,
                         offer: event.content.offer.sdp,
                         candidates: [],
-                        bridgeUserId: null
+                        timer: null
                     };
                     calls[event.room_id + event.content.call_id] = callStruct;
                     callsById[callStruct.callId] = callStruct;
-                    verto.attemptInvite(callStruct).done(function(res) {
-                        request.resolve();
-                    });
+                    request.outcomeFrom(verto.attemptInvite(callStruct, false));
                 }
                 else if (event.type === "m.call.candidates") {
                     callStruct = calls[event.room_id + event.content.call_id];
@@ -127,7 +126,7 @@ function runBridge(port, config) {
                     event.content.candidates.forEach(function(cand) {
                         callStruct.candidates.push(cand);
                     });
-                    // verto.attemptInvite(callStruct);
+                    request.outcomeFrom(verto.attemptInvite(callStruct, false));
                 }
                 else if (event.type === "m.call.answer") {
                     // TODO: send verto.answer
@@ -215,11 +214,40 @@ VertoEndpoint.prototype.login = function(user, pass) {
     return defer.promise;
 };
 
-VertoEndpoint.prototype.attemptInvite = function(callStruct) {
-    // TODO
-    // got enough candidates when SDP has a server-reflexive
-    // candidates (SRFLX or RELAY or 5s)
-    // de-trickle candidates
+VertoEndpoint.prototype.attemptInvite = function(callStruct, force) {
+    if (callStruct.candidates.length === 0) { return Promise.resolve(); }
+    var self = this;
+
+    var enoughCandidates = false;
+    for (var i = 0; i < callStruct.candidates.length; i++) {
+        var c = callStruct.candidates[i];
+        if (!c.candidate) { continue; }
+        // got enough candidates when SDP has a srflx or relay candidate
+        if (c.candidate.indexOf("typ srflx") !== -1 ||
+                c.candidate.indexOf("typ relay") !== -1) {
+            enoughCandidates = true;
+            console.log("Gathered enough candidates for %s", callStruct.callId);
+            break; // bail early
+        }
+    };
+
+    if (!enoughCandidates && !force) { // don't send the invite just yet
+        if (!callStruct.timer) {
+            callStruct.timer = setTimeout(function() {
+                console.log("Timed out. Forcing invite for %s", callStruct.callId);
+                self.attemptInvite(callStruct, true);
+            }, CANDIDATE_TIMEOUT_MS);
+            console.log("Call %s is waiting for candidates...", callStruct.callId);
+            return Promise.resolve("Waiting for candidates");
+        }
+    }
+
+    if (callStruct.timer) {  // cancel pending timers
+        clearTimeout(callStruct.timer);
+    }
+
+    // TODO de-trickle candidates
+
 
     var dialogParams = JSON.parse(JSON.stringify(this.dialogParams));
     dialogParams.callID = callStruct.callId;

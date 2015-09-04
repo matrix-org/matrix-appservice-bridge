@@ -4,7 +4,9 @@ var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration
 var Cli = require("..").Cli;
 var Bridge = require("..").Bridge;
 var RemoteUser = require("..").RemoteUser;
+var MatrixRoom = require("..").MatrixRoom;
 var WebSocket = require('ws');
+var uuid = require("uuid");
 
 var REGISTRATION_FILE = "verto-registration.yaml";
 var CONFIG_SCHEMA_FILE = "verto-config-schema.yaml";
@@ -12,16 +14,55 @@ var USER_PREFIX = "fs_";
 
 function runBridge(port, config) {
     // Create a verto instance and login, then listen on the bridge.
-    var verto = new VertoEndpoint(config["verto-bot"].url, function(msg) {
+    var verto = new VertoEndpoint(config["verto-bot"].url, config["verto-dialog-params"],
+    function(msg) {
         if (!msg.method) {
             return;
         }
         switch (msg.method) {
             case "verto.answer":
+                if (!msg.params || !msg.params.sdp || msg.params.callID === undefined) {
+                    console.error("Missing SDP and/or CallID");
+                    return;
+                }
+                var callStruct = callsByVertoCallId[msg.params.callID];
+                if (!callStruct) {
+                    console.error("No call with ID '%s' exists.", msg.params.callID);
+                    return;
+                }
+
+                // find out which user should be sending the answer
+                bridgeInst.getRoomStore().getMatrixRoom(callStruct.roomId).then(
+                function(room) {
+                    if (!room) {
+                        throw new Error("Unknown room ID: " + callStruct.roomId);
+                    }
+                    var sender = room.get("fs_user");
+                    if (!sender) {
+                        throw new Error("Room " + callStruct.roomId + " has no fs_user");
+                    }
+                    var intent = bridgeInst.getIntent(sender);
+                    return intent.sendEvent(callStruct.roomId, "m.call.answer", {
+                        call_id: callStruct.mxCallId,
+                        version: 0,
+                        answer: {
+                            sdp: msg.params.sdp,
+                            type: "answer"
+                        }
+                    });
+                }).then(function() {
+                    return verto.sendResponse({
+                        method: msg.method
+                    }, msg.id);
+                }).done(function() {
+                    console.log("Forwarded answer.");
+                }, function(err) {
+                    console.error("Failed to send m.call.answer: %s", err);
+                    console.log(err.stack);
+                    // TODO send verto error response?
+                });
                 break;
             case "verto.invite":
-                break;
-            case "verto.media":
                 break;
             default:
                 console.log("Unhandled method: %s", msg.method);
@@ -47,43 +88,62 @@ function runBridge(port, config) {
 
             onEvent: function(request, context) {
                 var event = request.getData();
+                var callStruct;
                 console.log(
-                    "%s: [%s] in [%s]: %s",
-                    event.type, event.user_id, event.room_id,
+                    "[%s] %s: from=%s in %s: %s\n",
+                    request.getId(), event.type, event.user_id, event.room_id,
                     JSON.stringify(event.content)
                 );
                 // auto-accept invites directed to @fs_ users
                 if (event.type === "m.room.member" && event.content.membership === "invite" &&
                         context.targets.matrix.localpart.indexOf(USER_PREFIX) === 0) {
                     var intent = bridgeInst.getIntent(context.targets.matrix.getId());
-                    request.outcomeFrom(intent.join(event.room_id));
+                    request.outcomeFrom(intent.join(event.room_id).then(function() {
+                        // pair this user with this room ID
+                        var room = new MatrixRoom(event.room_id);
+                        room.set("fs_user", context.targets.matrix.getId());
+                        room.set("inviter", event.user_id);
+                        return bridgeInst.getRoomStore().setMatrixRoom(room);
+                    }));
                 }
                 else if (event.type === "m.call.invite") {
-                    var callStruct = {
+                    callStruct = {
                         mxCallId: event.content.call_id,
-                        vertoCallId: Date.now(),
+                        vertoCallId: uuid.v4(),
                         roomId: event.room_id,
                         offer: event.content.offer.sdp,
-                        candidates: null
+                        candidates: [],
+                        bridgeUserId: null
                     };
                     calls[event.room_id + event.content.call_id] = callStruct;
                     callsByVertoCallId[callStruct.vertoCallId] = callStruct;
-                    // got enough candidates when SDP has a server-reflexive
-                    // candidates (SRFLX or RELAY or 5s)
-                    // de-trickle candidates
-                    // send out verto.invite
+                    verto.attemptInvite(callStruct).done(function(res) {
+                        request.resolve();
+                    });
                 }
                 else if (event.type === "m.call.candidates") {
-                    // got enough candidates when SDP has a server-reflexive
-                    // candidate
-                    // de-trickle candidates
-                    // send out verto.invite
+                    callStruct = calls[event.room_id + event.content.call_id];
+                    if (!callStruct) {
+                        request.reject("Received candidates for unknown call");
+                        return;
+                    }
+                    event.content.candidates.forEach(function(cand) {
+                        callStruct.candidates.push(cand);
+                    });
+                    // verto.attemptInvite(callStruct);
                 }
                 else if (event.type === "m.call.answer") {
                     // TODO: send verto.answer
                 }
                 else if (event.type === "m.call.hangup") {
                     // send verto.bye
+                    callStruct = calls[event.room_id + event.content.call_id];
+                    if (!callStruct) {
+                        request.reject("Received hangup for unknown call");
+                        return;
+                    }
+                    request.outcomeFrom(verto.sendBye(callStruct));
+                    delete calls[event.room_id + event.content.call_id];
                 }
             },
 
@@ -106,13 +166,14 @@ function runBridge(port, config) {
 }
 
 // === Verto Endpoint ===
-function VertoEndpoint(url, callback) {
+function VertoEndpoint(url, dialogParams, callback) {
     this.url = url;
     this.ws = null;
-    this.sessionId = Date.now();
+    this.sessionId = uuid.v4();
     this.callback = callback;
     this.requestId = 0;
     this.requests = {};
+    this.dialogParams = dialogParams;
 }
 
 VertoEndpoint.prototype.login = function(user, pass) {
@@ -120,7 +181,7 @@ VertoEndpoint.prototype.login = function(user, pass) {
     var defer = Promise.defer();
     this.ws = new WebSocket(this.url);
     this.ws.on('open', function() {
-        console.log("WebSocket[%s]: OPEN", self.url);
+        console.log("[%s]: OPENED", self.url);
         self.sendRequest("login", {
             login: user,
             passwd: pass,
@@ -132,7 +193,7 @@ VertoEndpoint.prototype.login = function(user, pass) {
         });
     });
     this.ws.on('message', function(message) {
-        console.log("WebSocket[%s]: MESSAGE %s", self.url, message);
+        console.log("[%s]: MESSAGE %s\n", self.url, message);
         var jsonMessage;
         try {
             jsonMessage = JSON.parse(message);
@@ -150,7 +211,7 @@ VertoEndpoint.prototype.login = function(user, pass) {
                 req.resolve(jsonMessage.result);
             }
             else {
-                console.error("WebSocket[%s]: Response is malformed.", self.url);
+                console.error("[%s]: Response is malformed.", self.url);
                 req.resolve(jsonMessage); // I guess?
             }
         }
@@ -159,8 +220,32 @@ VertoEndpoint.prototype.login = function(user, pass) {
     return defer.promise;
 };
 
+VertoEndpoint.prototype.attemptInvite = function(callStruct) {
+    // TODO
+    // got enough candidates when SDP has a server-reflexive
+    // candidates (SRFLX or RELAY or 5s)
+    // de-trickle candidates
+
+    var dialogParams = JSON.parse(JSON.stringify(this.dialogParams));
+    dialogParams.callID = callStruct.vertoCallId;
+    return this.sendRequest("verto.invite", {
+        sdp: callStruct.offer,
+        dialogParams: dialogParams,
+        sessid: this.sessionId
+    });
+};
+
+VertoEndpoint.prototype.sendBye = function(callStruct) {
+    var dialogParams = JSON.parse(JSON.stringify(this.dialogParams));
+    dialogParams.callID = callStruct.vertoCallId;
+    return this.sendRequest("verto.bye", {
+        dialogParams: dialogParams,
+        sessid: this.sessionId
+    });
+}
+
 VertoEndpoint.prototype.send = function(stuff) {
-    console.log("WebSocket[%s]: SEND %s", this.url, stuff);
+    console.log("[%s]: SENDING %s\n", this.url, stuff);
     var defer = Promise.defer();
     this.ws.send(stuff, function(err) {
         if (err) {

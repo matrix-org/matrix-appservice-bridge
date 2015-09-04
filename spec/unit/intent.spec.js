@@ -9,7 +9,9 @@ describe("Intent", function() {
     var botUserId = "@bot:user";
     var roomId = "!foo:bar";
 
-    beforeEach(function() {
+    beforeEach(
+    /** @this */
+    function() {
         log.beforeEach(this);
         var clientFields = [
             "credentials", "joinRoom", "invite", "leave", "ban", "unban",

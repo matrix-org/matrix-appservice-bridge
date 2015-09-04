@@ -7,7 +7,9 @@ describe("AppServiceBot", function() {
     var bot, client, reg;
     var botUserId = "@bot:bar";
 
-    beforeEach(function() {
+    beforeEach(
+    /** @this */
+    function() {
         log.beforeEach(this);
         client = jasmine.createSpyObj("MatrixClient", ["credentials", "_http"]);
         client.credentials = {

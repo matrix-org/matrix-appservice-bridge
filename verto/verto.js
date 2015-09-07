@@ -10,12 +10,20 @@ var uuid = require("uuid");
 var REGISTRATION_FILE = "verto-registration.yaml";
 var CONFIG_SCHEMA_FILE = "verto-config-schema.yaml";
 var USER_PREFIX = "fs_";
+var EXTENSION_PREFIX = "35"; // the 'destination_number' to dial: 35xx
 var CANDIDATE_TIMEOUT_MS = 1000 * 3; // 3s
 
 function runBridge(port, config) {
     var verto, bridgeInst;
-    var calls = {}; // room_id+call_id: CallStruct
-    var callsById = {}; // call_id: room_id
+    var calls = new CallStore();
+
+    function getExtensionToCall(fsUserId) {
+        var call = calls.byFsUserId[fsUserId];
+        if (call) {
+            return call.ext; // we have a call for this user already
+        }
+        return calls.nextExtension();
+    }
 
     // Create a verto instance and login, then listen on the bridge.
     verto = new VertoEndpoint(config.verto.url, config["verto-dialog-params"],
@@ -26,7 +34,7 @@ function runBridge(port, config) {
                     console.error("Missing SDP and/or CallID");
                     return;
                 }
-                var callStruct = callsById[msg.params.callID];
+                var callStruct = calls.byCallId[msg.params.callID];
                 if (!callStruct) {
                     console.error("No call with ID '%s' exists.", msg.params.callID);
                     return;
@@ -62,8 +70,6 @@ function runBridge(port, config) {
                     console.log(err.stack);
                     // TODO send verto error response?
                 });
-                break;
-            case "verto.invite":
                 break;
             default:
                 console.log("Unhandled method: %s", msg.method);
@@ -109,17 +115,21 @@ function runBridge(port, config) {
                     callStruct = {
                         callId: event.content.call_id,
                         roomId: event.room_id,
+                        fsUserId: context.rooms.matrix.get("fs_user"),
                         offer: event.content.offer.sdp,
                         candidates: [],
+                        pin: generatePin(),
+                        ext: getExtensionToCall(context.rooms.matrix.get("fs_user")),
                         timer: null,
                         sentInvite: false
                     };
-                    calls[event.room_id + event.content.call_id] = callStruct;
-                    callsById[callStruct.callId] = callStruct;
+                    calls.set(callStruct);
                     request.outcomeFrom(verto.attemptInvite(callStruct, false));
                 }
                 else if (event.type === "m.call.candidates") {
-                    callStruct = calls[event.room_id + event.content.call_id];
+                    callStruct = calls.byRoomAndCallId[
+                        event.room_id + event.content.call_id
+                    ];
                     if (!callStruct) {
                         request.reject("Received candidates for unknown call");
                         return;
@@ -134,13 +144,15 @@ function runBridge(port, config) {
                 }
                 else if (event.type === "m.call.hangup") {
                     // send verto.bye
-                    callStruct = calls[event.room_id + event.content.call_id];
+                    callStruct = calls.byRoomAndCallId[
+                        event.room_id + event.content.call_id
+                    ];
                     if (!callStruct) {
                         request.reject("Received hangup for unknown call");
                         return;
                     }
                     request.outcomeFrom(verto.sendBye(callStruct));
-                    delete calls[event.room_id + event.content.call_id];
+                    calls.delete(callStruct);
                 }
             }
         }
@@ -230,7 +242,7 @@ VertoEndpoint.prototype.attemptInvite = function(callStruct, force) {
             console.log("Gathered enough candidates for %s", callStruct.callId);
             break; // bail early
         }
-    };
+    }
 
     if (!enoughCandidates && !force) { // don't send the invite just yet
         if (!callStruct.timer) {
@@ -270,7 +282,7 @@ VertoEndpoint.prototype.attemptInvite = function(callStruct, force) {
         callStruct.candidates.forEach(function(cand) {
             // m-line index is more precise than the type (which can be multiple)
             // so prefer that when inserting
-            if (cand.sdpMLineIndex != null) { // allows 0
+            if (typeof(cand.sdpMLineIndex) === "number") {
                 if (cand.sdpMLineIndex !== mIndex) {
                     return;
                 }
@@ -280,7 +292,7 @@ VertoEndpoint.prototype.attemptInvite = function(callStruct, force) {
                     cand.candidate, cand.sdpMLineIndex
                 );
             }
-            else if (cand.sdpMid != null && cand.sdpMid === mType) {
+            else if (cand.sdpMid !== undefined && cand.sdpMid === mType) {
                 // insert candidate f.e. m= type (e.g. audio)
                 // This will repeatedly insert the candidate for m= blocks with
                 // the same type (unconfirmed if this is the 'right' thing to do)
@@ -295,21 +307,17 @@ VertoEndpoint.prototype.attemptInvite = function(callStruct, force) {
         return line;
     }).join("\r\n");
 
-    var dialogParams = JSON.parse(JSON.stringify(this.dialogParams));
-    dialogParams.callID = callStruct.callId;
     callStruct.sentInvite = true;
     return this.sendRequest("verto.invite", {
         sdp: callStruct.offer,
-        dialogParams: dialogParams,
+        dialogParams: this.getDialogParamsFor(callStruct),
         sessid: this.sessionId
     });
 };
 
 VertoEndpoint.prototype.sendBye = function(callStruct) {
-    var dialogParams = JSON.parse(JSON.stringify(this.dialogParams));
-    dialogParams.callID = callStruct.callId;
     return this.sendRequest("verto.bye", {
-        dialogParams: dialogParams,
+        dialogParams: this.getDialogParamsFor(callStruct),
         sessid: this.sessionId
     });
 }
@@ -350,6 +358,49 @@ VertoEndpoint.prototype.sendResponse = function(result, id) {
         id: id
     }));
 };
+
+VertoEndpoint.prototype.getDialogParamsFor = function(callStruct) {
+    var dialogParams = JSON.parse(JSON.stringify(this.dialogParams)); // deep copy
+    dialogParams.callID = callStruct.callId;
+    dialogParams.destination_number = callStruct.ext;
+    dialogParams.remote_caller_id_number = callStruct.ext;
+    return dialogParams;
+};
+
+// === Call Storage ===
+function CallStore() {
+    this.byCallId = {};
+    this.byRoomAndCallId = {};
+    this.byFsUserId = {};
+    this.currentExtension = "00";
+}
+
+CallStore.prototype.set = function(callStruct) {
+    this.byCallId[callStruct.callId] = callStruct;
+    this.byRoomAndCallId[callStruct.roomId + callStruct.callId] = callStruct;
+    this.byFsUserId[callStruct.fsUserId] = callStruct;
+};
+
+CallStore.prototype.delete = function(callStruct) {
+    delete this.byCallId[callStruct.callId];
+    delete this.byRoomAndCallId[callStruct.roomId + callStruct.callId];
+    delete this.byFsUserId[callStruct.fsUserId];
+};
+
+CallStore.prototype.nextExtension = function() { // loop 0-99 with leading 0
+    var nextExt = parseInt(this.currentExtension) + 1;
+    if (nextExt >= 100) { nextExt = 0; }
+    nextExt = "" + nextExt;
+    while (nextExt.length < 2) {
+        nextExt = "0" + nextExt;
+    }
+    this.currentExtension = nextExt;
+    return EXTENSION_PREFIX + nextExt;
+}
+
+function generatePin() {
+    return Math.floor(Math.random() * 10000); // random 4-digits
+}
 
 // === Command Line Interface ===
 var c = new Cli({

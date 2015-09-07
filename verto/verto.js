@@ -250,8 +250,50 @@ VertoEndpoint.prototype.attemptInvite = function(callStruct, force) {
         return Promise.resolve("Invite already sent");
     }
 
-    // TODO de-trickle candidates
+    // de-trickle candidates - insert the candidates in the right m= block.
+    // Insert the candidate line at the *END* of the media block
+    // (RFC 4566 Section 5; order is m,i,c,b,k,a) - we'll just insert at the
+    // start of the a= lines for parsing simplicity)
+    var mIndex = -1;
+    var mType = "";
+    var parsedUpToIndex = -1;
+    callStruct.offer = callStruct.offer.split("\r\n").map(function(line) {
+        if (line.indexOf("m=") === 0) { // m=audio 48202 RTP/SAVPF 111 103
+            mIndex += 1;
+            mType = line.split(" ")[0].replace("m=", ""); // 'audio'
+            console.log("index=%s - %s", mIndex, line);
+        }
+        if (mIndex === -1) { return line; } // ignore session-level keys
+        if (line.indexOf("a=") !== 0) { return line; } // ignore keys before a=
+        if (parsedUpToIndex === mIndex) { return line; } // don't insert cands f.e a=
 
+        callStruct.candidates.forEach(function(cand) {
+            // m-line index is more precise than the type (which can be multiple)
+            // so prefer that when inserting
+            if (cand.sdpMLineIndex != null) { // allows 0
+                if (cand.sdpMLineIndex !== mIndex) {
+                    return;
+                }
+                line = "a=" + cand.candidate + "\r\n" + line;
+                console.log(
+                    "Inserted candidate %s at m= index %s",
+                    cand.candidate, cand.sdpMLineIndex
+                );
+            }
+            else if (cand.sdpMid != null && cand.sdpMid === mType) {
+                // insert candidate f.e. m= type (e.g. audio)
+                // This will repeatedly insert the candidate for m= blocks with
+                // the same type (unconfirmed if this is the 'right' thing to do)
+                line = "a=" + cand.candidate + "\r\n" + line;
+                console.log(
+                    "Inserted candidate %s at m= type %s",
+                    cand.candidate, cand.sdpMid
+                );
+            }
+        });
+        parsedUpToIndex = mIndex;
+        return line;
+    }).join("\r\n");
 
     var dialogParams = JSON.parse(JSON.stringify(this.dialogParams));
     dialogParams.callID = callStruct.callId;

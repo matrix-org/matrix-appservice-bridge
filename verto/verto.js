@@ -22,7 +22,13 @@ function runBridge(port, config) {
         if (call) {
             return call.ext; // we have a call for this user already
         }
-        return calls.nextExtension();
+        var ext = calls.nextExtension();
+        if (calls.byExt[ext]) {
+            console.log("Extension %s is in use, finding another..", ext);
+            // try to find an unoccupied extension... this will throw if we're out
+            ext = calls.anyFreeExtension();
+        }
+        return ext;
     }
 
     // Create a verto instance and login, then listen on the bridge.
@@ -69,6 +75,23 @@ function runBridge(port, config) {
                     console.error("Failed to send m.call.answer: %s", err);
                     console.log(err.stack);
                     // TODO send verto error response?
+                });
+                break;
+            case "verto.bye":
+                // we HAVE to cleanup else we'll eventually fill up the ext pool
+                console.log(msg, undefined, 2);
+                break;
+            case "verto.event":
+                if (!msg.params.pvtData) {
+                    break;
+                }
+                verto.sendRequest("verto.subscribe", {
+                    eventChannel: msg.params.pvtData.laChannel,
+                    sessid: verto.sessionId
+                });
+                verto.sendRequest("verto.subscribe", {
+                    eventChannel: msg.params.pvtData.chatChannel,
+                    sessid: verto.sessionId
                 });
                 break;
             default:
@@ -335,7 +358,7 @@ VertoEndpoint.prototype.send = function(stuff) {
     return defer.promise;
 }
 
-VertoEndpoint.prototype.sendRequest = function(method, params, id) {
+VertoEndpoint.prototype.sendRequest = function(method, params) {
     this.requestId += 1;
     this.requests[this.requestId] = Promise.defer();
     // The request is OK if we can send it down the wire AND get
@@ -372,6 +395,7 @@ function CallStore() {
     this.byCallId = {};
     this.byRoomAndCallId = {};
     this.byFsUserId = {};
+    this.byExt = {};
     this.currentExtension = "00";
 }
 
@@ -379,12 +403,14 @@ CallStore.prototype.set = function(callStruct) {
     this.byCallId[callStruct.callId] = callStruct;
     this.byRoomAndCallId[callStruct.roomId + callStruct.callId] = callStruct;
     this.byFsUserId[callStruct.fsUserId] = callStruct;
+    this.byExt[callStruct.ext] = callStruct;
 };
 
 CallStore.prototype.delete = function(callStruct) {
     delete this.byCallId[callStruct.callId];
     delete this.byRoomAndCallId[callStruct.roomId + callStruct.callId];
     delete this.byFsUserId[callStruct.fsUserId];
+    delete this.byExt[callStruct.ext];
 };
 
 CallStore.prototype.nextExtension = function() { // loop 0-99 with leading 0
@@ -396,6 +422,18 @@ CallStore.prototype.nextExtension = function() { // loop 0-99 with leading 0
     }
     this.currentExtension = nextExt;
     return EXTENSION_PREFIX + nextExt;
+}
+
+CallStore.prototype.anyFreeExtension = function() {
+    var ext;
+    for (var i = 0; i < 100; i++) {
+        var extStr = (i < 10 ? "0"+i : i+"");
+        var call = this.byExt[EXTENSION_PREFIX + extStr];
+        if (!call) {
+            return EXTENSION_PREFIX + extStr;
+        }
+    }
+    throw new Error("No free extensions");
 }
 
 function generatePin() {

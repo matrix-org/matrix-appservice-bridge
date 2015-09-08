@@ -1,4 +1,15 @@
 "use strict";
+// TODO:
+// - Check join state of user before dialling out to the conf server
+// - Boot users off the conf when they leave rooms (fake a hangup)
+// - Prevent randoms from accessing the conf (PIN or firewall)
+// - GOTCHA: Knifing the web client will knife the RTP stream which is never
+//   propagated to other users on the conference (read: the bridge). This means
+//   the bridge will still think there is someone on that conf and will never
+//   recycle the extension number. Over time, this will lead to total consumption
+//   of conf calls.
+// - TEST: Does it cycle from 98,99,00,01?
+// - TEST: Does it fail gracefully (on the invite) if all conf exts are used?
 var Promise = require("bluebird");
 var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
 var Cli = require("..").Cli;

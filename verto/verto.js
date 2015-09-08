@@ -89,6 +89,7 @@ function runBridge(port, config) {
                 // we HAVE to cleanup else we'll eventually fill up the ext pool
                 console.log(msg, undefined, 2);
                 break;
+            /* TODO: Somehow get RTP dead events so we can gracefully hangup
             case "verto.event":
                 if (!msg.params.pvtData) {
                     break;
@@ -101,7 +102,7 @@ function runBridge(port, config) {
                     eventChannel: msg.params.pvtData.chatChannel,
                     sessid: verto.sessionId
                 });
-                break;
+                break; */
             default:
                 console.log("Unhandled method: %s", msg.method);
                 break;
@@ -470,7 +471,7 @@ CallStore.prototype.anyFreeExtension = function() {
     throw new Error("No free extensions");
 };
 
-
+// Represents a single conference call
 function VertoCall(fsUserId, ext) {
     this.ext = ext;
     this.fsUserId = fsUserId;

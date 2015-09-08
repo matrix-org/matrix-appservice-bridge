@@ -18,12 +18,12 @@ function runBridge(port, config) {
     var calls = new CallStore();
 
     function getExtensionToCall(fsUserId) {
-        var call = calls.byFsUserId[fsUserId];
-        if (call) {
-            return call.ext; // we have a call for this user already
+        var vertoCall = calls.fsUserToConf[fsUserId];
+        if (vertoCall) {
+            return vertoCall.ext; // we have a call for this fs user already
         }
         var ext = calls.nextExtension();
-        if (calls.byExt[ext]) {
+        if (calls.extToConf[ext]) {
             console.log("Extension %s is in use, finding another..", ext);
             // try to find an unoccupied extension... this will throw if we're out
             ext = calls.anyFreeExtension();
@@ -40,25 +40,33 @@ function runBridge(port, config) {
                     console.error("Missing SDP and/or CallID");
                     return;
                 }
-                var callStruct = calls.byCallId[msg.params.callID];
-                if (!callStruct) {
+                var matrixSide;
+                var exts = Object.keys(calls.extToConf);
+                for (var i = 0; i < exts.length; i++) {
+                    var vertoCall = calls.extToConf[exts[i]];
+                    matrixSide = vertoCall.getByVertoCallId(msg.params.callID);
+                    if (matrixSide) {
+                        break;
+                    }
+                };
+                if (!matrixSide) {
                     console.error("No call with ID '%s' exists.", msg.params.callID);
                     return;
                 }
 
                 // find out which user should be sending the answer
-                bridgeInst.getRoomStore().getMatrixRoom(callStruct.roomId).then(
+                bridgeInst.getRoomStore().getMatrixRoom(matrixSide.roomId).then(
                 function(room) {
                     if (!room) {
-                        throw new Error("Unknown room ID: " + callStruct.roomId);
+                        throw new Error("Unknown room ID: " + matrixSide.roomId);
                     }
                     var sender = room.get("fs_user");
                     if (!sender) {
-                        throw new Error("Room " + callStruct.roomId + " has no fs_user");
+                        throw new Error("Room " + matrixSide.roomId + " has no fs_user");
                     }
                     var intent = bridgeInst.getIntent(sender);
-                    return intent.sendEvent(callStruct.roomId, "m.call.answer", {
-                        call_id: callStruct.callId,
+                    return intent.sendEvent(matrixSide.roomId, "m.call.answer", {
+                        call_id: matrixSide.mxCallId,
                         version: 0,
                         answer: {
                             sdp: msg.params.sdp,
@@ -135,47 +143,71 @@ function runBridge(port, config) {
                     }));
                 }
                 else if (event.type === "m.call.invite") {
-                    callStruct = {
-                        callId: event.content.call_id,
+                    var vertoCall = calls.fsUserToConf[
+                        context.rooms.matrix.get("fs_user")
+                    ];
+                    if (!vertoCall) {
+                        vertoCall = new VertoCall(
+                            context.rooms.matrix.get("fs_user"),
+                            getExtensionToCall(context.rooms.matrix.get("fs_user"))
+                        );
+                    }
+                    var callData = {
                         roomId: event.room_id,
-                        fsUserId: context.rooms.matrix.get("fs_user"),
+                        mxUserId: event.user_id,
+                        mxCallId: event.content.call_id,
+                        vertoCallId: uuid.v4(),
                         offer: event.content.offer.sdp,
                         candidates: [],
                         pin: generatePin(),
-                        ext: getExtensionToCall(context.rooms.matrix.get("fs_user")),
                         timer: null,
                         sentInvite: false
                     };
-                    calls.set(callStruct);
-                    request.outcomeFrom(verto.attemptInvite(callStruct, false));
+                    vertoCall.addMatrixSide(callData);
+                    calls.set(vertoCall);
+                    request.outcomeFrom(
+                        verto.attemptInvite(vertoCall, callData, false)
+                    );
                 }
                 else if (event.type === "m.call.candidates") {
-                    callStruct = calls.byRoomAndCallId[
-                        event.room_id + event.content.call_id
+                    var vertoCall = calls.fsUserToConf[
+                        context.rooms.matrix.get("fs_user")
                     ];
-                    if (!callStruct) {
+                    if (!vertoCall) {
+                        request.reject("No ongoing conference call for fs user.");
+                        return;
+                    }
+                    var matrixSide = vertoCall.getByRoomId(event.room_id);
+                    if (!matrixSide) {
                         request.reject("Received candidates for unknown call");
                         return;
                     }
                     event.content.candidates.forEach(function(cand) {
-                        callStruct.candidates.push(cand);
+                        matrixSide.candidates.push(cand);
                     });
-                    request.outcomeFrom(verto.attemptInvite(callStruct, false));
+                    request.outcomeFrom(
+                        verto.attemptInvite(vertoCall, matrixSide, false)
+                    );
                 }
                 else if (event.type === "m.call.answer") {
                     // TODO: send verto.answer
                 }
                 else if (event.type === "m.call.hangup") {
                     // send verto.bye
-                    callStruct = calls.byRoomAndCallId[
-                        event.room_id + event.content.call_id
+                    var vertoCall = calls.fsUserToConf[
+                        context.rooms.matrix.get("fs_user")
                     ];
-                    if (!callStruct) {
+                    if (!vertoCall) {
+                        request.reject("No ongoing conference call for fs user.");
+                        return;
+                    }
+                    var matrixSide = vertoCall.getByRoomId(event.room_id);
+                    if (!matrixSide) {
                         request.reject("Received hangup for unknown call");
                         return;
                     }
-                    request.outcomeFrom(verto.sendBye(callStruct));
-                    calls.delete(callStruct);
+                    request.outcomeFrom(verto.sendBye(vertoCall, matrixSide));
+                    calls.delete(vertoCall, matrixSide);
                 }
             }
         }
@@ -250,38 +282,38 @@ VertoEndpoint.prototype.login = function(user, pass) {
     return defer.promise;
 };
 
-VertoEndpoint.prototype.attemptInvite = function(callStruct, force) {
-    if (callStruct.candidates.length === 0) { return Promise.resolve(); }
+VertoEndpoint.prototype.attemptInvite = function(vertoCall, matrixSide, force) {
+    if (matrixSide.candidates.length === 0) { return Promise.resolve(); }
     var self = this;
 
     var enoughCandidates = false;
-    for (var i = 0; i < callStruct.candidates.length; i++) {
-        var c = callStruct.candidates[i];
+    for (var i = 0; i < matrixSide.candidates.length; i++) {
+        var c = matrixSide.candidates[i];
         if (!c.candidate) { continue; }
         // got enough candidates when SDP has a srflx or relay candidate
         if (c.candidate.indexOf("typ srflx") !== -1 ||
                 c.candidate.indexOf("typ relay") !== -1) {
             enoughCandidates = true;
-            console.log("Gathered enough candidates for %s", callStruct.callId);
+            console.log("Gathered enough candidates for %s", matrixSide.mxCallId);
             break; // bail early
         }
     }
 
     if (!enoughCandidates && !force) { // don't send the invite just yet
-        if (!callStruct.timer) {
-            callStruct.timer = setTimeout(function() {
-                console.log("Timed out. Forcing invite for %s", callStruct.callId);
-                self.attemptInvite(callStruct, true);
+        if (!matrixSide.timer) {
+            matrixSide.timer = setTimeout(function() {
+                console.log("Timed out. Forcing invite for %s", matrixSide.mxCallId);
+                self.attemptInvite(vertoCall, matrixSide, true);
             }, CANDIDATE_TIMEOUT_MS);
-            console.log("Call %s is waiting for candidates...", callStruct.callId);
+            console.log("Call %s is waiting for candidates...", matrixSide.mxCallId);
             return Promise.resolve("Waiting for candidates");
         }
     }
 
-    if (callStruct.timer) {  // cancel pending timers
-        clearTimeout(callStruct.timer);
+    if (matrixSide.timer) {  // cancel pending timers
+        clearTimeout(matrixSide.timer);
     }
-    if (callStruct.sentInvite) {  // e.g. timed out and then got more candidates
+    if (matrixSide.sentInvite) {  // e.g. timed out and then got more candidates
         return Promise.resolve("Invite already sent");
     }
 
@@ -292,7 +324,7 @@ VertoEndpoint.prototype.attemptInvite = function(callStruct, force) {
     var mIndex = -1;
     var mType = "";
     var parsedUpToIndex = -1;
-    callStruct.offer = callStruct.offer.split("\r\n").map(function(line) {
+    matrixSide.offer = matrixSide.offer.split("\r\n").map(function(line) {
         if (line.indexOf("m=") === 0) { // m=audio 48202 RTP/SAVPF 111 103
             mIndex += 1;
             mType = line.split(" ")[0].replace("m=", ""); // 'audio'
@@ -302,7 +334,7 @@ VertoEndpoint.prototype.attemptInvite = function(callStruct, force) {
         if (line.indexOf("a=") !== 0) { return line; } // ignore keys before a=
         if (parsedUpToIndex === mIndex) { return line; } // don't insert cands f.e a=
 
-        callStruct.candidates.forEach(function(cand) {
+        matrixSide.candidates.forEach(function(cand) {
             // m-line index is more precise than the type (which can be multiple)
             // so prefer that when inserting
             if (typeof(cand.sdpMLineIndex) === "number") {
@@ -330,17 +362,17 @@ VertoEndpoint.prototype.attemptInvite = function(callStruct, force) {
         return line;
     }).join("\r\n");
 
-    callStruct.sentInvite = true;
+    matrixSide.sentInvite = true;
     return this.sendRequest("verto.invite", {
-        sdp: callStruct.offer,
-        dialogParams: this.getDialogParamsFor(callStruct),
+        sdp: matrixSide.offer,
+        dialogParams: this.getDialogParamsFor(vertoCall, matrixSide),
         sessid: this.sessionId
     });
 };
 
-VertoEndpoint.prototype.sendBye = function(callStruct) {
+VertoEndpoint.prototype.sendBye = function(vertoCall, callData) {
     return this.sendRequest("verto.bye", {
-        dialogParams: this.getDialogParamsFor(callStruct),
+        dialogParams: this.getDialogParamsFor(vertoCall, callData),
         sessid: this.sessionId
     });
 }
@@ -382,35 +414,37 @@ VertoEndpoint.prototype.sendResponse = function(result, id) {
     }));
 };
 
-VertoEndpoint.prototype.getDialogParamsFor = function(callStruct) {
+VertoEndpoint.prototype.getDialogParamsFor = function(vertoCall, callData) {
     var dialogParams = JSON.parse(JSON.stringify(this.dialogParams)); // deep copy
-    dialogParams.callID = callStruct.callId;
-    dialogParams.destination_number = callStruct.ext;
-    dialogParams.remote_caller_id_number = callStruct.ext;
+    dialogParams.callID = callData.vertoCallId;
+    dialogParams.destination_number = vertoCall.ext;
+    dialogParams.remote_caller_id_number = vertoCall.ext;
     return dialogParams;
 };
 
 // === Call Storage ===
 function CallStore() {
-    this.byCallId = {};
-    this.byRoomAndCallId = {};
-    this.byFsUserId = {};
-    this.byExt = {};
+    this.fsUserToConf = {}; // fsUserId: VertoCall
+    this.extToConf = {}; // ext: VertoCall
     this.currentExtension = "00";
 }
 
-CallStore.prototype.set = function(callStruct) {
-    this.byCallId[callStruct.callId] = callStruct;
-    this.byRoomAndCallId[callStruct.roomId + callStruct.callId] = callStruct;
-    this.byFsUserId[callStruct.fsUserId] = callStruct;
-    this.byExt[callStruct.ext] = callStruct;
+CallStore.prototype.set = function(vertoCall) {
+    this.extToConf[vertoCall.ext] = vertoCall;
+    this.fsUserToConf[vertoCall.fsUserId] = vertoCall;
+    console.log(
+        "Storing verto call on ext=%s fs_user=%s matrix_users=%s",
+        vertoCall.ext, vertoCall.fsUserId, vertoCall.getNumMatrixUsers()
+    );
 };
 
-CallStore.prototype.delete = function(callStruct) {
-    delete this.byCallId[callStruct.callId];
-    delete this.byRoomAndCallId[callStruct.roomId + callStruct.callId];
-    delete this.byFsUserId[callStruct.fsUserId];
-    delete this.byExt[callStruct.ext];
+CallStore.prototype.delete = function(vertoCall, matrixSide) {
+    vertoCall.removeMatrixSide(matrixSide);
+    if (vertoCall.getNumMatrixUsers() === 0) {
+        console.log("Deleting conf call for fs_user %s", vertoCall.fsUserId);
+        delete this.extToConf[vertoCall.ext];
+        delete this.fsUserToConf[vertoCall.fsUserId];
+    }
 };
 
 CallStore.prototype.nextExtension = function() { // loop 0-99 with leading 0
@@ -422,19 +456,54 @@ CallStore.prototype.nextExtension = function() { // loop 0-99 with leading 0
     }
     this.currentExtension = nextExt;
     return EXTENSION_PREFIX + nextExt;
-}
+};
 
 CallStore.prototype.anyFreeExtension = function() {
     var ext;
     for (var i = 0; i < 100; i++) {
         var extStr = (i < 10 ? "0"+i : i+"");
-        var call = this.byExt[EXTENSION_PREFIX + extStr];
-        if (!call) {
+        var vertoCall = this.extToConf[EXTENSION_PREFIX + extStr];
+        if (!vertoCall) {
             return EXTENSION_PREFIX + extStr;
         }
     }
     throw new Error("No free extensions");
+};
+
+
+function VertoCall(fsUserId, ext) {
+    this.ext = ext;
+    this.fsUserId = fsUserId;
+    this.mxCallsByVertoCallId = {};
+    this.mxCallsByRoomId = {};
+    console.log("Init verto call for fs_user %s", fsUserId);
 }
+
+VertoCall.prototype.getByRoomId = function(roomId) {
+    return this.mxCallsByRoomId[roomId];
+};
+
+VertoCall.prototype.getByVertoCallId = function(callId) {
+    return this.mxCallsByVertoCallId[callId];
+};
+
+VertoCall.prototype.addMatrixSide = function(data) {
+    this.mxCallsByRoomId[data.roomId] = data;
+    this.mxCallsByVertoCallId[data.vertoCallId] = data;
+    console.log("Add matrix side for fs_user %s (%s)", this.fsUserId, data.mxUserId);
+};
+
+VertoCall.prototype.removeMatrixSide = function(data) {
+    delete this.mxCallsByVertoCallId[data.vertoCallId];
+    delete this.mxCallsByRoomId[data.roomId];
+    console.log(
+        "Removed matrix side for fs_user %s (%s)", this.fsUserId, data.mxUserId
+    );
+};
+
+VertoCall.prototype.getNumMatrixUsers = function() {
+    return Object.keys(this.mxCallsByRoomId).length;
+};
 
 function generatePin() {
     return Math.floor(Math.random() * 10000); // random 4-digits

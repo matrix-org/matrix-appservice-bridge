@@ -144,11 +144,6 @@ function runBridge(port, config) {
                 var event = request.getData();
                 var fsUserId = context.rooms.matrix.get("fs_user");
                 var vertoCall, matrixSide, targetRoomId;
-                console.log(
-                    "[%s] %s: from=%s in %s: %s\n",
-                    request.getId(), event.type, event.user_id, event.room_id,
-                    JSON.stringify(event.content)
-                );
                 if (fsUserId) {
                     vertoCall = calls.fsUserToConf[fsUserId];
                     if (vertoCall) {
@@ -159,6 +154,10 @@ function runBridge(port, config) {
 
                 // auto-accept invites directed to @fs_ users
                 if (event.type === "m.room.member") {
+                    console.log(
+                        "Member update: room=%s member=%s -> %s",
+                        event.room_id, event.state_key, event.content.membership
+                    );
                     if (event.content.membership === "invite" &&
                             context.targets.matrix.localpart.indexOf(USER_PREFIX) === 0) {
                         targetRoomId = getTargetRoomId(context.targets.matrix.getId());
@@ -213,6 +212,10 @@ function runBridge(port, config) {
                     }
                 }
                 else if (event.type === "m.call.invite") {
+                    console.log(
+                        "Call invite: room=%s member=%s content=%s",
+                        event.room_id, event.user_id, JSON.stringify(event.content)
+                    );
                     // only accept call invites for rooms which we are joined to
                     if (!targetRoomId) {
                         request.reject("No valid fs room for this invite");
@@ -247,6 +250,10 @@ function runBridge(port, config) {
                     );
                 }
                 else if (event.type === "m.call.candidates") {
+                    console.log(
+                        "Call candidates: room=%s member=%s content=%s",
+                        event.room_id, event.user_id, JSON.stringify(event.content)
+                    );
                     if (!matrixSide) {
                         request.reject("Received candidates for unknown call");
                         return;
@@ -258,10 +265,11 @@ function runBridge(port, config) {
                         verto.attemptInvite(vertoCall, matrixSide, false)
                     );
                 }
-                else if (event.type === "m.call.answer") {
-                    // TODO: send verto.answer
-                }
                 else if (event.type === "m.call.hangup") {
+                    console.log(
+                        "Call hangup: room=%s member=%s content=%s",
+                        event.room_id, event.user_id, JSON.stringify(event.content)
+                    );
                     if (!matrixSide) {
                         request.reject("Received hangup for unknown call");
                         return;

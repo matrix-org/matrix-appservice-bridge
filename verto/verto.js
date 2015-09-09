@@ -1,8 +1,5 @@
 "use strict";
 // TODO:
-// - Check join state of user before dialling out to the conf server
-// - Prevent randoms from accessing the conf (PIN or firewall)
-// - Kick everyone off the conference if the fs_ user is kicked from the target room
 // - GOTCHA: Knifing the web client will knife the RTP stream which is never
 //   propagated to other users on the conference (read: the bridge). This means
 //   the bridge will still think there is someone on that conf and will never
@@ -226,28 +223,45 @@ function runBridge(port, config) {
                         request.reject("Bad call invite to group chat room");
                         return;
                     }
+                    // make sure this user is in the target room.
+                    bridgeInst.getIntent(fsUserId).roomState(targetRoomId).done(
+                    function(state) {
+                        var userInRoom = false;
+                        for (var i = 0; i < state.length; i++) {
+                            if (state[i].type === "m.room.member" &&
+                                    state[i].content.membership === "join" &&
+                                    state[i].state_key === event.user_id) {
+                                userInRoom = true;
+                                break;
+                            }
+                        }
+                        if (!userInRoom) {
+                            request.reject("User isn't joined to group chat room");
+                            return;
+                        }
 
-                    if (!vertoCall) {
-                        vertoCall = new VertoCall(
-                            fsUserId, getExtensionToCall(fsUserId)
+                        if (!vertoCall) {
+                            vertoCall = new VertoCall(
+                                fsUserId, getExtensionToCall(fsUserId)
+                            );
+                        }
+                        var callData = {
+                            roomId: event.room_id,
+                            mxUserId: event.user_id,
+                            mxCallId: event.content.call_id,
+                            vertoCallId: uuid.v4(),
+                            offer: event.content.offer.sdp,
+                            candidates: [],
+                            pin: generatePin(),
+                            timer: null,
+                            sentInvite: false
+                        };
+                        vertoCall.addMatrixSide(callData);
+                        calls.set(vertoCall);
+                        request.outcomeFrom(
+                            verto.attemptInvite(vertoCall, callData, false)
                         );
-                    }
-                    var callData = {
-                        roomId: event.room_id,
-                        mxUserId: event.user_id,
-                        mxCallId: event.content.call_id,
-                        vertoCallId: uuid.v4(),
-                        offer: event.content.offer.sdp,
-                        candidates: [],
-                        pin: generatePin(),
-                        timer: null,
-                        sentInvite: false
-                    };
-                    vertoCall.addMatrixSide(callData);
-                    calls.set(vertoCall);
-                    request.outcomeFrom(
-                        verto.attemptInvite(vertoCall, callData, false)
-                    );
+                    });
                 }
                 else if (event.type === "m.call.candidates") {
                     console.log(

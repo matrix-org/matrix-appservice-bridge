@@ -135,29 +135,43 @@ function runBridge(port, config) {
 
             onEvent: function(request, context) {
                 var event = request.getData();
-                var callStruct;
+                var vertoCall, matrixSide;
                 console.log(
                     "[%s] %s: from=%s in %s: %s\n",
                     request.getId(), event.type, event.user_id, event.room_id,
                     JSON.stringify(event.content)
                 );
+                if (context.rooms.matrix.get("fs_user")) {
+                    vertoCall = calls.fsUserToConf[context.rooms.matrix.get("fs_user")];
+                    if (vertoCall) {
+                        matrixSide = vertoCall.getByRoomId(event.room_id);
+                    }
+                }
+
                 // auto-accept invites directed to @fs_ users
-                if (event.type === "m.room.member" &&
-                        event.content.membership === "invite" &&
+                if (event.type === "m.room.member") {
+                    if (event.content.membership === "invite" &&
                         context.targets.matrix.localpart.indexOf(USER_PREFIX) === 0) {
-                    var intent = bridgeInst.getIntent(context.targets.matrix.getId());
-                    request.outcomeFrom(intent.join(event.room_id).then(function() {
-                        // pair this user with this room ID
-                        var room = new MatrixRoom(event.room_id);
-                        room.set("fs_user", context.targets.matrix.getId());
-                        room.set("inviter", event.user_id);
-                        return bridgeInst.getRoomStore().setMatrixRoom(room);
-                    }));
+                        var intent = bridgeInst.getIntent(context.targets.matrix.getId());
+                        request.outcomeFrom(intent.join(event.room_id).then(function() {
+                            // pair this user with this room ID
+                            var room = new MatrixRoom(event.room_id);
+                            room.set("fs_user", context.targets.matrix.getId());
+                            room.set("inviter", event.user_id);
+                            return bridgeInst.getRoomStore().setMatrixRoom(room);
+                        }));
+                    }
+                    else if (event.content.membership !== "join") {
+                        // hangup if this user is in a call.
+                        if (!matrixSide) {
+                            request.reject("User not in a call - no hangup needed");
+                            return;
+                        }
+                        request.outcomeFrom(verto.sendBye(vertoCall, matrixSide));
+                        calls.delete(vertoCall, matrixSide);
+                    }
                 }
                 else if (event.type === "m.call.invite") {
-                    var vertoCall = calls.fsUserToConf[
-                        context.rooms.matrix.get("fs_user")
-                    ];
                     if (!vertoCall) {
                         vertoCall = new VertoCall(
                             context.rooms.matrix.get("fs_user"),
@@ -182,14 +196,6 @@ function runBridge(port, config) {
                     );
                 }
                 else if (event.type === "m.call.candidates") {
-                    var vertoCall = calls.fsUserToConf[
-                        context.rooms.matrix.get("fs_user")
-                    ];
-                    if (!vertoCall) {
-                        request.reject("No ongoing conference call for fs user.");
-                        return;
-                    }
-                    var matrixSide = vertoCall.getByRoomId(event.room_id);
                     if (!matrixSide) {
                         request.reject("Received candidates for unknown call");
                         return;
@@ -205,15 +211,6 @@ function runBridge(port, config) {
                     // TODO: send verto.answer
                 }
                 else if (event.type === "m.call.hangup") {
-                    // send verto.bye
-                    var vertoCall = calls.fsUserToConf[
-                        context.rooms.matrix.get("fs_user")
-                    ];
-                    if (!vertoCall) {
-                        request.reject("No ongoing conference call for fs user.");
-                        return;
-                    }
-                    var matrixSide = vertoCall.getByRoomId(event.room_id);
                     if (!matrixSide) {
                         request.reject("Received hangup for unknown call");
                         return;

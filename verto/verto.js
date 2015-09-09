@@ -60,7 +60,7 @@ function runBridge(port, config) {
                     if (matrixSide) {
                         break;
                     }
-                };
+                }
                 if (!matrixSide) {
                     console.error("No call with ID '%s' exists.", msg.params.callID);
                     return;
@@ -498,7 +498,6 @@ CallStore.prototype.nextExtension = function() { // loop 0-99 with leading 0
 };
 
 CallStore.prototype.anyFreeExtension = function() {
-    var ext;
     for (var i = 0; i < 100; i++) {
         var extStr = (i < 10 ? "0"+i : i+"");
         var vertoCall = this.extToConf[EXTENSION_PREFIX + extStr];
@@ -549,8 +548,7 @@ function generatePin() {
 }
 
 function isValidRoomId(roomId) {
-    // starts with !, has stuff, :, has more stuff
-    return /^!.+:.+/.test(roomId);
+    return /^!.+:.+/.test(roomId);  // starts with !, has stuff, :, has more stuff
 }
 
 function getTargetRoomId(fsUserId) {
@@ -561,11 +559,6 @@ function getTargetRoomId(fsUserId) {
     var lpart = new MatrixUser(fsUserId).localpart;
     var base64roomId = lpart.replace(USER_PREFIX, "");
     return base64decode(base64roomId);
-}
-
-function base64encode(str) {
-    // strip padding bytes so we use valid user ID chars (= needs % encoding)
-    return new Buffer(str).toString("base64").replace(/=/g, "");
 }
 
 function base64decode(str) {

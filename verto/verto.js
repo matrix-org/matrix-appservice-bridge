@@ -1,8 +1,8 @@
 "use strict";
 // TODO:
 // - Check join state of user before dialling out to the conf server
-// - Boot users off the conf when they leave rooms (fake a hangup)
 // - Prevent randoms from accessing the conf (PIN or firewall)
+// - Kick everyone off the conference if the fs_ user is kicked from the target room
 // - GOTCHA: Knifing the web client will knife the RTP stream which is never
 //   propagated to other users on the conference (read: the bridge). This means
 //   the bridge will still think there is someone on that conf and will never
@@ -15,6 +15,7 @@ var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration
 var Cli = require("..").Cli;
 var Bridge = require("..").Bridge;
 var MatrixRoom = require("..").MatrixRoom;
+var MatrixUser = require("..").MatrixUser;
 var WebSocket = require('ws');
 var uuid = require("uuid");
 
@@ -127,33 +128,52 @@ function runBridge(port, config) {
 
         controller: {
             onUserQuery: function(queriedUser) {
-                // auto-create "users" when queried. @fs_#matrix:foo -> "#matrix (Room)"
+                // auto-create "users" when queried iff they can be base 64
+                // decoded to a valid room ID
+                var roomId = getTargetRoomId(queriedUser.getId());
+                if (!isValidRoomId(roomId)) {
+                    console.log("Queried with invalid user ID (decoded to %s)", roomId);
+                    return null;
+                }
                 return {
-                    name: queriedUser.localpart.replace(USER_PREFIX, "") + " (Room)"
+                    name: "VoIP Conference"
                 };
             },
 
             onEvent: function(request, context) {
                 var event = request.getData();
-                var vertoCall, matrixSide;
+                var fsUserId = context.rooms.matrix.get("fs_user");
+                var vertoCall, matrixSide, targetRoomId;
                 console.log(
                     "[%s] %s: from=%s in %s: %s\n",
                     request.getId(), event.type, event.user_id, event.room_id,
                     JSON.stringify(event.content)
                 );
-                if (context.rooms.matrix.get("fs_user")) {
-                    vertoCall = calls.fsUserToConf[context.rooms.matrix.get("fs_user")];
+                if (fsUserId) {
+                    vertoCall = calls.fsUserToConf[fsUserId];
                     if (vertoCall) {
-                        matrixSide = vertoCall.getByRoomId(event.room_id);
+                        matrixSide = vertoCall.getByUserId(event.user_id);
                     }
+                    targetRoomId = getTargetRoomId(fsUserId);
                 }
 
                 // auto-accept invites directed to @fs_ users
                 if (event.type === "m.room.member") {
                     if (event.content.membership === "invite" &&
-                        context.targets.matrix.localpart.indexOf(USER_PREFIX) === 0) {
+                            context.targets.matrix.localpart.indexOf(USER_PREFIX) === 0) {
+                        targetRoomId = getTargetRoomId(context.targets.matrix.getId());
+                        if (!isValidRoomId(targetRoomId)) {
+                            console.log(
+                                "Bad fs_user_id: %s decoded to room %s",
+                                context.targets.matrix.getId(), targetRoomId
+                            );
+                            request.reject("Malformed user ID invited");
+                            return;
+                        }
                         var intent = bridgeInst.getIntent(context.targets.matrix.getId());
-                        request.outcomeFrom(intent.join(event.room_id).then(function() {
+                        request.outcomeFrom(intent.join(targetRoomId).then(function() {
+                            return intent.join(event.room_id);
+                        }).then(function() {
                             // pair this user with this room ID
                             var room = new MatrixRoom(event.room_id);
                             room.set("fs_user", context.targets.matrix.getId());
@@ -172,10 +192,20 @@ function runBridge(port, config) {
                     }
                 }
                 else if (event.type === "m.call.invite") {
+                    // only accept call invites for rooms which we are joined to
+                    if (!targetRoomId) {
+                        request.reject("No valid fs room for this invite");
+                        return;
+                    }
+                    if (targetRoomId === event.room_id) {
+                        // someone sent a call invite to the group chat(!) ignore it.
+                        request.reject("Bad call invite to group chat room");
+                        return;
+                    }
+
                     if (!vertoCall) {
                         vertoCall = new VertoCall(
-                            context.rooms.matrix.get("fs_user"),
-                            getExtensionToCall(context.rooms.matrix.get("fs_user"))
+                            fsUserId, getExtensionToCall(fsUserId)
                         );
                     }
                     var callData = {
@@ -484,12 +514,12 @@ function VertoCall(fsUserId, ext) {
     this.ext = ext;
     this.fsUserId = fsUserId;
     this.mxCallsByVertoCallId = {};
-    this.mxCallsByRoomId = {};
+    this.mxCallsByUserId = {};
     console.log("Init verto call for fs_user %s", fsUserId);
 }
 
-VertoCall.prototype.getByRoomId = function(roomId) {
-    return this.mxCallsByRoomId[roomId];
+VertoCall.prototype.getByUserId = function(userId) {
+    return this.mxCallsByUserId[userId];
 };
 
 VertoCall.prototype.getByVertoCallId = function(callId) {
@@ -497,25 +527,55 @@ VertoCall.prototype.getByVertoCallId = function(callId) {
 };
 
 VertoCall.prototype.addMatrixSide = function(data) {
-    this.mxCallsByRoomId[data.roomId] = data;
+    this.mxCallsByUserId[data.mxUserId] = data;
     this.mxCallsByVertoCallId[data.vertoCallId] = data;
     console.log("Add matrix side for fs_user %s (%s)", this.fsUserId, data.mxUserId);
 };
 
 VertoCall.prototype.removeMatrixSide = function(data) {
     delete this.mxCallsByVertoCallId[data.vertoCallId];
-    delete this.mxCallsByRoomId[data.roomId];
+    delete this.mxCallsByUserId[data.mxUserId];
     console.log(
         "Removed matrix side for fs_user %s (%s)", this.fsUserId, data.mxUserId
     );
 };
 
 VertoCall.prototype.getNumMatrixUsers = function() {
-    return Object.keys(this.mxCallsByRoomId).length;
+    return Object.keys(this.mxCallsByUserId).length;
 };
 
 function generatePin() {
     return Math.floor(Math.random() * 10000); // random 4-digits
+}
+
+function isValidRoomId(roomId) {
+    // starts with !, has stuff, :, has more stuff
+    return /^!.+:.+/.test(roomId);
+}
+
+function getTargetRoomId(fsUserId) {
+    // The fs user ID contains the base64d room ID which is
+    // the room whose members are trying to place a conference call e.g.
+    // !foo:bar => IWZvbzpiYXI=
+    // @fs_IWZvbzpiYXI=:localhost => Conf call in room !foo:bar
+    var lpart = new MatrixUser(fsUserId).localpart;
+    var base64roomId = lpart.replace(USER_PREFIX, "");
+    return base64decode(base64roomId);
+}
+
+function base64encode(str) {
+    // strip padding bytes so we use valid user ID chars (= needs % encoding)
+    return new Buffer(str).toString("base64").replace(/=/g, "");
+}
+
+function base64decode(str) {
+    try {
+        return new Buffer(str, "base64").toString();
+    }
+    catch(e) {
+        // do nothing
+    }
+    return null;
 }
 
 // === Command Line Interface ===

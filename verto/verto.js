@@ -181,7 +181,28 @@ function runBridge(port, config) {
                             return bridgeInst.getRoomStore().setMatrixRoom(room);
                         }));
                     }
-                    else if (event.content.membership !== "join") {
+                    else if (event.content.membership === "leave" ||
+                            event.content.membership === "ban") {
+                        if (!vertoCall) {
+                            return;
+                        }
+                        if (context.targets.matrix.getId() === fsUserId &&
+                                targetRoomId === event.room_id) {
+                            // cheeky users have kicked the conf user from the
+                            // target room - boot everyone off the conference
+                            console.log(
+                                "Conference user is no longer in the target " +
+                                "room. Killing conference."
+                            );
+                            vertoCall.getAllMatrixSides().forEach(function(side) {
+                                verto.sendBye(vertoCall, side);
+                                calls.delete(vertoCall, side);
+                            });
+                            return;
+                        }
+                        matrixSide = vertoCall.getByUserId(
+                            context.targets.matrix.getId()
+                        );
                         // hangup if this user is in a call.
                         if (!matrixSide) {
                             request.reject("User not in a call - no hangup needed");
@@ -516,6 +537,13 @@ function VertoCall(fsUserId, ext) {
     this.mxCallsByUserId = {};
     console.log("Init verto call for fs_user %s", fsUserId);
 }
+
+VertoCall.prototype.getAllMatrixSides = function() {
+    var self = this;
+    return Object.keys(this.mxCallsByUserId).map(function(userId) {
+        return self.mxCallsByUserId[userId];
+    });
+};
 
 VertoCall.prototype.getByUserId = function(userId) {
     return this.mxCallsByUserId[userId];

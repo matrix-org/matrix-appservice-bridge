@@ -184,7 +184,8 @@
 
             
 
-            <td class="description last">The Client-Server base HTTP URL</td>
+            <td class="description last">The Client-Server base HTTP URL. This must be set
+prior to calling getClientAs(). See configure() to set this after instantiation.</td>
         </tr>
 
     
@@ -217,7 +218,44 @@
 
             
 
-            <td class="description last">The application service token to use.</td>
+            <td class="description last">The application service token to use. This must
+be set prior to calling getClientAs(). See configure() to set this after
+instantiation.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>appServiceUserId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The application service's user ID. Must
+be set prior to calling getClientAs(). See configure() to set this after
+instantiation.</td>
         </tr>
 
     
@@ -265,7 +303,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line11">line 11</a>
+        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line17">line 17</a>
     </li></ul></dd>
     
 
@@ -460,7 +498,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line132">line 132</a>
+        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line137">line 137</a>
     </li></ul></dd>
     
 
@@ -642,7 +680,7 @@ resolved.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line83">line 83</a>
+        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line88">line 88</a>
     </li></ul></dd>
     
 
@@ -774,7 +812,7 @@ log. The second arg is a boolean which is 'true' if the log is an error.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line28">line 28</a>
+        <a href="components_client-factory.js.html">components/client-factory.js</a>, <a href="components_client-factory.js.html#line33">line 33</a>
     </li></ul></dd>
     
 
@@ -816,13 +854,13 @@ log. The second arg is a boolean which is 'true' if the log is an error.</td>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ConfigValidator.html">ConfigValidator</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 17:37:15 GMT+0100 (BST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Sep 09 2015 09:19:53 GMT+0100 (BST)
 </footer>
 
 <script> prettyPrint(); </script>

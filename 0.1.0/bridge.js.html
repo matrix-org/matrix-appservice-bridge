@@ -27,68 +27,540 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>"use strict";
+/*
+TODO Bridge:
+- onEvent: Need to preserve ordering of events / queuing. Provide options:
+       * event_id (1 event at a time)
+       * user_id (bucketed on user; +state_key for m.room.member)
+       * room_id (bucketed on room)
+       * none (don't preserve ordering / don't queue)
+*/
+var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
+var AppService = require("matrix-appservice").AppService;
+var ClientFactory = require("./components/client-factory");
+var AppServiceBot = require("./components/app-service-bot");
+var RequestFactory = require("./components/request-factory");
+var Intent = require("./components/intent");
+var RoomBridgeStore = require("./components/room-bridge-store");
+var UserBridgeStore = require("./components/user-bridge-store");
+var MatrixUser = require("./models/users/matrix");
+var MatrixRoom = require("./models/rooms/matrix");
+var fs = require("fs");
+var yaml = require("js-yaml");
+var Promise = require("bluebird");
+var Datastore = require("nedb");
+var util = require("util");
 
 /**
  * @constructor
+ * @param {Object} opts Options to pass to the bridge
+ * @param {AppServiceRegistration|string} opts.registration Application service
+ * registration object or path to the registration file.
+ * @param {string} opts.homeserverUrl The base HS url
+ * @param {string} opts.domain The domain part for user_ids and room aliases
+ * e.g. "bar" in "@foo:bar".
+ * @param {Object} opts.controller The controller logic for the bridge.
+ * @param {Bridge~onEvent} opts.controller.onEvent Function. Called when
+ * an event has been received from the HS.
+ * @param {Bridge~onUserQuery=} opts.controller.onUserQuery Function. If supplied,
+ * the bridge will invoke this function when queried via onUserQuery. If
+ * not supplied, no users will be provisioned on user queries. Provisioned users
+ * will automatically be stored in the associated &lt;code>userStore&lt;/code>.
+ * @param {Bridge~onAliasQuery=} opts.controller.onAliasQuery Function. If supplied,
+ * the bridge will invoke this function when queried via onAliasQuery. If
+ * not supplied, no rooms will be provisioned on alias queries. Provisioned rooms
+ * will automatically be stored in the associated &lt;code>roomStore&lt;/code>.
+ * @param {Bridge~onLog=} opts.controller.onLog Function. Invoked when
+ * logging. Defaults to a function which logs to the console.
+ * @param {(RoomBridgeStore|string)=} opts.roomStore The room store instance to
+ * use, or the path to the room .db file to load. A database will be created if
+ * this is not specified.
+ * @param {(UserBridgeStore|string)=} opts.userStore The user store instance to
+ * use, or the path to the user .db file to load. A database will be created if
+ * this is not specified.
+ * @param {boolean=} opts.suppressEcho True to stop receiving onEvent callbacks
+ * for events which were sent by a bridge user. Default: true.
+ * @param {ClientFactory=} opts.clientFactory The client factory instance to
+ * use. If not supplied, one will be created.
  */
-function Bridge() {
+function Bridge(opts) {
+    if (typeof opts !== "object") {
+        throw new Error("opts must be supplied.");
+    }
+    var required = [
+        "homeserverUrl", "registration", "domain", "controller"
+    ];
+    required.forEach(function(key) {
+        if (!opts[key]) {
+            throw new Error("Missing '" + key + "' in opts.");
+        }
+    });
+    if (typeof opts.controller.onEvent !== "function") {
+        throw new Error("controller.onEvent is a required function");
+    }
 
+    opts.userStore = opts.userStore || "user-store.db";
+    opts.roomStore = opts.roomStore || "room-store.db";
+
+    // Default: logger -> log to console
+    opts.controller.onLog = opts.controller.onLog || function(text, isError) {
+        if (isError) {
+            console.error(text);
+            return;
+        }
+        console.log(text);
+    };
+    // Default: suppress echo -> True
+    if (opts.suppressEcho === undefined) {
+        opts.suppressEcho = true;
+    }
+
+    // we'll init these at runtime
+    this.appService = null;
+    this.opts = opts;
+    this._clientFactory = null;
+    this._botClient = null;
+    this._appServiceBot = null;
+    this._requestFactory = null;
+    this._botIntent = null;
+    this._intents = {
+        // user_id + request_id : Intent
+    };
+    this._intents["bot"] = null;
 }
 
-Bridge.prototype.setMatrixSide = function(side) {
-    // HS url, AS token, localpart, domain
+/**
+ * Run the bridge (start listening)
+ * @param {Number} port The port to listen on.
+ * @param {Object} config Configuration options
+ * @param {AppService=} appServiceInstance The AppService instance to attach to.
+ * If not provided, one will be created.
+ */
+Bridge.prototype.run = function(port, config, appServiceInstance) {
+    var self = this;
+
+    // Load the registration file into an AppServiceRegistration object.
+    if (typeof self.opts.registration === "string") {
+        var regObj = yaml.safeLoad(fs.readFileSync(self.opts.registration, 'utf8'));
+        self.opts.registration = AppServiceRegistration.fromObject(regObj);
+        if (self.opts.registration === null) {
+            throw new Error("Failed to parse registration file");
+        }
+    }
+
+    // Load up the databases if they provided file paths to them (or defaults)
+    if (typeof self.opts.userStore === "string") {
+        self.opts.userStore = loadDatabase(self.opts.userStore, UserBridgeStore);
+    }
+    if (typeof self.opts.roomStore === "string") {
+        self.opts.roomStore = loadDatabase(self.opts.roomStore, RoomBridgeStore);
+    }
+    this._clientFactory = self.opts.clientFactory || new ClientFactory({
+        url: self.opts.homeserverUrl,
+        token: self.opts.registration.as_token,
+        appServiceUserId: (
+            "@" + self.opts.registration.sender_localpart + ":" + self.opts.domain
+        )
+    });
+    this._clientFactory.setLogFunction(function(text, isErr) {
+        if (!self.opts.controller.onLog) {
+            return;
+        }
+        self.opts.controller.onLog(text, isErr);
+    });
+    this._botClient = this._clientFactory.getClientAs();
+    this._appServiceBot = new AppServiceBot(
+        this._botClient, self.opts.registration
+    );
+    this._requestFactory = new RequestFactory();
+    if (this.opts.controller.onLog) {
+        this._requestFactory.addDefaultResolveCallback(function(req) {
+            self.opts.controller.onLog(
+                "[" + req.getId() + "] SUCCESS (" + req.getDuration() + "ms)"
+            );
+        });
+        this._requestFactory.addDefaultRejectCallback(function(req, err) {
+            self.opts.controller.onLog(
+                "[" + req.getId() + "] FAILED (" + req.getDuration() + "ms) " +
+                util.inspect(err)
+            );
+        });
+    }
+    this._botIntent = new Intent(this._botClient, this._botClient);
+    this._intents = {
+        // user_id + request_id : Intent
+    };
+    this._intents["bot"] = this._botIntent;
+
+    // This works because if they provided a string we converted it to a Promise
+    // which will be resolved when we have the db instance. If they provided a
+    // db instance then this will resolve immediately.
+    Promise.resolve(self.opts.userStore).done(function(db) {
+        self._userStore = db;
+    });
+    Promise.resolve(self.opts.roomStore).done(function(db) {
+        self._roomStore = db;
+    });
+
+
+    this.appService = appServiceInstance || new AppService({
+        homeserverToken: this.opts.registration.getHomeserverToken()
+    });
+    this.appService.onUserQuery = this._onUserQuery.bind(this);
+    this.appService.onAliasQuery = this._onAliasQuery.bind(this);
+    this.appService.on("event", this._onEvent.bind(this));
+    this.appService.on("http-log", function(line) {
+        if (!self.opts.controller.onLog) {
+            return;
+        }
+        self.opts.controller.onLog(line, false);
+    });
+    this.appService.listen(port);
+    return Promise.all([
+        Promise.resolve(self.opts.userStore),
+        Promise.resolve(self.opts.roomStore)
+    ]);
 };
 
-Bridge.prototype.setRemoteSide = function(side) {
-
+/**
+ * Retrieve a connected room store instance.
+ * @return {?RoomBridgeStore} The connected instance ready for querying.
+ */
+Bridge.prototype.getRoomStore = function() {
+    return this._roomStore;
 };
 
-Bridge.prototype.run = function() {
-    // listen on AS port
-    // invoke onRun on remote side
+/**
+ * Retrieve a connected user store instance.
+ * @return {?UserBridgeStore} The connected instance ready for querying.
+ */
+Bridge.prototype.getUserStore = function() {
+    return this._userStore;
 };
 
-/*
-NOTES:
+/**
+ * Retrieve the request factory used to create incoming requests.
+ * @return {RequestFactory}
+ */
+Bridge.prototype.getRequestFactory = function() {
+    return this._requestFactory;
+};
 
-Two flows to consider:
- - Incoming remote events to outgoing matrix events
- - Incoming matrix events to outgoing remote events
+/**
+ * Get the AS bot instance.
+ * @return {AppServiceBot}
+ */
+Bridge.prototype.getBot = function() {
+    return this._appServiceBot;
+};
 
-Four API designs involved:
- - Asking the remote side to send an event
- - Asking the matrix side to send an event [Intent class]
- - Notification of new remote events
- - Notification of new matrix events [onAliasQuery, onEvent]
+/**
+ * Retrieve an Intent instance for the specified user ID. If no ID is given, an
+ * instance for the bot itself is returned.
+ * @param {?string} userId The user ID to get an Intent for.
+ * @param {Request=} request Optional. The request instance to tie the MatrixClient
+ * instance to. Useful for logging contextual request IDs.
+ * @return {Intent} The intent instance
+ */
+Bridge.prototype.getIntent = function(userId, request) {
+    if (!userId) {
+        return this._botIntent;
+    }
+    var key = userId + (request ? request.getId() : "");
+    if (!this._intents[key]) {
+        var client = this._clientFactory.getClientAs(userId, request);
+        this._intents[key] = new Intent(client, this._botIntent);
+    }
+    return this._intents[key];
+};
 
-How much should we wrest control of the remote side from the developer? This
-would mean forcing the dev to write a class meeting some interface which the
-Bridge class can use to glue everything together. This interface needs to
-specify the remaining 2 API designs. The interface needs to be able to map
-arbitrary data to matrix data (rooms, users, etc).
+/**
+ * Provision a user on the homeserver.
+ * @param {MatrixUser} matrixUser The virtual user to be provisioned.
+ * @param {Bridge~ProvisionedUser} provisionedUser Provisioning information.
+ * @return {Promise} Resolved when provisioned.
+ */
+Bridge.prototype.provisionUser = function(matrixUser, provisionedUser) {
+    var self = this;
+    var promise = self._botClient.register(matrixUser.localpart).then(function() {
+        return self._userStore.setMatrixUser(matrixUser);
+    });
 
-Provide two modes of operation? One saying "hey meet this interface and we'll do
-it all for you", the other being "here's the onXXX and Intent class, have fun!".
+    // storage promise chain
+    if (provisionedUser.remote) {
+        promise = promise.then(function() {
+            return self._userStore.linkUsers(
+                matrixUser, provisionedUser.remote
+            );
+        });
+    }
 
-Interface operation:
-  {
-    onIncomingremoteEvent: function(event) {} &lt;--they implement these functions?
-    sendremoteEvent: function(event) {} &lt;-----------`
-  }
+    // HTTP promise chain
+    var newUser = self._clientFactory.getClientAs(matrixUser.getId());
+    if (provisionedUser.name) {
+        promise = promise.then(function() {
+            return newUser.setDisplayName(provisionedUser.name);
+        });
+    }
+    if (provisionedUser.url) {
+        promise = promise.then(function() {
+            return newUser.setAvatarUrl(provisionedUser.url);
+        });
+    }
+    return promise;
+};
 
-Main problem is that we need to know how to map from their IDs to matrix IDs and
-know the capabilities of the network (e.g. do they understand invites?).
+Bridge.prototype._onUserQuery = function(userId) {
+    var self = this;
+    if (self.opts.controller.onUserQuery) {
+        var matrixUser = new MatrixUser(userId);
+        return Promise.resolve(
+            self.opts.controller.onUserQuery(matrixUser)
+        ).then(function(provisionedUser) {
+            if (!provisionedUser) {
+                throw new Error("Not provisioning user for this ID");
+            }
+            return self.provisionUser(matrixUser, provisionedUser);
+        });
+    }
+    return Promise.resolve();
+};
 
-Make them implement their own "Intent" class? This will dissolve into just:
-  onInvite(function(event) {
-    var mapped = map(event);
-    intent.invite(mapped);
-  }
-Perhaps with virtual user suppression included for free.
+Bridge.prototype._onAliasQuery = function(alias) {
+    var self = this;
+    var remoteRoom = null;
+    if (self.opts.controller.onAliasQuery) {
+        return Promise.resolve(
+            self.opts.controller.onAliasQuery(alias, alias.split(":")[0].substring(1))
+        ).then(function(provisionedRoom) {
+            if (!provisionedRoom) {
+                throw new Error("Not provisioning room for this alias");
+            }
+            // do the HTTP hit
+            remoteRoom = provisionedRoom.remote;
+            return self._botClient.createRoom(
+                provisionedRoom.creationOpts
+            );
+        }).then(function(createRoomResponse) {
+            // persist the mapping in the store
+            var roomId = createRoomResponse.room_id;
+            var matrixRoom = new MatrixRoom(roomId);
+            if (remoteRoom) {
+                return self._roomStore.linkRooms(matrixRoom, remoteRoom);
+            }
+            // store the matrix room only
+            return self._roomStore.setMatrixRoom(matrixRoom);
+        });
+    }
+    return Promise.resolve();
+};
 
-*/
+Bridge.prototype._onEvent = function(event) {
+    this._updateIntents(event);
+    if (this.opts.suppressEcho &amp;&amp;
+            this.opts.registration.isUserMatch(event.user_id, true)) {
+        return Promise.resolve();
+    }
+
+    var self = this;
+    var request = this._requestFactory.newRequest({ data: event });
+    var context = new BridgeContext({
+        sender: event.user_id,
+        target: event.state_key,
+        room: event.room_id
+    });
+    var promise = context.get(this._roomStore, this._userStore);
+
+    return promise.then(function() {
+        self.opts.controller.onEvent(request, context);
+    }).catch(function(e) {
+        if (!self.opts.controller.onLog) {
+            return;
+        }
+        self.opts.controller.onLog(
+            "Failed to get BridgeContext for event: " + e
+        );
+    });
+};
+
+Bridge.prototype._updateIntents = function(event) {
+    var self = this;
+    Object.keys(this._intents).forEach(function(key) {
+        self._intents[key].onEvent(event);
+    });
+};
 
 module.exports = Bridge;
+
+function loadDatabase(path, Cls) {
+    var defer = Promise.defer();
+    var db = new Datastore({
+        filename: path,
+        autoload: true,
+        onload: function(err) {
+            if (err) {
+                defer.reject(err);
+            }
+            else {
+                defer.resolve(new Cls(db));
+            }
+        }
+    });
+    return defer.promise;
+}
+
+function BridgeContext(ctx) {
+    this._ctx = ctx;
+    this.senders = {
+        matrix: new MatrixUser(ctx.sender),
+        remote: null,
+        remotes: []
+    };
+    this.targets = {
+        matrix: ctx.target ? new MatrixUser(ctx.target) : null,
+        remote: null,
+        remotes: []
+    };
+    this.rooms = {
+        matrix: new MatrixRoom(ctx.room),
+        remote: null,
+        remotes: []
+    };
+}
+
+BridgeContext.prototype.get = function(roomStore, userStore) {
+    var self = this;
+    return Promise.try(function() {
+        return [
+            roomStore.getLinkedRemoteRooms(self._ctx.room),
+            userStore.getRemoteUsersFromMatrixId(self._ctx.sender),
+            (self._ctx.target ?
+                userStore.getRemoteUsersFromMatrixId(self._ctx.target) :
+                Promise.resolve([])),
+            roomStore.getMatrixRoom(self._ctx.room),
+            userStore.getMatrixUser(self._ctx.sender)
+        ];
+    }).spread(function(remoteRooms, remoteSenders, remoteTargets, mxRoom, mxSender) {
+        if (remoteRooms &amp;&amp; remoteRooms.length > 0) {
+            self.rooms.remotes = remoteRooms;
+            self.rooms.remote = remoteRooms[0];
+        }
+        if (remoteSenders &amp;&amp; remoteSenders.length > 0) {
+            self.senders.remotes = remoteSenders;
+            self.senders.remote = remoteSenders[0];
+        }
+        if (remoteTargets &amp;&amp; remoteTargets.length > 0) {
+            self.targets.remotes = remoteTargets;
+            self.targets.remote = remoteTargets[0];
+        }
+        if (mxRoom) {
+            self.rooms.matrix = mxRoom;
+        }
+        if (mxSender) {
+            self.senders.matrix = mxSender;
+        }
+    });
+};
+
+/**
+ * @typedef Bridge~BridgeContext
+ * @type {Object}
+ * @property {Object} senders Data models on senders of this event
+ * @property {MatrixUser} senders.matrix The sender of this event
+ * @property {?RemoteUser} senders.remote The first linked remote sender: remotes[0]
+ * @property {RemoteUser[]} senders.remotes The linked remote senders
+ * @property {Object} targets Data models on targets (e.g. state_key in
+ * m.room.member) of this event.
+ * @property {?MatrixUser} targets.matrix The target of this event if applicable.
+ * @property {?RemoteUser} targets.remote The first linked remote target: remotes[0]
+ * @property {RemoteUser[]} targets.remotes The linked remote targets
+ * @property {Object} rooms Data models on rooms concerning this event.
+ * @property {MatrixRoom} rooms.matrix The room for this event.
+ * @property {?RemoteRoom} rooms.remote The first linked remote room: remotes[0]
+ * @property {RemoteRoom[]} rooms.remotes The linked remote rooms for this event
+ */
+
+/**
+ * @typedef Bridge~ProvisionedUser
+ * @type {Object}
+ * @property {string=} name The display name to set for the provisioned user.
+ * @property {string=} url The avatar URL to set for the provisioned user.
+ * @property {RemoteUser=} remote The remote user to link to the provisioned user.
+ */
+
+/**
+ * @typedef Bridge~ProvisionedRoom
+ * @type {Object}
+ * @property {Object} creationOpts Room creation options to use when creating the
+ * room. Required.
+ * @property {RemoteRoom=} remote The remote room to link to the provisioned room.
+ */
+
+/**
+ * Invoked when the bridge receives a user query from the homeserver. Supports
+ * both sync return values and async return values via promises.
+ * @callback Bridge~onUserQuery
+ * @param {MatrixUser} matrixUser The matrix user queried. Use &lt;code>getId()&lt;/code>
+ * to get the user ID.
+ * @return {?Bridge~ProvisionedUser|Promise&lt;Bridge~ProvisionedUser, Error>}
+ * Reject the promise / return null to not provision the user. Resolve the
+ * promise / return a {@link Bridge~ProvisionedUser} object to provision the user.
+ * @example
+ * new Bridge({
+ *   controller: {
+ *     onUserQuery: function(matrixUser) {
+ *       var remoteUser = new RemoteUser("some_remote_id");
+ *       return {
+ *         name: matrixUser.localpart + " (Bridged)",
+ *         url: "http://someurl.com/pic.jpg",
+ *         user: remoteUser
+ *       };
+ *     }
+ *   }
+ * });
+ */
+
+/**
+ * Invoked when the bridge receives an alias query from the homeserver. Supports
+ * both sync return values and async return values via promises.
+ * @callback Bridge~onAliasQuery
+ * @param {string} alias The alias queried.
+ * @param {string} aliasLocalpart The parsed localpart of the alias.
+ * @return {?Bridge~ProvisionedRoom|Promise&lt;Bridge~ProvisionedRoom, Error>}
+ * Reject the promise / return null to not provision the room. Resolve the
+ * promise / return a {@link Bridge~ProvisionedRoom} object to provision the room.
+ * @example
+ * new Bridge({
+ *   controller: {
+ *     onAliasQuery: function(alias, aliasLocalpart) {
+ *       return {
+ *         creationOpts: {
+ *           room_alias_name: aliasLocalpart, // IMPORTANT: must be set to make the link
+ *           name: aliasLocalpart,
+ *           topic: "Auto-generated bridged room"
+ *         }
+ *       };
+ *     }
+ *   }
+ * });
+ */
+
+ /**
+ * Invoked when the bridge receives an event from the homeserver.
+ * @callback Bridge~onEvent
+ * @param {Request} request The request to resolve or reject depending on the
+ * outcome of this request. The 'data' attached to this Request is the raw event
+ * JSON received (accessed via &lt;code>request.getData()&lt;/code>)
+ * @param {Bridge~BridgeContext} context Context for this event, including
+ * instantiated client instances.
+ */
+
+ /**
+ * Invoked when the bridge is attempting to log something.
+ * @callback Bridge~onLog
+ * @param {string} line The text to be logged.
+ * @param {boolean} isError True if this line should be treated as an error msg.
+ */
 </code></pre>
         </article>
     </section>
@@ -99,13 +571,13 @@ module.exports = Bridge;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#get">get</a></li><li><a href="global.html#getRoomBridgeStore">getRoomBridgeStore</a></li><li><a href="global.html#getUserBridgeStore">getUserBridgeStore</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ConfigValidator.html">ConfigValidator</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Aug 26 2015 17:37:15 GMT+0100 (BST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.2</a> on Wed Sep 09 2015 09:19:52 GMT+0100 (BST)
 </footer>
 
 <script> prettyPrint(); </script>

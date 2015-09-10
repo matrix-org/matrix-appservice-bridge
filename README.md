@@ -81,7 +81,7 @@ A wrapper around the JS SDK `MatrixClient` designed for use by the application
 service *itself*. Contains helper methods to get all rooms the AS is in, how
 many virtual / real users are in each, etc.
 
-### `Bridge` [TODO]
+### `Bridge`
 The component which orchestrates other components: a "glue" component. Provides
 a way to start the bridge. This is the component most examples use. Has
 dependencies on most of the components listed above.

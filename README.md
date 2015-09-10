@@ -1,4 +1,6 @@
 # Matrix Application Service Bridging Infrastructure
+[![Build Status](http://matrix.org/jenkins/buildStatus/icon?job=AppServiceBridgeLib)](http://matrix.org/jenkins/job/AppServiceBridgeLib/)
+
 This library sits on top of the
 [core application service library](https://github.com/matrix-org/matrix-appservice-node)
 and provides an API for setting up bridges quickly. Check out the

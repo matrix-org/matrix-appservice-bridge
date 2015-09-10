@@ -49,15 +49,7 @@ function runBridge(port, config) {
                     console.error("Missing SDP and/or CallID");
                     return;
                 }
-                var matrixSide;
-                var exts = Object.keys(calls.extToConf);
-                for (var i = 0; i < exts.length; i++) {
-                    var vertoCall = calls.extToConf[exts[i]];
-                    matrixSide = vertoCall.getByVertoCallId(msg.params.callID);
-                    if (matrixSide) {
-                        break;
-                    }
-                }
+                var matrixSide = calls.getByVertoCallId(msg.params.callID).matrixSide;
                 if (!matrixSide) {
                     console.error("No call with ID '%s' exists.", msg.params.callID);
                     return;
@@ -95,23 +87,21 @@ function runBridge(port, config) {
                 });
                 break;
             case "verto.bye":
-                // we HAVE to cleanup else we'll eventually fill up the ext pool
-                console.log(msg, undefined, 2);
-                break;
-            /* TODO: Somehow get RTP dead events so we can gracefully hangup
-            case "verto.event":
-                if (!msg.params.pvtData) {
-                    break;
+                if (!msg.params || !msg.params.callID) {
+                    return;
                 }
-                verto.sendRequest("verto.subscribe", {
-                    eventChannel: msg.params.pvtData.laChannel,
-                    sessid: verto.sessionId
+                var callInfo = calls.getByVertoCallId(msg.params.callID);
+                if (!callInfo.matrixSide) {
+                    console.error("No call with ID '%s' exists.", msg.params.callID);
+                    return;
+                }
+                var intent = bridgeInst.getIntent(callInfo.vertoCall.fsUserId);
+                intent.sendEvent(callInfo.matrixSide.roomId, "m.call.hangup", {
+                    call_id: callInfo.matrixSide.mxCallId,
+                    version: 0
                 });
-                verto.sendRequest("verto.subscribe", {
-                    eventChannel: msg.params.pvtData.chatChannel,
-                    sessid: verto.sessionId
-                });
-                break; */
+                calls.delete(callInfo.vertoCall, callInfo.matrixSide);
+                break;
             default:
                 console.log("Unhandled method: %s", msg.method);
                 break;
@@ -341,7 +331,7 @@ VertoEndpoint.prototype.login = function(user, pass) {
             jsonMessage = JSON.parse(message);
         }
         catch(e) {
-            console.error("Failed to parse: %s", e);
+            console.error("Failed to parse %s: %s", message, e);
             return;
         }
         var existingRequest = self.requests[jsonMessage.id];
@@ -351,10 +341,6 @@ VertoEndpoint.prototype.login = function(user, pass) {
             }
             else if (jsonMessage.result) {
                 existingRequest.resolve(jsonMessage.result);
-            }
-            else {
-                console.error("[%s]: Response is malformed.", self.url);
-                existingRequest.resolve(jsonMessage); // I guess?
             }
         }
         else if (jsonMessage.method) {
@@ -527,6 +513,23 @@ CallStore.prototype.delete = function(vertoCall, matrixSide) {
         delete this.extToConf[vertoCall.ext];
         delete this.fsUserToConf[vertoCall.fsUserId];
     }
+};
+
+CallStore.prototype.getByVertoCallId = function(vertoCallId) {
+    var exts = Object.keys(this.extToConf);
+    var matrixSide, vertoCall;
+    for (var i = 0; i < exts.length; i++) {
+        var c = this.extToConf[exts[i]];
+        matrixSide = c.getByVertoCallId(vertoCallId);
+        if (matrixSide) {
+            vertoCall = c;
+            break;
+        }
+    }
+    return {
+        matrixSide: matrixSide,
+        vertoCall: vertoCall
+    };
 };
 
 CallStore.prototype.nextExtension = function() { // loop 0-99 with leading 0

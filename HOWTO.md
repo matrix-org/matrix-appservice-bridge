@@ -155,7 +155,9 @@ request.on("end", function() {
 ```
 
 We filter out `USLACKBOT` to avoid showing duplicate messages when we do the reverse (sending to
-slack from an inbound webhook).
+slack from an inbound webhook). `qs.parse` is used to convert the POST string into a JSON object.
+The `Intent` object obtained from the bridge is scoped to a slack user ID specified in `getIntent`.
+This means that `sendText` will be sent as the `@slack_<user_name>:localhost` entity.
 
 Then run the application service with `node index.js -p 9000` and send a message from Slack. It
 should then be passed through to the specified matrix room!
@@ -191,8 +193,8 @@ onEvent: function(request, context) {
 }
 ```
 
-Run the app service with `node index.js -p 9000` and send a message to any `@slack_` user to have that
-message relayed to the specified slack room. That's it!
+Run the app service with `node index.js -p 9000` and send a message to the Matrix room and that
+message will be relayed to the specified slack room. That's it!
 
 # Full source
 

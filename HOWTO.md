@@ -9,12 +9,14 @@ You need to have:
 
 # Setup a new project
 Create a new directory and run `npm init` to generate a `package.json` file after answering some questions.
-Run `npm install matrix-appservice-bridge` to install the bridge library, and `matrix-appservice` to install
-the AS library. Create a file `index.js` which we'll use to write logic for the bridge.
+Run `npm install matrix-appservice-bridge` to install the bridge library, `request` to make sending HTTP
+requests easier and `matrix-appservice` to install the AS library. Create a file `index.js` which we'll
+use to write logic for the bridge.
 ```
 $ npm init
 $ npm install matrix-appservice-bridge
 $ npm install matrix-appservice
+$ npm install request
 $ touch index.js
 ```
 
@@ -33,6 +35,7 @@ Open up `index.js` and write the following:
 ```javascript
 var http = require("http");
 var qs = require("querystring"); // we will use this later
+var requestLib = require("request"); // we will use this later
 var bridge; // we will use this later
 
 http.createServer(function(request, response) {
@@ -150,7 +153,42 @@ request.on("end", function() {
 ```
 
 Then run the application service with `node index.js -p 9000` and send a message from Slack. It
-should then be passed through to the specified matrix room! The complete source for this section:
+should then be passed through to the specified matrix room!
+
+# Matrix-to-Slack
+First, you need to create an Incoming WebHook under the Integrations section. You'll need to
+remember your allocated webhook url: `$WEBHOOK_URL`.
+
+Replace the `onEvent: function(request, context)` function created earlier with:
+```javascript
+onEvent: function(request, context) {
+    var event = request.getData();
+    if (event.type !== "m.room.message" || !event.content) {
+        return;
+    }
+    requestLib({
+        method: "POST",
+        json: true,
+        uri: $WEBHOOK_URL, // replace with your url!
+        body: {
+            username: event.user_id,
+            text: event.content.body
+        }
+    }, function(err, res) {
+        if (err) {
+            console.log("HTTP Error: %s", err);
+        }
+        else {
+            console.log("HTTP %s", res.statusCode);
+        }
+    });
+}
+```
+
+Run the app service with `node index.js -p 9000` and send a message to any `@slack_` user to have that
+message relayed to the specified slack room. That's it!
+
+# Full source
 
 ```javascript
 // Usage:
@@ -158,9 +196,11 @@ should then be passed through to the specified matrix room! The complete source 
 // node index.js -p 9000
 var http = require("http");
 var qs = require('querystring');
+var requestLib = require("request");
 var bridge;
 var PORT = 9898; // slack needs to hit this port e.g. use "ngrok 9898"
 var ROOM_ID = "!YiuxjYhPLIZGVVkFjT:localhost"; // this room must have join_rules: public
+var SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/AAAA/BBBBB/CCCCC";
 
 http.createServer(function(request, response) {
     console.log(request.method + " " + request.url);
@@ -206,7 +246,26 @@ new Cli({
                 },
 
                 onEvent: function(request, context) {
-                    return; // we will handle incoming matrix requests later
+                    var event = request.getData();
+                    if (event.type !== "m.room.message" || !event.content) {
+                        return;
+                    }
+                    requestLib({
+                        method: "POST",
+                        json: true,
+                        uri: SLACK_WEBHOOK_URL,
+                        body: {
+                            username: event.user_id,
+                            text: event.content.body
+                        }
+                    }, function(err, res) {
+                        if (err) {
+                            console.log("HTTP Error: %s", err);
+                        }
+                        else {
+                            console.log("HTTP %s", res.statusCode);
+                        }
+                    });
                 }
             }
         });
@@ -216,13 +275,9 @@ new Cli({
 }).run();
 ```
 
-
-# Matrix-to-Slack
-
 # Extensions
  - These examples are somewhat contrived because they hard-code the room mappings used. It is
    possible to move this into a YAML config file using the `ConfigValidator`.
  - The Slack outbound webhook includes a token which should be checked with a stored one in the
    config.
  - The code to process the Slack POST request does not include any limits on the upload size.
-

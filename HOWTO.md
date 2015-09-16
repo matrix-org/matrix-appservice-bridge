@@ -144,13 +144,18 @@ Replace the function `request.on("end", function()`, with the following:
 ```javascript
 request.on("end", function() {
     var params = qs.parse(body);
-    var intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
-    intent.sendText($ROOM_ID, params.text); // replace with your actual room ID!
+    if (params.user_id !== "USLACKBOT") {
+        var intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
+        intent.sendText(ROOM_ID, params.text);
+    }
     response.writeHead(200, {"Content-Type": "application/json"});
     response.write(JSON.stringify({}));
     response.end();
 });
 ```
+
+We filter out `USLACKBOT` to avoid showing duplicate messages when we do the reverse (sending to
+slack from an inbound webhook).
 
 Then run the application service with `node index.js -p 9000` and send a message from Slack. It
 should then be passed through to the specified matrix room!
@@ -163,7 +168,8 @@ Replace the `onEvent: function(request, context)` function created earlier with:
 ```javascript
 onEvent: function(request, context) {
     var event = request.getData();
-    if (event.type !== "m.room.message" || !event.content) {
+    // replace with your room ID
+    if (event.type !== "m.room.message" || !event.content || event.room_id !== $ROOM_ID) {
         return;
     }
     requestLib({
@@ -212,8 +218,10 @@ http.createServer(function(request, response) {
 
     request.on("end", function() {
         var params = qs.parse(body);
-        var intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
-        intent.sendText(ROOM_ID, params.text);
+        if (params.user_id !== "USLACKBOT") {
+            var intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
+            intent.sendText(ROOM_ID, params.text);
+        }
         response.writeHead(200, {"Content-Type": "application/json"});
         response.write(JSON.stringify({}));
         response.end();
@@ -247,7 +255,7 @@ new Cli({
 
                 onEvent: function(request, context) {
                     var event = request.getData();
-                    if (event.type !== "m.room.message" || !event.content) {
+                    if (event.type !== "m.room.message" || !event.content || event.room_id !== ROOM_ID) {
                         return;
                     }
                     requestLib({

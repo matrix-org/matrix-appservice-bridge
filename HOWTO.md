@@ -34,6 +34,8 @@ Variables to remember:
 Open up `index.js` and write the following:
 ```javascript
 var http = require("http");
+var qs = require("querystring"); // we will use this later
+var bridge; // we will use this later
 
 http.createServer(function(request, response) {
     console.log(request.method + " " + request.url);
@@ -76,7 +78,6 @@ Open up `index.js` and add this at the bottom of the file:
 var Cli = require("matrix-appservice-bridge").Cli;
 var Bridge = require("matrix-appservice-bridge").Bridge;
 var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
-var bridge;
 
 new Cli({
     registrationPath: "slack-registration.yaml",
@@ -129,15 +130,27 @@ bridge = new Bridge({
 console.log("Matrix-side listening on port %s", port);
 bridge.run(port, config);
 ```
-**NB: Make sure that the `bridge` variable is declared in the global scope, as we will be using it in
-another function shortly.**
 
 This configures the bridge to try to communicate with the homeserver at `http://localhost:8008`
 using the information from the registration file `slack-registration.yaml`. We now need to use
-the bridge to send the message we were printing our from slack earlier. Instead of
-`console.log(body)` in `request.on("end", function() {`, replace that with the following:
-```javascript
+the bridge to send the message we were printing our from slack earlier. Just like how the Slack
+room is hard-coded to `$SLACK_CHAN`, we'll hard-code the room ID to send to. Create a new public
+room on Matrix, which has the room ID `$ROOM_ID`.
 
+Replace the function `request.on("end", function()`, with the following:
+```javascript
+request.on("end", function() {
+    var params = qs.parse(body);
+    var intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
+    intent.sendText($ROOM_ID, params.text);
+    response.writeHead(200, {"Content-Type": "application/json"});
+    response.write(JSON.stringify({}));
+    response.end();
+});
 ```
 
+Then run the application service with `node index.js -p 9000` and send a message from Slack. It
+should then be passed through to the specified matrix room!
+
+# Matrix-to-Slack
 

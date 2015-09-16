@@ -1,4 +1,4 @@
-This How-To will explain how to write a **Matrix <--> Slack bridge**. You should be comfortable with:
+This How-To will explain how to write a basic **Matrix <--> Slack bridge** in under 100 lines of code. You should be comfortable with:
  - REST/JSON APIs
  - Webhooks
  - Basic Node.js/JS tasks

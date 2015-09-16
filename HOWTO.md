@@ -23,12 +23,10 @@ First, we need to create an Outgoing WebHook in Slack (via the Integrations sect
 HTTP requests to us whenever a Slack user sends something in a slack channel. We'll monitor the channel
 `#matrix` when sending outgoing webhooks rather than trigger words. Set the URL to a publically accessible
 endpoint for your machine, or use something like [ngrok](https://ngrok.com/) if you're developing. We'll use
-ngrok, and forward port `9898`.
+ngrok, and forward port `$PORT`.
 
 Variables to remember:
  - Your monitored channel `$SLACK_CHAN`.
- - Your webhook url `$WEBHOOK_URL`.
- - Your listening port `$PORT`
  
 ## Printing out outbound slack requests
 Open up `index.js` and write the following:
@@ -113,27 +111,29 @@ Then restart your homeserver. Your application service is now registered.
 We need to have a `bridge` to send messages from, so in the `run: function(port, config)` method,
 type the following:
 ```javascript
-bridge = new Bridge({
-    homeserverUrl: "http://localhost:8008",
-    domain: "localhost",
-    registration: "slack-registration.yaml",
-    controller: {
-        onUserQuery: function(queriedUser) {
-            return {}; // auto-provision users with no additonal data
-        },
-
-        onEvent: function(request, context) {
-            return; // we will handle incoming matrix requests later
+run: function(port, config) {
+    bridge = new Bridge({
+        homeserverUrl: "http://localhost:8008",
+        domain: "localhost",
+        registration: "slack-registration.yaml",
+        controller: {
+            onUserQuery: function(queriedUser) {
+                return {}; // auto-provision users with no additonal data
+            },
+    
+            onEvent: function(request, context) {
+                return; // we will handle incoming matrix requests later
+            }
         }
-    }
-});
-console.log("Matrix-side listening on port %s", port);
-bridge.run(port, config);
+    });
+    console.log("Matrix-side listening on port %s", port);
+    bridge.run(port, config);
+})
 ```
 
 This configures the bridge to try to communicate with the homeserver at `http://localhost:8008`
 using the information from the registration file `slack-registration.yaml`. We now need to use
-the bridge to send the message we were printing our from slack earlier. Just like how the Slack
+the bridge to send the message we were printing out from slack earlier. Just like how the Slack
 room is hard-coded to `$SLACK_CHAN`, we'll hard-code the room ID to send to. Create a new public
 room on Matrix, which has the room ID `$ROOM_ID`.
 
@@ -142,7 +142,7 @@ Replace the function `request.on("end", function()`, with the following:
 request.on("end", function() {
     var params = qs.parse(body);
     var intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
-    intent.sendText($ROOM_ID, params.text);
+    intent.sendText($ROOM_ID, params.text); // replace with your actual room ID!
     response.writeHead(200, {"Content-Type": "application/json"});
     response.write(JSON.stringify({}));
     response.end();
@@ -152,5 +152,13 @@ request.on("end", function() {
 Then run the application service with `node index.js -p 9000` and send a message from Slack. It
 should then be passed through to the specified matrix room!
 
+
 # Matrix-to-Slack
+
+# Extensions
+ - These examples are somewhat contrived because they hard-code the room mappings used. It is
+   possible to move this into a YAML config file using the `ConfigValidator`.
+ - The Slack outbound webhook includes a token which should be checked with a stored one in the
+   config.
+ - The code to process the Slack POST request does not include any limits on the upload size.
 

@@ -150,7 +150,71 @@ request.on("end", function() {
 ```
 
 Then run the application service with `node index.js -p 9000` and send a message from Slack. It
-should then be passed through to the specified matrix room!
+should then be passed through to the specified matrix room! The complete source for this section:
+
+```javascript
+// Usage:
+// node index.js -r -u "http://localhost:9000" # remember to add the registration!
+// node index.js -p 9000
+var http = require("http");
+var qs = require('querystring');
+var bridge;
+var PORT = 9898; // slack needs to hit this port e.g. use "ngrok 9898"
+var ROOM_ID = "!YiuxjYhPLIZGVVkFjT:localhost"; // this room must have join_rules: public
+
+http.createServer(function(request, response) {
+    console.log(request.method + " " + request.url);
+
+    var body = "";
+    request.on("data", function(chunk) {
+        body += chunk;
+    });
+
+    request.on("end", function() {
+        var params = qs.parse(body);
+        var intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
+        intent.sendText(ROOM_ID, params.text);
+        response.writeHead(200, {"Content-Type": "application/json"});
+        response.write(JSON.stringify({}));
+        response.end();
+    });
+}).listen(PORT);
+
+var Cli = require("matrix-appservice-bridge").Cli;
+var Bridge = require("matrix-appservice-bridge").Bridge;
+var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
+
+new Cli({
+    registrationPath: "slack-registration.yaml",
+    generateRegistration: function(appServiceUrl, callback) {
+        var reg = new AppServiceRegistration(appServiceUrl);
+        reg.setHomeserverToken(AppServiceRegistration.generateToken());
+        reg.setAppServiceToken(AppServiceRegistration.generateToken());
+        reg.setSenderLocalpart("slackbot");
+        reg.addRegexPattern("users", "@slack_.*", true);
+        callback(reg);
+    },
+    run: function(port, config) {
+        bridge = new Bridge({
+            homeserverUrl: "http://localhost:8008",
+            domain: "localhost",
+            registration: "slack-registration.yaml",
+
+            controller: {
+                onUserQuery: function(queriedUser) {
+                    return {}; // auto-provision users with no additonal data
+                },
+
+                onEvent: function(request, context) {
+                    return; // we will handle incoming matrix requests later
+                }
+            }
+        });
+        console.log("Matrix-side listening on port %s", port);
+        bridge.run(port, config);
+    }
+}).run();
+```
 
 
 # Matrix-to-Slack

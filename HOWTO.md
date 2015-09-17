@@ -17,7 +17,6 @@ use to write logic for the bridge.
 ```
 $ npm init
 $ npm install matrix-appservice-bridge
-$ npm install matrix-appservice
 $ npm install request
 $ touch index.js
 ```
@@ -80,7 +79,7 @@ Open up `index.js` and add this at the bottom of the file:
 ```javascript
 var Cli = require("matrix-appservice-bridge").Cli;
 var Bridge = require("matrix-appservice-bridge").Bridge;
-var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
+var AppServiceRegistration = require("matrix-appservice-bridge").AppServiceRegistration;
 
 new Cli({
     registrationPath: "slack-registration.yaml",
@@ -233,7 +232,7 @@ http.createServer(function(request, response) {
 
 var Cli = require("matrix-appservice-bridge").Cli;
 var Bridge = require("matrix-appservice-bridge").Bridge;
-var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
+var AppServiceRegistration = require("matrix-appservice-bridge").AppServiceRegistration;
 
 new Cli({
     registrationPath: "slack-registration.yaml",

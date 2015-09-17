@@ -84,8 +84,7 @@ var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration
 
 new Cli({
     registrationPath: "slack-registration.yaml",
-    generateRegistration: function(appServiceUrl, callback) {
-        var reg = new AppServiceRegistration(appServiceUrl);
+    generateRegistration: function(reg, callback) {
         reg.setHomeserverToken(AppServiceRegistration.generateToken());
         reg.setAppServiceToken(AppServiceRegistration.generateToken());
         reg.setSenderLocalpart("slackbot");
@@ -238,8 +237,7 @@ var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration
 
 new Cli({
     registrationPath: "slack-registration.yaml",
-    generateRegistration: function(appServiceUrl, callback) {
-        var reg = new AppServiceRegistration(appServiceUrl);
+    generateRegistration: function(reg, callback) {
         reg.setHomeserverToken(AppServiceRegistration.generateToken());
         reg.setAppServiceToken(AppServiceRegistration.generateToken());
         reg.setSenderLocalpart("slackbot");

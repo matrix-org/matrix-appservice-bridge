@@ -8,6 +8,9 @@ describe("Intent", function() {
     var userId = "@alice:bar";
     var botUserId = "@bot:user";
     var roomId = "!foo:bar";
+    var alreadyRegistered = {
+        registered: true
+    };
 
     beforeEach(
     /** @this */
@@ -22,7 +25,7 @@ describe("Intent", function() {
         client.credentials.userId = userId;
         botClient = jasmine.createSpyObj("botClient", clientFields);
         botClient.credentials.userId = botUserId;
-        intent = new Intent(client, botClient);
+        intent = new Intent(client, botClient, alreadyRegistered);
     });
 
     describe("join", function() {

@@ -7,6 +7,8 @@ You need to have:
  - A working homeserver install
  - `npm` and `nodejs`
 
+NB: This how-to refers to the binary `node` - this may be `nodejs` depending on your distro.
+
 # Setup a new project
 Create a new directory and run `npm init` to generate a `package.json` file after answering some questions.
 Run `npm install matrix-appservice-bridge` to install the bridge library, `request` to make sending HTTP

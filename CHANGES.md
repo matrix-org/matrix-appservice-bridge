@@ -1,3 +1,7 @@
+0.1.2 (2015-10-05)
+==================
+Implement the `affectsRegistration` option on `Cli`.
+
 0.1.1 (2015-09-17)
 ==================
 Added a HOW-TO.

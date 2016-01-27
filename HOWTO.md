@@ -140,6 +140,9 @@ the bridge to send the message we were printing out from slack earlier. Just lik
 room is hard-coded to `$SLACK_CHAN`, we'll hard-code the room ID to send to. Create a new public
 room on Matrix, which has the room ID `$ROOM_ID`.
 
+NB: You can do this as an invite-only room on Matrix, but you *MUST* invite the slack AS bridge
+user (`@slackbot:domain`) to the room so it can invite virtual slack users. 
+
 Replace the function `request.on("end", function()`, with the following:
 ```javascript
 request.on("end", function() {

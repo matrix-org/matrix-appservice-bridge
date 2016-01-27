@@ -95,7 +95,7 @@ dependencies on most of the components listed above.
 # API
 
 A hosted reference can be found on
-[GitHub Pages](http://matrix-org.github.io/matrix-appservice-bridge/0.1.1).
+[GitHub Pages](http://matrix-org.github.io/matrix-appservice-bridge/0.1.3).
 Alternatively, build the docs using `npm run gendoc`. Each component's class
 constructor is exposed on `require("matrix-appservice-bridge")` so check each
 class for more information on how to use each component.

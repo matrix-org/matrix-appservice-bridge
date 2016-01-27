@@ -1,3 +1,15 @@
+0.1.3 (2016-01-27)
+==================
+More functions/options have been added to the `Cli` class:
+ - `enableLocalpart`: Set `true` to enable the `--localpart [-l]` flag.
+ - The CLI flag `--file [-f]` has been added. This represents the location of the
+   registration file.
+ - The `run()` function now includes the loaded `AppServiceRegistration` instance
+   as an argument.
+
+Bug fixes on the `Cli` class:
+ - When `generateRegistration` is called, `this` is now bound to the `Cli` instance.
+
 0.1.2 (2015-10-05)
 ==================
 Implement the `affectsRegistration` option on `Cli`.

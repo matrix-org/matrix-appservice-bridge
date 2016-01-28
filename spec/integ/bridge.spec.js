@@ -275,6 +275,8 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
+            bridgeCtrl.onEvent.andCallFake(function(req) { req.resolve(); });
+
             bridge.run(101, {}, appService).then(function() {
                 return appService.emit("event", event);
             }).done(function() {
@@ -300,6 +302,8 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
+            bridgeCtrl.onEvent.andCallFake(function(req) { req.resolve(); });
+
             bridge.run(101, {}, appService).then(function() {
                 return bridge.getUserStore().linkUsers(
                     new MatrixUser("@alice:bar"),
@@ -330,6 +334,8 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.member"
             };
+            bridgeCtrl.onEvent.andCallFake(function(req) { req.resolve(); });
+
             bridge.run(101, {}, appService).then(function() {
                 return bridge.getUserStore().linkUsers(
                     new MatrixUser("@bob:bar"),
@@ -360,6 +366,8 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.member"
             };
+            bridgeCtrl.onEvent.andCallFake(function(req) { req.resolve(); });
+
             bridge.run(101, {}, appService).then(function() {
                 return bridge.getRoomStore().linkRooms(
                     new MatrixRoom("!flibble:bar"),

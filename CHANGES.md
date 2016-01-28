@@ -1,3 +1,8 @@
+0.1.4 (2016-01-28)
+==================
+Adjusted the promise returned by the event listener the `Bridge` class attaches
+to `AppService`. This is mainly for testing purposes.
+
 0.1.3 (2016-01-27)
 ==================
 More functions/options have been added to the `Cli` class:

@@ -1,3 +1,10 @@
+0.1.5 (2016-01-29)
+==================
+Added the following `Bridge` function:
+ - `Bridge.getClientFactory()`
+
+Do not log values returned by resolved `Requests`, only on errors.
+
 0.1.4 (2016-01-28)
 ==================
 Adjusted the promise returned by the event listener the `Bridge` class attaches

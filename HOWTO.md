@@ -287,9 +287,41 @@ new Cli({
 }).run();
 ```
 
+# Configuration
+So far in this example we have hard-coded various items of information that would be
+considered "configuration"; namely the Slack outbound webhook token and the list of room
+mappings to bridge. We can use the `ConfigValidator` to help parse a configuration file
+at startup time to obtain this information from instead.
+
+Start by defining a schema file that describes what the YAML config file can contain.
+This is also a YAML file. Store this in a file called `slack-config-schema.yaml`:
+
+```yaml
+type: object
+requires: ["slack_webhook_url"]
+properties:
+    slack_webhook_url:
+        type: string
+```
+
+If we supply the name of this schema file to the constructor of the main `Cli` object
+then it will use this to valid a config file that the user passes on the commandline.
+The markup that this config file provides will be parsed and presented as the `config`
+parameter to the main `run` function.
+
+```javascript
+new Cli({
+    registrationPath: "slack-registration.yaml",
+    generateRegistration: function(reg, callback) {
+        ...
+    },
+    bridgeConfig: {
+        schema: "slack-config-schema.yaml"
+    },
+    run: function(port, config) {
+        var slack_webhook_url = config.slack_webhook_url;
+        ...
+```
+
 # Extensions
- - These examples are somewhat contrived because they hard-code the room mappings used. It is
-   possible to move this into a YAML config file using the `ConfigValidator`.
- - The Slack outbound webhook includes a token which should be checked with a stored one in the
-   config.
  - The code to process the Slack POST request does not include any limits on the upload size.

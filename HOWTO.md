@@ -84,6 +84,7 @@ var AppServiceRegistration = require("matrix-appservice-bridge").AppServiceRegis
 new Cli({
     registrationPath: "slack-registration.yaml",
     generateRegistration: function(reg, callback) {
+        reg.setId(AppServiceRegistration.generateToken());
         reg.setHomeserverToken(AppServiceRegistration.generateToken());
         reg.setAppServiceToken(AppServiceRegistration.generateToken());
         reg.setSenderLocalpart("slackbot");

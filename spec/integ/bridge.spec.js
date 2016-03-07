@@ -62,6 +62,7 @@ describe("Bridge", function() {
             "onEvent", "onAliasQuery", "onUserQuery"
         ]);
         appServiceRegistration = AppServiceRegistration.fromObject({
+            id: "an_id",
             hs_token: "h5_t0k3n",
             as_token: "a5_t0k3n",
             url: "http://app-service-url",

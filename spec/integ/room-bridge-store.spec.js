@@ -165,7 +165,19 @@ describe("RoomBridgeStore", function() {
             });
         });
 
-        it("should NOT delete links which partially match the given data", function(done) {
+        it("should delete links which partially match the given data", function(done) {
+            var matrixRoom = new MatrixRoom("!foo:bar");
+            var remoteRoom = new RemoteRoom("#foo_bar");
+            var data = { foo: "bar", tar: 6 };
+            store.linkRooms(matrixRoom, remoteRoom, data).then(function() {
+                return store.unlinkByData({ foo: "bar" });
+            }).done(function(deleteNum) {
+                expect(deleteNum).toEqual(1);
+                done();
+            });
+        });
+
+        it("should NOT delete links which do not match the given data", function(done) {
             var matrixRoom = new MatrixRoom("!foo:bar");
             var remoteRoom = new RemoteRoom("#foo_bar");
             var data = { foo: "bar", tar: 6 };

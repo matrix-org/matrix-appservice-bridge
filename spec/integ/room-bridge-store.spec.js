@@ -189,7 +189,8 @@ describe("RoomBridgeStore", function() {
             });
         });
 
-        it("should NOT delete links which have the same remote/matrix IDs", function(done) {
+        it("should NOT delete links which have the same remote/matrix IDs",
+        function(done) {
             var matrixRoom = new MatrixRoom("!foo:bar");
             var remoteRoom = new RemoteRoom("#foo_bar");
             var data = { foo: "bar" };

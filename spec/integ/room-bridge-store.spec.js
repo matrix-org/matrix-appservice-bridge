@@ -152,6 +152,47 @@ describe("RoomBridgeStore", function() {
         });
     });
 
+    describe("unlinkByData", function() {
+        it("should delete links which match the given data", function(done) {
+            var matrixRoom = new MatrixRoom("!foo:bar");
+            var remoteRoom = new RemoteRoom("#foo_bar");
+            var data = { foo: "bar" };
+            store.linkRooms(matrixRoom, remoteRoom, data).then(function() {
+                return store.unlinkByData(data);
+            }).done(function(deleteNum) {
+                expect(deleteNum).toEqual(1);
+                done();
+            });
+        });
+
+        it("should NOT delete links which partially match the given data", function(done) {
+            var matrixRoom = new MatrixRoom("!foo:bar");
+            var remoteRoom = new RemoteRoom("#foo_bar");
+            var data = { foo: "bar", tar: 6 };
+            store.linkRooms(matrixRoom, remoteRoom, data).then(function() {
+                return store.unlinkByData({ foo: "bar", tar: 99 });
+            }).done(function(deleteNum) {
+                expect(deleteNum).toEqual(0);
+                done();
+            });
+        });
+
+        it("should NOT delete links which have the same remote/matrix IDs", function(done) {
+            var matrixRoom = new MatrixRoom("!foo:bar");
+            var remoteRoom = new RemoteRoom("#foo_bar");
+            var data = { foo: "bar" };
+            var linkKey = "flibble";
+            store.linkRooms(matrixRoom, remoteRoom, data).then(function() {
+                return store.linkRooms(matrixRoom, remoteRoom, undefined, linkKey);
+            }).then(function() {
+                return store.unlinkByData(data);
+            }).done(function(deleteNum) {
+                expect(deleteNum).toEqual(1);
+                done();
+            });
+        });
+    });
+
     describe("unlinkRooms", function() {
         it("should delete a link made previously with linkRooms", function(done) {
             var matrixRoom = new MatrixRoom("!foo:bar");

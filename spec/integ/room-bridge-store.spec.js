@@ -132,6 +132,24 @@ describe("RoomBridgeStore", function() {
                 done();
             });
         });
+
+        it("should support custom link keys", function(done) {
+            var matrixRoom = new MatrixRoom("!foo:bar");
+            var remoteRoom = new RemoteRoom("foo_bar");
+            var linkKey = "flibble";
+            var data = { foo: "bar" };
+            store.linkRooms(matrixRoom, remoteRoom, data, linkKey).then(function() {
+                return store.getLinksByKey(linkKey);
+            }).done(function(links) {
+                expect(links.length).toEqual(1);
+                var link = links[0];
+                expect(link.link_key).toEqual(linkKey);
+                expect(link.matrix).toEqual(matrixRoom.getId());
+                expect(link.remote).toEqual(remoteRoom.getId());
+                expect(link.data).toEqual(data);
+                done();
+            });
+        });
     });
 
     describe("unlinkRooms", function() {

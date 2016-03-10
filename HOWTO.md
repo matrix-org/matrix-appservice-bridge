@@ -294,7 +294,8 @@ mappings to bridge. We can use the `ConfigValidator` to help parse a configurati
 at startup time to obtain this information from instead.
 
 Start by defining a schema file that describes what the YAML config file can contain.
-This is also a YAML file. Store this in a file called `slack-config-schema.yaml`:
+This is also a YAML file in the JSON Schema format. Store this in a file called
+`slack-config-schema.yaml`:
 
 ```yaml
 type: object
@@ -305,9 +306,9 @@ properties:
 ```
 
 If we supply the name of this schema file to the constructor of the main `Cli` object
-then it will use this to valid a config file that the user passes on the commandline.
-The markup that this config file provides will be parsed and presented as the `config`
-parameter to the main `run` function.
+then it will use this to validate a config file that the user passes on the
+command line. The markup that this config file provides will be parsed and presented
+as the `config` parameter to the main `run` function.
 
 ```javascript
 new Cli({

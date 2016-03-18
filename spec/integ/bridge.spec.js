@@ -118,13 +118,13 @@ describe("Bridge", function() {
         try {
             fs.unlinkSync(TEST_USER_DB_PATH);
         }
-        catch(e) {
+        catch (e) {
             // do nothing
         }
         try {
             fs.unlinkSync(TEST_ROOM_DB_PATH);
         }
-        catch(e) {
+        catch (e) {
             // do nothing
         }
     });

@@ -1,12 +1,12 @@
 {
   "name": "matrix-appservice-bridge",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Bridging infrastructure for Matrix Application Services",
   "main": "index.js",
   "scripts": {
     "gendoc": "jsdoc -r lib -R README.md -P package.json -d .jsdoc",
     "lint": "eslint lib/ spec/",
-    "test": "jasmine-node spec --verbose --forceexit --captureExceptions",
+    "test": "BLUEBIRD_DEBUG=1 jasmine-node spec --verbose --forceexit --captureExceptions",
     "check": "npm run lint && npm test",
     "ci-test": "istanbul cover --report cobertura -i \"lib/**/*.js\" jasmine-node -- spec --verbose --junitreport --forceexit --captureExceptions || true",
     "ci-lint": "eslint lib/ spec/ --format checkstyle > ci-lint.xml || true",

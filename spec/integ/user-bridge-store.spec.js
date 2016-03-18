@@ -33,7 +33,7 @@ describe("UserBridgeStore", function() {
         try {
             fs.unlinkSync(TEST_DB_PATH);
         }
-        catch(e) {
+        catch (e) {
             // do nothing
         }
     });

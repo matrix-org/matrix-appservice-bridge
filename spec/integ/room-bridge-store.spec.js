@@ -33,7 +33,7 @@ describe("RoomBridgeStore", function() {
         try {
             fs.unlinkSync(TEST_DB_PATH);
         }
-        catch(e) {
+        catch (e) {
             // do nothing
         }
     });
@@ -129,6 +129,78 @@ describe("RoomBridgeStore", function() {
             }).done(function(j) {
                 expect(j.getId()).toEqual("foo_bar");
                 expect(j.get("sentinel")).toEqual(42);
+                done();
+            });
+        });
+
+        it("should support custom link keys", function(done) {
+            var matrixRoom = new MatrixRoom("!foo:bar");
+            var remoteRoom = new RemoteRoom("foo_bar");
+            var linkKey = "flibble";
+            var data = { foo: "bar" };
+            store.linkRooms(matrixRoom, remoteRoom, data, linkKey).then(function() {
+                return store.getLinksByKey(linkKey);
+            }).done(function(links) {
+                expect(links.length).toEqual(1);
+                var link = links[0];
+                expect(link.link_key).toEqual(linkKey);
+                expect(link.matrix).toEqual(matrixRoom.getId());
+                expect(link.remote).toEqual(remoteRoom.getId());
+                expect(link.data).toEqual(data);
+                done();
+            });
+        });
+    });
+
+    describe("unlinkByData", function() {
+        it("should delete links which match the given data", function(done) {
+            var matrixRoom = new MatrixRoom("!foo:bar");
+            var remoteRoom = new RemoteRoom("#foo_bar");
+            var data = { foo: "bar" };
+            store.linkRooms(matrixRoom, remoteRoom, data).then(function() {
+                return store.unlinkByData(data);
+            }).done(function(deleteNum) {
+                expect(deleteNum).toEqual(1);
+                done();
+            });
+        });
+
+        it("should delete links which partially match the given data", function(done) {
+            var matrixRoom = new MatrixRoom("!foo:bar");
+            var remoteRoom = new RemoteRoom("#foo_bar");
+            var data = { foo: "bar", tar: 6 };
+            store.linkRooms(matrixRoom, remoteRoom, data).then(function() {
+                return store.unlinkByData({ foo: "bar" });
+            }).done(function(deleteNum) {
+                expect(deleteNum).toEqual(1);
+                done();
+            });
+        });
+
+        it("should NOT delete links which do not match the given data", function(done) {
+            var matrixRoom = new MatrixRoom("!foo:bar");
+            var remoteRoom = new RemoteRoom("#foo_bar");
+            var data = { foo: "bar", tar: 6 };
+            store.linkRooms(matrixRoom, remoteRoom, data).then(function() {
+                return store.unlinkByData({ foo: "bar", tar: 99 });
+            }).done(function(deleteNum) {
+                expect(deleteNum).toEqual(0);
+                done();
+            });
+        });
+
+        it("should NOT delete links which have the same remote/matrix IDs",
+        function(done) {
+            var matrixRoom = new MatrixRoom("!foo:bar");
+            var remoteRoom = new RemoteRoom("#foo_bar");
+            var data = { foo: "bar" };
+            var linkKey = "flibble";
+            store.linkRooms(matrixRoom, remoteRoom, data).then(function() {
+                return store.linkRooms(matrixRoom, remoteRoom, undefined, linkKey);
+            }).then(function() {
+                return store.unlinkByData(data);
+            }).done(function(deleteNum) {
+                expect(deleteNum).toEqual(1);
                 done();
             });
         });

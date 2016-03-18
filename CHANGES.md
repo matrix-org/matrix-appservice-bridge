@@ -1,3 +1,37 @@
+0.3.2 (2016-03-18)
+==================
+Improved JSDoc on various functions to clear up ambiguity. In addition:
+
+Changes on the `Intent` class:
+ - Fixed a bug which could cause `createRoom` to fail if the `Intent` was scoped to the bot user.
+ - Add intent option `dontCheckPowerLevel` to skip checking the required power level before sending events.
+ - Added `getClient()` to retrieve the underlying `MatrixClient` instance.
+ - Added `createAlias(alias, roomId)`.
+
+Changes on the `Bridge` class:
+ - Modified the default request error callback to always log 'FAILED'.
+ - Added `loadDatabases()` which can be invoked prior to `run()` for bridge setup.
+ - Expose `Intent` constructor options in the bridge `opts`.
+
+Changes on the `MatrixUser` class:
+ - Added `get(key)` and `set(key, val)` to allow arbitrary data to be stored on Matrix users.
+
+Changes on the `RoomBridgeStore` class:
+ - Added `unlinkByData()`
+ - Added the concept of "Link Keys" to clobber links based on something other than the tuple of the room IDs.
+
+Changes on the `UserBridgeStore` class:
+ - Added `getByMatrixData()`.
+
+0.3.1 (2016-03-07)
+==================
+Dependency on `matrix-appservice` was bumped to fix a critical bug.
+
+0.3.0 (2016-03-03)
+==================
+**BREAKING CHANGE** : An `id` field is required by all registration files as a result of bumping the dependency
+of `matrix-appservice` to `0.3.0`.
+
 0.1.5 (2016-01-29)
 ==================
 Added the following `Bridge` function:

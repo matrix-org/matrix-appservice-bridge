@@ -1,3 +1,7 @@
+0.3.3 (2016-04-12)
+==================
+Increased the default `matrix-js-sdk` dependency used by `ClientFactory` to 0.4.1.
+
 0.3.2 (2016-03-18)
 ==================
 Improved JSDoc on various functions to clear up ambiguity. In addition:

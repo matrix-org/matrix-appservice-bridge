@@ -6,6 +6,14 @@ This library sits on top of the
 and provides an API for setting up bridges quickly. Check out the
 [HOW-TO](HOWTO.md) for a step-by-step tutorial on setting up a new bridge.
 
+# API
+
+A hosted reference can be found on
+[GitHub Pages](http://matrix-org.github.io/matrix-appservice-bridge).
+Alternatively, build the docs using `npm run gendoc`. Each component's class
+constructor is exposed on `require("matrix-appservice-bridge")` so check each
+class for more information on how to use each component.
+
 # Architecture
 
 ```
@@ -91,12 +99,4 @@ dependencies on most of the components listed above.
  * `RemoteRoom` - A representation of a third-party room.
  * `MatrixUser` - A representation of a matrix user.
  * `RemoteUser` - A representation of a third-party user.
-
-# API
-
-A hosted reference can be found on
-[GitHub Pages](http://matrix-org.github.io/matrix-appservice-bridge).
-Alternatively, build the docs using `npm run gendoc`. Each component's class
-constructor is exposed on `require("matrix-appservice-bridge")` so check each
-class for more information on how to use each component.
 

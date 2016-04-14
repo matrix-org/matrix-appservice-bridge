@@ -1,3 +1,9 @@
+0.3.4 (2016-04-14)
+==================
+Fixed a critical bug which would prevent the callback for HTTP requests from
+firing if the request returned a network error such as ECONNRESET. This affected
+all users of `ClientFactory` who attached a logging function via `setLogFunction`.
+
 0.3.3 (2016-04-12)
 ==================
 Increased the default `matrix-js-sdk` dependency used by `ClientFactory` to 0.4.1.

@@ -573,9 +573,17 @@ function mkMockMatrixClient(uid) {
     var client = jasmine.createSpyObj(
         "MatrixClient", [
             "register", "joinRoom", "credentials", "createRoom", "setDisplayName",
-            "setAvatarUrl"
+            "setAvatarUrl", "_http"
         ]
     );
+    // Shim requests to authedRequestWithPrefix to register() if it is
+    // directed at /register
+    client._http.authedRequestWithPrefix = jasmine.createSpy("authedRequestWithPrefix");
+    client._http.authedRequestWithPrefix.andCallFake(function(a, method, path, d, data) {
+        if (method === "POST" && path === "/register") {
+            return client.register(data.user);
+        }
+    });
     client.credentials.userId = uid;
     return client;
 }

@@ -1,3 +1,12 @@
+0.3.5 (2016-04-14)
+==================
+Fixed an issue where the bridge library would attempt to use v1 APIs on r0 paths.
+This was caused by increasing the `matrix-js-sdk` dependency which now defaults
+to r0 paths. Fixed various `matrix-js-sdk` breaking API changes such as the
+change to the `register()` function.
+
+The bridge library still uses v1 `/initialSync`.
+
 0.3.4 (2016-04-14)
 ==================
 Fixed a critical bug which would prevent the callback for HTTP requests from

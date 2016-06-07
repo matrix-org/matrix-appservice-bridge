@@ -1,3 +1,8 @@
+0.3.6 (2016-06-07)
+==================
+The bridge library will now use `r0 /register`. Due to bugs inside Synapse, this
+means the **minimum supported Synapse version is 0.15.0-rc1** and above.
+
 0.3.5 (2016-04-14)
 ==================
 Fixed an issue where the bridge library would attempt to use v1 APIs on r0 paths.

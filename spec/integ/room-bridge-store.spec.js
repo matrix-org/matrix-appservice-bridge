@@ -382,4 +382,51 @@ describe("RoomBridgeStore", function() {
             });
         });
     });
+
+    describe("batchGetLinkedRemoteRooms", function() {
+        var entries = [
+            { mx: new MatrixRoom("!foo:bar"), r: new RemoteRoom("#foo_bar") },
+            // same remote mapping
+            { mx: new MatrixRoom("!foo_bar:bar"), r: new RemoteRoom("#foo_bar") },
+            { mx: new MatrixRoom("!fizz:buzz"), r: new RemoteRoom("#fizz_buzz") },
+            { mx: new MatrixRoom("!alpha:beta"), r: new RemoteRoom("#alpha_beta") },
+            // same matrix mapping
+            { mx: new MatrixRoom("!alpha:beta"), r: new RemoteRoom("#alpha_bet") }
+        ];
+        var expectedOutput = {
+            "!foo:bar": ["#foo_bar"],
+            "!foo_bar:bar": ["#foo_bar"],
+            "!fizz:buzz": ["#fizz_buzz"],
+            "!alpha:beta": ["#alpha_beta", "#alpha_bet"]
+        }
+
+        // persist the links
+        beforeEach(function(done) {
+            Promise.all(entries.map(function(e) {
+                return store.linkRooms(e.mx, e.r);
+            })).done(function() {
+                done();
+            });
+        });
+
+        it("should return a map of RemoteRooms", function(done) {
+            var mxIds = Object.keys(expectedOutput);
+            store.batchGetLinkedRemoteRooms(mxIds).done(function(outputMap) {
+                // make sure the keys are all there with the right links
+                mxIds.forEach(function(roomId) {
+                    var outRemoteRooms = outputMap[roomId];
+                    expect(outRemoteRooms).toBeDefined();
+                    if (!outRemoteRooms) {
+                        return;
+                    }
+                    expect(outRemoteRooms.length).toEqual(expectedOutput[roomId].length);
+                    var remoteIds = outRemoteRooms.map(function(r) {
+                        return r.getId();
+                    });
+                    expect(remoteIds.sort()).toEqual(expectedOutput[roomId].sort());
+                });
+                done();
+            });
+        });
+    });
 });

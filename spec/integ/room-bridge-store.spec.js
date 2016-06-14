@@ -2,6 +2,7 @@
 var Datastore = require("nedb");
 var fs = require("fs");
 var log = require("../log");
+var Promise = require("bluebird");
 
 var RoomBridgeStore = require("../..").RoomBridgeStore;
 var MatrixRoom = require("../..").MatrixRoom;
@@ -322,6 +323,107 @@ describe("RoomBridgeStore", function() {
                     expect(["foo_bar", "foo_bar_2"].indexOf(
                         link.remote
                     )).not.toEqual(-1, "Bad remote ID returned");
+                });
+                done();
+            });
+        });
+    });
+
+    describe("batchGetRemoteLinks", function() {
+        var entries = [
+            { mx: new MatrixRoom("!foo:bar"), r: new RemoteRoom("#foo_bar") },
+            // same remote mapping
+            { mx: new MatrixRoom("!foo_bar:bar"), r: new RemoteRoom("#foo_bar") },
+            { mx: new MatrixRoom("!fizz:buzz"), r: new RemoteRoom("#fizz_buzz") },
+            { mx: new MatrixRoom("!alpha:beta"), r: new RemoteRoom("#alpha_beta") },
+            // same matrix mapping
+            { mx: new MatrixRoom("!alpha:beta"), r: new RemoteRoom("#alpha_bet") }
+        ];
+        var expectedOutput = {
+            "!foo:bar": ["#foo_bar"],
+            "!foo_bar:bar": ["#foo_bar"],
+            "!fizz:buzz": ["#fizz_buzz"],
+            "!alpha:beta": ["#alpha_beta", "#alpha_bet"]
+        }
+
+        // persist the links
+        beforeEach(function(done) {
+            Promise.all(entries.map(function(e) {
+                return store.linkRooms(e.mx, e.r);
+            })).done(function() {
+                done();
+            });
+        });
+
+        it("should return a map of links", function(done) {
+            var mxIds = Object.keys(expectedOutput);
+            store.batchGetRemoteLinks(mxIds).done(function(outputMap) {
+                // make sure the keys are all there with the right links
+                mxIds.forEach(function(roomId) {
+                    var outputLinks = outputMap[roomId];
+                    expect(outputLinks).toBeDefined();
+                    if (!outputLinks) {
+                        return;
+                    }
+                    expect(outputLinks.length).toEqual(expectedOutput[roomId].length);
+                    var linkIds = outputLinks.map(function(l) {
+                        return l.remote;
+                    });
+                    expect(linkIds.sort()).toEqual(expectedOutput[roomId].sort());
+                });
+                done();
+            });
+        });
+
+        it("should return an empty list if there are no links", function(done) {
+            store.batchGetRemoteLinks(["!nada:here", "!more:na"]).done(function(links) {
+                expect(Object.keys(links).length).toEqual(0);
+                done();
+            });
+        });
+    });
+
+    describe("batchGetLinkedRemoteRooms", function() {
+        var entries = [
+            { mx: new MatrixRoom("!foo:bar"), r: new RemoteRoom("#foo_bar") },
+            // same remote mapping
+            { mx: new MatrixRoom("!foo_bar:bar"), r: new RemoteRoom("#foo_bar") },
+            { mx: new MatrixRoom("!fizz:buzz"), r: new RemoteRoom("#fizz_buzz") },
+            { mx: new MatrixRoom("!alpha:beta"), r: new RemoteRoom("#alpha_beta") },
+            // same matrix mapping
+            { mx: new MatrixRoom("!alpha:beta"), r: new RemoteRoom("#alpha_bet") }
+        ];
+        var expectedOutput = {
+            "!foo:bar": ["#foo_bar"],
+            "!foo_bar:bar": ["#foo_bar"],
+            "!fizz:buzz": ["#fizz_buzz"],
+            "!alpha:beta": ["#alpha_beta", "#alpha_bet"]
+        }
+
+        // persist the links
+        beforeEach(function(done) {
+            Promise.all(entries.map(function(e) {
+                return store.linkRooms(e.mx, e.r);
+            })).done(function() {
+                done();
+            });
+        });
+
+        it("should return a map of RemoteRooms", function(done) {
+            var mxIds = Object.keys(expectedOutput);
+            store.batchGetLinkedRemoteRooms(mxIds).done(function(outputMap) {
+                // make sure the keys are all there with the right links
+                mxIds.forEach(function(roomId) {
+                    var outRemoteRooms = outputMap[roomId];
+                    expect(outRemoteRooms).toBeDefined();
+                    if (!outRemoteRooms) {
+                        return;
+                    }
+                    expect(outRemoteRooms.length).toEqual(expectedOutput[roomId].length);
+                    var remoteIds = outRemoteRooms.map(function(r) {
+                        return r.getId();
+                    });
+                    expect(remoteIds.sort()).toEqual(expectedOutput[roomId].sort());
                 });
                 done();
             });

@@ -1,3 +1,8 @@
+0.3.7 (2016-06-14)
+==================
+Reduced the number of queries run when store methods are called. Added new
+`batch` functions to reduce database queries at the application level.
+
 0.3.6 (2016-06-07)
 ==================
 The bridge library will now use `r0 /register`. Due to bugs inside Synapse, this

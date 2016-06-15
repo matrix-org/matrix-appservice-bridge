@@ -154,7 +154,6 @@ describe("RoomBridgeStore", function() {
             }).done(function(results) {
                 expect(results["!foo:bar"].length).toEqual(2);
                 expect(results["!fizz:buzz"].length).toEqual(1);
-                
                 expect(results["!fizz:buzz"][0].remote.getId()).toEqual("#fizz");
                 expect(results["!foo:bar"].map(function(e) {
                     return e.remote.getId();

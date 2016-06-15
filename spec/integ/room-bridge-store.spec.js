@@ -119,25 +119,94 @@ describe("RoomBridgeStore", function() {
                 });
                 expect(remoteIds.sort()).toEqual(["#bar", "#foo"]);
                 done();
-            })
+            });
         });
     });
 
     describe("getEntriesByMatrixIds", function() {
         it("should return a map of room_id to entry", function(done) {
-            done();
+            var entries = [
+                {
+                    id: "id1",
+                    matrix: new MatrixRoom("!foo:bar"),
+                    remote: new RemoteRoom("#foo")
+                },
+                {
+                    id: "id2",
+                    matrix: new MatrixRoom("!foo:bar"),
+                    remote: new RemoteRoom("#bar")
+                },
+                {
+                    id: "id3",
+                    matrix: new MatrixRoom("!fizz:buzz"),
+                    remote: new RemoteRoom("#fizz")
+                },
+                {
+                    id: "id4",
+                    matrix: new MatrixRoom("!zzz:zzz"),
+                    remote: new RemoteRoom("#buzz")
+                }
+            ];
+            Promise.all(
+                entries.map(function(e) { return store.upsertEntry(e); })
+            ).then(function() {
+                return store.getEntriesByMatrixIds(["!foo:bar", "!fizz:buzz"]);
+            }).done(function(results) {
+                expect(results["!foo:bar"].length).toEqual(2);
+                expect(results["!fizz:buzz"].length).toEqual(1);
+                
+                expect(results["!fizz:buzz"][0].remote.getId()).toEqual("#fizz");
+                expect(results["!foo:bar"].map(function(e) {
+                    return e.remote.getId();
+                }).sort()).toEqual(["#bar", "#foo"]);
+
+                done();
+            })
         });
     });
 
     describe("getEntriesByRemoteId", function() {
         it("should return for matching remote_ids", function(done) {
-            done();
+            var entry = {
+                id: "id1", matrix: new MatrixRoom("!foo:bar"),
+                remote: new RemoteRoom("#foo")
+            };
+            var entry2 = {
+                id: "id2", matrix: new MatrixRoom("!foo:bar"),
+                remote: new RemoteRoom("#bar")
+            };
+            Promise.all(
+                [store.upsertEntry(entry), store.upsertEntry(entry2)]
+            ).then(function() {
+                return store.getEntriesByRemoteId("#foo");
+            }).done(function(results) {
+                expect(results.length).toEqual(1);
+                expect(results[0].matrix.getId()).toEqual("!foo:bar");
+                done();
+            });
         });
     });
 
     describe("linkRooms", function() {
         it("should create a single entry", function(done) {
-            done();
+            var m = new MatrixRoom("!foo:bar");
+            m.set("mxkey", "mxval");
+            var r = new RemoteRoom("#foo");
+            r.set("remotekey", { "nested": "remote_val"});
+            store.linkRooms(m, r,
+                { some: "data_goes_here" },
+                "_custom_id"
+            ).then(function() {
+                return store.getEntryById("_custom_id");
+            }).done(function(entry) {
+                expect(entry.id).toEqual("_custom_id");
+                expect(entry.remote.getId()).toEqual("#foo");
+                expect(entry.remote.get("remotekey")).toEqual({nested: "remote_val"});
+                expect(entry.matrix.getId()).toEqual("!foo:bar");
+                expect(entry.matrix.get("mxkey")).toEqual("mxval");
+                expect(entry.data).toEqual({some: "data_goes_here"});
+                done();
+            });
         });
     });
 });

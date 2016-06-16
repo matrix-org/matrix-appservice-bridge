@@ -98,6 +98,66 @@ describe("RoomBridgeStore", function() {
         });
     });
 
+    describe("getEntriesByRemoteRoomData", function() {
+
+        it("should return entries based on remote room data", function(done) {
+            var entry = {
+                id: "flibble",
+                matrix: new MatrixRoom("!nothing:here"),
+                remote: new RemoteRoom("#foo"),
+            };
+            entry.remote.set("custom", "abc123");
+            store.upsertEntry(entry).then(function() {
+                return store.getEntriesByRemoteRoomData({
+                    custom: "abc123"
+                });
+            }).done(function(e) {
+                expect(e).toBeDefined();
+                if (!e) {
+                    done();
+                    return;
+                }
+                expect(e.length).toEqual(1);
+                if (!e[0]) {
+                    done();
+                    return;
+                }
+                expect(e[0].remote.getId()).toEqual("#foo");
+                done();
+            });
+        });
+    });
+
+    describe("getEntriesByMatrixRoomData", function() {
+
+        it("should return entries based on matrix room data", function(done) {
+            var entry = {
+                id: "flibble",
+                matrix: new MatrixRoom("!nothing:here"),
+                remote: new RemoteRoom("#foo"),
+            };
+            entry.matrix.set("custom", "abc123");
+            store.upsertEntry(entry).then(function() {
+                return store.getEntriesByMatrixRoomData({
+                    custom: "abc123"
+                });
+            }).done(function(e) {
+                expect(e).toBeDefined();
+                if (!e) {
+                    done();
+                    return;
+                }
+                expect(e.length).toEqual(1);
+                if (!e[0]) {
+                    done();
+                    return;
+                }
+                expect(e[0].matrix.getId()).toEqual("!nothing:here");
+                done();
+            });
+        });
+    });
+
     describe("getEntriesByMatrixId", function() {
         it("should return for matching matrix_ids", function(done) {
             var entry = {

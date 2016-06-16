@@ -158,6 +158,69 @@ describe("RoomBridgeStore", function() {
         });
     });
 
+    describe("removeEntriesByRemoteRoomData", function() {
+        it("should remove entries based on remote room data", function(done) {
+            var entry = {
+                id: "flibble",
+                matrix: new MatrixRoom("!nothing:here"),
+                remote: new RemoteRoom("#foo"),
+            };
+            entry.remote.set("custom", "abc123");
+            store.upsertEntry(entry).then(function() {
+                return store.getEntryById("flibble");
+            }).then(function(e) {
+                expect(e).not.toBeNull();
+                return store.removeEntriesByRemoteRoomData({
+                    custom: "abc123"
+                });
+            }).then(function() {
+                return store.getEntryById("flibble");
+            }).done(function(e) {
+                expect(e).toBeNull();
+                done();
+            });
+        });
+    });
+
+    describe("removeEntriesByMatrixRoomData", function() {
+        it("should remove entries based on matrix room data", function(done) {
+            var entry = {
+                id: "flibble",
+                matrix: new MatrixRoom("!nothing:here"),
+                remote: new RemoteRoom("#foo"),
+            };
+            entry.matrix.set("custom", "abc123");
+            var entry2 = {
+                id: "wibble",
+                matrix: new MatrixRoom("!foo:bar")
+            };
+            entry2.matrix.set("custom", "abc123");
+            store.upsertEntry(entry).then(function() {
+                return store.upsertEntry(entry2);
+            }).then(function() {
+                return [
+                    store.getEntryById("flibble"),
+                    store.getEntryById("wibble")
+                ];
+            }).spread(function(e, f) {
+                expect(e).not.toBeNull();
+                expect(f).not.toBeNull();
+                return store.removeEntriesByMatrixRoomData({
+                    custom: "abc123"
+                });
+            }).then(function() {
+                return [
+                    store.getEntryById("flibble"),
+                    store.getEntryById("wibble")
+                ];
+            }).spread(function(e, f) {
+                expect(e).toBeNull();
+                expect(f).toBeNull();
+                done();
+            });
+        });
+    });
+
     describe("getEntriesByMatrixId", function() {
         it("should return for matching matrix_ids", function(done) {
             var entry = {

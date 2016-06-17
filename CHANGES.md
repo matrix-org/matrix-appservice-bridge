@@ -1,3 +1,15 @@
+1.0.0 (2016-06-17)
+==================
+Modify the internal storage format of `RoomBridgeStore`. Change the public API
+of `RoomBridgeStore` to reflect the new storage format.
+
+**This is a backwards-incompatible database format change.** If you wish to
+upgrade from a 0.x version, you will need to write a script to upgrade your
+database.
+
+The storage format has been changed to improve performance when querying
+room mappings.
+
 0.3.7 (2016-06-14)
 ==================
 Reduced the number of queries run when store methods are called. Added new

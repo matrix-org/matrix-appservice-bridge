@@ -387,6 +387,43 @@ describe("Bridge", function() {
                 done();
             });
         });
+
+        it("should omit the context if disableContext is true",
+        function(done) {
+            var event = {
+                content: {
+                    body: "oh noes!",
+                    msgtype: "m.text"
+                },
+                user_id: "@alice:bar",
+                room_id: "!flibble:bar",
+                type: "m.room.message"
+            };
+            bridgeCtrl.onEvent.andCallFake(function(req) { req.resolve(); });
+
+            bridge = new Bridge({
+                homeserverUrl: HS_URL,
+                domain: HS_DOMAIN,
+                registration: appServiceRegistration,
+                userStore: userStore,
+                roomStore: roomStore,
+                controller: bridgeCtrl,
+                clientFactory: clientFactory,
+                disableContext: true
+            });
+
+            bridge.run(101, {}, appService).then(function() {
+                return appService.emit("event", event);
+            }).done(function() {
+                expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+                var call = bridgeCtrl.onEvent.calls[0];
+                var req = call.args[0];
+                var ctx = call.args[1];
+                expect(req.getData()).toEqual(event);
+                expect(ctx).toBeNull();
+                done();
+            });
+        });
     });
 
     describe("run", function() {

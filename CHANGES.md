@@ -1,3 +1,7 @@
+1.0.1 (2016-06-21)
+==================
+Added `disableContext` option to the `Bridge` class.
+
 1.0.0 (2016-06-17)
 ==================
 Modify the internal storage format of `RoomBridgeStore`. Change the public API

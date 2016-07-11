@@ -1,3 +1,8 @@
+1.1.1 (2016-07-11)
+==================
+Added a new component: `StateLookup`. Added a new `Bridge` callback:
+`onAliasQueried(alias, roomId)`.
+
 1.0.1 (2016-06-21)
 ==================
 Added `disableContext` option to the `Bridge` class.

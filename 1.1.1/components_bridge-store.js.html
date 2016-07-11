@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/bridge-store.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/bridge-store.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+var Promise = require("bluebird");
+
+// wrapper to use promises
+var callbackFn = function(d, err, result) {
+    if (err) {
+        d.reject(err);
+    }
+    else {
+        d.resolve(result);
+    }
+};
+
+/**
+ * Bridge store base class
+ * @constructor
+ * @param {Datastore} db
+ */
+function BridgeStore(db) {
+    this.db = db;
+}
+
+/**
+ * INSERT a multiple documents.
+ * @param {Object} objects
+ * @param {Deferred=} defer
+ * @return {Promise}
+ */
+BridgeStore.prototype.insert = function(objects, defer) {
+    defer = defer || new Promise.defer();
+    this.db.insert(objects, function(err, result) {
+        callbackFn(defer, err, result);
+    });
+    return defer.promise;
+};
+
+/**
+ * UPSERT a single document.
+ * @param {Object} query
+ * @param {Object} updateVals
+ * @param {Deferred=} defer
+ * @return {Promise}
+ */
+BridgeStore.prototype.upsert = function(query, updateVals, defer) {
+    defer = defer || new Promise.defer();
+    this.db.update(query, updateVals, {upsert: true}, function(err, result) {
+        callbackFn(defer, err, result);
+    });
+    return defer.promise;
+};
+
+/**
+ * INSERT IF NOT EXISTS a single document.
+ * @param {Object} query
+ * @param {Object} insertObj
+ * @return {Promise}
+ */
+BridgeStore.prototype.insertIfNotExists = function(query, insertObj) {
+    var self = this;
+    return self.selectOne(query).then(function(doc) {
+        if (doc) {
+            return Promise.resolve();
+        }
+        return self.insert(insertObj);
+    });
+};
+
+/**
+ * UPDATE a single document. If the document already exists, this will NOT update
+ * it.
+ * @param {Object} query
+ * @param {Object} updateVals
+ * @param {Deferred=} defer
+ * @return {Promise}
+ */
+BridgeStore.prototype.update = function(query, updateVals, defer) {
+    defer = defer || new Promise.defer();
+    this.db.update(query, updateVals, {upsert: false}, function(err, result) {
+        callbackFn(defer, err, result);
+    });
+    return defer.promise;
+};
+
+/**
+ * DELETE multiple documents.
+ * @param {Object} query
+ * @param {Deferred=} defer
+ * @return {Promise}
+ */
+BridgeStore.prototype.delete = function(query, defer) {
+    defer = defer || new Promise.defer();
+    this.db.remove(query, {multi: true}, function(err, result) {
+        callbackFn(defer, err, result);
+    });
+    return defer.promise;
+};
+
+/**
+ * SELECT a single document.
+ * @param {Object} query
+ * @param {Function} transformFn
+ * @param {Deferred=} defer
+ * @return {Promise}
+ */
+BridgeStore.prototype.selectOne = function(query, transformFn, defer) {
+    defer = defer || new Promise.defer();
+    this.db.findOne(query, function(err, doc) {
+        callbackFn(defer, err, transformFn ? transformFn(doc) : doc);
+    });
+    return defer.promise;
+};
+
+/**
+ * SELECT a number of documents.
+ * @param {Object} query
+ * @param {Function} transformFn
+ * @param {Deferred=} defer
+ * @return {Promise}
+ */
+BridgeStore.prototype.select = function(query, transformFn, defer) {
+    defer = defer || new Promise.defer();
+    this.db.find(query, function(err, docs) {
+        callbackFn(defer, err, transformFn ? transformFn(docs) : docs);
+    });
+    return defer.promise;
+};
+
+/**
+ * Set a UNIQUE key constraint on the given field.
+ * @param {string} fieldName The field name. Use dot notation for nested objects.
+ * @param {boolean} sparse Allow sparse entries (undefined won't cause a key
+ * violation). Default: false.
+ */
+BridgeStore.prototype.setUnique = function(fieldName, sparse) {
+    sparse = sparse || false;
+    this.db.ensureIndex({
+        fieldName: fieldName,
+        unique: true,
+        sparse: sparse
+    });
+};
+
+/**
+ * Convenience method to convert a document to something.
+ * @param {Function} func The function which will be called with a single document
+ * object. Guaranteed not to be null.
+ * @return {Function} A &lt;code>transformFn&lt;/code> function to pass to the standard
+ * select/delete/upsert/etc methods.
+ */
+BridgeStore.prototype.convertTo = function(func) {
+    return function(doc) {
+        if (!doc) { // findOne query will return 'null' on no matches.
+            return null;
+        }
+        if (Array.isArray(doc)) {
+            return doc.map(function(d) {
+                return func(d);
+            });
+        }
+        return func(doc);
+    };
+};
+
+module.exports = BridgeStore;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ConfigValidator.html">ConfigValidator</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="StateLookup.html">StateLookup</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Mon Jul 11 2016 15:39:28 GMT+0100 (BST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

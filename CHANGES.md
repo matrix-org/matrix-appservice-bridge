@@ -1,3 +1,8 @@
+1.2.0 (2016-07-26)
+==================
+Added new `RoomBridgeStore` methods: `getEntriesByLinkData` and
+`removeEntriesByLinkData`. See docs for function signatures and usage.
+
 1.1.1 (2016-07-11)
 ==================
 Added a new component: `StateLookup`. Added a new `Bridge` callback:

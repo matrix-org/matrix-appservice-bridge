@@ -221,6 +221,32 @@ describe("RoomBridgeStore", function() {
         });
     });
 
+    describe("removeEntriesByLinkData", function() {
+        it("should remove entries based on link data", function(done) {
+            var entry = {
+                id: "flibble",
+                matrix: new MatrixRoom("!nothing:here"),
+                remote: new RemoteRoom("#foo"),
+                data: {
+                    foo: "bar"
+                }
+            };
+            store.linkRooms(entry.matrix, entry.remote, entry.data).then(function() {
+                return store.getEntriesByLinkData({foo: "bar"});
+            }).then(function(e) {
+                expect(e.length).toEqual(1);
+                return store.removeEntriesByLinkData({
+                    foo: "bar"
+                });
+            }).then(function() {
+                return store.getEntriesByLinkData({foo: "bar"});
+            }).done(function(e) {
+                expect(e.length).toEqual(0);
+                done();
+            });
+        });
+    });
+
     describe("getEntriesByMatrixId", function() {
         it("should return for matching matrix_ids", function(done) {
             var entry = {

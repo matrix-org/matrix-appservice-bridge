@@ -43,14 +43,14 @@ process.exit(0);
 // ** You will probably want to customise these functions **
 // *********************************************************
 
-function generateMatrixID(opts)
+function generateMatrixEntry(opts)
 {
-    return opts.matrix_id;
+    return null;
 }
 
-function generateRemoteID(opts)
+function generateRemoteEntry(opts)
 {
-    return opts.remote_id;
+    return null;
 }
 
 function generateLinkId(opts)
@@ -106,11 +106,9 @@ var upgradeRooms = Promise.coroutine(function*(db) {
                 }
                 matrixRooms[e.id] = e.data;
 
-                var id = generateMatrixID({matrix_id: e.id, matrix: e.data});
-                insert(id, {
-                    matrix_id: e.id,
-                    matrix: e.data,
-                });
+                var entry = generateMatrixEntry({matrix_id: e.id, matrix: e.data});
+                if (entry) insert(entry.id, entry);
+
                 break;
             case "remote":
                 if (remoteRooms[e.id]) {
@@ -118,11 +116,9 @@ var upgradeRooms = Promise.coroutine(function*(db) {
                 }
                 remoteRooms[e.id] = e.data;
 
-                var id = generateRemoteID({remote_id: e.id, remote: e.data});
-                insert(id, {
-                    remote_id: e.id,
-                    remote: e.data,
-                });
+                var entry = generateRemoteEntry({remote_id: e.id, remote: e.data});
+                if (entry) insert(entry.id, entry);
+
                 break;
         }
     });

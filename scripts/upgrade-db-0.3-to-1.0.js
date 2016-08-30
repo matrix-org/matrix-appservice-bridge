@@ -109,7 +109,6 @@ var upgradeRooms = Promise.coroutine(function*(db) {
                 var id = generateMatrixID({matrix_id: e.id, matrix: e.data});
                 insert(id, {
                     matrix_id: e.id,
-                    remote_id: null,
                     matrix: e.data,
                 });
                 break;
@@ -121,7 +120,6 @@ var upgradeRooms = Promise.coroutine(function*(db) {
 
                 var id = generateRemoteID({remote_id: e.id, remote: e.data});
                 insert(id, {
-                    matrix_id: null,
                     remote_id: e.id,
                     remote: e.data,
                 });

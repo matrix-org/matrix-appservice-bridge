@@ -34,7 +34,11 @@ if (opts.help) {
 --------------------------------------
 
  Usage:
-   --rooms   The path to rooms.db. Required.`
+   --rooms   The path to rooms.db. Required.
+
+A new room database file will be created in a directory called "1.0-db". The
+existing database file will not be modified.
+`
 );
 process.exit(0);
 }

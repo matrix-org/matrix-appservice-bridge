@@ -45,16 +45,37 @@ process.exit(0);
 
 function generateMatrixEntry(opts)
 {
+    // This function should return an object to represent a 'type=matrix' entry
+    // or 'null' if it does not wish to emit unlinked entries.
+    //
+    // opts will contain:
+    //   'matrix': the 'data' field from the old database format
+    //   'matrix_id': the 'id' field from the old database format
     return null;
 }
 
 function generateRemoteEntry(opts)
 {
+    // This function should return an object to represent a 'type=remote' entry
+    // or 'null' if it does not wish to emit unlinked entries.
+    //
+    // opts will contain:
+    //   'remote': the 'data' field from the old database format
+    //   'remote_id': the 'id' field from the old database format
     return null;
 }
 
 function generateLinkId(opts)
 {
+    // This function should return a string to use as the 'id' field for linked
+    // entries. Its behaviour should match the way that such IDs are generated
+    // by the application service code.
+    //
+    // opts will contain:
+    //   'matrix': the 'data' field for the matrix object
+    //   'remote': the 'data' field for the remote object
+    //   'matrix_id': the 'id' field for the matrix object
+    //   'remote_id': the 'id' field for the remote object
     return opts.matrix_id + " " + opts.remote_id;
 }
 

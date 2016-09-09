@@ -1,3 +1,15 @@
+1.3.0 (2016-09-09)
+==================
+Improved queueing of pending messages to send to the homeserver to store one
+queue per destination room. This stops large amounts of traffic to a busy room
+from holding up traffic on other rooms.
+
+Added a `getProfileInfo` method on user intent objects to wrap the
+corresponding `matrix-js-sdk` client method.
+
+Added a convenience in the bridge controller to wrap the new `/thirdparty`
+API.
+
 1.2.1 (2016-08-08)
 ==================
 Increased the default dependency of the JS SDK to 0.5.3. This is to allow

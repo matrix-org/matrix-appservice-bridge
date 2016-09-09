@@ -1,3 +1,7 @@
+1.3.0 (2016-09-09)
+==================
+TODO
+
 1.2.1 (2016-08-08)
 ==================
 Increased the default dependency of the JS SDK to 0.5.3. This is to allow

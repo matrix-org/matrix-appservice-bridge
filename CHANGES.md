@@ -1,3 +1,13 @@
+1.3.1 (2016-10-19)
+==================
+Third Party Lookup:
+ - 3PL/3PU lookups now return lists instead of individual results
+ - Reverse lookups now possible
+
+Added Intent function `sendReadReceipt`
+
+`ContentRepo` now exported as pass-through from `matrix-js-sdk`.
+
 1.3.0 (2016-09-09)
 ==================
 Improved queueing of pending messages to send to the homeserver to store one

@@ -1,6 +1,6 @@
 1.3.2 (2016-10-25)
 ==================
-Bump dependency on matrix-org/matrix-appservice-node from `0.3.1` to `0.3.3`. See (https://github.com/matrix-org/matrix-appservice-node/blob/1ff56e9c11d8536f2ce7043279818bfa61b8fa91/CHANGELOG.md#v033matrix-appservice-node#)
+Bump dependency on matrix-org/matrix-appservice-node from `0.3.1` to `0.3.3`. See (the matrix-appservice-node changelog)[https://github.com/matrix-org/matrix-appservice-node/blob/1ff56e9c11d8536f2ce7043279818bfa61b8fa91/CHANGELOG.md#v033matrix-appservice-node#].
 
 1.3.1 (2016-10-19)
 ==================

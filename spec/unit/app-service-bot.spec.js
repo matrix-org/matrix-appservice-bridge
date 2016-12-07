@@ -51,7 +51,7 @@ describe("AppServiceBot", function() {
                             }
                         }
                     }
-                } 
+                }
             }));
             bot.getMemberLists().done(function(result) {
                 expect(result["!foo:bar"].realJoinedUsers).toEqual([
@@ -76,7 +76,7 @@ describe("AppServiceBot", function() {
                             }
                         }
                     }
-                } 
+                }
             }));
             bot.getMemberLists().done(function(result) {
                 expect(result["!foo:bar"].remoteJoinedUsers).toEqual([

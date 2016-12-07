@@ -39,14 +39,19 @@ describe("AppServiceBot", function() {
 
         it("should return joined members only from initial sync", function(done) {
             client._http.authedRequestWithPrefix.andReturn(Promise.resolve({
-                rooms: [{
-                    room_id: "!foo:bar",
-                    state: [
-                        memberEvent("!foo:bar", "@alice:bar", "join"),
-                        memberEvent("!foo:bar", "@bob:bar", "invite"),
-                        memberEvent("!foo:bar", "@charlie:bar", "leave")
-                    ]
-                }]
+                rooms: {
+                    join: {
+                        "!foo:bar": {
+                            state: {
+                                events: [
+                                memberEvent("!foo:bar", "@alice:bar", "join"),
+                                memberEvent("!foo:bar", "@bob:bar", "invite"),
+                                memberEvent("!foo:bar", "@charlie:bar", "leave")
+                                ]
+                            }
+                        }
+                    }
+                }
             }));
             bot.getMemberLists().done(function(result) {
                 expect(result["!foo:bar"].realJoinedUsers).toEqual([
@@ -60,13 +65,18 @@ describe("AppServiceBot", function() {
 
         it("should not return the bot itself as a remote user", function(done) {
             client._http.authedRequestWithPrefix.andReturn(Promise.resolve({
-                rooms: [{
-                    room_id: "!foo:bar",
-                    state: [
-                        memberEvent("!foo:bar", "@test_alice:bar", "join"),
-                        memberEvent("!foo:bar", botUserId, "join")
-                    ]
-                }]
+                rooms: {
+                    join: {
+                        "!foo:bar": {
+                            state: {
+                                events: [
+                                memberEvent("!foo:bar", "@test_alice:bar", "join"),
+                                memberEvent("!foo:bar", botUserId, "join")
+                                ]
+                            }
+                        }
+                    }
+                }
             }));
             bot.getMemberLists().done(function(result) {
                 expect(result["!foo:bar"].remoteJoinedUsers).toEqual([
@@ -81,13 +91,18 @@ describe("AppServiceBot", function() {
         it("should return remote users which match the registration regex",
         function(done) {
             client._http.authedRequestWithPrefix.andReturn(Promise.resolve({
-                rooms: [{
-                    room_id: "!foo:bar",
-                    state: [
-                        memberEvent("!foo:bar", "@test_alice:bar", "join"),
-                        memberEvent("!foo:bar", "@alice:bar", "join")
-                    ]
-                }]
+                rooms: {
+                    join: {
+                        "!foo:bar": {
+                            state: {
+                                events: [
+                                memberEvent("!foo:bar", "@test_alice:bar", "join"),
+                                memberEvent("!foo:bar", "@alice:bar", "join")
+                                ]
+                            }
+                        }
+                    }
+                }
             }));
             bot.getMemberLists().done(function(result) {
                 expect(result["!foo:bar"].remoteJoinedUsers).toEqual([

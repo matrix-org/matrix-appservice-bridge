@@ -1,3 +1,20 @@
+1.3.4 (2016-12-15)
+==================
+
+Added `AppServiceBot` function `getJoinedRooms` for getting a list of joined
+room IDs for the AS bot and function `getJoinedMembers` for getting a map of
+joined user IDs for the given room ID. The values in the map are with a
+`display_name` and `avatar_url` properties.
+
+Switched the prometheus metrics from using the `prometheus-client` library to
+the `prom-client` library.
+
+Added `PrometheusMetrics` functions `addTimer` and `startTimer` for manipulating
+timer metrics for the bridge.
+
+Bumped matrix-org/matrix-js-sdk dependency from `0.5.3` to `0.7.2`. See
+[the matrix-js-sdk changelog](https://github.com/matrix-org/matrix-js-sdk/blob/master/CHANGELOG.md#changes-in-072-2016-12-15)
+
 1.3.3 (2016-11-24)
 ==================
 Metrics.js has been refactored from matrix-appservice-{slack,gitter} to this repo. Bridge intent objects and Matrix client API calls are now counted as part of the new metrics functionality.

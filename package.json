@@ -8,9 +8,7 @@
     "lint": "eslint lib/ spec/",
     "test": "BLUEBIRD_DEBUG=1 jasmine-node spec --verbose --forceexit --captureExceptions",
     "check": "npm run lint && npm test",
-    "ci-test": "istanbul cover --report cobertura -i \"lib/**/*.js\" jasmine-node -- spec --verbose --junitreport --forceexit --captureExceptions || true",
-    "ci-lint": "eslint lib/ spec/ --format checkstyle > ci-lint.xml || true",
-    "ci": "npm run ci-lint; npm run ci-test"
+    "ci-test": "istanbul cover --report text -i \"lib/**/*.js\" jasmine-node -- spec --verbose --forceexit --captureExceptions"
   },
   "repository": {
     "type": "git",

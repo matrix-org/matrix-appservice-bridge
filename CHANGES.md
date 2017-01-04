@@ -1,3 +1,9 @@
+1.3.5 (2017-01-04)
+==================
+
+Specify a `localTimeoutMs` of 2 minutes for every outbound HTTP request to
+prevent connections from wedging if a response is never returned.
+
 1.3.4 (2016-12-15)
 ==================
 

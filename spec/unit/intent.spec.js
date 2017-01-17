@@ -266,4 +266,127 @@ describe("Intent", function() {
             })
         });
     });
+
+    describe("sending message events", function() {
+        var content = {
+            body: "hello world",
+            msgtype: "m.text",
+        };
+
+        beforeEach(function() {
+            intent.opts.dontCheckPowerLevel = true;
+            // not interested in joins, so no-op them.
+            intent.onEvent({
+                event_id: "test",
+                type: "m.room.member",
+                state_key: userId,
+                room_id: roomId,
+                content: {
+                    membership: "join"
+                }
+            });
+        });
+
+        it("should immediately try to send the event if joined/have pl", function(done) {
+            client.sendEvent.andReturn(Promise.resolve({
+                event_id: "$abra:kadabra"
+            }));
+            intent.sendMessage(roomId, content).done(function() {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId, "m.room.message", content
+                );
+                done();
+            });
+        });
+
+        it("should fail if get an error that isn't M_FORBIDDEN", function(done) {
+            client.sendEvent.andReturn(Promise.reject({
+                error: "Oh no",
+                errcode: "M_UNKNOWN"
+            }));
+            intent.sendMessage(roomId, content).catch(function() {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId, "m.room.message", content
+                );
+                done();
+            });
+        });
+
+        it("should try to join the room on M_FORBIDDEN then resend", function(done) {
+            var isJoined = false;
+            client.sendEvent.andCallFake(function() {
+                if (isJoined) {
+                    return Promise.resolve({
+                        event_id: "$12345:6789"
+                    });
+                }
+                return Promise.reject({
+                    error: "You are not joined",
+                    errcode: "M_FORBIDDEN"
+                });
+            });
+            client.joinRoom.andCallFake(function(joinRoomId) {
+                isJoined = true;
+                return Promise.resolve({
+                    room_id: joinRoomId,
+                });
+            });
+            intent.sendMessage(roomId, content).done(function() {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId, "m.room.message", content
+                );
+                expect(client.joinRoom).toHaveBeenCalledWith(roomId, { syncRoom: false });
+                done();
+            });
+        });
+
+        it("should fail if the join on M_FORBIDDEN fails", function(done) {
+            client.sendEvent.andCallFake(function() {
+                return Promise.reject({
+                    error: "You are not joined",
+                    errcode: "M_FORBIDDEN"
+                });
+            });
+            client.joinRoom.andReturn(Promise.reject({
+                error: "Never!",
+                errcode: "M_YOU_ARE_A_FISH"
+            }));
+            intent.sendMessage(roomId, content).catch(function() {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId, "m.room.message", content
+                );
+                expect(client.joinRoom).toHaveBeenCalledWith(roomId, { syncRoom: false });
+                done();
+            });
+        });
+
+        it("should fail if the resend after M_FORBIDDEN fails", function(done) {
+            var isJoined = false;
+            client.sendEvent.andCallFake(function() {
+                if (isJoined) {
+                    return Promise.reject({
+                        error: "Internal Server Error",
+                        errcode: "M_WHOOPSIE",
+                    });
+                }
+                return Promise.reject({
+                    error: "You are not joined",
+                    errcode: "M_FORBIDDEN",
+                });
+            });
+            client.joinRoom.andCallFake(function(joinRoomId) {
+                isJoined = true;
+                return Promise.resolve({
+                    room_id: joinRoomId,
+                });
+            });
+            intent.sendMessage(roomId, content).catch(function() {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId, "m.room.message", content
+                );
+                expect(client.joinRoom).toHaveBeenCalledWith(roomId, { syncRoom: false });
+                done();
+            });
+        });
+    });
 });

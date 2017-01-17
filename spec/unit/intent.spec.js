@@ -295,6 +295,7 @@ describe("Intent", function() {
                 expect(client.sendEvent).toHaveBeenCalledWith(
                     roomId, "m.room.message", content
                 );
+                expect(client.joinRoom).not.toHaveBeenCalled();
                 done();
             });
         });
@@ -308,6 +309,7 @@ describe("Intent", function() {
                 expect(client.sendEvent).toHaveBeenCalledWith(
                     roomId, "m.room.message", content
                 );
+                expect(client.joinRoom).not.toHaveBeenCalled();
                 done();
             });
         });

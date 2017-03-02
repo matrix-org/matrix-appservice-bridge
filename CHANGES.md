@@ -1,3 +1,8 @@
+1.3.7 (2017-03-02)
+==================
+
+Allow the default SUCCESS/FAILED log lines to be turned off via `opts.logRequestOutcome`.
+
 1.3.6 (2017-01-17)
 ==================
 

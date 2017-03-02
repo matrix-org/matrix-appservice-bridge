@@ -1,3 +1,10 @@
+1.3.6 (2017-01-17)
+==================
+
+Fixed a bug in the `Intent` class which could cause message sending to fail
+with `M_FORBIDDEN` errors due to not being joined to the room. The class
+now handles this case and will join the room before resending the message.
+
 1.3.5 (2017-01-04)
 ==================
 

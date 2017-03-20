@@ -8,14 +8,14 @@ describe("Intent", function() {
     var userId = "@alice:bar";
     var botUserId = "@bot:user";
     var roomId = "!foo:bar";
-    var alreadyRegistered = {
-        registered: true
-    };
 
     beforeEach(
     /** @this */
     function() {
         log.beforeEach(this);
+        var alreadyRegistered = {
+            registered: true
+        };
         var clientFields = [
             "credentials", "joinRoom", "invite", "leave", "ban", "unban",
             "kick", "getStateEvent", "setPowerLevel", "sendTyping", "sendEvent",

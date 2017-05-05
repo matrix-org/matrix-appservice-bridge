@@ -471,11 +471,26 @@ describe("Bridge", function() {
             });
         });
 
-        it("should return the same intent on multiple invokations", function() {
+        it("should return the same intent on multiple invokations within the cull time",
+        function() {
             var intent = bridge.getIntent("@foo:bar");
             intent._test = 42; // sentinel
             var intent2 = bridge.getIntent("@foo:bar");
             expect(intent).toEqual(intent2);
+        });
+
+        it(
+        "should not return the same intent on multiple invokations outside the cull time",
+        function() {
+            // TODO
+        });
+
+        it("should not cull intents which are accessed again via getIntent", function() {
+            // TODO
+        });
+
+        it("should keep culled Intents up-to-date with incoming events", function() {
+            // TODO
         });
 
         it("should keep the Intent up-to-date with incoming events", function(done) {

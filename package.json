@@ -6,9 +6,9 @@
   "scripts": {
     "gendoc": "jsdoc -r lib -R README.md -P package.json -d .jsdoc",
     "lint": "eslint lib/ spec/",
-    "test": "BLUEBIRD_DEBUG=1 jasmine-node spec --verbose --forceexit --captureExceptions",
+    "test": "BLUEBIRD_DEBUG=1 jasmine --stop-on-failure=true",
     "check": "npm run lint && npm test",
-    "ci-test": "istanbul cover --report text -i \"lib/**/*.js\" jasmine-node -- spec --verbose --forceexit --captureExceptions"
+    "ci-test": "BLUEBIRD_DEBUG=1 istanbul cover -x \"**/spec/**\" --report text -i \"lib/**/*.js\" jasmine"
   },
   "repository": {
     "type": "git",
@@ -37,7 +37,7 @@
   "devDependencies": {
     "jsdoc": "^3.3.2",
     "istanbul": "^0.3.18",
-    "jasmine-node": "^1.14.5",
+    "jasmine": "^2.5.2",
     "eslint": "^1.2.0"
   }
 }

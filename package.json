@@ -8,7 +8,7 @@
     "lint": "eslint lib/ spec/",
     "test": "BLUEBIRD_DEBUG=1 jasmine --stop-on-failure=true",
     "check": "npm run lint && npm test",
-    "ci-test": "BLUEBIRD_DEBUG=1 istanbul cover -x \"**/spec/**\" --report text -i \"lib/**/*.js\" jasmine"
+    "ci-test": "BLUEBIRD_DEBUG=1 istanbul cover -x \"**/spec/**\" --report text jasmine"
   },
   "repository": {
     "type": "git",

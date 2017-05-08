@@ -111,7 +111,7 @@ describe("Bridge", function() {
                 clientFactory: clientFactory
             });
             done();
-        });
+        }).done();
     });
 
     afterEach(function() {
@@ -133,7 +133,8 @@ describe("Bridge", function() {
         it("should invoke the user-supplied onUserQuery function with the right args",
         function(done) {
             bridge.run(101, {}, appService);
-            appService.onUserQuery("@alice:bar").finally(function() {
+            appService.onUserQuery("@alice:bar").catch(function(){}).finally(
+            function() {
                 expect(bridgeCtrl.onUserQuery).toHaveBeenCalled();
                 var call = bridgeCtrl.onUserQuery.calls.argsFor(0);
                 var mxUser = call[0];
@@ -146,7 +147,7 @@ describe("Bridge", function() {
         function(done) {
             bridgeCtrl.onUserQuery.and.returnValue(null);
             bridge.run(101, {}, appService);
-            appService.onUserQuery("@alice:bar").finally(function() {
+            appService.onUserQuery("@alice:bar").catch(function() {}).finally(function() {
                 expect(clients["bot"].register).not.toHaveBeenCalled();
                 done();
             });
@@ -167,7 +168,7 @@ describe("Bridge", function() {
         it("should invoke the user-supplied onAliasQuery function with the right args",
         function(done) {
             bridge.run(101, {}, appService);
-            appService.onAliasQuery("#foo:bar").finally(function() {
+            appService.onAliasQuery("#foo:bar").catch(function() {}).finally(function() {
                 expect(bridgeCtrl.onAliasQuery).toHaveBeenCalledWith("#foo:bar", "foo");
                 done();
             });

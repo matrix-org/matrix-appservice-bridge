@@ -214,7 +214,9 @@ describe("Intent", function() {
         it("should get the power levels before sending if it doesn't know them",
         function(done) {
             client.sendStateEvent.and.returnValue(Promise.resolve({}));
-            client.getStateEvent.and.returnValue(Promise.resolve(validPowerLevels.content));
+            client.getStateEvent.and.returnValue(
+                Promise.resolve(validPowerLevels.content)
+            );
 
             intent.setRoomTopic(roomId, "Hello world").done(function() {
                 expect(client.getStateEvent).toHaveBeenCalledWith(

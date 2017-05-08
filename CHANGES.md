@@ -12,6 +12,8 @@ the number of `Intent` objects).
 Cull `Intent` objects which are accessed via `Bridge.getIntent` after an eviction
 period. This reduces memory usage.
 
+`a` release: Bugfixes whereby the bot `Intent` could forget its state.
+
 1.3.7 (2017-03-02)
 ==================
 

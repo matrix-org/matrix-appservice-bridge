@@ -1,3 +1,17 @@
+1.4.0 (2017-05-08)
+==================
+
+Added `dontJoin` option to `Intent` class for use when the bridge is maintaining
+its own membership state for each user.
+
+Share data structures created by `Intent` objects when accessed via the `Bridge`
+class. This reduces memory usage and CPU usage as only 1 map needs to be updated
+when new member/power level events are received, rather than N maps (where N is
+the number of `Intent` objects).
+
+Cull `Intent` objects which are accessed via `Bridge.getIntent` after an eviction
+period. This reduces memory usage.
+
 1.3.7 (2017-03-02)
 ==================
 

@@ -538,6 +538,11 @@ describe("Bridge", function() {
         });
 
         it("should keep culled Intents up-to-date with incoming events", function(done) {
+            // We tell the bridge that @foo:bar is joined to the room.
+            // Therefore, we expect that intent.join() should NOT call the SDK's join
+            // method. This should still be the case even if the Intent object is culled
+            // and we try to join using a new intent, in addition to if we use the old
+            // stale Intent.
             var client = mkMockMatrixClient("@foo:bar");
             client.joinRoom.and.returnValue(Promise.resolve({})); // shouldn't be called
             clients["@foo:bar"] = client;

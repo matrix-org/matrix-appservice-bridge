@@ -6,6 +6,11 @@ describe("RequestFactory", function() {
 
     beforeEach(function() {
         factory = new RequestFactory();
+        jasmine.clock().install();
+    });
+
+    afterEach(function() {
+        jasmine.clock().uninstall();
     });
 
     it("addDefaultResolveCallback should be invoked on resolved requests",
@@ -56,48 +61,43 @@ describe("RequestFactory", function() {
 
     it("addDefaultTimeoutCallback should be invoked after a set time",
     function() {
-        jasmine.Clock.useMock();
-
         var fired = false;
         factory.addDefaultTimeoutCallback(function(req) {
             fired = true;
         }, 1500);
         factory.newRequest();
-        jasmine.Clock.tick(1000);
+        jasmine.clock().tick(1000);
         expect(fired).toBe(false);
-        jasmine.Clock.tick(500);
+        jasmine.clock().tick(500);
         expect(fired).toBe(true);
     });
 
     it("addDefaultTimeoutCallback should not be invoked on resolved requests",
     function() {
         var r1;
-        jasmine.Clock.useMock();
-
         var fired = false;
         factory.addDefaultTimeoutCallback(function(req) {
             fired = true;
         }, 1500);
         r1 = factory.newRequest();
-        jasmine.Clock.tick(1000);
+        jasmine.clock().tick(1000);
         r1.resolve("yup");
-        jasmine.Clock.tick(1000);
+        jasmine.clock().tick(1000);
         expect(fired).toBe(false);
     });
 
     it("addDefaultTimeoutCallback should not be invoked on rejected requests",
     function() {
         var r1;
-        jasmine.Clock.useMock();
 
         var fired = false;
         factory.addDefaultTimeoutCallback(function(req) {
             fired = true;
         }, 1500);
         r1 = factory.newRequest();
-        jasmine.Clock.tick(1000);
+        jasmine.clock().tick(1000);
         r1.reject("narp");
-        jasmine.Clock.tick(1000);
+        jasmine.clock().tick(1000);
         expect(fired).toBe(false);
     });
 });

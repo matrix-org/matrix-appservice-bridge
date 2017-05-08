@@ -15,13 +15,19 @@ describe("StateLookup", function() {
             eventTypes: ["m.room.member", "m.room.name"],
             client: cli
         });
+        jasmine.clock().install();
+    });
+
+    afterEach(function() {
+        jasmine.clock().uninstall();
     });
 
     describe("trackRoom", function() {
         it("should return a Promise which is resolved after the HTTP call " +
         "to /state returns", function(done) {
+            jasmine.clock().uninstall(); // actually wait 5ms
             var statePromise = createStatePromise([]);
-            cli.roomState.andReturn(statePromise.promise);
+            cli.roomState.and.returnValue(statePromise.promise);
             var p = lookup.trackRoom("!foo:bar");
             expect(p.isPending()).toBe(true); // not resolved HTTP call yet
             Promise.delay(5).then(function() {
@@ -36,7 +42,7 @@ describe("StateLookup", function() {
         it("should return the same Promise if called multiple times with the " +
         "same room ID", function() {
             var statePromise = createStatePromise([]);
-            cli.roomState.andReturn(statePromise.promise);
+            cli.roomState.and.returnValue(statePromise.promise);
             var p = lookup.trackRoom("!foo:bar");
             var q = lookup.trackRoom("!foo:bar");
             expect(p).toBe(q);
@@ -45,7 +51,7 @@ describe("StateLookup", function() {
         it("should be able to have >1 in-flight track requests at once", function(done) {
             var stateA = createStatePromise([]);
             var stateB = createStatePromise([]);
-            cli.roomState.andCallFake(function(roomId) {
+            cli.roomState.and.callFake(function(roomId) {
                 if (roomId === "!a:foobar") {
                     return stateA.promise;
                 }
@@ -67,9 +73,8 @@ describe("StateLookup", function() {
         });
 
         it("should retry the HTTP call on non 4xx, 5xx errors", function(done) {
-            jasmine.Clock.useMock();
             var count = 0;
-            cli.roomState.andCallFake(function(roomId) {
+            cli.roomState.and.callFake(function(roomId) {
                 count += 1;
                 if (count < 3) {
                     // We need to tick time only *AFTER* the rejection handler
@@ -78,7 +83,7 @@ describe("StateLookup", function() {
                     var p = Promise.reject(new Error("network error"));
                     p.catch(function(err) {
                         process.nextTick(function() {
-                            jasmine.Clock.tick(10 * 1000); // 10s
+                            jasmine.clock().tick(10 * 1000); // 10s
                         });
                     });
                     return p;
@@ -93,7 +98,7 @@ describe("StateLookup", function() {
         });
 
         it("should fail the promise if the HTTP call returns 4xx", function(done) {
-            cli.roomState.andCallFake(function(roomId) {
+            cli.roomState.and.callFake(function(roomId) {
                 return Promise.reject({
                     httpStatus: 403
                 });
@@ -106,7 +111,7 @@ describe("StateLookup", function() {
         });
 
         it("should fail the promise if the HTTP call returns 5xx", function(done) {
-            cli.roomState.andCallFake(function(roomId) {
+            cli.roomState.and.callFake(function(roomId) {
                 return Promise.reject({
                     httpStatus: 500
                 });
@@ -121,7 +126,7 @@ describe("StateLookup", function() {
 
     describe("onEvent", function() {
         it("should update the state lookup map", function(done) {
-            cli.roomState.andCallFake(function(roomId) {
+            cli.roomState.and.callFake(function(roomId) {
                 return Promise.resolve([
                     {type: "m.room.name", state_key: "", room_id: "!foo:bar",
                         content: { name: "Foo" }}
@@ -148,7 +153,7 @@ describe("StateLookup", function() {
                 {type: "m.room.name", state_key: "", room_id: "!foo:bar",
                         content: { name: "Foo" }}
             ]);
-            cli.roomState.andReturn(statePromise.promise);
+            cli.roomState.and.returnValue(statePromise.promise);
             var p = lookup.trackRoom("!foo:bar");
             expect(p.isPending()).toBe(true); // not resolved HTTP call yet
             // this event should clobber response from HTTP call
@@ -169,7 +174,7 @@ describe("StateLookup", function() {
 
     describe("getState", function() {
         beforeEach(function(done) {
-            cli.roomState.andCallFake(function(roomId) {
+            cli.roomState.and.callFake(function(roomId) {
                 return Promise.resolve([
                     {type: "m.room.name", state_key: "", content: { name: "Foo" }},
                     {type: "m.room.topic", state_key: "", content: { name: "Bar" }},

@@ -17,7 +17,7 @@ describe("AppServiceBot", function() {
         };
         client._http = jasmine.createSpyObj("MatrixHttpApi", ["authedRequestWithPrefix"]);
         reg = jasmine.createSpyObj("AppServiceRegistration", ["getOutput"]);
-        reg.getOutput.andReturn({
+        reg.getOutput.and.returnValue({
             namespaces: {
                 users: [{
                     regex: "@test_.*",
@@ -31,14 +31,14 @@ describe("AppServiceBot", function() {
     describe("getMemberLists", function() {
 
         it("should fail if the HTTP request fails", function(done) {
-            client._http.authedRequestWithPrefix.andReturn(Promise.reject("nope"));
+            client._http.authedRequestWithPrefix.and.returnValue(Promise.reject("nope"));
             bot.getMemberLists().catch(function(e) {
                 done();
             });
         });
 
         it("should return joined members only from initial sync", function(done) {
-            client._http.authedRequestWithPrefix.andReturn(Promise.resolve({
+            client._http.authedRequestWithPrefix.and.returnValue(Promise.resolve({
                 rooms: {
                     join: {
                         "!foo:bar": {
@@ -64,7 +64,7 @@ describe("AppServiceBot", function() {
         });
 
         it("should not return the bot itself as a remote user", function(done) {
-            client._http.authedRequestWithPrefix.andReturn(Promise.resolve({
+            client._http.authedRequestWithPrefix.and.returnValue(Promise.resolve({
                 rooms: {
                     join: {
                         "!foo:bar": {
@@ -90,7 +90,7 @@ describe("AppServiceBot", function() {
 
         it("should return remote users which match the registration regex",
         function(done) {
-            client._http.authedRequestWithPrefix.andReturn(Promise.resolve({
+            client._http.authedRequestWithPrefix.and.returnValue(Promise.resolve({
                 rooms: {
                     join: {
                         "!foo:bar": {

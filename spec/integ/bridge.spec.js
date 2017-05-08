@@ -133,7 +133,7 @@ describe("Bridge", function() {
         it("should invoke the user-supplied onUserQuery function with the right args",
         function(done) {
             bridge.run(101, {}, appService);
-            appService.onUserQuery("@alice:bar").catch(function(){}).finally(
+            appService.onUserQuery("@alice:bar").catch(function() {}).finally(
             function() {
                 expect(bridgeCtrl.onUserQuery).toHaveBeenCalled();
                 var call = bridgeCtrl.onUserQuery.calls.argsFor(0);

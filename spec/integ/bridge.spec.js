@@ -465,16 +465,52 @@ describe("Bridge", function() {
     });
 
     describe("getIntent", function() {
+        // 2h which should be long enough to cull it
+        var cullTimeMs = 1000 * 60 * 60 * 2;
 
         beforeEach(function(done) {
+            jasmine.clock().install();
+            jasmine.clock().mockDate();
             bridge.run(101, {}, appService).done(function() {
                 done();
             });
         });
 
-        it("should return the same intent on multiple invokations", function() {
+        afterEach(function() {
+            jasmine.clock().uninstall();
+        });
+
+        it("should return the same intent on multiple invokations within the cull time",
+        function() {
             var intent = bridge.getIntent("@foo:bar");
-            intent._test = 42; // sentinel
+            // sentinel. If the same object is returned, this will be present.
+            intent._test = 42;
+            var intent2 = bridge.getIntent("@foo:bar");
+            expect(intent).toEqual(intent2);
+        });
+
+        it(
+        "should not return the same intent on multiple invokations outside the cull time",
+        function() {
+            var intent = bridge.getIntent("@foo:bar");
+            // sentinel. If the same object is returned, this will be present.
+            intent._test = 42;
+            jasmine.clock().tick(cullTimeMs);
+            var intent2 = bridge.getIntent("@foo:bar");
+            expect(intent).not.toEqual(intent2);
+        });
+
+        it("should not cull intents which are accessed again via getIntent", function() {
+            var intent = bridge.getIntent("@foo:bar");
+            // sentinel. If the same object is returned, this will be present.
+            intent._test = 42;
+
+            // Call getIntent 1000 times evenly up to the cull time. If the cull time is
+            // 2hrs, then this is called once every ~7.2s
+            for (var i = 0; i < 1000; i ++) {
+                jasmine.clock().tick(cullTimeMs/1000);
+                bridge.getIntent("@foo:bar");
+            }
             var intent2 = bridge.getIntent("@foo:bar");
             expect(intent).toEqual(intent2);
         });
@@ -496,6 +532,41 @@ describe("Bridge", function() {
             };
             appService.emit("event", joinEvent);
             intent.join("!flibble:bar").done(function() {
+                expect(client.joinRoom).not.toHaveBeenCalled();
+                done();
+            });
+        });
+
+        it("should keep culled Intents up-to-date with incoming events", function(done) {
+            // We tell the bridge that @foo:bar is joined to the room.
+            // Therefore, we expect that intent.join() should NOT call the SDK's join
+            // method. This should still be the case even if the Intent object is culled
+            // and we try to join using a new intent, in addition to if we use the old
+            // stale Intent.
+            var client = mkMockMatrixClient("@foo:bar");
+            client.joinRoom.and.returnValue(Promise.resolve({})); // shouldn't be called
+            clients["@foo:bar"] = client;
+
+            var intent = bridge.getIntent("@foo:bar");
+            var joinEvent = {
+                content: {
+                    membership: "join"
+                },
+                state_key: "@foo:bar",
+                user_id: "@foo:bar",
+                room_id: "!flibble:bar",
+                type: "m.room.member"
+            };
+            appService.emit("event", joinEvent);
+            // wait the cull time then attempt the join, it shouldn't try to join.
+            jasmine.clock().tick(cullTimeMs);
+
+            intent.join("!flibble:bar").then(function() {
+                expect(client.joinRoom).not.toHaveBeenCalled();
+                // wait the cull time again and use a new intent, still shouldn't join.
+                jasmine.clock().tick(cullTimeMs);
+                return bridge.getIntent("@foo:bar").join("!flibble:bar");
+            }).done(function() {
                 expect(client.joinRoom).not.toHaveBeenCalled();
                 done();
             });

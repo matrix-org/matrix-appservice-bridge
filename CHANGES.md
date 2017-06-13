@@ -1,3 +1,78 @@
+1.4.0 (2017-05-08)
+==================
+
+Added `dontJoin` option to `Intent` class for use when the bridge is maintaining
+its own membership state for each user.
+
+Share data structures created by `Intent` objects when accessed via the `Bridge`
+class. This reduces memory usage and CPU usage as only 1 map needs to be updated
+when new member/power level events are received, rather than N maps (where N is
+the number of `Intent` objects).
+
+Cull `Intent` objects which are accessed via `Bridge.getIntent` after an eviction
+period. This reduces memory usage.
+
+`a` release: Bugfixes whereby the bot `Intent` could forget its state.
+
+1.3.7 (2017-03-02)
+==================
+
+Allow the default SUCCESS/FAILED log lines to be turned off via `opts.logRequestOutcome`.
+
+1.3.6 (2017-01-17)
+==================
+
+Fixed a bug in the `Intent` class which could cause message sending to fail
+with `M_FORBIDDEN` errors due to not being joined to the room. The class
+now handles this case and will join the room before resending the message.
+
+1.3.5 (2017-01-04)
+==================
+
+Specify a `localTimeoutMs` of 2 minutes for every outbound HTTP request to
+prevent connections from wedging if a response is never returned.
+
+1.3.4 (2016-12-15)
+==================
+
+Added `AppServiceBot` function `getJoinedRooms` for getting a list of joined
+room IDs for the AS bot and function `getJoinedMembers` for getting a map of
+joined user IDs for the given room ID. The values in the map are with a
+`display_name` and `avatar_url` properties.
+
+Switched the prometheus metrics from using the `prometheus-client` library to
+the `prom-client` library.
+
+Added `PrometheusMetrics` functions `addTimer` and `startTimer` for manipulating
+timer metrics for the bridge.
+
+Bumped matrix-org/matrix-js-sdk dependency from `0.5.3` to `0.7.2`. See
+[the matrix-js-sdk changelog](https://github.com/matrix-org/matrix-js-sdk/blob/master/CHANGELOG.md#changes-in-072-2016-12-15)
+
+1.3.3 (2016-11-24)
+==================
+Metrics.js has been refactored from matrix-appservice-{slack,gitter} to this repo. Bridge intent objects and Matrix client API calls are now counted as part of the new metrics functionality.
+
+Added `RoomBridgeStore` function `removeEntriesByRemoteId` to remove entries in the DB with a given remote ID.
+
+Added `StateLookup` function `untrackRoom` to stop further tracking of state events in a given room and delete existing stored state for it.
+
+Use `r0/sync` rather than `v1/initialSync` for `AppServiceBot` function `getMemberLists`. A filter has also been added to limit the number events sent across.
+
+1.3.2 (2016-10-25)
+==================
+Bump dependency on matrix-org/matrix-appservice-node from `0.3.1` to `0.3.3`. See [the matrix-appservice-node changelog](https://github.com/matrix-org/matrix-appservice-node/blob/1ff56e9c11d8536f2ce7043279818bfa61b8fa91/CHANGELOG.md#v033matrix-appservice-node#).
+
+1.3.1 (2016-10-19)
+==================
+Third Party Lookup:
+ - 3PL/3PU lookups now return lists instead of individual results
+ - Reverse lookups now possible
+
+Added Intent function `sendReadReceipt`
+
+`ContentRepo` now exported as pass-through from `matrix-js-sdk`.
+
 1.3.0 (2016-09-09)
 ==================
 Improved queueing of pending messages to send to the homeserver to store one

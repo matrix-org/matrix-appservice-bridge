@@ -32,7 +32,7 @@ describe("Bridge", function() {
         clientFactory = jasmine.createSpyObj("ClientFactory", [
             "setLogFunction", "getClientAs", "configure"
         ]);
-        clientFactory.getClientAs.andCallFake(function(uid, req) {
+        clientFactory.getClientAs.and.callFake(function(uid, req) {
             return clients[
                 (uid ? uid : "bot") + (req ? req.getId() : "")];
         });
@@ -45,7 +45,7 @@ describe("Bridge", function() {
             "onAliasQuery", "onUserQuery", "listen", "on"
         ]);
         appService._events = {};
-        appService.on.andCallFake(function(name, fn) {
+        appService.on.and.callFake(function(name, fn) {
             if (!appService._events[name]) {
                 appService._events[name] = [];
             }
@@ -111,7 +111,7 @@ describe("Bridge", function() {
                 clientFactory: clientFactory
             });
             done();
-        });
+        }).done();
     });
 
     afterEach(function() {
@@ -133,10 +133,11 @@ describe("Bridge", function() {
         it("should invoke the user-supplied onUserQuery function with the right args",
         function(done) {
             bridge.run(101, {}, appService);
-            appService.onUserQuery("@alice:bar").finally(function() {
+            appService.onUserQuery("@alice:bar").catch(function() {}).finally(
+            function() {
                 expect(bridgeCtrl.onUserQuery).toHaveBeenCalled();
-                var call = bridgeCtrl.onUserQuery.calls[0];
-                var mxUser = call.args[0];
+                var call = bridgeCtrl.onUserQuery.calls.argsFor(0);
+                var mxUser = call[0];
                 expect(mxUser.getId()).toEqual("@alice:bar");
                 done();
             });
@@ -144,17 +145,17 @@ describe("Bridge", function() {
 
         it("should not provision a user if null is returned from the function",
         function(done) {
-            bridgeCtrl.onUserQuery.andReturn(null);
+            bridgeCtrl.onUserQuery.and.returnValue(null);
             bridge.run(101, {}, appService);
-            appService.onUserQuery("@alice:bar").finally(function() {
+            appService.onUserQuery("@alice:bar").catch(function() {}).finally(function() {
                 expect(clients["bot"].register).not.toHaveBeenCalled();
                 done();
             });
         });
 
         it("should provision the user from the return object", function(done) {
-            bridgeCtrl.onUserQuery.andReturn({});
-            clients["bot"].register.andReturn(Promise.resolve({}));
+            bridgeCtrl.onUserQuery.and.returnValue({});
+            clients["bot"].register.and.returnValue(Promise.resolve({}));
             bridge.run(101, {}, appService);
             appService.onUserQuery("@alice:bar").done(function() {
                 expect(clients["bot"].register).toHaveBeenCalledWith("alice");
@@ -167,7 +168,7 @@ describe("Bridge", function() {
         it("should invoke the user-supplied onAliasQuery function with the right args",
         function(done) {
             bridge.run(101, {}, appService);
-            appService.onAliasQuery("#foo:bar").finally(function() {
+            appService.onAliasQuery("#foo:bar").catch(function() {}).finally(function() {
                 expect(bridgeCtrl.onAliasQuery).toHaveBeenCalledWith("#foo:bar", "foo");
                 done();
             });
@@ -175,7 +176,7 @@ describe("Bridge", function() {
 
         it("should not provision a room if null is returned from the function",
         function(done) {
-            bridgeCtrl.onAliasQuery.andReturn(null);
+            bridgeCtrl.onAliasQuery.and.returnValue(null);
             bridge.run(101, {}, appService);
             appService.onAliasQuery("#foo:bar").catch(function() {
                 expect(clients["bot"].createRoom).not.toHaveBeenCalled();
@@ -189,10 +190,10 @@ describe("Bridge", function() {
                     room_alias_name: "foo"
                 }
             };
-            clients["bot"].createRoom.andReturn({
+            clients["bot"].createRoom.and.returnValue({
                 room_id: "!abc123:bar"
             });
-            bridgeCtrl.onAliasQuery.andReturn(provisionedRoom);
+            bridgeCtrl.onAliasQuery.and.returnValue(provisionedRoom);
             bridge.run(101, {}, appService);
             appService.onAliasQuery("#foo:bar").done(function() {
                 expect(clients["bot"].createRoom).toHaveBeenCalledWith(
@@ -203,10 +204,10 @@ describe("Bridge", function() {
         });
 
         it("should store the new matrix room", function(done) {
-            clients["bot"].createRoom.andReturn({
+            clients["bot"].createRoom.and.returnValue({
                 room_id: "!abc123:bar"
             });
-            bridgeCtrl.onAliasQuery.andReturn({
+            bridgeCtrl.onAliasQuery.and.returnValue({
                 creationOpts: {
                     room_alias_name: "foo"
                 }
@@ -224,10 +225,10 @@ describe("Bridge", function() {
 
         it("should store and link the new matrix room if a remote room was supplied",
         function(done) {
-            clients["bot"].createRoom.andReturn({
+            clients["bot"].createRoom.and.returnValue({
                 room_id: "!abc123:bar"
             });
-            bridgeCtrl.onAliasQuery.andReturn({
+            bridgeCtrl.onAliasQuery.and.returnValue({
                 creationOpts: {
                     room_alias_name: "foo"
                 },
@@ -276,15 +277,15 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
-            bridgeCtrl.onEvent.andCallFake(function(req) { req.resolve(); });
+            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
             bridge.run(101, {}, appService).then(function() {
                 return appService.emit("event", event);
             }).done(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-                var call = bridgeCtrl.onEvent.calls[0];
-                var req = call.args[0];
-                var ctx = call.args[1];
+                var call = bridgeCtrl.onEvent.calls.argsFor(0);
+                var req = call[0];
+                var ctx = call[1];
                 expect(req.getData()).toEqual(event);
                 expect(ctx.senders.matrix.getId()).toEqual("@foo:bar");
                 expect(ctx.rooms.matrix.getId()).toEqual("!flibble:bar");
@@ -303,7 +304,7 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
-            bridgeCtrl.onEvent.andCallFake(function(req) { req.resolve(); });
+            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
             bridge.run(101, {}, appService).then(function() {
                 return bridge.getUserStore().linkUsers(
@@ -314,9 +315,9 @@ describe("Bridge", function() {
                 return appService.emit("event", event);
             }).done(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-                var call = bridgeCtrl.onEvent.calls[0];
-                var req = call.args[0];
-                var ctx = call.args[1];
+                var call = bridgeCtrl.onEvent.calls.argsFor(0);
+                var req = call[0];
+                var ctx = call[1];
                 expect(req.getData()).toEqual(event);
                 expect(ctx.senders.remote.getId()).toEqual("__alice__");
                 expect(ctx.senders.remotes.length).toEqual(1);
@@ -335,7 +336,7 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.member"
             };
-            bridgeCtrl.onEvent.andCallFake(function(req) { req.resolve(); });
+            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
             bridge.run(101, {}, appService).then(function() {
                 return bridge.getUserStore().linkUsers(
@@ -346,9 +347,9 @@ describe("Bridge", function() {
                 return appService.emit("event", event);
             }).done(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-                var call = bridgeCtrl.onEvent.calls[0];
-                var req = call.args[0];
-                var ctx = call.args[1];
+                var call = bridgeCtrl.onEvent.calls.argsFor(0);
+                var req = call[0];
+                var ctx = call[1];
                 expect(req.getData()).toEqual(event);
                 expect(ctx.targets.remote.getId()).toEqual("__bob__");
                 expect(ctx.targets.remotes.length).toEqual(1);
@@ -367,7 +368,7 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.member"
             };
-            bridgeCtrl.onEvent.andCallFake(function(req) { req.resolve(); });
+            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
             bridge.run(101, {}, appService).then(function() {
                 return bridge.getRoomStore().linkRooms(
@@ -378,9 +379,9 @@ describe("Bridge", function() {
                 return appService.emit("event", event);
             }).done(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-                var call = bridgeCtrl.onEvent.calls[0];
-                var req = call.args[0];
-                var ctx = call.args[1];
+                var call = bridgeCtrl.onEvent.calls.argsFor(0);
+                var req = call[0];
+                var ctx = call[1];
                 expect(req.getData()).toEqual(event);
                 expect(ctx.rooms.remote.getId()).toEqual("roomy");
                 expect(ctx.rooms.remotes.length).toEqual(1);
@@ -399,7 +400,7 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
-            bridgeCtrl.onEvent.andCallFake(function(req) { req.resolve(); });
+            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
             bridge = new Bridge({
                 homeserverUrl: HS_URL,
@@ -416,9 +417,9 @@ describe("Bridge", function() {
                 return appService.emit("event", event);
             }).done(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-                var call = bridgeCtrl.onEvent.calls[0];
-                var req = call.args[0];
-                var ctx = call.args[1];
+                var call = bridgeCtrl.onEvent.calls.argsFor(0);
+                var req = call[0];
+                var ctx = call[1];
                 expect(req.getData()).toEqual(event);
                 expect(ctx).toBeNull();
                 done();
@@ -464,23 +465,59 @@ describe("Bridge", function() {
     });
 
     describe("getIntent", function() {
+        // 2h which should be long enough to cull it
+        var cullTimeMs = 1000 * 60 * 60 * 2;
 
         beforeEach(function(done) {
+            jasmine.clock().install();
+            jasmine.clock().mockDate();
             bridge.run(101, {}, appService).done(function() {
                 done();
             });
         });
 
-        it("should return the same intent on multiple invokations", function() {
+        afterEach(function() {
+            jasmine.clock().uninstall();
+        });
+
+        it("should return the same intent on multiple invokations within the cull time",
+        function() {
             var intent = bridge.getIntent("@foo:bar");
-            intent._test = 42; // sentinel
+            // sentinel. If the same object is returned, this will be present.
+            intent._test = 42;
+            var intent2 = bridge.getIntent("@foo:bar");
+            expect(intent).toEqual(intent2);
+        });
+
+        it(
+        "should not return the same intent on multiple invokations outside the cull time",
+        function() {
+            var intent = bridge.getIntent("@foo:bar");
+            // sentinel. If the same object is returned, this will be present.
+            intent._test = 42;
+            jasmine.clock().tick(cullTimeMs);
+            var intent2 = bridge.getIntent("@foo:bar");
+            expect(intent).not.toEqual(intent2);
+        });
+
+        it("should not cull intents which are accessed again via getIntent", function() {
+            var intent = bridge.getIntent("@foo:bar");
+            // sentinel. If the same object is returned, this will be present.
+            intent._test = 42;
+
+            // Call getIntent 1000 times evenly up to the cull time. If the cull time is
+            // 2hrs, then this is called once every ~7.2s
+            for (var i = 0; i < 1000; i ++) {
+                jasmine.clock().tick(cullTimeMs/1000);
+                bridge.getIntent("@foo:bar");
+            }
             var intent2 = bridge.getIntent("@foo:bar");
             expect(intent).toEqual(intent2);
         });
 
         it("should keep the Intent up-to-date with incoming events", function(done) {
             var client = mkMockMatrixClient("@foo:bar");
-            client.joinRoom.andReturn(Promise.resolve({})); // shouldn't be called
+            client.joinRoom.and.returnValue(Promise.resolve({})); // shouldn't be called
             clients["@foo:bar"] = client;
 
             var intent = bridge.getIntent("@foo:bar");
@@ -495,6 +532,41 @@ describe("Bridge", function() {
             };
             appService.emit("event", joinEvent);
             intent.join("!flibble:bar").done(function() {
+                expect(client.joinRoom).not.toHaveBeenCalled();
+                done();
+            });
+        });
+
+        it("should keep culled Intents up-to-date with incoming events", function(done) {
+            // We tell the bridge that @foo:bar is joined to the room.
+            // Therefore, we expect that intent.join() should NOT call the SDK's join
+            // method. This should still be the case even if the Intent object is culled
+            // and we try to join using a new intent, in addition to if we use the old
+            // stale Intent.
+            var client = mkMockMatrixClient("@foo:bar");
+            client.joinRoom.and.returnValue(Promise.resolve({})); // shouldn't be called
+            clients["@foo:bar"] = client;
+
+            var intent = bridge.getIntent("@foo:bar");
+            var joinEvent = {
+                content: {
+                    membership: "join"
+                },
+                state_key: "@foo:bar",
+                user_id: "@foo:bar",
+                room_id: "!flibble:bar",
+                type: "m.room.member"
+            };
+            appService.emit("event", joinEvent);
+            // wait the cull time then attempt the join, it shouldn't try to join.
+            jasmine.clock().tick(cullTimeMs);
+
+            intent.join("!flibble:bar").then(function() {
+                expect(client.joinRoom).not.toHaveBeenCalled();
+                // wait the cull time again and use a new intent, still shouldn't join.
+                jasmine.clock().tick(cullTimeMs);
+                return bridge.getIntent("@foo:bar").join("!flibble:bar");
+            }).done(function() {
                 expect(client.joinRoom).not.toHaveBeenCalled();
                 done();
             });
@@ -523,7 +595,7 @@ describe("Bridge", function() {
             var mxUser = new MatrixUser("@foo:bar");
             var provisionedUser = {};
             var botClient = clients["bot"];
-            botClient.register.andReturn(Promise.resolve({}));
+            botClient.register.and.returnValue(Promise.resolve({}));
             bridge.provisionUser(mxUser, provisionedUser).then(function() {
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
                 // should also be persisted in storage
@@ -541,9 +613,9 @@ describe("Bridge", function() {
                 name: "Foo Bar"
             };
             var botClient = clients["bot"];
-            botClient.register.andReturn(Promise.resolve({}));
+            botClient.register.and.returnValue(Promise.resolve({}));
             var client = mkMockMatrixClient("@foo:bar");
-            client.setDisplayName.andReturn(Promise.resolve({}));
+            client.setDisplayName.and.returnValue(Promise.resolve({}));
             clients["@foo:bar"] = client;
             bridge.provisionUser(mxUser, provisionedUser).done(function() {
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
@@ -558,9 +630,9 @@ describe("Bridge", function() {
                 url: "http://avatar.jpg"
             };
             var botClient = clients["bot"];
-            botClient.register.andReturn(Promise.resolve({}));
+            botClient.register.and.returnValue(Promise.resolve({}));
             var client = mkMockMatrixClient("@foo:bar");
-            client.setAvatarUrl.andReturn(Promise.resolve({}));
+            client.setAvatarUrl.and.returnValue(Promise.resolve({}));
             clients["@foo:bar"] = client;
             bridge.provisionUser(mxUser, provisionedUser).done(function() {
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
@@ -576,7 +648,7 @@ describe("Bridge", function() {
                 remote: new RemoteUser("__remote__")
             };
             var botClient = clients["bot"];
-            botClient.register.andReturn(Promise.resolve({}));
+            botClient.register.and.returnValue(Promise.resolve({}));
             var client = mkMockMatrixClient("@foo:bar");
             clients["@foo:bar"] = client;
             bridge.provisionUser(mxUser, provisionedUser).then(function() {
@@ -595,7 +667,7 @@ describe("Bridge", function() {
             var mxUser = new MatrixUser("@foo:bar");
             var provisionedUser = {};
             var botClient = clients["bot"];
-            botClient.register.andReturn(Promise.reject({
+            botClient.register.and.returnValue(Promise.reject({
                 errcode: "M_FORBIDDEN"
             }));
             bridge.provisionUser(mxUser, provisionedUser).catch(function() {
@@ -616,7 +688,7 @@ function mkMockMatrixClient(uid) {
     // Shim requests to authedRequestWithPrefix to register() if it is
     // directed at /register
     client._http.authedRequestWithPrefix = jasmine.createSpy("authedRequestWithPrefix");
-    client._http.authedRequestWithPrefix.andCallFake(function(a, method, path, d, data) {
+    client._http.authedRequestWithPrefix.and.callFake(function(a, method, path, d, data) {
         if (method === "POST" && path === "/register") {
             return client.register(data.user);
         }

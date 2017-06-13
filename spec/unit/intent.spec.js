@@ -8,14 +8,14 @@ describe("Intent", function() {
     var userId = "@alice:bar";
     var botUserId = "@bot:user";
     var roomId = "!foo:bar";
-    var alreadyRegistered = {
-        registered: true
-    };
 
     beforeEach(
     /** @this */
     function() {
         log.beforeEach(this);
+        var alreadyRegistered = {
+            registered: true
+        };
         var clientFields = [
             "credentials", "joinRoom", "invite", "leave", "ban", "unban",
             "kick", "getStateEvent", "setPowerLevel", "sendTyping", "sendEvent",
@@ -32,7 +32,7 @@ describe("Intent", function() {
 
         it("should /join/$ROOMID if it doesn't know it is already joined",
         function(done) {
-            client.joinRoom.andReturn(Promise.resolve({}));
+            client.joinRoom.and.returnValue(Promise.resolve({}));
             intent.join(roomId).done(function() {
                 expect(client.joinRoom).toHaveBeenCalledWith(
                     roomId, { syncRoom: false }
@@ -59,7 +59,7 @@ describe("Intent", function() {
 
         it("should fail if the join returned an error other than forbidden",
         function(done) {
-            client.joinRoom.andReturn(Promise.reject({
+            client.joinRoom.and.returnValue(Promise.reject({
                 errcode: "M_YOU_ARE_A_FISH",
                 error: "you're a fish"
             }));
@@ -72,8 +72,8 @@ describe("Intent", function() {
         describe("client join failed", function() {
 
             it("should make the bot invite then the client join", function(done) {
-                client.joinRoom.andCallFake(function() {
-                    if (botClient.invite.calls.length === 0) {
+                client.joinRoom.and.callFake(function() {
+                    if (botClient.invite.calls.count() === 0) {
                         return Promise.reject({
                             errcode: "M_FORBIDDEN",
                             error: "Join first"
@@ -81,7 +81,7 @@ describe("Intent", function() {
                     }
                     return Promise.resolve({});
                 });
-                botClient.invite.andReturn(Promise.resolve({}));
+                botClient.invite.and.returnValue(Promise.resolve({}));
 
                 intent.join(roomId).done(function() {
                     expect(client.joinRoom).toHaveBeenCalledWith(
@@ -95,8 +95,8 @@ describe("Intent", function() {
             describe("bot invite failed", function() {
                 it("should make the bot join then invite then the client join",
                 function(done) {
-                    client.joinRoom.andCallFake(function() {
-                        if (botClient.invite.calls.length === 0) {
+                    client.joinRoom.and.callFake(function() {
+                        if (botClient.invite.calls.count() === 0) {
                             return Promise.reject({
                                 errcode: "M_FORBIDDEN",
                                 error: "Join first"
@@ -104,8 +104,8 @@ describe("Intent", function() {
                         }
                         return Promise.resolve({});
                     });
-                    botClient.invite.andCallFake(function() {
-                        if (botClient.joinRoom.calls.length === 0) {
+                    botClient.invite.and.callFake(function() {
+                        if (botClient.joinRoom.calls.count() === 0) {
                             return Promise.reject({
                                 errcode: "M_FORBIDDEN",
                                 error: "Join first"
@@ -113,7 +113,7 @@ describe("Intent", function() {
                         }
                         return Promise.resolve({});
                     });
-                    botClient.joinRoom.andReturn(Promise.resolve({}));
+                    botClient.joinRoom.and.returnValue(Promise.resolve({}));
 
                     intent.join(roomId).done(function() {
                         expect(client.joinRoom).toHaveBeenCalledWith(
@@ -128,15 +128,15 @@ describe("Intent", function() {
                 });
 
                 it("should give up if the bot cannot join the room", function(done) {
-                    client.joinRoom.andReturn(Promise.reject({
+                    client.joinRoom.and.returnValue(Promise.reject({
                         errcode: "M_FORBIDDEN",
                         error: "Join first"
                     }));
-                    botClient.invite.andReturn(Promise.reject({
+                    botClient.invite.and.returnValue(Promise.reject({
                         errcode: "M_FORBIDDEN",
                         error: "No invites kthx"
                     }));
-                    botClient.joinRoom.andReturn(Promise.reject({
+                    botClient.joinRoom.and.returnValue(Promise.reject({
                         errcode: "M_FORBIDDEN",
                         error: "No bots allowed!"
                     }));
@@ -200,7 +200,7 @@ describe("Intent", function() {
 
         it("should directly send the event if it thinks power levels are ok",
         function(done) {
-            client.sendStateEvent.andReturn(Promise.resolve({}));
+            client.sendStateEvent.and.returnValue(Promise.resolve({}));
 
             intent.onEvent(validPowerLevels);
             intent.setRoomTopic(roomId, "Hello world").done(function() {
@@ -213,8 +213,10 @@ describe("Intent", function() {
 
         it("should get the power levels before sending if it doesn't know them",
         function(done) {
-            client.sendStateEvent.andReturn(Promise.resolve({}));
-            client.getStateEvent.andReturn(Promise.resolve(validPowerLevels.content));
+            client.sendStateEvent.and.returnValue(Promise.resolve({}));
+            client.getStateEvent.and.returnValue(
+                Promise.resolve(validPowerLevels.content)
+            );
 
             intent.setRoomTopic(roomId, "Hello world").done(function() {
                 expect(client.getStateEvent).toHaveBeenCalledWith(
@@ -229,8 +231,8 @@ describe("Intent", function() {
 
         it("should modify power levels before sending if client is too low",
         function(done) {
-            client.sendStateEvent.andCallFake(function() {
-                if (botClient.setPowerLevel.calls.length > 0) {
+            client.sendStateEvent.and.callFake(function() {
+                if (botClient.setPowerLevel.calls.count() > 0) {
                     return Promise.resolve({});
                 }
                 return Promise.reject({
@@ -238,7 +240,7 @@ describe("Intent", function() {
                     error: "Not enough powaaaaaa"
                 });
             });
-            botClient.setPowerLevel.andReturn(Promise.resolve({}));
+            botClient.setPowerLevel.and.returnValue(Promise.resolve({}));
             // give the power to the bot
             invalidPowerLevels.content.users[botUserId] = 100;
             intent.onEvent(invalidPowerLevels);
@@ -264,6 +266,131 @@ describe("Intent", function() {
                 expect(botClient.setPowerLevel).not.toHaveBeenCalled();
                 done();
             })
+        });
+    });
+
+    describe("sending message events", function() {
+        var content = {
+            body: "hello world",
+            msgtype: "m.text",
+        };
+
+        beforeEach(function() {
+            intent.opts.dontCheckPowerLevel = true;
+            // not interested in joins, so no-op them.
+            intent.onEvent({
+                event_id: "test",
+                type: "m.room.member",
+                state_key: userId,
+                room_id: roomId,
+                content: {
+                    membership: "join"
+                }
+            });
+        });
+
+        it("should immediately try to send the event if joined/have pl", function(done) {
+            client.sendEvent.and.returnValue(Promise.resolve({
+                event_id: "$abra:kadabra"
+            }));
+            intent.sendMessage(roomId, content).done(function() {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId, "m.room.message", content
+                );
+                expect(client.joinRoom).not.toHaveBeenCalled();
+                done();
+            });
+        });
+
+        it("should fail if get an error that isn't M_FORBIDDEN", function(done) {
+            client.sendEvent.and.returnValue(Promise.reject({
+                error: "Oh no",
+                errcode: "M_UNKNOWN"
+            }));
+            intent.sendMessage(roomId, content).catch(function() {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId, "m.room.message", content
+                );
+                expect(client.joinRoom).not.toHaveBeenCalled();
+                done();
+            });
+        });
+
+        it("should try to join the room on M_FORBIDDEN then resend", function(done) {
+            var isJoined = false;
+            client.sendEvent.and.callFake(function() {
+                if (isJoined) {
+                    return Promise.resolve({
+                        event_id: "$12345:6789"
+                    });
+                }
+                return Promise.reject({
+                    error: "You are not joined",
+                    errcode: "M_FORBIDDEN"
+                });
+            });
+            client.joinRoom.and.callFake(function(joinRoomId) {
+                isJoined = true;
+                return Promise.resolve({
+                    room_id: joinRoomId,
+                });
+            });
+            intent.sendMessage(roomId, content).done(function() {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId, "m.room.message", content
+                );
+                expect(client.joinRoom).toHaveBeenCalledWith(roomId, { syncRoom: false });
+                done();
+            });
+        });
+
+        it("should fail if the join on M_FORBIDDEN fails", function(done) {
+            client.sendEvent.and.callFake(function() {
+                return Promise.reject({
+                    error: "You are not joined",
+                    errcode: "M_FORBIDDEN"
+                });
+            });
+            client.joinRoom.and.returnValue(Promise.reject({
+                error: "Never!",
+                errcode: "M_YOU_ARE_A_FISH"
+            }));
+            intent.sendMessage(roomId, content).catch(function() {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId, "m.room.message", content
+                );
+                expect(client.joinRoom).toHaveBeenCalledWith(roomId, { syncRoom: false });
+                done();
+            });
+        });
+
+        it("should fail if the resend after M_FORBIDDEN fails", function(done) {
+            var isJoined = false;
+            client.sendEvent.and.callFake(function() {
+                if (isJoined) {
+                    return Promise.reject({
+                        error: "Internal Server Error",
+                        errcode: "M_WHOOPSIE",
+                    });
+                }
+                return Promise.reject({
+                    error: "You are not joined",
+                    errcode: "M_FORBIDDEN",
+                });
+            });
+            client.joinRoom.and.callFake(function(joinRoomId) {
+                isJoined = true;
+                return Promise.resolve({
+                    room_id: joinRoomId,
+                });
+            });
+            intent.sendMessage(roomId, content).catch(function() {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId, "m.room.message", content
+                );
+                expect(client.joinRoom).toHaveBeenCalledWith(roomId, { syncRoom: false });
+                done();
+            });
         });
     });
 });

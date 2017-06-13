@@ -17,7 +17,7 @@ describe("AppServiceBot", function() {
         };
         client._http = jasmine.createSpyObj("MatrixHttpApi", ["authedRequestWithPrefix"]);
         reg = jasmine.createSpyObj("AppServiceRegistration", ["getOutput"]);
-        reg.getOutput.andReturn({
+        reg.getOutput.and.returnValue({
             namespaces: {
                 users: [{
                     regex: "@test_.*",
@@ -31,22 +31,27 @@ describe("AppServiceBot", function() {
     describe("getMemberLists", function() {
 
         it("should fail if the HTTP request fails", function(done) {
-            client._http.authedRequestWithPrefix.andReturn(Promise.reject("nope"));
+            client._http.authedRequestWithPrefix.and.returnValue(Promise.reject("nope"));
             bot.getMemberLists().catch(function(e) {
                 done();
             });
         });
 
         it("should return joined members only from initial sync", function(done) {
-            client._http.authedRequestWithPrefix.andReturn(Promise.resolve({
-                rooms: [{
-                    room_id: "!foo:bar",
-                    state: [
-                        memberEvent("!foo:bar", "@alice:bar", "join"),
-                        memberEvent("!foo:bar", "@bob:bar", "invite"),
-                        memberEvent("!foo:bar", "@charlie:bar", "leave")
-                    ]
-                }]
+            client._http.authedRequestWithPrefix.and.returnValue(Promise.resolve({
+                rooms: {
+                    join: {
+                        "!foo:bar": {
+                            state: {
+                                events: [
+                                memberEvent("!foo:bar", "@alice:bar", "join"),
+                                memberEvent("!foo:bar", "@bob:bar", "invite"),
+                                memberEvent("!foo:bar", "@charlie:bar", "leave")
+                                ]
+                            }
+                        }
+                    }
+                }
             }));
             bot.getMemberLists().done(function(result) {
                 expect(result["!foo:bar"].realJoinedUsers).toEqual([
@@ -59,14 +64,19 @@ describe("AppServiceBot", function() {
         });
 
         it("should not return the bot itself as a remote user", function(done) {
-            client._http.authedRequestWithPrefix.andReturn(Promise.resolve({
-                rooms: [{
-                    room_id: "!foo:bar",
-                    state: [
-                        memberEvent("!foo:bar", "@test_alice:bar", "join"),
-                        memberEvent("!foo:bar", botUserId, "join")
-                    ]
-                }]
+            client._http.authedRequestWithPrefix.and.returnValue(Promise.resolve({
+                rooms: {
+                    join: {
+                        "!foo:bar": {
+                            state: {
+                                events: [
+                                memberEvent("!foo:bar", "@test_alice:bar", "join"),
+                                memberEvent("!foo:bar", botUserId, "join")
+                                ]
+                            }
+                        }
+                    }
+                }
             }));
             bot.getMemberLists().done(function(result) {
                 expect(result["!foo:bar"].remoteJoinedUsers).toEqual([
@@ -80,14 +90,19 @@ describe("AppServiceBot", function() {
 
         it("should return remote users which match the registration regex",
         function(done) {
-            client._http.authedRequestWithPrefix.andReturn(Promise.resolve({
-                rooms: [{
-                    room_id: "!foo:bar",
-                    state: [
-                        memberEvent("!foo:bar", "@test_alice:bar", "join"),
-                        memberEvent("!foo:bar", "@alice:bar", "join")
-                    ]
-                }]
+            client._http.authedRequestWithPrefix.and.returnValue(Promise.resolve({
+                rooms: {
+                    join: {
+                        "!foo:bar": {
+                            state: {
+                                events: [
+                                memberEvent("!foo:bar", "@test_alice:bar", "join"),
+                                memberEvent("!foo:bar", "@alice:bar", "join")
+                                ]
+                            }
+                        }
+                    }
+                }
             }));
             bot.getMemberLists().done(function(result) {
                 expect(result["!foo:bar"].remoteJoinedUsers).toEqual([

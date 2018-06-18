@@ -7,6 +7,7 @@ var log = require("../log");
 var HS_URL = "http://example.com";
 var HS_DOMAIN = "example.com";
 var BOT_LOCALPART = "the_bridge";
+const REG_AUTH = {type: "m.login.application_service"};
 
 var TEST_USER_DB_PATH = __dirname + "/test-users.db";
 var TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
@@ -158,7 +159,8 @@ describe("Bridge", function() {
             clients["bot"].register.and.returnValue(Promise.resolve({}));
             bridge.run(101, {}, appService);
             appService.onUserQuery("@alice:bar").done(function() {
-                expect(clients["bot"].register).toHaveBeenCalledWith("alice");
+                expect(clients["bot"].register).toHaveBeenCalledWith(
+                    "alice", undefined, undefined, REG_AUTH);
                 done();
             });
         });
@@ -597,7 +599,8 @@ describe("Bridge", function() {
             var botClient = clients["bot"];
             botClient.register.and.returnValue(Promise.resolve({}));
             bridge.provisionUser(mxUser, provisionedUser).then(function() {
-                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
+                expect(botClient.register).toHaveBeenCalledWith(
+                    mxUser.localpart, undefined, undefined, REG_AUTH);
                 // should also be persisted in storage
                 return bridge.getUserStore().getMatrixUser("@foo:bar");
             }).done(function(usr) {
@@ -618,7 +621,8 @@ describe("Bridge", function() {
             client.setDisplayName.and.returnValue(Promise.resolve({}));
             clients["@foo:bar"] = client;
             bridge.provisionUser(mxUser, provisionedUser).done(function() {
-                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
+                expect(botClient.register).toHaveBeenCalledWith(
+                    mxUser.localpart, undefined, undefined, REG_AUTH);
                 expect(client.setDisplayName).toHaveBeenCalledWith("Foo Bar");
                 done();
             });
@@ -635,7 +639,8 @@ describe("Bridge", function() {
             client.setAvatarUrl.and.returnValue(Promise.resolve({}));
             clients["@foo:bar"] = client;
             bridge.provisionUser(mxUser, provisionedUser).done(function() {
-                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
+                expect(botClient.register).toHaveBeenCalledWith(
+                    mxUser.localpart, undefined, undefined, REG_AUTH);
                 expect(client.setAvatarUrl).toHaveBeenCalledWith("http://avatar.jpg");
                 done();
             });
@@ -652,7 +657,8 @@ describe("Bridge", function() {
             var client = mkMockMatrixClient("@foo:bar");
             clients["@foo:bar"] = client;
             bridge.provisionUser(mxUser, provisionedUser).then(function() {
-                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
+                expect(botClient.register).toHaveBeenCalledWith(
+                    mxUser.localpart, undefined, undefined, REG_AUTH);
                 return bridge.getUserStore().getRemoteUsersFromMatrixId("@foo:bar");
             }).done(function(users) {
                 expect(users.length).toEqual(1);
@@ -671,7 +677,8 @@ describe("Bridge", function() {
                 errcode: "M_FORBIDDEN"
             }));
             bridge.provisionUser(mxUser, provisionedUser).catch(function() {
-                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
+                expect(botClient.register).toHaveBeenCalledWith(
+                    mxUser.localpart, undefined, undefined, REG_AUTH);
                 done();
             });
         });

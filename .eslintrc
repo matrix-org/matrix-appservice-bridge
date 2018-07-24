@@ -1,7 +1,8 @@
 {
   "env": {
     "node": true,
-    "jasmine": true
+    "jasmine": true,
+    "es6": true
   },
   "rules": {
     "consistent-return": 2,

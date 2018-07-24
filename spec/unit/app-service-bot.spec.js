@@ -1,5 +1,4 @@
 "use strict";
-var Promise = require("bluebird");
 var AppServiceBot = require("../..").AppServiceBot;
 var log = require("../log");
 
@@ -34,16 +33,3 @@ describe("AppServiceBot", function() {
         });
     });
 });
-
-function memberEvent(roomId, userId, state) {
-    return {
-        event_id: "something",
-        type: "m.room.member",
-        state_key: userId,
-        room_id: roomId,
-        user_id: userId,
-        content: {
-            membership: state
-        }
-    };
-}

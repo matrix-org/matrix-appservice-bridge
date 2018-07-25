@@ -1,3 +1,27 @@
+1.5.0 (2018-07-25)
+==================
+
+Updated matrix-js-sdk and matrix-appservice-node to latest versions.
+
+The bridge now depends on prom-client.
+
+When `_ensureRegistered` fails, we now fail the function that was called it
+unless the user is in use to avoid bridges thinking they had successfully done
+an action, while in reality the user wasn't even registered
+
+Created and exposed the membership cache through `MembershipCache` so
+bridge developers may optionally setup the bridge with previous state they
+may be aware of.
+
+Membership is automatically passed to the `MembershipCache` when `getJoinedMembers`
+is called so that we don't needlessly join rooms. Registration is also cached now
+so that we do not try to register users we are aware of through membership.
+
+Deprecated `getMemberLists` as it relied on /sync which is no longer allowed
+in the client-server API for appservices. This will now throw an `Error` instead.
+
+Exposed `isRemoteUser` (`_isRemoteUser` is still present for backwards compat).
+
 1.4.0 (2017-05-08)
 ==================
 

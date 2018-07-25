@@ -26,6 +26,8 @@ Exposed `isRemoteUser` (`_isRemoteUser` is still present for backwards compat).
 New `setPresence` function on Intent for setting presence, can now disable presence
 on the bridge via the bridge config.
 
+Enable the default process-wide metrics in prom-client
+
 1.4.0 (2017-05-08)
 ==================
 

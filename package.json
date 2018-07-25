@@ -1,6 +1,6 @@
 {
   "name": "matrix-appservice-bridge",
-  "version": "1.4.0a",
+  "version": "1.5.0",
   "description": "Bridging infrastructure for Matrix Application Services",
   "main": "index.js",
   "scripts": {

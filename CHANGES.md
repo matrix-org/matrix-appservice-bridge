@@ -28,6 +28,8 @@ on the bridge via the bridge config.
 
 Enable the default process-wide metrics in prom-client
 
+`a` release: Fixes enablePresence being off by default
+
 1.4.0 (2017-05-08)
 ==================
 

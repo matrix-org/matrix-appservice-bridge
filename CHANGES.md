@@ -5,12 +5,13 @@ Updated matrix-js-sdk and matrix-appservice-node to latest versions.
 
 The bridge now depends on prom-client.
 
-When `_ensureRegistered` fails, we now fail the function that was called it
-unless the user is in use to avoid bridges thinking they had successfully done
-an action, while in reality the user wasn't even registered
+When `_ensureRegistered` fails, we now reject the `Promise` with the error
+unless the user is in use (`M_USER_IN_USE`). This means that most intent
+functions will reject if the user fails to be registered. This may break your
+bridge, so please be aware of it.
 
 Created and exposed the membership cache through `MembershipCache` so
-bridge developers may optionally setup the bridge with previous state they
+bridge developers may optionally setup the bridge any previous state they
 may be aware of.
 
 Membership is automatically passed to the `MembershipCache` when `getJoinedMembers`
@@ -21,6 +22,9 @@ Deprecated `getMemberLists` as it relied on /sync which is no longer allowed
 in the client-server API for appservices. This will now throw an `Error` instead.
 
 Exposed `isRemoteUser` (`_isRemoteUser` is still present for backwards compat).
+
+New `setPresence` function on Intent for setting presence, can now disable presence
+on the bridge via the bridge config.
 
 1.4.0 (2017-05-08)
 ==================

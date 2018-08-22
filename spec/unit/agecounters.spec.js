@@ -37,8 +37,9 @@ describe("AgeCounters", function() {
             expect(() => {new AgeCounters(["h"]);}).toThrow();
             expect(() => {new AgeCounters(["1x"]);}).toThrow();
         });
-        it("Cannot construct with negative integers", function() {
+        it("Can only construct with positive integers", function() {
             expect(() => {new AgeCounters(["-1h"]);}).toThrow();
+            expect(() => {new AgeCounters(["0h"]);}).toThrow();
         });
 
         it("Cannot construct counter with null", function() {
@@ -78,15 +79,15 @@ describe("AgeCounters", function() {
     describe("setGauge", function () {
         it("Should appropriately report gauge contents", function() {
             const ageCounter = new AgeCounters(["1h", "2d", "5d"]);
-            for (let i = 0; i < 5;i++){
+            for (let i = 0; i < 5; i++){
                 ageCounter.bump(1200);
             }
 
-            for (let i = 0; i < 3;i++){
+            for (let i = 0; i < 3; i++){
                 ageCounter.bump(3600 * 24);
             }
 
-            for (let i = 0; i < 7;i++){
+            for (let i = 0; i < 7; i++){
                 ageCounter.bump(3600 * 24 * 7);
             }
             const gaugeContents = [];

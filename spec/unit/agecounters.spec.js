@@ -30,7 +30,7 @@ describe("AgeCounters", function() {
             expect(ageCounter.counterPeriods).toEqual(["all"]);
             expect(ageCounter.counters.size).toEqual(1);
         });
-
+        /* eslint-disable no-new */
         it("Cannot construct with invalid period strings", function() {
             expect(() => {new AgeCounters(["cats", "dogs"]);}).toThrow();
             expect(() => {new AgeCounters(["5"]);}).toThrow();
@@ -46,6 +46,8 @@ describe("AgeCounters", function() {
             expect(() => {new AgeCounters([null]);}).toThrow();
             expect(() => {new AgeCounters([undefined]);}).toThrow();
         });
+        /* eslint-enable no-new */
+
     });
 
     describe("bump", function () {

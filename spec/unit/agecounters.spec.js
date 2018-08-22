@@ -27,7 +27,7 @@ describe("AgeCounters", function() {
     });
 
     describe("bump", function () {
-        it("Bumping a small ageCountere should go in all slots", function() {
+        it("Bumping a small age should go in all slots", function() {
             const ageCounter = new AgeCounters(["1h", "2d", "5d"]);
             ageCounter.bump(1200);
             expect(ageCounter.counters.get(3600)).toEqual(1);
@@ -36,7 +36,7 @@ describe("AgeCounters", function() {
             expect(ageCounter.counters.get("all")).toEqual(1);
         });
 
-        it("Bumping a middling ageCountere should only go in some", function() {
+        it("Bumping a middling age should only go in some", function() {
             const ageCounter = new AgeCounters(["1h", "2d", "5d"]);
             ageCounter.bump(3600 * 24 * 2);
             expect(ageCounter.counters.get(3600)).toEqual(0);
@@ -45,7 +45,7 @@ describe("AgeCounters", function() {
             expect(ageCounter.counters.get("all")).toEqual(1);
         });
 
-        it("Bumping a large ageCountere should only go in all", function() {
+        it("Bumping a large age should only go in 'all'", function() {
             const ageCounter = new AgeCounters(["1h", "2d", "5d"]);
             ageCounter.bump(1200000);
             expect(ageCounter.counters.get(3600)).toEqual(0);
@@ -55,7 +55,7 @@ describe("AgeCounters", function() {
         });
     })
     describe("setGauge", function () {
-        it("Should appropriately report gauge contents.", function() {
+        it("Should appropriately report gauge contents", function() {
             const ageCounter = new AgeCounters(["1h", "2d", "5d"]);
             for (let i = 0; i < 5;i++){
                 ageCounter.bump(1200);

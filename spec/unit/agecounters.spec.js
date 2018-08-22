@@ -3,14 +3,16 @@ const AgeCounters = require("../../lib/components/agecounters");
 describe("AgeCounters", function() {
     describe("constructor", function() {
         it("Can construct some counter periods by default", function() {
-            const ageCounter = new AgeCounters();
-            expect(ageCounter.counterPeriods).toEqual(["1h", "1d", "7d", "all"]);
-            expect(ageCounter.counters.size).toEqual(4);
-            const mapIter = ageCounter.counters.keys();
-            expect(mapIter.next().value).toEqual(3600);
-            expect(mapIter.next().value).toEqual(3600 * 24);
-            expect(mapIter.next().value).toEqual(3600 * 24 * 7);
-            expect(mapIter.next().value).toEqual("all");
+            for (const empty of [null, undefined]) {
+                const ageCounter = new AgeCounters(empty);
+                expect(ageCounter.counterPeriods).toEqual(["1h", "1d", "7d", "all"]);
+                expect(ageCounter.counters.size).toEqual(4);
+                const mapIter = ageCounter.counters.keys();
+                expect(mapIter.next().value).toEqual(3600);
+                expect(mapIter.next().value).toEqual(3600 * 24);
+                expect(mapIter.next().value).toEqual(3600 * 24 * 7);
+                expect(mapIter.next().value).toEqual("all");
+            }
         });
 
         it("Can construct given counter periods", function() {

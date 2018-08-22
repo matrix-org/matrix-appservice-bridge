@@ -24,6 +24,27 @@ describe("AgeCounters", function() {
             expect(mapIter.next().value).toEqual(3600 * 24 * 7 * 3);
             expect(mapIter.next().value).toEqual("all");
         });
+
+        it("Can construct with an empty array", function() {
+            const ageCounter = new AgeCounters([]);
+            expect(ageCounter.counterPeriods).toEqual(["all"]);
+            expect(ageCounter.counters.size).toEqual(1);
+        });
+
+        it("Cannot construct with invalid period strings", function() {
+            expect(() => {new AgeCounters(["cats", "dogs"]);}).toThrow();
+            expect(() => {new AgeCounters(["5"]);}).toThrow();
+            expect(() => {new AgeCounters(["h"]);}).toThrow();
+            expect(() => {new AgeCounters(["1x"]);}).toThrow();
+        });
+        it("Cannot construct with negative integers", function() {
+            expect(() => {new AgeCounters(["-1h"]);}).toThrow();
+        });
+
+        it("Cannot construct counter with null", function() {
+            expect(() => {new AgeCounters([null]);}).toThrow();
+            expect(() => {new AgeCounters([undefined]);}).toThrow();
+        });
     });
 
     describe("bump", function () {

@@ -5,6 +5,7 @@ describe("ClientRequestCache", function() {
     describe("constructor", function() {
         it("Can construct", function() {
             const crc = new ClientRequestCache(50, 1, () => { });
+            expect(crc.requestFunc).toBeDefined();
             expect(crc.ttl).toBe(50);
             expect(crc.maxSize).toBe(1);
         });

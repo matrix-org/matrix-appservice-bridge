@@ -7,8 +7,6 @@ describe("ClientRequestCache", function() {
             const crc = new ClientRequestCache(50, 1, () => { });
             expect(crc.ttl).toBe(50);
             expect(crc.maxSize).toBe(1);
-            expect(crc.requestFunc).toBeDefined();
-            expect(crc._requestContent).toBeDefined();
         });
 
         /* eslint-disable no-new */
@@ -110,7 +108,7 @@ describe("ClientRequestCache", function() {
                 crc.get("3"),
                 crc.get("4"),
             ]).then(() => {
-                expect([...crc._requestContent.values()].map((v) => v.content)).toEqual([
+                expect([...crc.getCachedResults().values()].map((v) => v.content)).toEqual([
                     "3baa",
                     "4baa",
                 ]);

@@ -74,7 +74,8 @@ describe("ClientRequestCache", function() {
                 expect(res).toBe("Thing 2!");
             });
         });
-        it("should pass down failures", () => {
+
+        it("should pass down failures (reject)", () => {
             const crc = new ClientRequestCache(1000, 1, () => {
                 return Promise.reject("Sorry, this test has subject to a GDPR request.");
             });
@@ -84,6 +85,18 @@ describe("ClientRequestCache", function() {
                 expect(err).toBe("Sorry, this test has subject to a GDPR request.");
             });
         });
+
+        it("should pass down failures (throw)", () => {
+            const crc = new ClientRequestCache(1000, 1, () => {
+                throw Error("Sorry, this test has subject to a GDPR request.");
+            });
+            return crc.get("1").then((res) => {
+                fail("Didn't reject");
+            }).catch((err) => {
+                expect(err.message).toBe("Sorry, this test has subject to a GDPR request.");
+            });
+        });
+
         it("should pass args", () => {
             const crc = new ClientRequestCache(1000, 1, (key, ...args) => {
                 return args;

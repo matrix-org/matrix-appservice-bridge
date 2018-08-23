@@ -14,6 +14,8 @@ be quick.
 `MembershipCache` is now exposed to let folks read and write to the cache
 while also letting the bridge access it.
 
+`a` release: Fix issue where `roomState` would fail.
+
 1.5.0 (2018-07-25)
 ==================
 

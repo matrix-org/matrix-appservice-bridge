@@ -52,7 +52,7 @@ describe("ClientRequestCache", function() {
                 return "Behold, the *thing*";
             });
             return crc.get("athing").then(() => {
-                return Promise.delay(50);
+                return Promise.delay(100);
             }).then(() => {
                 return crc.get("athing");
             }).then((res) => {
@@ -62,15 +62,15 @@ describe("ClientRequestCache", function() {
         });
         it("should hold multiple items", () => {
             const crc = new ClientRequestCache(1000, (thing) => {
-                if (thing === 1) {
+                if (thing === "1") {
                     return "Thing 1!";
                 }
                 return "Thing 2!";
             });
             
-            return crc.get(1).then((res) => {
+            return crc.get("1").then((res) => {
                 expect(res).toBe("Thing 1!");
-                return crc.get(2);
+                return crc.get("2");
             }).then((res) => {
                 expect(res).toBe("Thing 2!");
             });
@@ -79,19 +79,27 @@ describe("ClientRequestCache", function() {
             const crc = new ClientRequestCache(1000, () => {
                 return Promise.reject("Sorry, this test has subject to a GDPR request.");
             });
-            return crc.get(1).then((res) => {
+            return crc.get("1").then((res) => {
                 fail("Didn't reject");
             }).catch((err) => {
                 expect(err).toBe("Sorry, this test has subject to a GDPR request.");
             });
         });
         it("should pass args", () => {
-            const crc = new ClientRequestCache(1000, (...args) => {
+            const crc = new ClientRequestCache(1000, (key, ...args) => {
                 return args;
             });
-            return crc.get(1, "Hey", "that's", "pretty", "cool").then((res) => {
-                expect(res).toEqual([1, "Hey", "that's", "pretty", "cool"]);
+            return crc.get("1", "Hey", "that's", "pretty", "cool").then((res) => {
+                expect(res).toEqual(["Hey", "that's", "pretty", "cool"]);
             });
+        });
+        it("should reject non-string keys", () => {
+            const crc = new ClientRequestCache(1000, () => { });
+            expect(() => { crc.get({}) }).toThrow();
+            expect(() => { crc.get(1) }).toThrow();
+            expect(() => { crc.get(true) }).toThrow();
+            expect(() => { crc.get(null) }).toThrow();
+            expect(() => { crc.get() }).toThrow();
         });
     });
 });

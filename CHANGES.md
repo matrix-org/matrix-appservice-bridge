@@ -15,6 +15,7 @@ be quick.
 while also letting the bridge access it.
 
 `a` release: Fix issue where `roomState` would fail.
+`b` release: Fix issue where we were calling this.intent *inside* intent like fools!
 
 1.5.0 (2018-07-25)
 ==================

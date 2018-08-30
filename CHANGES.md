@@ -1,3 +1,8 @@
+1.6.1 (2018-08-30)
+==================
+
+Fix bug where age counters would overwrite it's parameter for periods.
+
 1.6.0 (2018-08-23)
 ==================
 

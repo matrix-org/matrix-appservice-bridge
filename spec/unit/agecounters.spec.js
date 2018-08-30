@@ -48,6 +48,11 @@ describe("AgeCounters", function() {
             expect(() => {new AgeCounters([null]);}).toThrow();
             expect(() => {new AgeCounters([undefined]);}).toThrow();
         });
+        it("Cannot repeatedbly construct counter", function() {
+            let periods = ["1d", "1w", "4w"];
+            new AgeCounters(periods);
+            new AgeCounters(periods);
+        });
         /* eslint-enable no-new */
 
     });

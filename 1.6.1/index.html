@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Home</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Home</h1>
+
+    
+
+
+
+    
+
+
+    <h3>matrix-appservice-bridge 1.6.1</h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>Matrix Application Service Bridging Infrastructure</h1><p><a href="https://travis-ci.org/matrix-org/matrix-appservice-bridge"><img src="https://travis-ci.org/matrix-org/matrix-appservice-bridge.svg?branch=master" alt="Build Status"></a></p>
+<p>This library sits on top of the
+<a href="https://github.com/matrix-org/matrix-appservice-node">core application service library</a>
+and provides an API for setting up bridges quickly. Check out the
+<a href="HOWTO.md">HOW-TO</a> for a step-by-step tutorial on setting up a new bridge.</p>
+<h1>API</h1><p>A hosted reference can be found on
+<a href="http://matrix-org.github.io/matrix-appservice-bridge">GitHub Pages</a>.
+Alternatively, build the docs using <code>npm run gendoc</code>. Each component's class
+constructor is exposed on <code>require(&quot;matrix-appservice-bridge&quot;)</code> so check each
+class for more information on how to use each component.</p>
+<h1>Architecture</h1><pre class="prettyprint source"><code> __________________________
+|                          |
+|   Your bridge e.g. IRC   |
+|__________________________|
+ __|___________________|___
+|                          |
+| matrix-appservice-bridge |
+|__________________________|
+ __|___________________|___
+|                          |
+|    matrix-appservice     |
+|__________________________|
+</code></pre><p>The bridge relies on <code>matrix-appservice</code> and <code>matrix-js-sdk</code> for their
+AS API and CS API implementations respectively. The bridge manages state for
+virtual users and provides many useful helper functions bridges may desire.</p>
+<h2>Components</h2><p>The bridge is formed around &quot;components&quot;. You can pick and choose which
+components you use, though some components depend upon other components.
+All components operate on data models defined in the bridge. You can directly
+construct components: the bridge exposes the class constructor.</p>
+<h3><code>BridgeStore</code></h3><p>Provides basic document store (key-value) CRUD operations.</p>
+<h3><code>UserBridgeStore</code></h3><p>Provides storage for matrix and remote users. Provides CRUD operations and
+mapping between different types of users.</p>
+<h3><code>RoomBridgeStore</code></h3><p>Provides storage for matrix and remote rooms. Provides CRUD operations and
+mapping between different types of rooms.</p>
+<h3><code>ClientFactory</code></h3><p>Provides a method to obtain a JS SDK <code>MatrixClient</code> in the context of a
+particular <code>user_id</code> and/or <code>Request</code>. This is used to send messages as other
+users.</p>
+<h3><code>Request</code> / <code>RequestFactory</code></h3><p>An abstraction provided to identify a single request through the bridge.
+Can be used for request-context logging (each request has a unique ID)
+and metrics (each request can succeed or fail and has timers for how long
+they take to go through the bridge).</p>
+<h3><code>Intent</code></h3><p>Provides a way to perform Matrix actions by <em>intent</em> rather than by raw
+API calls. This can be thought of as an extension to the client-server JS SDK.
+For example, <code>intent.invite(roomId, invitee)</code> would make sure that you are
+actually joined to the room <code>roomId</code> first (and will automatically join it if
+you aren't) before trying to send the invite.</p>
+<p>Performing actions by <em>intent</em> makes creating bridges a lot easier. For example,
+if your bridge has no concept of inviting or joining rooms, then you don't need
+to care about it either in the bridge. Simply calling
+<code>intent.sendMessage(roomId, text)</code> would make sure that you are joined to the
+room first before sending the message.</p>
+<h3><code>ConfigValidator</code></h3><p>Provides a way to validate a YAML file when provided with a schema file.
+Useful for setting your bridge-specific configuration information.</p>
+<h3><code>Cli</code></h3><p>Processes command line arguments and runs the <code>Bridge</code>.</p>
+<h3><code>AppServiceBot</code></h3><p>A wrapper around the JS SDK <code>MatrixClient</code> designed for use by the application
+service <em>itself</em>. Contains helper methods to get all rooms the AS is in, how
+many virtual / real users are in each, etc.</p>
+<h3><code>Bridge</code></h3><p>The component which orchestrates other components: a &quot;glue&quot; component. Provides
+a way to start the bridge. This is the component most examples use. Has
+dependencies on most of the components listed above.</p>
+<h2>Data Models</h2><ul>
+<li><code>MatrixRoom</code> - A representation of a matrix room.</li>
+<li><code>RemoteRoom</code> - A representation of a third-party room.</li>
+<li><code>MatrixUser</code> - A representation of a matrix user.</li>
+<li><code>RemoteUser</code> - A representation of a third-party user.</li>
+</ul></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AgeCounters.html">AgeCounters</a></li><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ClientRequestCache.html">ClientRequestCache</a></li><li><a href="ConfigValidator.html">ConfigValidator</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="MembershipCache.html">MembershipCache</a></li><li><a href="PrometheusMetrics.html">PrometheusMetrics</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="StateLookup.html">StateLookup</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Aug 30 2018 13:24:43 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

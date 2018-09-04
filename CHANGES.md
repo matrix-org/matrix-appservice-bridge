@@ -1,3 +1,23 @@
+1.6.0 (2018-08-23)
+==================
+
+Some `Intent` operations now cache requests that would otherwise fall through
+to the homeserver which can be expensive. This is configurable for `Intent`s
+via the `opts.caching.ttl` and `size` options.
+
+AgeCounters now allow you to set your own time period buckets.
+
+Added a new function `Intent.getEvent` which will fetch events
+from the homeserver without any context information, which should
+be quick.
+
+`MembershipCache` is now exposed to let folks read and write to the cache
+while also letting the bridge access it.
+
+`a` release: Fix issue where `roomState` would fail.
+`b` release: Fix issue where we were calling this.intent *inside* intent like fools!
+`c` release: Fix issue where some stole js-sdk code was not checked thoroughly.
+
 1.5.0 (2018-07-25)
 ==================
 

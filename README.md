@@ -94,6 +94,41 @@ The component which orchestrates other components: a "glue" component. Provides
 a way to start the bridge. This is the component most examples use. Has
 dependencies on most of the components listed above.
 
+## `Logging`
+This component exposes access to the bridges log reporter. To use, you should
+install the optional packages `winston`, `winston-daily-rotate-file` and
+`chalk` to get nice formatted log lines, otherwise it will default to the JS
+console. To use the component, use `Logging.Configure(configObject)` to setup
+the logger, which takes the following options:
+```
+    # A level to set the console reporter to.
+    console: "error|warn|info|debug|off"
+
+    # Format to append to log files.
+    fileDatePattern: "YYYY-MM-DD",
+
+    # Format of the timestamp in log files.
+    timestampFormat: "MMM-D HH:mm:ss.SSS"
+
+    # Log files to emit to, keyed of the minimum level they report.
+    files: {
+        "abc.log" => "error|warn|info|debug|off"
+    }
+
+    # The maximum number of files per level before old files get cleaned
+    up. Use 0 to disable.
+    maxFiles: 5
+```
+
+You **MUST** configure the logger before anything will be emitted to the console.
+
+You can then use `Logging.Get(ModuleName)` to start logging to the reporter,
+using the `error, warn, info, debug` functions. Arguments to these functions will
+automatically be seralized if they aren't strings.
+
+NOTE: ``opts.controller.onLog`` will override this, but if not set then the logging
+transport is used.
+
 ## Data Models
  * `MatrixRoom` - A representation of a matrix room.
  * `RemoteRoom` - A representation of a third-party room.

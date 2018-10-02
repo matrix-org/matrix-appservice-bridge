@@ -18,9 +18,9 @@ describe("MatrixUser", function() {
             const expected = [
                 "@=24:localhost",
                 "@500=24=20dog:localhost",
-                "@woah=2A=2A=2A:localhost",
-                "@=D83D:localhost",
-                "@matrix.org=2Fspec:localhost",
+                "@woah=2a=2a=2a:localhost",
+                "@=d83d:localhost",
+                "@matrix.org=2fspec:localhost",
             ];
             [
                 new MatrixUser("@$:localhost", null, false),

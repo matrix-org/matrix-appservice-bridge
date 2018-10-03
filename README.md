@@ -124,6 +124,7 @@ the logger, which takes the following options:
 }
 ```
 
+
 You **MUST** configure the logger before anything will be emitted to the console.
 
 You can then use `const log = Logging.Get(ModuleName)` to start logging to the reporter,
@@ -132,6 +133,32 @@ automatically be seralized if they aren't strings.
 
 NOTE: ``opts.controller.onLog`` will override this, but if not set then the logging
 transport is used.
+
+## `RoomLinkValidator`
+This component validates if a room can be linked to a remote channel based on
+whether it conflicts with any rules given in a rule file. The filename is given
+in `opts` for `Bridge`, though you may also set the rules as an object instead.
+The format for the file (in YAML) or the object is as follows:
+```javascript
+{
+    // This rule checks the memberlist of a room to determine if it will let
+    // the bridge create a link to the room. This is useful for avoiding conflicts
+    // with other bridges.
+    "userIds": {
+        // Anyone in this set will be ALWAYS exempt from the conflicts rule.
+        // Here anyone who's localpart starts with nice is exempt.
+        "exempt": ["@nice+.:example.com"]
+        // This is a regex that will exclude anyone who has "guy" at the end of their localpart.
+        // evilbloke is also exempt.
+        "conflicts": ["@+.guy:example.com", "@evilbloke:example.com"]
+    }
+}
+```
+
+If you set `opts.roomLinkValidator.triggerEndpoint` to `true`, then you may use
+`/_bridge/roomLinkValidator/reload` to reload the config from file. This endpoint
+optionally takes the `filename` parameter if you want to reload the config from
+another location.
 
 ## Data Models
  * `MatrixRoom` - A representation of a matrix room.

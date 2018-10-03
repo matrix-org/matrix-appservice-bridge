@@ -40,5 +40,10 @@
     "istanbul": "^0.3.18",
     "jasmine": "^2.5.2",
     "eslint": "^1.2.0"
+  },
+  "optionalDependencies": {
+    "winston": "^3.1.0",
+    "winston-daily-rotate-file": "^3.3.3",
+    "chalk": "^2.4.1"
   }
 }

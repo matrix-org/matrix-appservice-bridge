@@ -2,11 +2,12 @@
 ==================
 
 ### ** Breaking change**
-MatrixUser objects now escape user ids by default which  means any user id not conforming to https://matrix.org/docs/spec/appendices.html#user-identifiers
+MatrixUser now escapes user ids by default which means any user id not conforming to https://matrix.org/docs/spec/appendices.html#user-identifiers
 will have some characters converted to [QP encoding](https://en.wikipedia.org/wiki/Quoted-printable).
 This is likely to break some store mappings as well as create escaped ghost users
-where previously invalid ids would have been accepted. Do not upgrade your bridge
-without evaluating the risks.
+where previously invalid ids would have been accepted.
+
+### Changes
 
 User ids are now escaped when using `MatrixUser`, see above.
 

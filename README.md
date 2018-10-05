@@ -137,7 +137,8 @@ transport is used.
 ## `RoomLinkValidator`
 This component validates if a room can be linked to a remote channel based on
 whether it conflicts with any rules given in a rule file. The filename is given
-in `opts` for `Bridge`, though you may also set the rules as an object instead.
+in `opts.roomLinkValidation.ruleFile` for `Bridge`, though you may also set the
+rules as an object instead by setting `opts.roomLinkValidation.rules`.
 The format for the file (in YAML) or the object is as follows:
 ```javascript
 {
@@ -150,12 +151,12 @@ The format for the file (in YAML) or the object is as follows:
         "exempt": ["@nice+.:example.com"]
         // This is a regex that will exclude anyone who has "guy" at the end of their localpart.
         // evilbloke is also exempt.
-        "conflicts": ["@+.guy:example.com", "@evilbloke:example.com"]
+        "conflict": ["@+.guy:example.com", "@evilbloke:example.com"]
     }
 }
 ```
 
-If you set `opts.roomLinkValidator.triggerEndpoint` to `true`, then you may use
+If you set `opts.roomLinkValidation.triggerEndpoint` to `true`, then you may use
 `/_bridge/roomLinkValidator/reload` to reload the config from file. This endpoint
 optionally takes the `filename` parameter if you want to reload the config from
 another location.

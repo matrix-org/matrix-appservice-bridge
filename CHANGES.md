@@ -1,3 +1,26 @@
+1.7.0 (2018-10-05)
+==================
+
+### ** Breaking change**
+MatrixUser objects now escape user ids by default which  means any user id not conforming to https://matrix.org/docs/spec/appendices.html#user-identifiers
+will have some characters converted to [QP encoding](https://en.wikipedia.org/wiki/Quoted-printable).
+This is likely to break some store mappings as well as create escaped ghost users
+where previously invalid ids would have been accepted. Do not upgrade your bridge
+without evaluating the risks.
+
+User ids are now escaped when using `MatrixUser`, see above.
+
+Packages `js-yaml`, `matrix-appservice`, `istanbul` have been updated.
+`jayschema` was removed in favour of `is-my-json-valid`.
+
+New component `RoomLinkValidator` can now parse rule files for linking rooms
+  and abort a link that could potentially be problematic.
+
+New component `Logging` is a simple wrapper around `winston` (which falls back
+  to console) for more straight forward log management.
+
+See the README and docs for more information about these components.
+
 1.6.1 (2018-08-30)
 ==================
 

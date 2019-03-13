@@ -161,6 +161,19 @@ If you set `opts.roomLinkValidation.triggerEndpoint` to `true`, then you may use
 optionally takes the `filename` parameter if you want to reload the config from
 another location.
 
+
+## `RoomUpgradeHandler`
+This component automatically handles [Room Upgrades](https://matrix.org/docs/spec/client_server/unstable.html#post-matrix-client-r0-rooms-roomid-upgrade)
+by changing all associated room entries to use the new room id as well as leaving
+and joining ghosts. It can also be hooked into so you can manually adjust entries,
+or do an action once the upgrade is over.
+
+This component is disabled by default but can enabled by simply defining `roomUpgradeOpts`
+in the options given to the bridge (simply `{}` (empty object)). By default, users
+will be copied on upgrade. Upgrade events will also be consumed by the bridge, and
+will not be emitted by `onEvent`. For more information, see the docs.
+
+
 ## Data Models
  * `MatrixRoom` - A representation of a matrix room.
  * `RemoteRoom` - A representation of a third-party room.

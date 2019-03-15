@@ -1,3 +1,14 @@
+1.8.0 (2019-03-15)
+==================
+
+### Changes
+
+New `RoomUpgradeHandler` component to handle room upgrades. More information on this can be found in the README.md.
+
+* Fixed bug where the cli interface would incorrectly output to the log rather than to the console
+* Fixed bug where invites and bans would be used to determine if a user "exists", which is not reliable.
+* Bump matrix-js-sdk to 1.0.1
+
 1.7.0 (2018-10-05)
 ==================
 

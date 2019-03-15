@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/client-request-cache.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/client-request-cache.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Caches requests in memory and handles expiring them.
+ */
+class ClientRequestCache {
+    /**
+     * @param ttl {Number} How old a result can be before it gets expired.
+     * @param size {Number} How many results to store before we trim.
+     * @param requestFunc The function to use on cache miss.
+     */
+    constructor (ttl, size, requestFunc) {
+        if (!Number.isInteger(ttl) || ttl &lt;= 0) {
+            throw Error("'ttl' must be greater than 0");
+        }
+        if (!Number.isInteger(size) || ttl &lt;= 0) {
+            throw Error("'size' must be greater than 0");
+        }
+        if (typeof(requestFunc) !== "function") {
+            throw Error("'requestFunc' must be a function");
+        }
+        this._requestContent = new Map(); // key => {ts, content}
+        this.requestFunc = requestFunc;
+        this.ttl = ttl;
+        this.maxSize = size;
+    }
+
+    /**
+     * Gets a result of a request from the cache, or otherwise
+     * tries to fetch the the result with this.requestFunc
+     *
+     * @param {string}} key Key of the item to get/store.
+     * @param {any[]} args A set of arguments to pass to the request func.
+     * @returns {Promise} The request, or undefined if not retrievable.
+     * @throws {Error} If the key is not a string.
+     */
+    get(key, ...args) {
+        if (typeof(key) !== "string") {
+            throw Error("'key' must be a string");
+        }
+        const cachedResult = this._requestContent.get(key);
+        if (cachedResult !== undefined &amp;&amp; cachedResult.ts >= Date.now() - this.ttl) {
+            return cachedResult.content;
+        }
+        // Delete the old req.
+        this._requestContent.delete(key);
+        return new Promise((resolve, reject) => {
+            resolve(this.requestFunc.apply(null, [key].concat(args)))
+        }).then((result) => {
+            if (result !== undefined) {
+                this._requestContent.set(key, {
+                    ts: Date.now(),
+                    content: result,
+                });
+                if (this._requestContent.size > this.maxSize) {
+                    const oldKey = this._requestContent.keys().next().value;
+                    this._requestContent.delete(oldKey);
+                }
+            }
+            return result;
+        });
+        // Not catching here because we want to pass 
+        // through any failures.
+    }
+
+    /**
+     * Clone the current request result cache, mapping keys to their cache records.
+     * @returns {Map&lt;string,any>}
+     */
+    getCachedResults() {
+        return new Map(this._requestContent);
+    }
+
+    /**
+     * @callback requestFunc
+     * @param {any[]} args A set of arguments passed from get().
+     * @param {string} key The key for the cached item.
+     */
+}
+
+module.exports = ClientRequestCache;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AgeCounters.html">AgeCounters</a></li><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ClientRequestCache.html">ClientRequestCache</a></li><li><a href="global.html#ConfigValidator">ConfigValidator</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="MembershipCache.html">MembershipCache</a></li><li><a href="PrometheusMetrics.html">PrometheusMetrics</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="RoomLinkValidator.html">RoomLinkValidator</a></li><li><a href="RoomUpgradeHandler.html">RoomUpgradeHandler</a></li><li><a href="StateLookup.html">StateLookup</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Fri Mar 15 2019 00:27:06 GMT+0000 (Greenwich Mean Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -34,7 +34,7 @@ describe("Bridge", function() {
         ]);
         clientFactory.getClientAs.and.callFake(function(uid, req) {
             return clients[
-                (uid ? uid : "bot") + (req ? req.getId() : "")];
+                (uid ? uid : "bot") + (req ? req.getId() : "")] || {uid};
         });
         clients["bot"] = mkMockMatrixClient(
             "@" + BOT_LOCALPART + ":" + HS_DOMAIN
@@ -580,6 +580,19 @@ describe("Bridge", function() {
             });
             expect(intent2).toBeDefined();
             expect(intent).not.toEqual(intent2);
+        });
+
+        it("should return an escaped userId",
+        function() {
+            const intent = bridge.getIntent("@foo£$&!£:bar");
+            expect(intent.client.uid).toEqual("@foo=a3=24=26=21=a3:bar");
+        });
+
+        it("should not return an escaped userId if disabled",
+        function() {
+            bridge.opts.escapeUserIds = false;
+            const intent = bridge.getIntent("@foo£$&!£:bar");
+            expect(intent.client.uid).toEqual("@foo£$&!£:bar");
         });
     });
 

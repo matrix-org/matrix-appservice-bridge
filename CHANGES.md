@@ -1,3 +1,11 @@
+1.8.1 (2019-04-17)
+==================
+
+### Changes
+
+* Fix issue where not supplying RoomUpgradeHandler would break incoming events
+* Handle more cases of userid encoding
+
 1.8.0 (2019-03-15)
 ==================
 

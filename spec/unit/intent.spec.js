@@ -2,6 +2,7 @@
 var Intent = require("../..").Intent;
 var Promise = require("bluebird");
 var log = require("../log");
+const RoomMember = require("matrix-js-sdk").RoomMember;
 
 describe("Intent", function() {
     var intent, client, botClient;
@@ -19,7 +20,7 @@ describe("Intent", function() {
         var clientFields = [
             "credentials", "joinRoom", "invite", "leave", "ban", "unban",
             "kick", "getStateEvent", "setPowerLevel", "sendTyping", "sendEvent",
-            "sendStateEvent", "setDisplayName", "setAvatarUrl"
+            "sendStateEvent", "setDisplayName", "setAvatarUrl", "getRoom"
         ];
         client = jasmine.createSpyObj("client", clientFields);
         client.credentials.userId = userId;
@@ -389,6 +390,86 @@ describe("Intent", function() {
                     roomId, "m.room.message", content
                 );
                 expect(client.joinRoom).toHaveBeenCalledWith(roomId, { syncRoom: false });
+                done();
+            });
+        });
+    });
+
+    describe("signaling bridge error", function() {
+        const reason = "m.event_not_handled"
+        var affectedUsers, eventId, bridge, room, roomMembers;
+
+        beforeEach(function() {
+            intent.opts.dontCheckPowerLevel = true;
+            // not interested in joins, so no-op them.
+            intent.onEvent({
+                event_id: "test",
+                type: "m.room.member",
+                state_key: userId,
+                room_id: roomId,
+                content: {
+                    membership: "join"
+                }
+            });
+            eventId = "$random:event.id";
+            bridge = "International Pidgeon Post";
+            affectedUsers = [
+                "@pidgeonpost_1134:home.server",
+                "pidgeonpost_0001:home.server"
+            ];
+            roomMembers = affectedUsers.map(s => new RoomMember(roomId, s))
+            room = jasmine.createSpyObj("room", ["getJoinedMembers"]);
+        });
+
+        it("should send an event", function(done) {
+            client.sendEvent.and.returnValue(Promise.resolve({
+                event_id: "$abra:kadabra"
+            }));
+            intent
+            .signalBridgeError(roomId, eventId, bridge, reason, affectedUsers)
+            .then(() => {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId,
+                    "m.room.bridge_error",
+                    {
+                        "network_name": bridge,
+                        "reason": reason,
+                        "affected_users": affectedUsers,
+                        "m.relates_to": {
+                            "rel_type": "m.reference",
+                            "event_id": eventId
+                        }
+                    }
+                );
+                expect(client.joinRoom).not.toHaveBeenCalled();
+                done();
+            });
+        });
+
+        it("should get room members and send an event", function(done) {
+            client.sendEvent.and.returnValue(Promise.resolve({
+                event_id: "$abra:kadabra"
+            }));
+
+            client.getRoom.and.returnValue(room);
+            room.getJoinedMembers.and.returnValue(roomMembers)
+            intent
+            .signalBridgeError(roomId, eventId, bridge, reason)
+            .then(() => {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId,
+                    "m.room.bridge_error",
+                    {
+                        "network_name": bridge,
+                        "reason": reason,
+                        "affected_users": affectedUsers,
+                        "m.relates_to": {
+                            "rel_type": "m.reference",
+                            "event_id": eventId,
+                        }
+                    }
+                );
+                expect(client.joinRoom).not.toHaveBeenCalled();
                 done();
             });
         });

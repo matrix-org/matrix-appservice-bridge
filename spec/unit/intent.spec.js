@@ -2,7 +2,6 @@
 var Intent = require("../..").Intent;
 var Promise = require("bluebird");
 var log = require("../log");
-const RoomMember = require("matrix-js-sdk").RoomMember;
 
 describe("Intent", function() {
     var intent, client, botClient;
@@ -397,7 +396,7 @@ describe("Intent", function() {
 
     describe("signaling bridge error", function() {
         const reason = "m.event_not_handled"
-        var affectedUsers, eventId, bridge, room, roomMembers;
+        var affectedUsers, eventId, bridge;
 
         beforeEach(function() {
             intent.opts.dontCheckPowerLevel = true;
@@ -413,12 +412,7 @@ describe("Intent", function() {
             });
             eventId = "$random:event.id";
             bridge = "International Pidgeon Post";
-            affectedUsers = [
-                "@pidgeonpost_1134:home.server",
-                "pidgeonpost_0001:home.server"
-            ];
-            roomMembers = affectedUsers.map(s => new RoomMember(roomId, s))
-            room = jasmine.createSpyObj("room", ["getJoinedMembers"]);
+            affectedUsers = "@_pidgeonpost_*:home.server";
         });
 
         it("should send an event", function(done) {
@@ -438,34 +432,6 @@ describe("Intent", function() {
                         "m.relates_to": {
                             "rel_type": "m.reference",
                             "event_id": eventId
-                        }
-                    }
-                );
-                expect(client.joinRoom).not.toHaveBeenCalled();
-                done();
-            });
-        });
-
-        it("should get room members and send an event", function(done) {
-            client.sendEvent.and.returnValue(Promise.resolve({
-                event_id: "$abra:kadabra"
-            }));
-
-            client.getRoom.and.returnValue(room);
-            room.getJoinedMembers.and.returnValue(roomMembers)
-            intent
-            .signalBridgeError(roomId, eventId, bridge, reason)
-            .then(() => {
-                expect(client.sendEvent).toHaveBeenCalledWith(
-                    roomId,
-                    "m.room.bridge_error",
-                    {
-                        "network_name": bridge,
-                        "reason": reason,
-                        "affected_users": affectedUsers,
-                        "m.relates_to": {
-                            "rel_type": "m.reference",
-                            "event_id": eventId,
                         }
                     }
                 );

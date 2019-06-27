@@ -35,5 +35,13 @@ describe("MatrixUser", function() {
                 expect(user.getId()).toBe(expected[i]);
             })
         });
+        it("should not escape if ESCAPE_DEFAULT is false", function() {
+            MatrixUser.ESCAPE_DEFAULT = false;
+            expect(new MatrixUser("@$:localhost", null).getId()).toBe("@$:localhost");
+        });
+        it("should escape if ESCAPE_DEFAULT is true", function() {
+            MatrixUser.ESCAPE_DEFAULT = true;
+            expect(new MatrixUser("@$:localhost", null).getId()).toBe("@=24:localhost");
+        });
     });
 });

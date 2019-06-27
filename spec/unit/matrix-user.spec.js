@@ -21,13 +21,15 @@ describe("MatrixUser", function() {
                 "@woah=2a=2a=2a:localhost",
                 "@=d83d:localhost",
                 "@matrix.org=2fspec:localhost",
+                "@=5bdoggo=5d:localhost"
             ];
             [
                 new MatrixUser("@$:localhost", null, false),
                 new MatrixUser("@500$ dog:localhost", null, false),
                 new MatrixUser("@woah***:localhost", null, false),
                 new MatrixUser("@🐶:localhost", null, false),
-                new MatrixUser("@matrix.org/spec:localhost", null, false)
+                new MatrixUser("@matrix.org/spec:localhost", null, false),
+                new MatrixUser("@[doggo]:localhost", null, false)
             ].forEach((user, i) => {
                 user.escapeUserId();
                 expect(user.getId()).toBe(expected[i]);

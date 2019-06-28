@@ -424,7 +424,7 @@ describe("Intent", function() {
             .then(() => {
                 expect(client.sendEvent).toHaveBeenCalledWith(
                     roomId,
-                    "m.room.bridge_error",
+                    "de.nasnotfound.bridge_error",
                     {
                         "network_name": bridge,
                         "reason": reason,

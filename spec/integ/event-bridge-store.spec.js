@@ -1,10 +1,21 @@
-"use strict";
+/*
+Copyright 2019 New Vector Ltd
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 const Datastore = require("nedb");
 const fs = require("fs");
 const log = require("../log");
 
 const EventBridgeStore = require("../..").EventBridgeStore;
-const StoreEvent = require("../..").StoreEvent;
+const StoredEvent = require("../..").StoredEvent;
 var TEST_DB_PATH = __dirname + "/test.db";
 
 describe("EventBridgeStore", function() {
@@ -40,7 +51,7 @@ describe("EventBridgeStore", function() {
     describe("upsertEvent", function() {
         it("should be able to store a SourceEvent, retrievable again via getEntryBy(Matrix|Remote)Id",
         function(done) {
-            const ev = new StoreEvent(
+            const ev = new StoredEvent(
                 "!room:bar",
                 "$event:bar",
                 "remoteroom:bar",
@@ -62,7 +73,7 @@ describe("EventBridgeStore", function() {
     describe("removeEvent", function() {
         it("should be able to remove a SourceEvent",
         function(done) {
-            const ev = new StoreEvent(
+            const ev = new StoredEvent(
                 "!room:bar",
                 "$event:bar",
                 "remoteroom:bar",
@@ -82,7 +93,7 @@ describe("EventBridgeStore", function() {
     describe("removeEventByMatrixId", function() {
         it("should be able to remove a SourceEvent",
         function(done) {
-            const ev = new StoreEvent(
+            const ev = new StoredEvent(
                 "!room:bar",
                 "$event:bar",
                 "remoteroom:bar",
@@ -102,7 +113,7 @@ describe("EventBridgeStore", function() {
     describe("removeEventByRemoteId", function() {
         it("should be able to remove a SourceEvent",
         function(done) {
-            const ev = new StoreEvent(
+            const ev = new StoredEvent(
                 "!room:bar",
                 "$event:bar",
                 "remoteroom:bar",

@@ -21,17 +21,27 @@ describe("MatrixUser", function() {
                 "@woah=2a=2a=2a:localhost",
                 "@=d83d:localhost",
                 "@matrix.org=2fspec:localhost",
+                "@=5bdoggo=5d:localhost"
             ];
             [
                 new MatrixUser("@$:localhost", null, false),
                 new MatrixUser("@500$ dog:localhost", null, false),
                 new MatrixUser("@woah***:localhost", null, false),
                 new MatrixUser("@🐶:localhost", null, false),
-                new MatrixUser("@matrix.org/spec:localhost", null, false)
+                new MatrixUser("@matrix.org/spec:localhost", null, false),
+                new MatrixUser("@[doggo]:localhost", null, false)
             ].forEach((user, i) => {
                 user.escapeUserId();
                 expect(user.getId()).toBe(expected[i]);
             })
+        });
+        it("should not escape if ESCAPE_DEFAULT is false", function() {
+            MatrixUser.ESCAPE_DEFAULT = false;
+            expect(new MatrixUser("@$:localhost", null).getId()).toBe("@$:localhost");
+        });
+        it("should escape if ESCAPE_DEFAULT is true", function() {
+            MatrixUser.ESCAPE_DEFAULT = true;
+            expect(new MatrixUser("@$:localhost", null).getId()).toBe("@=24:localhost");
         });
     });
 });

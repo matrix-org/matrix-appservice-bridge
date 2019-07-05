@@ -705,6 +705,7 @@ function mkMockMatrixClient(uid) {
         if (method === "POST" && path === "/register") {
             return client.register(data.user);
         }
+        return undefined;
     });
     client.credentials.userId = uid;
     return client;

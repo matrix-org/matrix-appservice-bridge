@@ -1,3 +1,17 @@
+1.9.0 (2019-07-05)
+==================
+
+### Changes
+
+* New `EventStore` component for storing matrix and remote event id mappings. #107
+* Request.outcomeFrom no longer expects a Bluebird promise. #104
+* Username escaping now handles `[ ]` #112
+* Escaping can be now disabled by changing `MatrixUser.ESCAPE_DEFAULT` to `false`. #112
+
+### Misc
+
+* Linting has been fixed, and now supports more modern syntax. #110
+
 1.8.1 (2019-04-17)
 ==================
 

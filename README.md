@@ -53,6 +53,9 @@ mapping between different types of users.
 Provides storage for matrix and remote rooms. Provides CRUD operations and
 mapping between different types of rooms.
 
+### `EventBridgeStore`
+Provides storage for matrix and remote event ids.
+
 ### `ClientFactory`
 Provides a method to obtain a JS SDK `MatrixClient` in the context of a
 particular `user_id` and/or `Request`. This is used to send messages as other

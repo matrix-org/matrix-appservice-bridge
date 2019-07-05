@@ -12,7 +12,6 @@
 
 * Linting has been fixed, and now supports more modern syntax. #110
 
-
 1.8.1 (2019-04-17)
 ==================
 

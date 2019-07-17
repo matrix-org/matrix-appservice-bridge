@@ -19,7 +19,7 @@ describe("Intent", function() {
         var clientFields = [
             "credentials", "joinRoom", "invite", "leave", "ban", "unban",
             "kick", "getStateEvent", "setPowerLevel", "sendTyping", "sendEvent",
-            "sendStateEvent", "setDisplayName", "setAvatarUrl", "getRoom"
+            "sendStateEvent", "setDisplayName", "setAvatarUrl",
         ];
         client = jasmine.createSpyObj("client", clientFields);
         client.credentials.userId = userId;

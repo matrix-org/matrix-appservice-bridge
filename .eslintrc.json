@@ -5,6 +5,7 @@
     "es6": true
   },
   "rules": {
+    // 0: off, 1: warn, 2: error
     "consistent-return": 2,
     "curly": 1,
     "default-case": 2,
@@ -68,6 +69,7 @@
     "no-spaced-func": 1,
     "no-trailing-spaces": 1,
     "keyword-spacing": [1, {"after": true}],
-    "space-before-blocks": [1, "always"]
+    "space-before-blocks": [1, "always"],
+    "camelcase": [1, {"properties": "never", "ignoreDestructuring": true}]
   }
 }

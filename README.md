@@ -182,3 +182,22 @@ will not be emitted by `onEvent`. For more information, see the docs.
  * `RemoteRoom` - A representation of a third-party room.
  * `MatrixUser` - A representation of a matrix user.
  * `RemoteUser` - A representation of a third-party user.
+
+
+## Signaling Bridge Errors
+This section applies when you are using `Bridge` and want to notify your users
+about problems while processing their events.
+
+One thing the bridge requires you to do is fulfilling or rejecting the
+`request` promise which is handed to you as argument of the
+`controller.onEvent` callback. When rejecting the promise the `Error` you
+reject with does matter:
+
+- On most `Error`s the bridge will simply notify the homeserver that the event
+  could not be handled right now. The homeserver will then try to resend the
+  message again with exponential backoff.
+- On an `EventNotHandledError` (and all its subtypes) the bridge will declare
+  the event as permanently failed. It will mark it as such by sending a
+  `de.nasnotfound.bridge_error` room event, which will make clients show an
+  error message to their users. The homeserver is signaled that the message was
+  handled and it will not try to resend it.

@@ -67,7 +67,7 @@ describe("ClientRequestCache", function() {
                 }
                 return "Thing 2!";
             });
-            
+
             return crc.get("1").then((res) => {
                 expect(res).toBe("Thing 1!");
                 return crc.get("2");

@@ -8,7 +8,7 @@
     "lint": "eslint lib/ spec/",
     "test": "BLUEBIRD_DEBUG=1 jasmine --stop-on-failure=true",
     "check": "npm run lint && npm test",
-    "ci-test": "BLUEBIRD_DEBUG=1 istanbul cover -x \"**/spec/**\" --report text jasmine"
+    "ci-test": "BLUEBIRD_DEBUG=1 nyc -x \"**/spec/**\" --report text jasmine"
   },
   "repository": {
     "type": "git",
@@ -37,9 +37,9 @@
   },
   "devDependencies": {
     "eslint": "^5.16.0",
-    "istanbul": "^0.4.5",
     "jasmine": "^2.5.2",
-    "jsdoc": "^3.3.2"
+    "jsdoc": "^3.3.2",
+    "nyc": "^14.1.1"
   },
   "optionalDependencies": {
     "winston": "^3.1.0",

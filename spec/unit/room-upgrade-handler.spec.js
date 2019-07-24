@@ -14,7 +14,7 @@ describe("RoomLinkValidator", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomID) => { joined = roomID; return Promise.resolve(); },
+                    join: (roomId) => { joined = roomId; return Promise.resolve(); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -35,7 +35,7 @@ describe("RoomLinkValidator", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomID) => { joined = roomID; return Promise.reject({errcode: "M_FORBIDDEN"}); },
+                    join: (roomId) => { joined = roomId; return Promise.reject({errcode: "M_FORBIDDEN"}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -55,7 +55,7 @@ describe("RoomLinkValidator", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomID) => { joined = roomID; return Promise.reject({}); },
+                    join: (roomId) => { joined = roomId; return Promise.reject({}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -78,7 +78,7 @@ describe("RoomLinkValidator", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomID) => { joined = roomID; return Promise.resolve({}); },
+                    join: (roomId) => { joined = roomId; return Promise.resolve({}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -91,7 +91,7 @@ describe("RoomLinkValidator", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomID) => { joined = roomID; return Promise.reject({errcode: "M_FORBIDDEN"}); },
+                    join: (roomId) => { joined = roomId; return Promise.reject({errcode: "M_FORBIDDEN"}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -103,7 +103,7 @@ describe("RoomLinkValidator", () => {
         it("should fail for any other reason", () => {
             const bridge = {
                 getIntent: () => ({
-                    join: (roomID) => { return Promise.reject({}); },
+                    join: (roomId) => { return Promise.reject({}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);

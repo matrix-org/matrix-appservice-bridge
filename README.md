@@ -185,6 +185,12 @@ will not be emitted by `onEvent`. For more information, see the docs.
 
 
 ## Signaling Bridge Errors
+
+**Warning**: This feature is experimental and not part of the matrix specification
+yet. [MSC2162](https://github.com/matrix-org/matrix-doc/pull/2162) is currently ongoing
+which means that changes will likely happen to the format of the errors. Do not use
+this in production bridges.
+
 This section applies when you are using `Bridge` and want to notify your users
 about problems while processing their events.
 

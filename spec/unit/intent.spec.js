@@ -420,7 +420,7 @@ describe("Intent", function() {
                 event_id: "$abra:kadabra"
             }));
             intent
-            .signalBridgeError(roomId, eventId, bridge, reason, affectedUsers)
+            .unstableSignalBridgeError(roomId, eventId, bridge, reason, affectedUsers)
             .then(() => {
                 expect(client.sendEvent).toHaveBeenCalledWith(
                     roomId,

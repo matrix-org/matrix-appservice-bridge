@@ -19,7 +19,7 @@ describe("Intent", function() {
         var clientFields = [
             "credentials", "joinRoom", "invite", "leave", "ban", "unban",
             "kick", "getStateEvent", "setPowerLevel", "sendTyping", "sendEvent",
-            "sendStateEvent", "setDisplayName", "setAvatarUrl"
+            "sendStateEvent", "setDisplayName", "setAvatarUrl",
         ];
         client = jasmine.createSpyObj("client", clientFields);
         client.credentials.userId = userId;
@@ -389,6 +389,53 @@ describe("Intent", function() {
                     roomId, "m.room.message", content
                 );
                 expect(client.joinRoom).toHaveBeenCalledWith(roomId, { syncRoom: false });
+                done();
+            });
+        });
+    });
+
+    describe("signaling bridge error", function() {
+        const reason = "m.event_not_handled"
+        var affectedUsers, eventId, bridge;
+
+        beforeEach(function() {
+            intent.opts.dontCheckPowerLevel = true;
+            // not interested in joins, so no-op them.
+            intent.onEvent({
+                event_id: "test",
+                type: "m.room.member",
+                state_key: userId,
+                room_id: roomId,
+                content: {
+                    membership: "join"
+                }
+            });
+            eventId = "$random:event.id";
+            bridge = "International Pidgeon Post";
+            affectedUsers = ["@_pidgeonpost_.*:home.server"];
+        });
+
+        it("should send an event", function(done) {
+            client.sendEvent.and.returnValue(Promise.resolve({
+                event_id: "$abra:kadabra"
+            }));
+            intent
+            .signalBridgeError(roomId, eventId, bridge, reason, affectedUsers)
+            .then(() => {
+                expect(client.sendEvent).toHaveBeenCalledWith(
+                    roomId,
+                    "de.nasnotfound.bridge_error",
+                    {
+                        "network_name": bridge,
+                        "reason": reason,
+                        "affected_users": affectedUsers,
+                        "m.relates_to": {
+                            "rel_type": "m.reference",
+                            "event_id": eventId
+                        }
+                    }
+                );
+                expect(client.joinRoom).not.toHaveBeenCalled();
                 done();
             });
         });

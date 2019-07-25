@@ -412,7 +412,7 @@ describe("Intent", function() {
             });
             eventId = "$random:event.id";
             bridge = "International Pidgeon Post";
-            affectedUsers = "@_pidgeonpost_*:home.server";
+            affectedUsers = ["@_pidgeonpost_.*:home.server"];
         });
 
         it("should send an event", function(done) {

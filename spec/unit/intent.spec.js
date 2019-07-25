@@ -439,5 +439,18 @@ describe("Intent", function() {
                 done();
             });
         });
+
+        it("should complain about the bad AS user regex", function(done) {
+            const badUserRegex = ["@_pidgeon_.*"];
+
+            client.sendEvent.and.returnValue(Promise.resolve({
+                event_id: "$abra:kadabra"
+            }));
+            intent
+            .unstableSignalBridgeError(roomId, eventId, bridge, reason, badUserRegex)
+            .then(() => done.fail("Invalid AS user regex was not detected."))
+            .catch(() => done()
+            );
+        });
     });
 });

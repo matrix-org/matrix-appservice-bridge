@@ -1,3 +1,10 @@
+1.9.1 (2019-08-05)
+==================
+
+### Changes
+
+* **Security fix** Check that `state_key` exists on tombstone events.
+
 1.9.0 (2019-07-05)
 ==================
 

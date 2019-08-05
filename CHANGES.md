@@ -1,3 +1,10 @@
+1.9.2 (2019-08-05)
+==================
+
+### Changes
+
+* Bugfix where we failed to handle events with empty string `state_key`s
+
 1.9.1 (2019-08-05)
 ==================
 

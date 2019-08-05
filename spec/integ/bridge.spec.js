@@ -689,6 +689,75 @@ describe("Bridge", function() {
             });
         });
     });
+
+    describe("_onEvent", () => {
+        it("should not upgrade a room if state_key is not defined", () => {
+            bridge._roomUpgradeHandler = jasmine.createSpyObj("_roomUpgradeHandler", ["onTombstone"]);
+            bridge._roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
+            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
+            bridge.opts.roomUpgradeOpts = { consumeEvent: true };
+            return bridge.run(101, {}, appService).then(() => {
+                return bridge._onEvent({
+                    type: "m.room.tombstone",
+                    state_key: undefined,
+                    user_id: "@foo:bar",
+                    sender: "@foo:bar",
+                });
+            }).then(() => {
+                expect(bridge._roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
+            });
+        });
+
+        it("should not upgrade a room if state_key is not === '' ", () => {
+            bridge._roomUpgradeHandler = jasmine.createSpyObj("_roomUpgradeHandler", ["onTombstone"]);
+            bridge._roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
+            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
+            bridge.opts.roomUpgradeOpts = { consumeEvent: true };
+            return bridge.run(101, {}, appService).then(() => {
+                return bridge._onEvent({
+                    type: "m.room.tombstone",
+                    state_key: "fooobar",
+                    user_id: "@foo:bar",
+                    sender: "@foo:bar",
+                });
+            }).then(() => {
+                expect(bridge._roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
+                return bridge._onEvent({
+                    type: "m.room.tombstone",
+                    state_key: 212345,
+                    user_id: "@foo:bar",
+                    sender: "@foo:bar",
+                });
+            }).then(() => {
+                expect(bridge._roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
+                return bridge._onEvent({
+                    type: "m.room.tombstone",
+                    state_key: null,
+                    user_id: "@foo:bar",
+                    sender: "@foo:bar",
+                });
+            }).then(() => {
+                expect(bridge._roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
+            });
+        });
+
+        it("should upgrade a room if state_key == '' is defined", () => {
+            bridge._roomUpgradeHandler = jasmine.createSpyObj("_roomUpgradeHandler", ["onTombstone"]);
+            bridge._roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
+            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
+            bridge.opts.roomUpgradeOpts = { consumeEvent: true };
+            return bridge.run(101, {}, appService).then(() => {
+                return bridge._onEvent({
+                    type: "m.room.tombstone",
+                    state_key: "",
+                    user_id: "@foo:bar",
+                    sender: "@foo:bar",
+                });
+            }).then(() => {
+                expect(bridge._roomUpgradeHandler.onTombstone).toHaveBeenCalled();
+            });
+        });
+    });
 });
 
 function mkMockMatrixClient(uid) {

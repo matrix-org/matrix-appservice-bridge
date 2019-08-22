@@ -1,3 +1,16 @@
+1.10.0 (2019-08-22)
+==================
+
+### Changes
+
+* Bridge Errors are a new unstable feature which allows a bridge to report errors
+  to the client when a message cannot be relayed. This feature is not stable and
+  will be subject to change in the future. Please read the README for more
+  information. #111, #121, #125, #127. Thanks to Kai (@V02460) for their work on this
+  during GSOC!
+
+* Remove old room store entries during upgrade. #129, #130
+
 1.9.2 (2019-08-05)
 ==================
 

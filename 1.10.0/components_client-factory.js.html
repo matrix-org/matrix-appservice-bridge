@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/client-factory.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/client-factory.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+
+/**
+ * @constructor
+ * @param {Object} opts Options for this factory
+ * @param {*=} opts.sdk The Matrix JS SDK require() to use.
+ * @param {string=} opts.url The Client-Server base HTTP URL. This must be set
+ * prior to calling getClientAs(). See configure() to set this after instantiation.
+ * @param {string=} opts.token The application service token to use. This must
+ * be set prior to calling getClientAs(). See configure() to set this after
+ * instantiation.
+ * @param {string=} opts.appServiceUserId The application service's user ID. Must
+ * be set prior to calling getClientAs(). See configure() to set this after
+ * instantiation.
+ * @param {function=} opts.clientSchedulerBuilder Optional. A function that
+ * returns a new client scheduler to use in place of the default event
+ * scheduler that schedules events to be sent to the HS.
+ */
+function ClientFactory(opts) {
+    opts = opts || {};
+    this._sdk = opts.sdk || require("matrix-js-sdk");
+    this._clients = {
+    //  request_id: {
+    //      user_id: Client
+    //  }
+    };
+    this._clientSchedulerBuilder = opts.clientSchedulerBuilder || function() {};
+    this.configure(opts.url, opts.token, opts.appServiceUserId);
+}
+
+/**
+ * Set a function to be called when logging requests and responses.
+ * @param {Function} func The function to invoke. The first arg is the string to
+ * log. The second arg is a boolean which is 'true' if the log is an error.
+ */
+ClientFactory.prototype.setLogFunction = function(func) {
+    if (!func) {
+        return;
+    }
+    this._sdk.wrapRequest(function(origRequest, opts, callback) {
+        var logPrefix = (
+            (opts._matrix_opts &amp;&amp; opts._matrix_opts._reqId ?
+                "[" + opts._matrix_opts._reqId + "] " : ""
+            ) +
+            opts.method + " " + opts.uri + " " +
+            (opts.qs.user_id ? "(" + opts.qs.user_id + ")" : "(AS)")
+        );
+        // Request logging
+        func(
+            logPrefix + " Body: " +
+            (opts.body ? JSON.stringify(opts.body).substring(0, 80) : "")
+        );
+        // Make the request
+        origRequest(opts, function(err, response, body) {
+            // Response logging
+            var httpCode = response ? response.statusCode : null;
+            var responsePrefix = logPrefix + " HTTP " + httpCode;
+            if (err) {
+                func(
+                    responsePrefix + " Error: " + JSON.stringify(err), true
+                );
+            }
+            else if (httpCode >= 300 || httpCode &lt; 200) {
+                func(
+                    responsePrefix + " Error: " + JSON.stringify(body), true
+                );
+            }
+            else {
+                func( // body may be large, so do first 80 chars
+                    responsePrefix + " " +
+                    JSON.stringify(body).substring(0, 80)
+                );
+            }
+            // Invoke the callback
+            callback(err, response, body);
+        });
+    });
+};
+
+/**
+ * Construct a new Matrix JS SDK Client. Calling this twice with the same args
+ * will return the *same* client instance.
+ * @param {?string} userId Required. The user_id to scope the client to. A new
+ * client will be created per user ID. If this is null, a client scoped to the
+ * application service *itself* will be created.
+ * @param {Request=} request Optional. The request ID to additionally scope the
+ * client to. If set, this will create a new client per user ID / request combo.
+ * This factory will dispose the created client instance when the request is
+ * resolved.
+ */
+ClientFactory.prototype.getClientAs = function(userId, request) {
+    var reqId = request ? request.getId() : "-";
+    var userIdKey = userId || "bot";
+    var self = this;
+
+    // see if there is an existing match
+    var client = this._getClient(reqId, userIdKey);
+    if (client) {
+        return client;
+    }
+
+    // create a new client
+    var queryParams = {};
+    if (userId) {
+        queryParams.user_id = userId;
+    }
+    // force set access_token= so it is used when /register'ing
+    queryParams.access_token = this._token;
+    var clientOpts = {
+        accessToken: this._token,
+        baseUrl: this._url,
+        userId: userId || this._botUserId, // NB: no clobber so we don't set ?user_id=BOT
+        queryParams: queryParams,
+        scheduler: this._clientSchedulerBuilder(),
+        localTimeoutMs: 1000 * 60 * 2, // Time out CS-API calls after 2mins
+    };
+    client = this._sdk.createClient(clientOpts);
+    client._http.opts._reqId = reqId; // FIXME gut wrenching
+
+    // add a listener for the completion of this request so we can cleanup
+    // the clients we've made
+    if (request) {
+        request.getPromise().finally(function() {
+            delete self._clients[reqId];
+        });
+    }
+
+    // store the new client
+    if (!this._clients[reqId]) {
+        this._clients[reqId] = {};
+    }
+    this._clients[reqId][userIdKey] = client;
+
+    return client;
+};
+
+/**
+ * Configure the factory for generating clients.
+ * @param {string} baseUrl The base URL to create clients with.
+ * @param {string} appServiceToken The AS token to use as the access_token
+ * @param {string} appServiceUserId The AS's user_id
+ */
+ClientFactory.prototype.configure = function(baseUrl, appServiceToken, appServiceUserId) {
+    this._url = baseUrl;
+    this._token = appServiceToken;
+    this._botUserId = appServiceUserId;
+};
+
+ClientFactory.prototype._getClient = function(reqId, userId) {
+    if (this._clients[reqId] &amp;&amp; this._clients[reqId][userId]) {
+        return this._clients[reqId][userId];
+    }
+    return null;
+};
+
+module.exports = ClientFactory;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AgeCounters.html">AgeCounters</a></li><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeContext.html">BridgeContext</a></li><li><a href="BridgeInternalError.html">BridgeInternalError</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ClientRequestCache.html">ClientRequestCache</a></li><li><a href="global.html#ConfigValidator">ConfigValidator</a></li><li><a href="EventBridgeStore.html">EventBridgeStore</a></li><li><a href="EventNotHandledError.html">EventNotHandledError</a></li><li><a href="EventQueue.html">EventQueue</a></li><li><a href="EventQueueNone.html">EventQueueNone</a></li><li><a href="EventQueuePerRoom.html">EventQueuePerRoom</a></li><li><a href="EventQueueSingle.html">EventQueueSingle</a></li><li><a href="EventTooOldError.html">EventTooOldError</a></li><li><a href="EventUnknownError.html">EventUnknownError</a></li><li><a href="ForeignNetworkError.html">ForeignNetworkError</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="MembershipCache.html">MembershipCache</a></li><li><a href="PrometheusMetrics.html">PrometheusMetrics</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="RoomLinkValidator.html">RoomLinkValidator</a></li><li><a href="RoomUpgradeHandler.html">RoomUpgradeHandler</a></li><li><a href="StateLookup.html">StateLookup</a></li><li><a href="StoredEvent.html">StoredEvent</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultMessage">defaultMessage</a></li><li><a href="global.html#wrap">wrap</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Thu Aug 22 2019 17:57:26 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

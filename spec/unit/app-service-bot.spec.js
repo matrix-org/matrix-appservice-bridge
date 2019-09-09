@@ -14,7 +14,7 @@ describe("AppServiceBot", function() {
         client.credentials = {
             userId: botUserId
         };
-        client._http = jasmine.createSpyObj("MatrixHttpApi", ["authedRequestWithPrefix"]);
+        client._http = jasmine.createSpyObj("MatrixHttpApi", ["authedRequest"]);
         reg = jasmine.createSpyObj("AppServiceRegistration", ["getOutput"]);
         reg.getOutput.and.returnValue({
             namespaces: {

@@ -1,3 +1,11 @@
+1.10.1 (2019-09-10)
+==================
+
+### Changes
+
+* Update matrix-js-sdk to 2.3.0 #134
+* Fix issue where rejected promises would not be returned from _onEvent #133 #132
+
 1.10.0 (2019-08-22)
 ==================
 

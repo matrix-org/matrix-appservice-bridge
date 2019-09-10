@@ -1,3 +1,10 @@
+1.10.2 (2019-09-10)
+==================
+
+### Changes
+
+- Ensure getJoinedMembers returns it's promise
+
 1.10.1 (2019-09-10)
 ==================
 

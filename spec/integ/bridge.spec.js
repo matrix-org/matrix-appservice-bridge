@@ -769,7 +769,7 @@ function mkMockMatrixClient(uid) {
     );
     // Shim requests to authedRequestWithPrefix to register() if it is
     // directed at /register
-    client._http.authedRequest = jasmine.createSpy("authedRequestWithPrefix");
+    client._http.authedRequest = jasmine.createSpy("authedRequest");
     client._http.authedRequest.and.callFake(function(a, method, path, d, data) {
         if (method === "POST" && path === "/register") {
             return client.register(data.user);

@@ -4,7 +4,7 @@ describe("RoomLinkValidator", () => {
     describe("constructor", () => {
         it("should construct", () => {
             const ruh = new RoomUpgradeHandler({isOpts: true}, {isBridge: true});
-            expect(ruh._opts).toEqual({isOpts: true, migrateGhosts: true});
+            expect(ruh._opts).toEqual({isOpts: true, migrateGhosts: true, migrateStoreEntries: true});
             expect(ruh._bridge).toEqual({isBridge: true});
             expect(ruh._waitingForInvite.size).toEqual(0);
         });

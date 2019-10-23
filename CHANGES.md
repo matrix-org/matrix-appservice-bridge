@@ -1,3 +1,10 @@
+1.10.3 (2019-09-11)
+==================
+
+### Changes
+
+- Ensure getJoinedMembers uses the roomId parameter
+
 1.10.2 (2019-09-10)
 ==================
 

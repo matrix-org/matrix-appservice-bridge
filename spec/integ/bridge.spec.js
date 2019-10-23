@@ -680,13 +680,16 @@ describe("Bridge", function() {
             var mxUser = new MatrixUser("@foo:bar");
             var provisionedUser = {};
             var botClient = clients["bot"];
-            botClient.register.and.returnValue(Promise.reject({
-                errcode: "M_FORBIDDEN"
-            }));
-            bridge.provisionUser(mxUser, provisionedUser).catch(function() {
+            const err = { errcode: "M_FORBIDDEN" };
+            const errorPromise = Promise.reject(err)
+            botClient.register.and.returnValue(errorPromise);
+            bridge.provisionUser(mxUser, provisionedUser).catch(function(ex) {
+                expect(ex).toBe(err);
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
                 done();
             });
+            // This complains otherwise.
+            errorPromise.catch((ex) => {});
         });
     });
 

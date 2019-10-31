@@ -430,7 +430,11 @@ describe("Bridge", function() {
     describe("run", function() {
         it("should invoke listen(port) on the AppService instance", function() {
             bridge.run(101, {}, appService);
-            expect(appService.listen).toHaveBeenCalledWith(101);
+            expect(appService.listen).toHaveBeenCalledWith(101, undefined);
+        });
+        it("should invoke listen(port, hostname) on the AppService instance", function() {
+            bridge.run(101, {}, appService, "foobar");
+            expect(appService.listen).toHaveBeenCalledWith(101, "foobar");
         });
     });
 

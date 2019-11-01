@@ -1,3 +1,11 @@
+1.11.1 (2019-11-01)
+==================
+
+### Changes
+
+* Use `matrix-appservice` `0.4.1` #138
+* Bridges can now bind to a hostname rather than listening globally #137
+
 1.11.0 (2019-10-23)
 ==================
 

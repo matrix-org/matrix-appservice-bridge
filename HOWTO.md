@@ -163,6 +163,9 @@ slack from an inbound webhook). `qs.parse` is used to convert the POST string in
 The `Intent` object obtained from the bridge is scoped to a slack user ID specified in `getIntent`.
 This means that `sendText` will be sent as the `@slack_<user_name>:localhost` entity.
 
+Note that if your `server_name` is not `localhost` you must change the server part of the user ID
+in the `bridge.getIntent()` call.
+
 Then run the application service with `node index.js -p 9000` and send a message from Slack. It
 should then be passed through to the specified matrix room!
 

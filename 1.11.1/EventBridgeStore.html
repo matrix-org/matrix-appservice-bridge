@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Class: EventBridgeStore</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Class: EventBridgeStore</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>EventBridgeStore<span class="signature">(db)</span><span class="type-signature"></span></h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+
+    
+    <h4 class="name" id="EventBridgeStore"><span class="type-signature"></span>new EventBridgeStore<span class="signature">(db)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Construct a store suitable for event mapping information. Data is stored
+as <a href="StoredEvent.html">StoredEvent</a>s.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>db</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Datastore</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The connected NEDB database instance</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_event-bridge-store.js.html">components/event-bridge-store.js</a>, <a href="components_event-bridge-store.js.html#line25">line 25</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getEntryByMatrixId"><span class="type-signature"></span>getEntryByMatrixId<span class="signature">(roomId, eventId)</span><span class="type-signature"> &rarr; (nullable) {<a href="StoredEvent.html">StoredEvent</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Get an existing event based on the provided matrix IDs.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>roomId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The ID of the room.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eventId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The ID of the event.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_event-bridge-store.js.html">components/event-bridge-store.js</a>, <a href="components_event-bridge-store.js.html#line48">line 48</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise which resolves to the StoredEvent or null.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="StoredEvent.html">StoredEvent</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getEntryByRemoteId"><span class="type-signature"></span>getEntryByRemoteId<span class="signature">(roomId, eventId)</span><span class="type-signature"> &rarr; (nullable) {<a href="StoredEvent.html">StoredEvent</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Get an existing event based on the provided remote IDs.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>roomId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The ID of the room.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eventId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The ID of the event.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_event-bridge-store.js.html">components/event-bridge-store.js</a>, <a href="components_event-bridge-store.js.html#line63">line 63</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise which resolves to the StoredEvent or null.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="StoredEvent.html">StoredEvent</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="removeEvent"><span class="type-signature"></span>removeEvent<span class="signature">(event)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Remove entries based on the event data.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>event</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="StoredEvent.html">StoredEvent</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The event to remove.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_event-bridge-store.js.html">components/event-bridge-store.js</a>, <a href="components_event-bridge-store.js.html#line77">line 77</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="removeEventByMatrixId"><span class="type-signature"></span>removeEventByMatrixId<span class="signature">(roomId, eventId)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Remove entries based on the matrix IDs.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>roomId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The ID of the room.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eventId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The ID of the event.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_event-bridge-store.js.html">components/event-bridge-store.js</a>, <a href="components_event-bridge-store.js.html#line89">line 89</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="removeEventByRemoteId"><span class="type-signature"></span>removeEventByRemoteId<span class="signature">(roomId, eventId)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Remove entries based on the matrix IDs.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>roomId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The ID of the room.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eventId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The ID of the event.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_event-bridge-store.js.html">components/event-bridge-store.js</a>, <a href="components_event-bridge-store.js.html#line102">line 102</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="upsertEvent"><span class="type-signature"></span>upsertEvent<span class="signature">(event)</span><span class="type-signature"> &rarr; {Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Insert an event, clobbering based on the ID of the StoredEvent.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>event</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="StoredEvent.html">StoredEvent</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_event-bridge-store.js.html">components/event-bridge-store.js</a>, <a href="components_event-bridge-store.js.html#line36">line 36</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AgeCounters.html">AgeCounters</a></li><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeContext.html">BridgeContext</a></li><li><a href="BridgeInternalError.html">BridgeInternalError</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ClientRequestCache.html">ClientRequestCache</a></li><li><a href="global.html#ConfigValidator">ConfigValidator</a></li><li><a href="EventBridgeStore.html">EventBridgeStore</a></li><li><a href="EventNotHandledError.html">EventNotHandledError</a></li><li><a href="EventQueue.html">EventQueue</a></li><li><a href="EventQueueNone.html">EventQueueNone</a></li><li><a href="EventQueuePerRoom.html">EventQueuePerRoom</a></li><li><a href="EventQueueSingle.html">EventQueueSingle</a></li><li><a href="EventTooOldError.html">EventTooOldError</a></li><li><a href="EventUnknownError.html">EventUnknownError</a></li><li><a href="ForeignNetworkError.html">ForeignNetworkError</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="MembershipCache.html">MembershipCache</a></li><li><a href="PrometheusMetrics.html">PrometheusMetrics</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="RoomLinkValidator.html">RoomLinkValidator</a></li><li><a href="RoomUpgradeHandler.html">RoomUpgradeHandler</a></li><li><a href="StateLookup.html">StateLookup</a></li><li><a href="StoredEvent.html">StoredEvent</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultMessage">defaultMessage</a></li><li><a href="global.html#wrap">wrap</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Fri Nov 01 2019 15:40:18 GMT+0000 (Greenwich Mean Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

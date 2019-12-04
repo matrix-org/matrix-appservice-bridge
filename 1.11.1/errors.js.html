@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: errors.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: errors.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Append the old error message to the new one and keep its stack trace.
+ * Example:
+ *     throw wrap(e, HighLevelError, "This error is more specific");
+ */
+function wrap(
+    oldError,
+    newErrorType,
+    ...args
+) {
+    const newError = new newErrorType(...args);
+    let appendMsg;
+    if (oldError instanceof Error) {
+        appendMsg = oldError.message;
+        newError.stack = oldError.stack;
+    }
+    else {
+        appendMsg = oldError.toString();
+    }
+    newError.message += ":\n" + appendMsg;
+    return newError;
+}
+
+/**
+ * Ensures `args` contain an error message defaulting to `defaultMsg`.
+ *
+ * Modifies `args`.
+ * @param {Array&lt;str>} args The arguments to an Error object constructor.
+ * @param {str} defaultMsg The error message to default to if there is none given.
+ */
+function defaultMessage(args, defaultMsg) {
+    args[0] = args[0] || defaultMsg;
+}
+
+/**
+ * Base Error for when the bride can not handle the event.
+ */
+class EventNotHandledError extends Error {
+    constructor(...args) {
+        defaultMessage(args, "The event could not be handled by the bridge");
+        super(...args);
+        this.name = "EventNotHandledError";
+        this.reason = "m.event_not_handled";
+    }
+}
+
+/**
+ * The bridge decides that the event is too old to be sent.
+ */
+class EventTooOldError extends EventNotHandledError {
+    constructor(...args) {
+        defaultMessage(args, "The event was too old to be handled by the bridge");
+        super(...args);
+        this.name = "EventTooOldError";
+        this.reason = "m.event_too_old";
+    }
+}
+
+/**
+ * An unexpected internal error occured while the bridge handled the event.
+ */
+class BridgeInternalError extends EventNotHandledError {
+    constructor(...args) {
+        defaultMessage(args, "The bridge experienced an internal error");
+        super(...args);
+        this.name = "EventTooOldError";
+        this.reason = "m.internal_error";
+    }
+}
+
+/**
+ * The foreign network errored and the event couldn't be delivered.
+ */
+class ForeignNetworkError extends EventNotHandledError {
+    constructor(...args) {
+        defaultMessage(args, "The foreign network experienced an error");
+        super(...args);
+        this.name = "ForeignNetworkError";
+        this.reason = "m.foreign_network_error";
+    }
+}
+
+/**
+ * The event is not understood by the bridge.
+ */
+class EventUnknownError extends EventNotHandledError {
+    constructor(...args) {
+        defaultMessage(args, "The event is not known to the bridge");
+        super(...args);
+        this.name = "EventUnknownError";
+        this.reason = "m.event_unknown";
+    }
+}
+
+module.exports = {
+    wrap,
+    EventNotHandledError,
+    EventTooOldError,
+    BridgeInternalError,
+    ForeignNetworkError,
+    EventUnknownError,
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AgeCounters.html">AgeCounters</a></li><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeContext.html">BridgeContext</a></li><li><a href="BridgeInternalError.html">BridgeInternalError</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ClientRequestCache.html">ClientRequestCache</a></li><li><a href="global.html#ConfigValidator">ConfigValidator</a></li><li><a href="EventBridgeStore.html">EventBridgeStore</a></li><li><a href="EventNotHandledError.html">EventNotHandledError</a></li><li><a href="EventQueue.html">EventQueue</a></li><li><a href="EventQueueNone.html">EventQueueNone</a></li><li><a href="EventQueuePerRoom.html">EventQueuePerRoom</a></li><li><a href="EventQueueSingle.html">EventQueueSingle</a></li><li><a href="EventTooOldError.html">EventTooOldError</a></li><li><a href="EventUnknownError.html">EventUnknownError</a></li><li><a href="ForeignNetworkError.html">ForeignNetworkError</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="MembershipCache.html">MembershipCache</a></li><li><a href="PrometheusMetrics.html">PrometheusMetrics</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="RoomLinkValidator.html">RoomLinkValidator</a></li><li><a href="RoomUpgradeHandler.html">RoomUpgradeHandler</a></li><li><a href="StateLookup.html">StateLookup</a></li><li><a href="StoredEvent.html">StoredEvent</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultMessage">defaultMessage</a></li><li><a href="global.html#wrap">wrap</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Fri Nov 01 2019 15:40:18 GMT+0000 (Greenwich Mean Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

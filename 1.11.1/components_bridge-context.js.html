@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/bridge-context.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/bridge-context.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const Promise = require("bluebird");
+
+const MatrixUser = require("../models/users/matrix");
+const MatrixRoom = require("../models/rooms/matrix");
+
+/**
+ * Bridge context.
+ *
+ * @property {Object} senders Data models on senders of this event
+ * @property {MatrixUser} senders.matrix The sender of this event
+ * @property {?RemoteUser} senders.remote The first linked remote sender: remotes[0]
+ * @property {RemoteUser[]} senders.remotes The linked remote senders
+ * @property {Object} targets Data models on targets (e.g. state_key in
+ * m.room.member) of this event.
+ * @property {?MatrixUser} targets.matrix The target of this event if applicable.
+ * @property {?RemoteUser} targets.remote The first linked remote target: remotes[0]
+ * @property {RemoteUser[]} targets.remotes The linked remote targets
+ * @property {Object} rooms Data models on rooms concerning this event.
+ * @property {MatrixRoom} rooms.matrix The room for this event.
+ * @property {?RemoteRoom} rooms.remote The first linked remote room: remotes[0]
+ * @property {RemoteRoom[]} rooms.remotes The linked remote rooms for this event
+ */
+class BridgeContext {
+    /**
+     * @param {Object} ctx Event related data
+     * @param {string} ctx.sender Matrix user ID of the sender.
+     * @param {string=} ctx.target Matrix user ID of the target.
+     * @param {string} ctx.room Matrix room ID.
+     */
+    constructor(ctx) {
+        this._ctx = ctx;
+        this.senders = {
+            matrix: new MatrixUser(ctx.sender),
+            remote: null,
+            remotes: [],
+        };
+        this.targets = {
+            matrix: ctx.target ? new MatrixUser(ctx.target) : null,
+            remote: null,
+            remotes: [],
+        };
+        this.rooms = {
+            matrix: new MatrixRoom(ctx.room),
+            remote: null,
+            remotes: [],
+        };
+    }
+
+    /**
+     * Returns this instance after its initialization.
+     *
+     * @param {RoomBridgeStore} roomStore
+     * @param {UserBridgeStore} userStore
+     * @returns {Promise&lt;BridgeContext>}
+     */
+    async get(roomStore, userStore) {
+        return Promise.try(() => {
+            return [
+                roomStore.getLinkedRemoteRooms(this._ctx.room),
+                userStore.getRemoteUsersFromMatrixId(this._ctx.sender),
+                (this._ctx.target ?
+                    userStore.getRemoteUsersFromMatrixId(this._ctx.target) :
+                    Promise.resolve([])
+                ),
+                roomStore.getMatrixRoom(this._ctx.room),
+                userStore.getMatrixUser(this._ctx.sender)
+            ];
+        }).spread((remoteRooms, remoteSenders, remoteTargets, mxRoom, mxSender) => {
+            if (remoteRooms.length) {
+                this.rooms.remotes = remoteRooms;
+                this.rooms.remote = remoteRooms[0];
+            }
+            if (remoteSenders.length) {
+                this.senders.remotes = remoteSenders;
+                this.senders.remote = remoteSenders[0];
+            }
+            if (remoteTargets.length) {
+                this.targets.remotes = remoteTargets;
+                this.targets.remote = remoteTargets[0];
+            }
+            if (mxRoom) {
+                this.rooms.matrix = mxRoom;
+            }
+            if (mxSender) {
+                this.senders.matrix = mxSender;
+            }
+        }).catch(e => {throw wrap(e, Error, "Could not retrieve bridge context");})
+        .return(this);
+    }
+}
+
+module.exports = BridgeContext;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AgeCounters.html">AgeCounters</a></li><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeContext.html">BridgeContext</a></li><li><a href="BridgeInternalError.html">BridgeInternalError</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ClientRequestCache.html">ClientRequestCache</a></li><li><a href="global.html#ConfigValidator">ConfigValidator</a></li><li><a href="EventBridgeStore.html">EventBridgeStore</a></li><li><a href="EventNotHandledError.html">EventNotHandledError</a></li><li><a href="EventQueue.html">EventQueue</a></li><li><a href="EventQueueNone.html">EventQueueNone</a></li><li><a href="EventQueuePerRoom.html">EventQueuePerRoom</a></li><li><a href="EventQueueSingle.html">EventQueueSingle</a></li><li><a href="EventTooOldError.html">EventTooOldError</a></li><li><a href="EventUnknownError.html">EventUnknownError</a></li><li><a href="ForeignNetworkError.html">ForeignNetworkError</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="MembershipCache.html">MembershipCache</a></li><li><a href="PrometheusMetrics.html">PrometheusMetrics</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="RoomLinkValidator.html">RoomLinkValidator</a></li><li><a href="RoomUpgradeHandler.html">RoomUpgradeHandler</a></li><li><a href="StateLookup.html">StateLookup</a></li><li><a href="StoredEvent.html">StoredEvent</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultMessage">defaultMessage</a></li><li><a href="global.html#wrap">wrap</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Fri Nov 01 2019 15:40:18 GMT+0000 (Greenwich Mean Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

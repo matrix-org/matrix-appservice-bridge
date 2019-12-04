@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Class: BridgeContext</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Class: BridgeContext</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>BridgeContext<span class="signature">(ctx)</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description">Bridge context.</div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+    <h2>Constructor</h2>
+    
+
+    
+    <h4 class="name" id="BridgeContext"><span class="type-signature"></span>new BridgeContext<span class="signature">(ctx)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>ctx</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Event related data
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sender</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Matrix user ID of the sender.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>target</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Matrix user ID of the target.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>room</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Matrix room ID.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>senders</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Data models on senders of this event
+                <h6>Properties</h6>
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>matrix</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="MatrixUser.html">MatrixUser</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The sender of this event</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>remote</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="RemoteUser.html">RemoteUser</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The first linked remote sender: remotes[0]</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>remotes</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;<a href="RemoteUser.html">RemoteUser</a>></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The linked remote senders</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>targets</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Data models on targets (e.g. state_key in
+m.room.member) of this event.
+                <h6>Properties</h6>
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>matrix</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="MatrixUser.html">MatrixUser</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The target of this event if applicable.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>remote</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="RemoteUser.html">RemoteUser</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The first linked remote target: remotes[0]</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>remotes</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;<a href="RemoteUser.html">RemoteUser</a>></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The linked remote targets</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>rooms</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Data models on rooms concerning this event.
+                <h6>Properties</h6>
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>matrix</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="MatrixRoom.html">MatrixRoom</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The room for this event.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>remote</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="RemoteRoom.html">RemoteRoom</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The first linked remote room: remotes[0]</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>remotes</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;<a href="RemoteRoom.html">RemoteRoom</a>></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The linked remote rooms for this event</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_bridge-context.js.html">components/bridge-context.js</a>, <a href="components_bridge-context.js.html#line30">line 30</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="get"><span class="type-signature">(async) </span>get<span class="signature">(roomStore, userStore)</span><span class="type-signature"> &rarr; {Promise.&lt;<a href="BridgeContext.html">BridgeContext</a>>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Returns this instance after its initialization.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>roomStore</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="RoomBridgeStore.html">RoomBridgeStore</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>userStore</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="UserBridgeStore.html">UserBridgeStore</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_bridge-context.js.html">components/bridge-context.js</a>, <a href="components_bridge-context.js.html#line56">line 56</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;<a href="BridgeContext.html">BridgeContext</a>></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AgeCounters.html">AgeCounters</a></li><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeContext.html">BridgeContext</a></li><li><a href="BridgeInternalError.html">BridgeInternalError</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ClientRequestCache.html">ClientRequestCache</a></li><li><a href="global.html#ConfigValidator">ConfigValidator</a></li><li><a href="EventBridgeStore.html">EventBridgeStore</a></li><li><a href="EventNotHandledError.html">EventNotHandledError</a></li><li><a href="EventQueue.html">EventQueue</a></li><li><a href="EventQueueNone.html">EventQueueNone</a></li><li><a href="EventQueuePerRoom.html">EventQueuePerRoom</a></li><li><a href="EventQueueSingle.html">EventQueueSingle</a></li><li><a href="EventTooOldError.html">EventTooOldError</a></li><li><a href="EventUnknownError.html">EventUnknownError</a></li><li><a href="ForeignNetworkError.html">ForeignNetworkError</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="MembershipCache.html">MembershipCache</a></li><li><a href="PrometheusMetrics.html">PrometheusMetrics</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="RoomLinkValidator.html">RoomLinkValidator</a></li><li><a href="RoomUpgradeHandler.html">RoomUpgradeHandler</a></li><li><a href="StateLookup.html">StateLookup</a></li><li><a href="StoredEvent.html">StoredEvent</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultMessage">defaultMessage</a></li><li><a href="global.html#wrap">wrap</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Fri Nov 01 2019 15:40:18 GMT+0000 (Greenwich Mean Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

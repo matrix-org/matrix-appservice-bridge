@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/agecounters.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/agecounters.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+
+const HOUR = 3600;
+const DAY = HOUR * 24;
+const WEEK = DAY * 7;
+
+const PERIOD_UNITS = {
+    "h": HOUR,
+    "d": DAY,
+    "w": WEEK,
+};
+
+const PERIOD_UNIT_KEYS = Object.keys(PERIOD_UNITS);
+
+/**
+ * A small helper object that counts into buckets the number of calls to its
+ * &lt;code>bump&lt;/code> that fall into the given age categories.
+ * Counts are maintained within the object, and can be fetched to set
+ * into a gauge metric object.
+ *
+ * This class is useful when exporting metrics that count the number of
+ * hourly/daily/weekly active instances of various types of object within the
+ * bridge.
+ */
+
+class AgeCounters {
+    /***
+     * @param {String[]} counterPeriods A set of strings denoting the bucket periods
+     * used by the gauge. It is in the format of '#X' where # is the integer period and
+     * X is the unit of time. A unit can be one of 'h, d, w' for hours, days and weeks.
+     * 7d would be 7 days. If not given, the periods are 1h, 1d and 7d.
+     */
+    constructor(counterPeriods) {
+        if (counterPeriods) {
+            counterPeriods = Array.from(counterPeriods);
+        }
+        counterPeriods = counterPeriods || ["1h", "1d", "7d"];
+        this.counters = new Map();
+        this.counterPeriods = counterPeriods;
+        counterPeriods.forEach((periodKey) => {
+            if (periodKey.length &lt; 2) {
+                throw Error("A period must contain a unit.");
+            }
+            const unit = periodKey[periodKey.length-1];
+            if (!PERIOD_UNIT_KEYS.includes(unit)) {
+                throw Error(`The unit period must be one of '${PERIOD_UNIT_KEYS.join(",")}'`);
+            }
+            const number = parseInt(periodKey.substr(0, periodKey.length-1));
+            if (isNaN(number) || number &lt;= 0) {
+                throw Error("The period duration must be a positive integer.");
+            }
+            this.counters.set(number * PERIOD_UNITS[unit], 0);
+        });
+        this.counterPeriods.push("all");
+        this.counters.set("all", 0);
+    }
+
+    /**
+     * Increment the values of the internal counters depending on the given age,
+     * in seconds.
+     *
+     * @param {Number} age The age in seconds.
+     */
+    bump(age) {
+        this.counters.forEach((value, key) => {
+            if (key === "all") {
+                this.counters.set("all", value + 1);
+            }
+            else if (age &lt; key) {
+                this.counters.set(key, value + 1);
+            }
+        });
+    }
+
+    /**
+     * Fetch the counts in the age buckets and set them as labeled observations in
+     * the given gauge metric instance.
+     *
+     * @param {Gauge} gauge The gauge metric instance.
+     * @param {Object} morelabels An object containing more labels to add to the
+     * gauge when setting values.
+     */
+    setGauge(gauge, morelabels) {
+        const counters = this.counters;
+        let i = 0;
+        counters.forEach((value) => {
+            const labels = Object.assign(
+                {
+                    age: this.counterPeriods[i]
+                },
+                morelabels
+            );
+            gauge.set(labels, value);
+            i++;
+        });
+    }
+}
+
+module.exports = AgeCounters;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AgeCounters.html">AgeCounters</a></li><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeContext.html">BridgeContext</a></li><li><a href="BridgeInternalError.html">BridgeInternalError</a></li><li><a href="BridgeStore.html">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ClientRequestCache.html">ClientRequestCache</a></li><li><a href="global.html#ConfigValidator">ConfigValidator</a></li><li><a href="EventBridgeStore.html">EventBridgeStore</a></li><li><a href="EventNotHandledError.html">EventNotHandledError</a></li><li><a href="EventQueue.html">EventQueue</a></li><li><a href="EventQueueNone.html">EventQueueNone</a></li><li><a href="EventQueuePerRoom.html">EventQueuePerRoom</a></li><li><a href="EventQueueSingle.html">EventQueueSingle</a></li><li><a href="EventTooOldError.html">EventTooOldError</a></li><li><a href="EventUnknownError.html">EventUnknownError</a></li><li><a href="ForeignNetworkError.html">ForeignNetworkError</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="MembershipCache.html">MembershipCache</a></li><li><a href="PrometheusMetrics.html">PrometheusMetrics</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="RoomLinkValidator.html">RoomLinkValidator</a></li><li><a href="RoomUpgradeHandler.html">RoomUpgradeHandler</a></li><li><a href="StateLookup.html">StateLookup</a></li><li><a href="StoredEvent.html">StoredEvent</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultMessage">defaultMessage</a></li><li><a href="global.html#wrap">wrap</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Fri Nov 01 2019 15:40:18 GMT+0000 (Greenwich Mean Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -189,7 +189,7 @@ describe("Intent", function() {
                 },
                 state_key: "",
                 room_id: roomId,
-                user_id: "@example:localhost",
+                sender: "@example:localhost",
                 type: "m.room.power_levels",
                 event_id: "test2"
             };

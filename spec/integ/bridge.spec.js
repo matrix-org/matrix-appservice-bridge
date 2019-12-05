@@ -254,7 +254,7 @@ describe("Bridge", function() {
                     body: "oh noes!",
                     msgtype: "m.text"
                 },
-                user_id: "@virtual_foo:bar",
+                sender: "@virtual_foo:bar",
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
@@ -273,7 +273,7 @@ describe("Bridge", function() {
                     body: "oh noes!",
                     msgtype: "m.text"
                 },
-                user_id: "@foo:bar",
+                sender: "@foo:bar",
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
@@ -300,7 +300,7 @@ describe("Bridge", function() {
                     body: "oh noes!",
                     msgtype: "m.text"
                 },
-                user_id: "@alice:bar",
+                sender: "@alice:bar",
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
@@ -332,7 +332,7 @@ describe("Bridge", function() {
                     membership: "invite"
                 },
                 state_key: "@bob:bar",
-                user_id: "@alice:bar",
+                sender: "@alice:bar",
                 room_id: "!flibble:bar",
                 type: "m.room.member"
             };
@@ -364,7 +364,7 @@ describe("Bridge", function() {
                     membership: "invite"
                 },
                 state_key: "@bob:bar",
-                user_id: "@alice:bar",
+                sender: "@alice:bar",
                 room_id: "!flibble:bar",
                 type: "m.room.member"
             };
@@ -396,7 +396,7 @@ describe("Bridge", function() {
                     body: "oh noes!",
                     msgtype: "m.text"
                 },
-                user_id: "@alice:bar",
+                sender: "@alice:bar",
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
@@ -530,7 +530,7 @@ describe("Bridge", function() {
                     membership: "join"
                 },
                 state_key: "@foo:bar",
-                user_id: "@foo:bar",
+                sender: "@foo:bar",
                 room_id: "!flibble:bar",
                 type: "m.room.member"
             };
@@ -557,7 +557,7 @@ describe("Bridge", function() {
                     membership: "join"
                 },
                 state_key: "@foo:bar",
-                user_id: "@foo:bar",
+                sender: "@foo:bar",
                 room_id: "!flibble:bar",
                 type: "m.room.member"
             };
@@ -707,7 +707,6 @@ describe("Bridge", function() {
                 return bridge._onEvent({
                     type: "m.room.tombstone",
                     state_key: undefined,
-                    user_id: "@foo:bar",
                     sender: "@foo:bar",
                 });
             }).then(() => {
@@ -724,7 +723,6 @@ describe("Bridge", function() {
                 return bridge._onEvent({
                     type: "m.room.tombstone",
                     state_key: "fooobar",
-                    user_id: "@foo:bar",
                     sender: "@foo:bar",
                 });
             }).then(() => {
@@ -732,7 +730,6 @@ describe("Bridge", function() {
                 return bridge._onEvent({
                     type: "m.room.tombstone",
                     state_key: 212345,
-                    user_id: "@foo:bar",
                     sender: "@foo:bar",
                 });
             }).then(() => {
@@ -740,7 +737,6 @@ describe("Bridge", function() {
                 return bridge._onEvent({
                     type: "m.room.tombstone",
                     state_key: null,
-                    user_id: "@foo:bar",
                     sender: "@foo:bar",
                 });
             }).then(() => {
@@ -757,7 +753,6 @@ describe("Bridge", function() {
                 return bridge._onEvent({
                     type: "m.room.tombstone",
                     state_key: "",
-                    user_id: "@foo:bar",
                     sender: "@foo:bar",
                 });
             }).then(() => {

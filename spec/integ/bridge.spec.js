@@ -111,7 +111,7 @@ describe("Bridge", function() {
                 clientFactory: clientFactory
             });
             done();
-        }).done();
+        }).then();
     });
 
     afterEach(function() {
@@ -157,7 +157,7 @@ describe("Bridge", function() {
             bridgeCtrl.onUserQuery.and.returnValue({});
             clients["bot"].register.and.returnValue(Promise.resolve({}));
             bridge.run(101, {}, appService);
-            appService.onUserQuery("@alice:bar").done(function() {
+            appService.onUserQuery("@alice:bar").then(function() {
                 expect(clients["bot"].register).toHaveBeenCalledWith("alice");
                 done();
             });
@@ -195,7 +195,7 @@ describe("Bridge", function() {
             });
             bridgeCtrl.onAliasQuery.and.returnValue(provisionedRoom);
             bridge.run(101, {}, appService);
-            appService.onAliasQuery("#foo:bar").done(function() {
+            appService.onAliasQuery("#foo:bar").then(function() {
                 expect(clients["bot"].createRoom).toHaveBeenCalledWith(
                     provisionedRoom.creationOpts
                 );
@@ -215,7 +215,7 @@ describe("Bridge", function() {
             bridge.run(101, {}, appService);
             appService.onAliasQuery("#foo:bar").then(function() {
                 return bridge.getRoomStore().getMatrixRoom("!abc123:bar");
-            }).done(function(room) {
+            }).then(function(room) {
                 expect(room).toBeDefined();
                 if (!room) { done(); return; }
                 expect(room.getId()).toEqual("!abc123:bar");
@@ -237,7 +237,7 @@ describe("Bridge", function() {
             bridge.run(101, {}, appService);
             appService.onAliasQuery("#foo:bar").then(function() {
                 return bridge.getRoomStore().getLinkedRemoteRooms("!abc123:bar");
-            }).done(function(rooms) {
+            }).then(function(rooms) {
                 expect(rooms.length).toEqual(1);
                 if (!rooms.length) { done(); return; }
                 expect(rooms[0].getId()).toEqual("__abc__");
@@ -260,7 +260,7 @@ describe("Bridge", function() {
             };
             bridge.run(101, {}, appService).then(function() {
                 return appService.emit("event", event);
-            }).done(function() {
+            }).then(function() {
                 expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
                 done();
             });
@@ -281,7 +281,7 @@ describe("Bridge", function() {
 
             bridge.run(101, {}, appService).then(function() {
                 return appService.emit("event", event);
-            }).done(function() {
+            }).then(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
                 var call = bridgeCtrl.onEvent.calls.argsFor(0);
                 var req = call[0];
@@ -313,7 +313,7 @@ describe("Bridge", function() {
                 );
             }).then(function() {
                 return appService.emit("event", event);
-            }).done(function() {
+            }).then(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
                 var call = bridgeCtrl.onEvent.calls.argsFor(0);
                 var req = call[0];
@@ -345,7 +345,7 @@ describe("Bridge", function() {
                 );
             }).then(function() {
                 return appService.emit("event", event);
-            }).done(function() {
+            }).then(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
                 var call = bridgeCtrl.onEvent.calls.argsFor(0);
                 var req = call[0];
@@ -377,7 +377,7 @@ describe("Bridge", function() {
                 );
             }).then(function() {
                 return appService.emit("event", event);
-            }).done(function() {
+            }).then(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
                 var call = bridgeCtrl.onEvent.calls.argsFor(0);
                 var req = call[0];
@@ -415,7 +415,7 @@ describe("Bridge", function() {
 
             bridge.run(101, {}, appService).then(function() {
                 return appService.emit("event", event);
-            }).done(function() {
+            }).then(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
                 var call = bridgeCtrl.onEvent.calls.argsFor(0);
                 var req = call[0];
@@ -440,28 +440,28 @@ describe("Bridge", function() {
 
     describe("getters", function() {
         it("should be able to getRoomStore", function(done) {
-            bridge.run(101, {}, appService).done(function() {
+            bridge.run(101, {}, appService).then(function() {
                 expect(bridge.getRoomStore()).toEqual(roomStore);
                 done();
             });
         });
 
         it("should be able to getUserStore", function(done) {
-            bridge.run(101, {}, appService).done(function() {
+            bridge.run(101, {}, appService).then(function() {
                 expect(bridge.getUserStore()).toEqual(userStore);
                 done();
             });
         });
 
         it("should be able to getRequestFactory", function(done) {
-            bridge.run(101, {}, appService).done(function() {
+            bridge.run(101, {}, appService).then(function() {
                 expect(bridge.getRequestFactory()).toBeDefined();
                 done();
             });
         });
 
         it("should be able to getBot", function(done) {
-            bridge.run(101, {}, appService).done(function() {
+            bridge.run(101, {}, appService).then(function() {
                 expect(bridge.getBot()).toBeDefined();
                 done();
             });
@@ -475,7 +475,7 @@ describe("Bridge", function() {
         beforeEach(function(done) {
             jasmine.clock().install();
             jasmine.clock().mockDate();
-            bridge.run(101, {}, appService).done(function() {
+            bridge.run(101, {}, appService).then(function() {
                 done();
             });
         });
@@ -535,7 +535,7 @@ describe("Bridge", function() {
                 type: "m.room.member"
             };
             appService.emit("event", joinEvent);
-            intent.join("!flibble:bar").done(function() {
+            intent.join("!flibble:bar").then(function() {
                 expect(client.joinRoom).not.toHaveBeenCalled();
                 done();
             });
@@ -570,7 +570,7 @@ describe("Bridge", function() {
                 // wait the cull time again and use a new intent, still shouldn't join.
                 jasmine.clock().tick(cullTimeMs);
                 return bridge.getIntent("@foo:bar").join("!flibble:bar");
-            }).done(function() {
+            }).then(function() {
                 expect(client.joinRoom).not.toHaveBeenCalled();
                 done();
             });
@@ -603,7 +603,7 @@ describe("Bridge", function() {
     describe("provisionUser", function() {
 
         beforeEach(function(done) {
-            bridge.run(101, {}, appService).done(function() {
+            bridge.run(101, {}, appService).then(function() {
                 done();
             });
         });
@@ -617,7 +617,7 @@ describe("Bridge", function() {
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
                 // should also be persisted in storage
                 return bridge.getUserStore().getMatrixUser("@foo:bar");
-            }).done(function(usr) {
+            }).then(function(usr) {
                 expect(usr).toBeDefined();
                 expect(usr.getId()).toEqual("@foo:bar");
                 done();
@@ -634,7 +634,7 @@ describe("Bridge", function() {
             var client = mkMockMatrixClient("@foo:bar");
             client.setDisplayName.and.returnValue(Promise.resolve({}));
             clients["@foo:bar"] = client;
-            bridge.provisionUser(mxUser, provisionedUser).done(function() {
+            bridge.provisionUser(mxUser, provisionedUser).then(function() {
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
                 expect(client.setDisplayName).toHaveBeenCalledWith("Foo Bar");
                 done();
@@ -651,7 +651,7 @@ describe("Bridge", function() {
             var client = mkMockMatrixClient("@foo:bar");
             client.setAvatarUrl.and.returnValue(Promise.resolve({}));
             clients["@foo:bar"] = client;
-            bridge.provisionUser(mxUser, provisionedUser).done(function() {
+            bridge.provisionUser(mxUser, provisionedUser).then(function() {
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
                 expect(client.setAvatarUrl).toHaveBeenCalledWith("http://avatar.jpg");
                 done();
@@ -671,7 +671,7 @@ describe("Bridge", function() {
             bridge.provisionUser(mxUser, provisionedUser).then(function() {
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
                 return bridge.getUserStore().getRemoteUsersFromMatrixId("@foo:bar");
-            }).done(function(users) {
+            }).then(function(users) {
                 expect(users.length).toEqual(1);
                 if (users.length > 0) {
                     expect(users[0].getId()).toEqual("__remote__");

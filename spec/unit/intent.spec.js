@@ -1,6 +1,5 @@
 "use strict";
 var Intent = require("../..").Intent;
-var Promise = require("bluebird");
 var log = require("../log");
 
 describe("Intent", function() {
@@ -33,7 +32,7 @@ describe("Intent", function() {
         it("should /join/$ROOMID if it doesn't know it is already joined",
         function(done) {
             client.joinRoom.and.returnValue(Promise.resolve({}));
-            intent.join(roomId).done(function() {
+            intent.join(roomId).then(function() {
                 expect(client.joinRoom).toHaveBeenCalledWith(
                     roomId, { syncRoom: false }
                 );
@@ -51,7 +50,7 @@ describe("Intent", function() {
                     membership: "join"
                 }
             });
-            intent.join(roomId).done(function() {
+            intent.join(roomId).then(function() {
                 expect(client.joinRoom).not.toHaveBeenCalled();
                 done();
             });
@@ -83,7 +82,7 @@ describe("Intent", function() {
                 });
                 botClient.invite.and.returnValue(Promise.resolve({}));
 
-                intent.join(roomId).done(function() {
+                intent.join(roomId).then(function() {
                     expect(client.joinRoom).toHaveBeenCalledWith(
                         roomId, { syncRoom: false }
                     );
@@ -115,7 +114,7 @@ describe("Intent", function() {
                     });
                     botClient.joinRoom.and.returnValue(Promise.resolve({}));
 
-                    intent.join(roomId).done(function() {
+                    intent.join(roomId).then(function() {
                         expect(client.joinRoom).toHaveBeenCalledWith(
                             roomId, { syncRoom: false }
                         );
@@ -203,7 +202,7 @@ describe("Intent", function() {
             client.sendStateEvent.and.returnValue(Promise.resolve({}));
 
             intent.onEvent(validPowerLevels);
-            intent.setRoomTopic(roomId, "Hello world").done(function() {
+            intent.setRoomTopic(roomId, "Hello world").then(function() {
                 expect(client.sendStateEvent).toHaveBeenCalledWith(
                     roomId, "m.room.topic", {topic: "Hello world"}, ""
                 );
@@ -218,7 +217,7 @@ describe("Intent", function() {
                 Promise.resolve(validPowerLevels.content)
             );
 
-            intent.setRoomTopic(roomId, "Hello world").done(function() {
+            intent.setRoomTopic(roomId, "Hello world").then(function() {
                 expect(client.getStateEvent).toHaveBeenCalledWith(
                     roomId, "m.room.power_levels", ""
                 );
@@ -245,7 +244,7 @@ describe("Intent", function() {
             invalidPowerLevels.content.users[botUserId] = 100;
             intent.onEvent(invalidPowerLevels);
 
-            intent.setRoomTopic(roomId, "Hello world").done(function() {
+            intent.setRoomTopic(roomId, "Hello world").then(function() {
                 expect(client.sendStateEvent).toHaveBeenCalledWith(
                     roomId, "m.room.topic", {topic: "Hello world"}, ""
                 );
@@ -293,7 +292,7 @@ describe("Intent", function() {
             client.sendEvent.and.returnValue(Promise.resolve({
                 event_id: "$abra:kadabra"
             }));
-            intent.sendMessage(roomId, content).done(function() {
+            intent.sendMessage(roomId, content).then(function() {
                 expect(client.sendEvent).toHaveBeenCalledWith(
                     roomId, "m.room.message", content
                 );
@@ -335,7 +334,7 @@ describe("Intent", function() {
                     room_id: joinRoomId,
                 });
             });
-            intent.sendMessage(roomId, content).done(function() {
+            intent.sendMessage(roomId, content).then(function() {
                 expect(client.sendEvent).toHaveBeenCalledWith(
                     roomId, "m.room.message", content
                 );

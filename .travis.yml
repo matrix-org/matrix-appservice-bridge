@@ -1,6 +1,7 @@
 language: node_js
 node_js:
-  - "8"
-install: npm install
+  - "10"
+  - "12"
+install: npm install && npm run build
 script:  let "n = 0";npm run lint; let "n = n + $?";npm run ci-test; let "n = n + $?";(exit $n)
 

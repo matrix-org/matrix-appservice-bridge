@@ -41,3 +41,5 @@ node_modules
 
 # Fuse files
 .fuse_*
+
+lib/

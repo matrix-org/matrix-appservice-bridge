@@ -226,7 +226,7 @@ Cli.prototype._printHelp = function() {
             "The user_id localpart to assign to the AS.";
         }
         var regUsage = "-r [-f /path/to/save/registration.yaml] " +
-            "-u 'http://localhost:6789/appservice'";
+            "-u 'http://localhost:6789'";
         if (this.opts.bridgeConfig && this.opts.bridgeConfig.affectsRegistration) {
             regUsage += " -c CONFIG_FILE";
         }

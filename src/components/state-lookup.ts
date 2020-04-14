@@ -13,9 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import Bluebird from "bluebird";
+import PQueue from "p-queue";
 
 interface StateLookupOpts {
-    client: any
+    client: any;
+    stateLookupConcurrency: number;
     eventTypes?: string[];
 }
 
@@ -37,11 +39,13 @@ interface StateLookupEvent {
 }
 
 const RETRY_STATE_IN_MS = 3000;
+const DEFAULT_STATE_CONCURRENCY = 4;
 
 export class StateLookup {
     private _client: any;
     private eventTypes: {[eventType: string]: boolean} = {};
     private dict: { [roomId: string]: StateLookupRoom } = {};
+    private lookupQueue: PQueue;
 
     /**
      * Construct a new state lookup entity.
@@ -63,6 +67,10 @@ export class StateLookup {
         if (!opts.client) {
             throw new Error("client property must be supplied");
         }
+
+        this.lookupQueue = new PQueue({
+            concurrency: opts.stateLookupConcurrency || DEFAULT_STATE_CONCURRENCY,
+        });
 
         this._client = opts.client;
         (opts.eventTypes || []).forEach((t) => {
@@ -117,7 +125,9 @@ export class StateLookup {
         r.syncPromise = (async () => {
             while (true) {
                 try {
-                    const events: StateLookupEvent[] = await this._client.roomState(roomId);
+                    const events: StateLookupEvent[] = await this.lookupQueue.add(
+                        () => this._client.roomState(roomId)
+                    );
                     events.forEach((ev) => {
                         if (this.eventTypes[ev.type]) {
                             if (!r.events[ev.type]) {

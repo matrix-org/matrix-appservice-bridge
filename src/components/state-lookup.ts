@@ -41,7 +41,7 @@ interface StateLookupEvent {
 const RETRY_STATE_IN_MS = 3000;
 const DEFAULT_STATE_CONCURRENCY = 4;
 
-export class StateLookup {
+export default class StateLookup {
     private _client: any;
     private eventTypes: {[eventType: string]: boolean} = {};
     private dict: { [roomId: string]: StateLookupRoom } = {};

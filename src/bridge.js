@@ -441,7 +441,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/(unstable|v1)/thirdparty/protocol/:protocol",
+            path: "/_matrix/app/:version/thirdparty/protocol/:protocol",
             handler: function(req, res) {
                 const protocol = req.params.protocol;
 
@@ -463,7 +463,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/(unstable|v1)/thirdparty/location/:protocol",
+            path: "/_matrix/app/:version/thirdparty/location/:protocol",
             handler: function(req, res) {
                 const protocol = req.params.protocol;
 
@@ -485,7 +485,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/(unstable|v1)/thirdparty/location",
+            path: "/_matrix/app/:version/thirdparty/location",
             handler: function(req, res) {
                 const alias = req.query.alias;
                 if (!alias) {
@@ -506,7 +506,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/(unstable|v1)/thirdparty/user/:protocol",
+            path: "/_matrix/app/:version/thirdparty/user/:protocol",
             handler: function(req, res) {
                 const protocol = req.params.protocol;
 
@@ -528,7 +528,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/(unstable|v1)/thirdparty/user",
+            path: "/_matrix/app/:version/thirdparty/user",
             handler: function(req, res) {
                 const userid = req.query.userid;
                 if (!userid) {

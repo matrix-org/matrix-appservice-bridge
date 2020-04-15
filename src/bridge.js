@@ -387,9 +387,6 @@ Bridge.prototype._customiseAppservice = function() {
             method: "POST",
             path: "/_bridge/roomLinkValidator/reload",
             handler: (req, res) => {
-                if (!this._requestCheckToken(req, res)) {
-                    return;
-                }
                 try {
                     // Will use filename if provided, or the config
                     // one otherwised.
@@ -589,20 +586,26 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
  * @param {Object} opts Named options
  * @param {string} opts.method The HTTP method name.
  * @param {string} opts.path Path to the endpoint.
+ * @param {string} opts.checkToken Should the token be automatically checked. Defaults to true.
  * @param {Bridge~appServicePathHandler} opts.handler Function to handle requests
  * to this endpoint.
  */
 Bridge.prototype.addAppServicePath = function(opts) {
     // TODO(paul): This is gut-wrenching into the AppService instance itself.
     //   Maybe an API on that object would be good?
-    var app = this.appService.app;
+    const app = this.appService.app;
+    opts.checkToken = opts.checkToken !== undefined ? opts.checkToken : true;
 
     // TODO(paul): Consider more options:
     //   opts.versions - automatic version filtering and rejecting of
     //     unrecognised API versions
     // Consider automatic "/_matrix/app/:version" path prefix
-
-    app[opts.method.toLowerCase()](opts.path, opts.handler);
+    app[opts.method.toLowerCase()](opts.path, (...args) => {
+        if (opts.checkToken && this._requestCheckToken(req, res)) {
+            return null;
+        }
+        return handler(...args);
+    });
 };
 
 /**

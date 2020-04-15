@@ -125,10 +125,8 @@ export class StateLookup {
             if (err.httpStatus >= 400 && err.httpStatus < 600) { // 4xx, 5xx
                 throw err; // don't have permission, don't retry.
             }
-            console.log(err.message);
             // wait a bit then try again
-            await new Promise((resolve) => setTimeout(() => { console.log("hi"); resolve();}, 300));
-            console.log("FIN");
+            await new Promise((resolve) => setTimeout(resolve, 300));
         }
         return this.getInitialState(roomId);
     }

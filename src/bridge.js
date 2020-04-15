@@ -441,16 +441,9 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:ver/thirdparty/protocol/:protocol",
+            path: "/_matrix/app/(unstable|v1)/thirdparty/protocol/:protocol",
             handler: function(req, res) {
-                if (req.params.ver !== "unstable") {
-                    res.status(404).json(
-                        {err: "Unrecognised API version " + req.params.ver}
-                    );
-                    return;
-                }
-
-                var protocol = req.params.protocol;
+                const protocol = req.params.protocol;
 
                 if (protocols.length && protocols.indexOf(protocol) === -1) {
                     res.status(404).json({err: "Unknown 3PN protocol " + protocol});
@@ -470,16 +463,9 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:ver/thirdparty/location/:protocol",
+            path: "/_matrix/app/(unstable|v1)/thirdparty/location/:protocol",
             handler: function(req, res) {
-                if (req.params.ver !== "unstable") {
-                    res.status(404).json(
-                        {err: "Unrecognised API version " + req.params.ver}
-                    );
-                    return;
-                }
-
-                var protocol = req.params.protocol;
+                const protocol = req.params.protocol;
 
                 if (protocols.length && protocols.indexOf(protocol) === -1) {
                     res.status(404).json({err: "Unknown 3PN protocol " + protocol});
@@ -499,16 +485,9 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:ver/thirdparty/location",
+            path: "/_matrix/app/(unstable|v1)/thirdparty/location",
             handler: function(req, res) {
-                if (req.params.ver !== "unstable") {
-                    res.status(404).json(
-                        {err: "Unrecognised API version " + req.params.ver}
-                    );
-                    return;
-                }
-
-                var alias = req.query.alias;
+                const alias = req.query.alias;
                 if (!alias) {
                     res.status(400).send({err: "Missing 'alias' parameter"});
                     return;
@@ -527,16 +506,9 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:ver/thirdparty/user/:protocol",
+            path: "/_matrix/app/(unstable|v1)/thirdparty/user/:protocol",
             handler: function(req, res) {
-                if (req.params.ver !== "unstable") {
-                    res.status(404).json(
-                        {err: "Unrecognised API version " + req.params.ver}
-                    );
-                    return;
-                }
-
-                var protocol = req.params.protocol;
+                const protocol = req.params.protocol;
 
                 if (protocols.length && protocols.indexOf(protocol) === -1) {
                     res.status(404).json({err: "Unknown 3PN protocol " + protocol});
@@ -556,16 +528,9 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:ver/thirdparty/user",
+            path: "/_matrix/app/(unstable|v1)/thirdparty/user",
             handler: function(req, res) {
-                if (req.params.ver !== "unstable") {
-                    res.status(404).json(
-                        {err: "Unrecognised API version " + req.params.ver}
-                    );
-                    return;
-                }
-
-                var userid = req.query.userid;
+                const userid = req.query.userid;
                 if (!userid) {
                     res.status(400).send({err: "Missing 'userid' parameter"});
                     return;

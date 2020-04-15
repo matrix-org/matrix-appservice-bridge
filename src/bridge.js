@@ -1010,7 +1010,10 @@ Bridge.prototype.registerBridgeGauges = function(counterFunc) {
 };
 
 Bridge.prototype._requestCheckToken = function(req, res) {
-    if (req.query.access_token !== this.opts.registration.hs_token) {
+    if (
+        req.query.access_token !== this.opts.registration.hs_token &&
+        req.headers["Authorization"] !== `Bearer ${this.opts.registration.hs_token}`
+    ) {
         res.status(403).send({
             errcode: "M_FORBIDDEN",
             error: "Bad token supplied,"

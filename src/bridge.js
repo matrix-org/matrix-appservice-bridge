@@ -565,11 +565,14 @@ Bridge.prototype.addAppServicePath = function(opts) {
     //   opts.versions - automatic version filtering and rejecting of
     //     unrecognised API versions
     // Consider automatic "/_matrix/app/:version" path prefix
-    app[opts.method.toLowerCase()](opts.path, (...args) => {
-        if (opts.checkToken && this._requestCheckToken(req, res)) {
-            return null;
+    app[opts.method.toLowerCase()](opts.path, (req, res, ...args) => {
+        if (opts.checkToken && !this._requestCheckToken(req)) {
+            return res.status(403).send({
+                errcode: "M_FORBIDDEN",
+                error: "Bad token supplied,"
+            });
         }
-        return handler(...args);
+        return handler(req, res, ...args);
     });
 };
 
@@ -974,15 +977,11 @@ Bridge.prototype.registerBridgeGauges = function(counterFunc) {
     });
 };
 
-Bridge.prototype._requestCheckToken = function(req, res) {
+Bridge.prototype._requestCheckToken = function(req) {
     if (
         req.query.access_token !== this.opts.registration.hs_token &&
         req.headers["Authorization"] !== `Bearer ${this.opts.registration.hs_token}`
     ) {
-        res.status(403).send({
-            errcode: "M_FORBIDDEN",
-            error: "Bad token supplied,"
-        });
         return false;
     }
     return true;

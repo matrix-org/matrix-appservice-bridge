@@ -566,7 +566,7 @@ Bridge.prototype.addAppServicePath = function(opts) {
     //     unrecognised API versions
     // Consider automatic "/_matrix/app/:version" path prefix
     app[opts.method.toLowerCase()](opts.path, (req, res, ...args) => {
-        if (opts.checkToken && !this._requestCheckToken(req)) {
+        if (opts.checkToken && !this.requestCheckToken(req)) {
             return res.status(403).send({
                 errcode: "M_FORBIDDEN",
                 error: "Bad token supplied,"
@@ -977,7 +977,13 @@ Bridge.prototype.registerBridgeGauges = function(counterFunc) {
     });
 };
 
-Bridge.prototype._requestCheckToken = function(req) {
+/**
+ * Check a express Request to see if it's correctly
+ * authenticated (includes the hsToken). The query parameter `access_token`
+ * and the Authorization header are checked.
+ * @returns {Boolean} True if authenticated, False if not.
+ */
+Bridge.prototype.requestCheckToken = function(req) {
     if (
         req.query.access_token !== this.opts.registration.hs_token &&
         req.headers["Authorization"] !== `Bearer ${this.opts.registration.hs_token}`

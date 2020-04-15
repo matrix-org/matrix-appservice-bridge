@@ -16,7 +16,7 @@ import Bluebird, { resolve } from "bluebird";
 import PQueue from "p-queue";
 
 interface StateLookupOpts {
-    client: any;
+    client: any; //TODO: Needs to be MatrixClient (once that becomes TypeScript)
     stateLookupConcurrency: number;
     eventTypes?: string[];
 }

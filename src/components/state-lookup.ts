@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-import Bluebird from "bluebird";
+import Bluebird, { resolve } from "bluebird";
 import PQueue from "p-queue";
 
 interface StateLookupOpts {
@@ -22,7 +22,7 @@ interface StateLookupOpts {
 }
 
 interface StateLookupRoom {
-    syncPromise: Promise<StateLookupRoom>;
+    syncPromise: Bluebird<StateLookupRoom>;
     syncComplete: boolean;
     events: {
         [eventType: string]: {
@@ -38,10 +38,10 @@ interface StateLookupEvent {
     event_id: string;
 }
 
-const RETRY_STATE_IN_MS = 3000;
+const RETRY_STATE_IN_MS = 300;
 const DEFAULT_STATE_CONCURRENCY = 4;
 
-export default class StateLookup {
+export class StateLookup {
     private _client: any;
     private eventTypes: {[eventType: string]: boolean} = {};
     private dict: { [roomId: string]: StateLookupRoom } = {};
@@ -90,19 +90,47 @@ export default class StateLookup {
     public getState(roomId: string, eventType: string, stateKey?: string): unknown|unknown[] {
         const r = this.dict[roomId];
         if (!r) {
-            return stateKey ? null : [];
+            return stateKey === undefined ? [] : null;
         }
         const es = r.events;
         if (!es[eventType]) {
-            return stateKey ? null : [];
+            return stateKey === undefined ? [] : null;
         }
-        if (stateKey) {
+        if (stateKey !== undefined) {
             return es[eventType][stateKey] || null;
         }
     
         return Object.keys(es[eventType]).map(function(skey) {
             return es[eventType][skey];
         });
+    }
+
+    private async getInitialState(roomId: string): Promise<StateLookupRoom> {
+        const r = this.dict[roomId];
+        try {
+            const events: StateLookupEvent[] = await this.lookupQueue.add(
+                () => this._client.roomState(roomId)
+            );
+            events.forEach((ev) => {
+                if (this.eventTypes[ev.type]) {
+                    if (!r.events[ev.type]) {
+                        r.events[ev.type] = {};
+                    }
+                    r.events[ev.type][ev.state_key] = ev;
+                }
+            });
+            return r;
+        }
+        catch (err) {
+            if (err.httpStatus >= 400 && err.httpStatus < 600) { // 4xx, 5xx
+                throw err; // don't have permission, don't retry.
+            }
+            console.log(err.message);
+            // wait a bit then try again
+            await new Promise((resolve) => setTimeout(() => { console.log("hi"); resolve();}, 300));
+            console.log("FIN");
+        }
+        return this.getInitialState(roomId);
     }
 
     /**
@@ -122,34 +150,10 @@ export default class StateLookup {
             return r.syncPromise;
         }
         r.events = {};
-        r.syncPromise = (async () => {
-            while (true) {
-                try {
-                    const events: StateLookupEvent[] = await this.lookupQueue.add(
-                        () => this._client.roomState(roomId)
-                    );
-                    events.forEach((ev) => {
-                        if (this.eventTypes[ev.type]) {
-                            if (!r.events[ev.type]) {
-                                r.events[ev.type] = {};
-                            }
-                            r.events[ev.type][ev.state_key] = ev;
-                        }
-                    });
-                    return r;
-                }
-                catch (err) {
-                    if (err.httpStatus >= 400 && err.httpStatus < 600) { // 4xx, 5xx
-                        throw err; // don't have permission, don't retry.
-                    }
-                    // wait a bit then try again
-                    await new Promise((resolve) => setTimeout(resolve, RETRY_STATE_IN_MS));
-                } 
-            }
-        })();
+        // For backwards compat, we use Bluebird
+        r.syncPromise = Bluebird.resolve(this.getInitialState(roomId));
 
-        // For backwards compat.
-        return Bluebird.resolve(r.syncPromise);
+        return r.syncPromise;
     }
 
     /**
@@ -175,9 +179,9 @@ export default class StateLookup {
         }
         let r = this.dict[event.room_id];
         // Ensure /sync has completed before trying to update.
-        await r.syncPromise;
-        // Capture latest
-        r = this.dict[event.room_id];
+        if (r.syncPromise.isPending()) {
+            r = await r.syncPromise;
+        }
 
         // blunt update
         if (!r.events[event.type]) {

@@ -1,7 +1,7 @@
 "use strict";
 var Promise = require("bluebird");
 var log = require("../log");
-var StateLookup = require("../..").StateLookup;
+const StateLookup = require("../..").StateLookup;
 
 describe("StateLookup", function() {
     var lookup, cli;
@@ -82,7 +82,9 @@ describe("StateLookup", function() {
                     // the catch => nextTick magic.
                     var p = Promise.reject(new Error("network error"));
                     p.catch(function(err) {
+                        console.log("WOOF");
                         process.nextTick(function() {
+                            console.log("TICK!");
                             jasmine.clock().tick(10 * 1000); // 10s
                         });
                     });
@@ -148,7 +150,7 @@ describe("StateLookup", function() {
             });
         });
 
-        it("should clobber events from in-flight track requests", function(done) {
+        it("should clobber events from in-flight track requests", async() => {
             var statePromise = createStatePromise([
                 {type: "m.room.name", state_key: "", room_id: "!foo:bar",
                         content: { name: "Foo" }}
@@ -157,18 +159,15 @@ describe("StateLookup", function() {
             var p = lookup.trackRoom("!foo:bar");
             expect(p.isPending()).toBe(true); // not resolved HTTP call yet
             // this event should clobber response from HTTP call
-            lookup.onEvent(
+            statePromise.resolve();
+            await lookup.onEvent(
                 {type: "m.room.name", state_key: "", room_id: "!foo:bar",
                     content: { name: "Bar" }}
             );
-            statePromise.resolve();
-
-            p.then(function() {
-                expect(
-                    lookup.getState("!foo:bar", "m.room.name", "").content.name
-                ).toEqual("Bar");
-                done();
-            });
+            await p;
+            expect(
+                lookup.getState("!foo:bar", "m.room.name", "").content.name
+            ).toEqual("Bar");
         });
     });
 

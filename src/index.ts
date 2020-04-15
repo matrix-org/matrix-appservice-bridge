@@ -16,7 +16,7 @@ limitations under the License.
 module.exports.ClientFactory = require("./components/client-factory");
 module.exports.Intent = require("./components/intent");
 module.exports.AppServiceBot = require("./components/app-service-bot");
-module.exports.StateLookup = require("./components/state-lookup");
+module.exports.StateLookup = require("./components/state-lookup").StateLookup;
 
 // Config and CLI
 module.exports.Cli = require("./components/cli");

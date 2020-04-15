@@ -82,7 +82,6 @@ describe("StateLookup", function() {
                     // the catch => nextTick magic.
                     var p = Promise.reject(new Error("network error"));
                     p.catch(function(err) {
-                        console.log("WOOF");
                         process.nextTick(function() {
                             console.log("TICK!");
                             jasmine.clock().tick(10 * 1000); // 10s

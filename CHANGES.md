@@ -1,3 +1,26 @@
+1.12.0 (2020-04-16)
+==================
+
+### Changes
+
+* Remove usage of v1 event format keys in the library. #145
+* The project now supports Typescript source files. #148
+* StateLookup /state requests are now queued rather than run in parallel. #157
+* **IMPORTANT** The bridge now supports authenticating `/_matrix/app/.../thirdparty` requests. #158
+  To remain backwards compatible with other homeservers, it is off by default. Setting
+  `opts.authenticateThirdpartyEndpoints` to `true` on the `Bridge` object will enable this behaviour.
+* Limit thirdparty requests to `v1` and `unstable` versions. #160
+
+### Docs
+
+* Update `HOWTO.md` to clarify `server_name`/`localhost` confusion. Thanks @marceltransier! #141
+* Remove /appservice URL parth from `cli.js` help text. #152
+
+### Misc
+
+* Minimum required Node.JS version is now 10. Thanks @V02460 #146
+* Audit packages and update versions. #159
+
 1.11.1 (2019-11-01)
 ==================
 

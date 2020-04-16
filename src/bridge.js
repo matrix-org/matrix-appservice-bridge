@@ -445,7 +445,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:version/thirdparty/protocol/:protocol",
+            path: "/_matrix/app/:version(v1|unstable)/thirdparty/protocol/:protocol",
             checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
                 const protocol = req.params.protocol;
@@ -468,7 +468,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:version/thirdparty/location/:protocol",
+            path: "/_matrix/app/:version(v1|unstable)/thirdparty/location/:protocol",
             checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
                 const protocol = req.params.protocol;
@@ -494,7 +494,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:version/thirdparty/location",
+            path: "/_matrix/app/:version(v1|unstable)/thirdparty/location",
             checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
                 const alias = req.query.alias;
@@ -516,7 +516,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:version/thirdparty/user/:protocol",
+            path: "/_matrix/app/:version(v1|unstable)/thirdparty/user/:protocol",
             checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
                 const protocol = req.params.protocol;
@@ -542,7 +542,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:version/thirdparty/user",
+            path: "/_matrix/app/:version(v1|unstable)/thirdparty/user",
             checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
                 const userid = req.query.userid;
@@ -579,7 +579,7 @@ Bridge.prototype.addAppServicePath = function(opts) {
     // TODO(paul): Consider more options:
     //   opts.versions - automatic version filtering and rejecting of
     //     unrecognised API versions
-    // Consider automatic "/_matrix/app/:version" path prefix
+    // Consider automatic "/_matrix/app/:version(v1|unstable)" path prefix
     app[opts.method.toLowerCase()](opts.path, (req, res, ...args) => {
         if (opts.checkToken && !this.requestCheckToken(req)) {
             return res.status(403).send({

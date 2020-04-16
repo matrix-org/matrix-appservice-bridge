@@ -587,7 +587,7 @@ Bridge.prototype.addAppServicePath = function(opts) {
                 error: "Bad token supplied,"
             });
         }
-        return handler(req, res, ...args);
+        return opts.handler(req, res, ...args);
     });
 };
 

@@ -478,6 +478,9 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
                     return;
                 }
 
+                // Do not leak access token to function
+                delete req.query.access_token;
+
                 getLocationFunc(protocol, req.query).then(
                     function(result) { res.status(200).json(result) },
                     function(e) { _respondErr(e, res) }
@@ -522,6 +525,9 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
                     res.status(404).json({err: "Unknown 3PN protocol " + protocol});
                     return;
                 }
+
+                // Do not leak access token to function
+                delete req.query.access_token;
 
                 getUserFunc(protocol, req.query).then(
                     function(result) { res.status(200).json(result) },

@@ -141,6 +141,9 @@ const INTENT_CULL_EVICT_AFTER_MS = 1000 * 60 * 15; // 15 minutes
  * @param {boolean=} opts.roomLinkValidation.triggerEndpoint Enable the endpoint
  * to trigger a reload of the rules file.
  * Default: false
+ * @param {string} opts.authenticateThirdpartyEndpoints Should the bridge authenticate
+ * requests to thirdparty endpoints. This is false by default to be backwards compatible
+ * with Synapse.
  * @param {RoomUpgradeHandler~Options} opts.roomUpgradeOpts Options to supply to
  * the room upgrade handler. If not defined then upgrades are NOT handled by the bridge.
  */
@@ -173,6 +176,7 @@ function Bridge(opts) {
         opts.disableStores = false;
     }
 
+    opts.authenticateThirdpartyEndpoints = opts.authenticateThirdpartyEndpoints || false;
 
     opts.userStore = opts.userStore || "user-store.db";
     opts.roomStore = opts.roomStore || "room-store.db";
@@ -442,6 +446,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
         this.addAppServicePath({
             method: "GET",
             path: "/_matrix/app/:version/thirdparty/protocol/:protocol",
+            checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
                 const protocol = req.params.protocol;
 
@@ -464,6 +469,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
         this.addAppServicePath({
             method: "GET",
             path: "/_matrix/app/:version/thirdparty/location/:protocol",
+            checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
                 const protocol = req.params.protocol;
 
@@ -486,6 +492,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
         this.addAppServicePath({
             method: "GET",
             path: "/_matrix/app/:version/thirdparty/location",
+            checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
                 const alias = req.query.alias;
                 if (!alias) {
@@ -507,6 +514,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
         this.addAppServicePath({
             method: "GET",
             path: "/_matrix/app/:version/thirdparty/user/:protocol",
+            checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
                 const protocol = req.params.protocol;
 
@@ -529,6 +537,7 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
         this.addAppServicePath({
             method: "GET",
             path: "/_matrix/app/:version/thirdparty/user",
+            checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
                 const userid = req.query.userid;
                 if (!userid) {
@@ -980,7 +989,7 @@ Bridge.prototype.registerBridgeGauges = function(counterFunc) {
 /**
  * Check a express Request to see if it's correctly
  * authenticated (includes the hsToken). The query parameter `access_token`
- * and the Authorization header are checked.
+ * and the `Authorization` header are checked.
  * @returns {Boolean} True if authenticated, False if not.
  */
 Bridge.prototype.requestCheckToken = function(req) {

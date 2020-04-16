@@ -12,10 +12,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-import Bluebird, { resolve } from "bluebird";
+import Bluebird from "bluebird";
 import PQueue from "p-queue";
 
 interface StateLookupOpts {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     client: any; //TODO: Needs to be MatrixClient (once that becomes TypeScript)
     stateLookupConcurrency: number;
     eventTypes?: string[];
@@ -28,8 +29,8 @@ interface StateLookupRoom {
     events: {
         [eventType: string]: {
             [stateKey: string]: StateLookupEvent;
-        }
-    }
+        };
+    };
 }
 
 interface StateLookupEvent {
@@ -43,6 +44,7 @@ const RETRY_STATE_IN_MS = 300;
 const DEFAULT_STATE_CONCURRENCY = 4;
 
 export class StateLookup {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private _client: any;
     private eventTypes: {[eventType: string]: boolean} = {};
     private dict: { [roomId: string]: StateLookupRoom } = {};
@@ -103,7 +105,7 @@ export class StateLookup {
         if (stateKey !== undefined) {
             return es[eventType][stateKey] || null;
         }
-    
+
         return Object.keys(es[eventType]).map(function(skey) {
             return es[eventType][skey];
         });
@@ -190,5 +192,5 @@ export class StateLookup {
             r.events[event.type] = {};
         }
         r.events[event.type][event.state_key] = event;
-    };
+    }
 }

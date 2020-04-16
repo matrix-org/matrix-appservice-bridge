@@ -70,7 +70,7 @@ describe("StateLookup", function() {
         it("should retry the HTTP call on non 4xx, 5xx errors", async function() {
             // Don't use the clock here, because.
             var count = 0;
-            const ss = cli.roomState.and.callFake(function(roomId) {
+            cli.roomState.and.callFake(function(roomId) {
                 count += 1;
                 if (count < 3) {
                     return Promise.reject(new Error('network error'));

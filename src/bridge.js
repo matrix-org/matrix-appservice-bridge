@@ -142,7 +142,7 @@ const INTENT_CULL_EVICT_AFTER_MS = 1000 * 60 * 15; // 15 minutes
  * to trigger a reload of the rules file.
  * Default: false
  * @param {string} opts.authenticateThirdpartyEndpoints Should the bridge authenticate
- * requests to thirdparty endpoints. This is false by default to be backwards compatible
+ * requests to third party endpoints. This is false by default to be backwards-compatible
  * with Synapse.
  * @param {RoomUpgradeHandler~Options} opts.roomUpgradeOpts Options to supply to
  * the room upgrade handler. If not defined then upgrades are NOT handled by the bridge.

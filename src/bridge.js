@@ -141,6 +141,9 @@ const INTENT_CULL_EVICT_AFTER_MS = 1000 * 60 * 15; // 15 minutes
  * @param {boolean=} opts.roomLinkValidation.triggerEndpoint Enable the endpoint
  * to trigger a reload of the rules file.
  * Default: false
+ * @param {string} opts.authenticateThirdpartyEndpoints Should the bridge authenticate
+ * requests to third party endpoints. This is false by default to be backwards-compatible
+ * with Synapse.
  * @param {RoomUpgradeHandler~Options} opts.roomUpgradeOpts Options to supply to
  * the room upgrade handler. If not defined then upgrades are NOT handled by the bridge.
  */
@@ -173,6 +176,7 @@ function Bridge(opts) {
         opts.disableStores = false;
     }
 
+    opts.authenticateThirdpartyEndpoints = opts.authenticateThirdpartyEndpoints || false;
 
     opts.userStore = opts.userStore || "user-store.db";
     opts.roomStore = opts.roomStore || "room-store.db";
@@ -387,9 +391,6 @@ Bridge.prototype._customiseAppservice = function() {
             method: "POST",
             path: "/_bridge/roomLinkValidator/reload",
             handler: (req, res) => {
-                if (!this._requestCheckToken(req, res)) {
-                    return;
-                }
                 try {
                     // Will use filename if provided, or the config
                     // one otherwised.
@@ -444,16 +445,10 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:ver/thirdparty/protocol/:protocol",
+            path: "/_matrix/app/:version/thirdparty/protocol/:protocol",
+            checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
-                if (req.params.ver !== "unstable") {
-                    res.status(404).json(
-                        {err: "Unrecognised API version " + req.params.ver}
-                    );
-                    return;
-                }
-
-                var protocol = req.params.protocol;
+                const protocol = req.params.protocol;
 
                 if (protocols.length && protocols.indexOf(protocol) === -1) {
                     res.status(404).json({err: "Unknown 3PN protocol " + protocol});
@@ -473,21 +468,18 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:ver/thirdparty/location/:protocol",
+            path: "/_matrix/app/:version/thirdparty/location/:protocol",
+            checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
-                if (req.params.ver !== "unstable") {
-                    res.status(404).json(
-                        {err: "Unrecognised API version " + req.params.ver}
-                    );
-                    return;
-                }
-
-                var protocol = req.params.protocol;
+                const protocol = req.params.protocol;
 
                 if (protocols.length && protocols.indexOf(protocol) === -1) {
                     res.status(404).json({err: "Unknown 3PN protocol " + protocol});
                     return;
                 }
+
+                // Do not leak access token to function
+                delete req.query.access_token;
 
                 getLocationFunc(protocol, req.query).then(
                     function(result) { res.status(200).json(result) },
@@ -502,16 +494,10 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:ver/thirdparty/location",
+            path: "/_matrix/app/:version/thirdparty/location",
+            checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
-                if (req.params.ver !== "unstable") {
-                    res.status(404).json(
-                        {err: "Unrecognised API version " + req.params.ver}
-                    );
-                    return;
-                }
-
-                var alias = req.query.alias;
+                const alias = req.query.alias;
                 if (!alias) {
                     res.status(400).send({err: "Missing 'alias' parameter"});
                     return;
@@ -530,21 +516,18 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:ver/thirdparty/user/:protocol",
+            path: "/_matrix/app/:version/thirdparty/user/:protocol",
+            checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
-                if (req.params.ver !== "unstable") {
-                    res.status(404).json(
-                        {err: "Unrecognised API version " + req.params.ver}
-                    );
-                    return;
-                }
-
-                var protocol = req.params.protocol;
+                const protocol = req.params.protocol;
 
                 if (protocols.length && protocols.indexOf(protocol) === -1) {
                     res.status(404).json({err: "Unknown 3PN protocol " + protocol});
                     return;
                 }
+
+                // Do not leak access token to function
+                delete req.query.access_token;
 
                 getUserFunc(protocol, req.query).then(
                     function(result) { res.status(200).json(result) },
@@ -559,16 +542,10 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
 
         this.addAppServicePath({
             method: "GET",
-            path: "/_matrix/app/:ver/thirdparty/user",
+            path: "/_matrix/app/:version/thirdparty/user",
+            checkToken: this.opts.authenticateThirdpartyEndpoints,
             handler: function(req, res) {
-                if (req.params.ver !== "unstable") {
-                    res.status(404).json(
-                        {err: "Unrecognised API version " + req.params.ver}
-                    );
-                    return;
-                }
-
-                var userid = req.query.userid;
+                const userid = req.query.userid;
                 if (!userid) {
                     res.status(400).send({err: "Missing 'userid' parameter"});
                     return;
@@ -589,20 +566,29 @@ Bridge.prototype._customiseAppserviceThirdPartyLookup = function(lookupControlle
  * @param {Object} opts Named options
  * @param {string} opts.method The HTTP method name.
  * @param {string} opts.path Path to the endpoint.
+ * @param {string} opts.checkToken Should the token be automatically checked. Defaults to true.
  * @param {Bridge~appServicePathHandler} opts.handler Function to handle requests
  * to this endpoint.
  */
 Bridge.prototype.addAppServicePath = function(opts) {
     // TODO(paul): This is gut-wrenching into the AppService instance itself.
     //   Maybe an API on that object would be good?
-    var app = this.appService.app;
+    const app = this.appService.app;
+    opts.checkToken = opts.checkToken !== undefined ? opts.checkToken : true;
 
     // TODO(paul): Consider more options:
     //   opts.versions - automatic version filtering and rejecting of
     //     unrecognised API versions
     // Consider automatic "/_matrix/app/:version" path prefix
-
-    app[opts.method.toLowerCase()](opts.path, opts.handler);
+    app[opts.method.toLowerCase()](opts.path, (req, res, ...args) => {
+        if (opts.checkToken && !this.requestCheckToken(req)) {
+            return res.status(403).send({
+                errcode: "M_FORBIDDEN",
+                error: "Bad token supplied,"
+            });
+        }
+        return handler(req, res, ...args);
+    });
 };
 
 /**
@@ -1006,12 +992,17 @@ Bridge.prototype.registerBridgeGauges = function(counterFunc) {
     });
 };
 
-Bridge.prototype._requestCheckToken = function(req, res) {
-    if (req.query.access_token !== this.opts.registration.hs_token) {
-        res.status(403).send({
-            errcode: "M_FORBIDDEN",
-            error: "Bad token supplied,"
-        });
+/**
+ * Check a express Request to see if it's correctly
+ * authenticated (includes the hsToken). The query parameter `access_token`
+ * and the `Authorization` header are checked.
+ * @returns {Boolean} True if authenticated, False if not.
+ */
+Bridge.prototype.requestCheckToken = function(req) {
+    if (
+        req.query.access_token !== this.opts.registration.hs_token &&
+        req.headers["Authorization"] !== `Bearer ${this.opts.registration.hs_token}`
+    ) {
         return false;
     }
     return true;

@@ -333,6 +333,9 @@ PrometheusMetrics.prototype.addAppServicePath = function(bridge) {
     bridge.addAppServicePath({
         method: "GET",
         path: "/metrics",
+        // TODO: Ideally these metrics would be on a different port.
+        // For now, leave this unauthenticated.
+        checkToken: false,
         handler: function(req, res) {
             this.refresh();
 

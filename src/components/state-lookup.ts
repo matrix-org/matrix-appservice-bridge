@@ -19,6 +19,7 @@ interface StateLookupOpts {
     client: any; //TODO: Needs to be MatrixClient (once that becomes TypeScript)
     stateLookupConcurrency: number;
     eventTypes?: string[];
+    retryStateInMs?: number;
 }
 
 interface StateLookupRoom {
@@ -46,6 +47,7 @@ export class StateLookup {
     private eventTypes: {[eventType: string]: boolean} = {};
     private dict: { [roomId: string]: StateLookupRoom } = {};
     private lookupQueue: PQueue;
+    private retryStateIn: number;
 
     /**
      * Construct a new state lookup entity.
@@ -71,6 +73,8 @@ export class StateLookup {
         this.lookupQueue = new PQueue({
             concurrency: opts.stateLookupConcurrency || DEFAULT_STATE_CONCURRENCY,
         });
+
+        this.retryStateIn = opts.retryStateInMs || RETRY_STATE_IN_MS;
 
         this._client = opts.client;
         (opts.eventTypes || []).forEach((t) => {
@@ -126,7 +130,7 @@ export class StateLookup {
                 throw err; // don't have permission, don't retry.
             }
             // wait a bit then try again
-            await new Promise((resolve) => setTimeout(resolve, 300));
+            await new Promise((resolve) => setTimeout(resolve, this.retryStateIn));
         }
         return this.getInitialState(roomId);
     }

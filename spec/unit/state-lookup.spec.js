@@ -13,19 +13,14 @@ describe("StateLookup", function() {
         cli = jasmine.createSpyObj("client", ["roomState"]);
         lookup = new StateLookup({
             eventTypes: ["m.room.member", "m.room.name"],
-            client: cli
+            client: cli,
+            retryStateInMs: 20,
         });
-        jasmine.clock().install();
-    });
-
-    afterEach(function() {
-        jasmine.clock().uninstall();
     });
 
     describe("trackRoom", function() {
         it("should return a Promise which is resolved after the HTTP call " +
         "to /state returns", function(done) {
-            jasmine.clock().uninstall(); // actually wait 5ms
             var statePromise = createStatePromise([]);
             cli.roomState.and.returnValue(statePromise.promise);
             var p = lookup.trackRoom("!foo:bar");
@@ -72,30 +67,19 @@ describe("StateLookup", function() {
             });
         });
 
-        it("should retry the HTTP call on non 4xx, 5xx errors", function(done) {
+        it("should retry the HTTP call on non 4xx, 5xx errors", async function() {
+            // Don't use the clock here, because.
             var count = 0;
-            cli.roomState.and.callFake(function(roomId) {
+            const ss = cli.roomState.and.callFake(function(roomId) {
                 count += 1;
                 if (count < 3) {
-                    // We need to tick time only *AFTER* the rejection handler
-                    // for StateLookup runs (which sets the timer going), hence
-                    // the catch => nextTick magic.
-                    var p = Promise.reject(new Error("network error"));
-                    p.catch(function(err) {
-                        process.nextTick(function() {
-                            console.log("TICK!");
-                            jasmine.clock().tick(10 * 1000); // 10s
-                        });
-                    });
-                    return p;
+                    return Promise.reject(new Error('network error'));
                 }
                 return Promise.resolve([]);
-            });
+            })
 
-            lookup.trackRoom("!foo:bar").then(function() {
-                expect(count).toBe(3);
-                done();
-            });
+            await lookup.trackRoom("!foo:bar");
+            expect(count).toBe(3);
         });
 
         it("should fail the promise if the HTTP call returns 4xx", function(done) {

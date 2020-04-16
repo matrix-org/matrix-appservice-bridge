@@ -1,7 +1,7 @@
 "use strict";
 var Promise = require("bluebird");
 var log = require("../log");
-var StateLookup = require("../..").StateLookup;
+const StateLookup = require("../..").StateLookup;
 
 describe("StateLookup", function() {
     var lookup, cli;
@@ -13,19 +13,14 @@ describe("StateLookup", function() {
         cli = jasmine.createSpyObj("client", ["roomState"]);
         lookup = new StateLookup({
             eventTypes: ["m.room.member", "m.room.name"],
-            client: cli
+            client: cli,
+            retryStateInMs: 20,
         });
-        jasmine.clock().install();
-    });
-
-    afterEach(function() {
-        jasmine.clock().uninstall();
     });
 
     describe("trackRoom", function() {
         it("should return a Promise which is resolved after the HTTP call " +
         "to /state returns", function(done) {
-            jasmine.clock().uninstall(); // actually wait 5ms
             var statePromise = createStatePromise([]);
             cli.roomState.and.returnValue(statePromise.promise);
             var p = lookup.trackRoom("!foo:bar");
@@ -72,29 +67,19 @@ describe("StateLookup", function() {
             });
         });
 
-        it("should retry the HTTP call on non 4xx, 5xx errors", function(done) {
+        it("should retry the HTTP call on non 4xx, 5xx errors", async function() {
+            // Don't use the clock here, because.
             var count = 0;
             cli.roomState.and.callFake(function(roomId) {
                 count += 1;
                 if (count < 3) {
-                    // We need to tick time only *AFTER* the rejection handler
-                    // for StateLookup runs (which sets the timer going), hence
-                    // the catch => nextTick magic.
-                    var p = Promise.reject(new Error("network error"));
-                    p.catch(function(err) {
-                        process.nextTick(function() {
-                            jasmine.clock().tick(10 * 1000); // 10s
-                        });
-                    });
-                    return p;
+                    return Promise.reject(new Error('network error'));
                 }
                 return Promise.resolve([]);
-            });
+            })
 
-            lookup.trackRoom("!foo:bar").then(function() {
-                expect(count).toBe(3);
-                done();
-            });
+            await lookup.trackRoom("!foo:bar");
+            expect(count).toBe(3);
         });
 
         it("should fail the promise if the HTTP call returns 4xx", function(done) {
@@ -148,7 +133,7 @@ describe("StateLookup", function() {
             });
         });
 
-        it("should clobber events from in-flight track requests", function(done) {
+        it("should clobber events from in-flight track requests", async() => {
             var statePromise = createStatePromise([
                 {type: "m.room.name", state_key: "", room_id: "!foo:bar",
                         content: { name: "Foo" }}
@@ -157,18 +142,15 @@ describe("StateLookup", function() {
             var p = lookup.trackRoom("!foo:bar");
             expect(p.isPending()).toBe(true); // not resolved HTTP call yet
             // this event should clobber response from HTTP call
-            lookup.onEvent(
+            statePromise.resolve();
+            await lookup.onEvent(
                 {type: "m.room.name", state_key: "", room_id: "!foo:bar",
                     content: { name: "Bar" }}
             );
-            statePromise.resolve();
-
-            p.then(function() {
-                expect(
-                    lookup.getState("!foo:bar", "m.room.name", "").content.name
-                ).toEqual("Bar");
-                done();
-            });
+            await p;
+            expect(
+                lookup.getState("!foo:bar", "m.room.name", "").content.name
+            ).toEqual("Bar");
         });
     });
 

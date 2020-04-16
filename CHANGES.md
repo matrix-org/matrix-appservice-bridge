@@ -1,3 +1,10 @@
+1.12.1 (2020-04-16)
+==================
+
+### Changes
+
+* Fix an error which would break all custom bridge endpoints #161
+
 1.12.0 (2020-04-16)
 ==================
 

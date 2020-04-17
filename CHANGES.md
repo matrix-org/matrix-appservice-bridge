@@ -1,3 +1,10 @@
+1.12.2 (2020-04-17)
+==================
+
+### Changes
+
+* Fix a bug where Authorization headers were ignored for authenticated requests #162
+
 1.12.1 (2020-04-16)
 ==================
 

@@ -1001,7 +1001,7 @@ Bridge.prototype.registerBridgeGauges = function(counterFunc) {
 Bridge.prototype.requestCheckToken = function(req) {
     if (
         req.query.access_token !== this.opts.registration.hs_token &&
-        req.headers["Authorization"] !== `Bearer ${this.opts.registration.hs_token}`
+        req.headers["authorization"] !== `Bearer ${this.opts.registration.hs_token}`
     ) {
         return false;
     }

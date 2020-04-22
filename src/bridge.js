@@ -250,7 +250,7 @@ function Bridge(opts) {
  * @return {Promise} Resolved/rejected when the user/room databases have been loaded.
  */
 Bridge.prototype.loadDatabases = function() {
-    if (this.disableStores) {
+    if (this.opts.disableStores) {
         return Promise.resolve();
     }
     // Load up the databases if they provided file paths to them (or defaults)
@@ -720,7 +720,7 @@ Bridge.prototype.provisionUser = function (matrixUser, provisionedUser) {
 Bridge.prototype._provisionUser = async function(matrixUser, provisionedUser) {
     await this._botClient.register(matrixUser.localpart);
 
-    if (!this.disableStores) {
+    if (!this.opts.disableStores) {
         await this._userStore.setMatrixUser(matrixUser);
         if (provisionedUser.remote) {
             await this._userStore.linkUsers(matrixUser, provisionedUser.remote);

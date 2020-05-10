@@ -66,8 +66,15 @@ function Cli(opts) {
     this.opts.registrationPath = this.opts.registrationPath || DEFAULT_FILENAME;
     this.opts.port = this.opts.port || DEFAULT_PORT;
     this._bridgeConfig = null;
+    this._args = null;
 }
-
+/**                                                                                                                                                                                                                                                                          
+ * Get the parsed arguments. Only set after run is called and arguments parsed.                            
+ * @return {?Object} The parsed arguments                                                                                             
+ */                                                                                                                                   
+Cli.prototype.getArgs = function () {                                                                                            
+    return this._args                                                                                                                 
+} 
 /**
  * Get the loaded and parsed bridge config. Only set after run() has been called.
  * @return {?Object} The config
@@ -89,7 +96,7 @@ Cli.prototype.getRegistrationFilePath = function() {
  * Run the app from the command line. Will parse sys args.
  */
 Cli.prototype.run = function() {
-    var args = nopt({
+    this._args = nopt({
         "generate-registration": Boolean,
         "config": path,
         "url": String,
@@ -107,39 +114,39 @@ Cli.prototype.run = function() {
         "h": "--help"
     });
 
-    if (args.file) {
-        this.opts.registrationPath = args.file;
+    if (this._args.file) {
+        this.opts.registrationPath = this._args.file;
     }
 
-    if (this.opts.enableRegistration && args["generate-registration"]) {
-        if (!args.url) {
+    if (this.opts.enableRegistration && this._args["generate-registration"]) {
+        if (!this._args.url) {
             this._printHelp();
             console.log("Missing --url [-u]");
             process.exit(1);
         }
-        if (args.port) {
+        if (this._args.port) {
             this._printHelp();
             console.log("--port [-p] is not valid when generating a registration file.");
             process.exit(1);
         }
         if (this.opts.bridgeConfig && this.opts.bridgeConfig.affectsRegistration) {
-            if (!args.config) {
+            if (!this._args.config) {
                 this._printHelp();
                 console.log("Missing --config [-c]");
                 process.exit(1);
             }
-            this._assignConfigFile(args.config);
+            this._assignConfigFile(this._args.config);
         }
-        this._generateRegistration(args.url, args.localpart);
+        this._generateRegistration(this._args.url, this._args.localpart);
         return;
     }
 
-    if (args.help || (this.opts.bridgeConfig && !args.config)) {
+    if (this._args.help || (this.opts.bridgeConfig && !this._args.config)) {
         this._printHelp();
         process.exit(0);
         return;
     }
-    if (args.localpart) {
+    if (this._args.localpart) {
         this._printHelp();
         console.log(
             "--localpart [-l] can only be provided when generating a registration."
@@ -148,10 +155,10 @@ Cli.prototype.run = function() {
         return;
     }
 
-    if (args.port) {
-        this.opts.port = args.port;
+    if (this._args.port) {
+        this.opts.port = this._args.port;
     }
-    this._assignConfigFile(args.config);
+    this._assignConfigFile(this._args.config);
     this._startWithConfig(this._bridgeConfig);
 };
 

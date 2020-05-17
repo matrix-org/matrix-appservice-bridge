@@ -48,8 +48,9 @@ module.exports.ContentRepo = (
 	require("matrix-js-sdk").ContentRepo
 );
 
-module.exports.PrometheusMetrics = require("./components/prometheusmetrics");
-module.exports.PrometheusMetrics.AgeCounters = require("./components/agecounters");
+
+export * from "./components/prometheusmetrics";
+module.exports.PrometheusMetrics.AgeCounters = require("./components/agecounters").AgeCounters;
 
 // Caches
 module.exports.MembershipCache = require("./components/membership-cache");

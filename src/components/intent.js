@@ -736,7 +736,7 @@ Intent.prototype._ensureJoined = async function(
         }
     }
     catch (ex) {
-        d.reject(passthroughError ? e : new Error("Failed to join room"));
+        d.reject(passthroughError ? ex : Error("Failed to join room"));
     }
 
     return d.promise;

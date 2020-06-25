@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { Gauge } from "prom-client";
+
 const HOUR = 3600;
 const DAY = HOUR * 24;
 const WEEK = DAY * 7;
@@ -37,25 +39,26 @@ const PERIOD_UNIT_KEYS = Object.keys(PERIOD_UNITS);
  * bridge.
  */
 
-class AgeCounters {
+export class AgeCounters {
+    private counters: Map<string|number, number> = new Map();
+    private counterPeriods: string[];
     /***
      * @param {String[]} counterPeriods A set of strings denoting the bucket periods
      * used by the gauge. It is in the format of '#X' where # is the integer period and
      * X is the unit of time. A unit can be one of 'h, d, w' for hours, days and weeks.
      * 7d would be 7 days. If not given, the periods are 1h, 1d and 7d.
      */
-    constructor(counterPeriods) {
+    constructor(counterPeriods: string[]) {
         if (counterPeriods) {
             counterPeriods = Array.from(counterPeriods);
         }
         counterPeriods = counterPeriods || ["1h", "1d", "7d"];
-        this.counters = new Map();
         this.counterPeriods = counterPeriods;
         counterPeriods.forEach((periodKey) => {
             if (periodKey.length < 2) {
                 throw Error("A period must contain a unit.");
             }
-            const unit = periodKey[periodKey.length-1];
+            const unit = periodKey[periodKey.length-1] as "d"|"h"|"w";
             if (!PERIOD_UNIT_KEYS.includes(unit)) {
                 throw Error(`The unit period must be one of '${PERIOD_UNIT_KEYS.join(",")}'`);
             }
@@ -75,7 +78,7 @@ class AgeCounters {
      *
      * @param {Number} age The age in seconds.
      */
-    bump(age) {
+    bump(age: number) {
         this.counters.forEach((value, key) => {
             if (key === "all") {
                 this.counters.set("all", value + 1);
@@ -94,7 +97,7 @@ class AgeCounters {
      * @param {Object} morelabels An object containing more labels to add to the
      * gauge when setting values.
      */
-    setGauge(gauge, morelabels) {
+    setGauge(gauge: Gauge<string>, morelabels?: {[label: string]: string}) {
         const counters = this.counters;
         let i = 0;
         counters.forEach((value) => {
@@ -109,5 +112,3 @@ class AgeCounters {
         });
     }
 }
-
-module.exports = AgeCounters;

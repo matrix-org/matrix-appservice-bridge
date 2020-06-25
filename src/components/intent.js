@@ -664,10 +664,9 @@ Intent.prototype._joinGuard = function(roomId, promiseFn) {
     };
 };
 
-Intent.prototype._ensureJoined = function(
+Intent.prototype._ensureJoined = async function(
     roomId, ignoreCache = false, viaServers = undefined, passthroughError = false
 ) {
-    var self = this;
     var userId = self.client.credentials.userId;
     const opts = {
         syncRoom: false,
@@ -698,52 +697,47 @@ Intent.prototype._ensureJoined = function(
 
     var d = new Promise.defer();
 
-    function mark(r, state) {
-        self.opts.backingStore.setMembership(r, userId, state);
+    const mark = (r, state) => {
+        this.opts.backingStore.setMembership(r, userId, state);
         if (state === "join") {
             d.resolve();
         }
     }
 
-    var dontJoin = this.opts.dontJoin;
+    const dontJoin = this.opts.dontJoin;
 
-    self._ensureRegistered().done(function() {
+    try {
+        await this._ensureRegistered();
         if (dontJoin) {
             d.resolve();
-            return;
+            return d.promise;
         }
-
-        self.client.joinRoom(roomId, opts).then(function() {
+        try {
+            await this.client.joinRoom(roomId, opts);
             mark(roomId, "join");
-        }, function(e) {
-            if (e.errcode !== "M_FORBIDDEN" || self.botClient === self) {
-                d.reject(passthroughError ? e : new Error("Failed to join room"));
-                return;
+        }
+        catch (ex) {
+            if (ex.errcode !== "M_FORBIDDEN" || this.botClient === this) {
+                throw ex;
             }
-
-            // Try bot inviting client
-            self.botClient.invite(roomId, userId).then(function() {
-                return self.client.joinRoom(roomId, opts);
-            }).done(function() {
+            try {
+                // Try bot inviting client
+                await this.botClient.invite(roomId, userId);
+                await this.client.joinRoom(roomId, opts);
                 mark(roomId, "join");
-            }, function(invErr) {
+            }
+            catch (_ex) {
                 // Try bot joining
-                self.botClient.joinRoom(roomId, opts)
-                .then(function() {
-                    return self.botClient.invite(roomId, userId);
-                }).then(function() {
-                    return self.client.joinRoom(roomId, opts);
-                }).done(function() {
-                    mark(roomId, "join");
-                }, function(finalErr) {
-                    d.reject(passthroughError ? e : new Error("Failed to join room"));
-                    return;
-                });
-            });
-        });
-    }, function(e) {
-        d.reject(e);
-    });
+                await this.botClient.joinRoom(roomId, opts)
+                await this.botClient.invite(roomId, userId);
+                await this.client.joinRoom(roomId, opts);
+                mark(roomId, "join");
+            }
+        }
+    }
+    catch (ex) {
+        d.reject(passthroughError ? e : new Error("Failed to join room"));
+    }
 
     return d.promise;
 };

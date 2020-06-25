@@ -1,3 +1,21 @@
+1.13.0 (2020-06-25)
+==============================
+
+Features
+--------
+
+- Make parsed CLI arguments accessible to bridges. Thanks @devec0! ([\#164](https://github.com/matrix-org/matrix-appservice-bridge/issues/164))
+- Use `towncrier` for changelog tracking ([\#168](https://github.com/matrix-org/matrix-appservice-bridge/issues/168))
+- Allow bridges to provide their own prometheus metrics Register
+  and disable the default metrics endpoint ([\#169](https://github.com/matrix-org/matrix-appservice-bridge/issues/169))
+
+
+Bugfixes
+--------
+
+- Fix prototype bug ([\#170](https://github.com/matrix-org/matrix-appservice-bridge/issues/170))
+
+
 1.12.2 (2020-04-17)
 ==================
 

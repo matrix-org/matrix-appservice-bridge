@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import PromClient, { Counter } from "prom-client";
+import PromClient from "prom-client";
 import { AgeCounters } from "./agecounters";
 import MatrixClient from "matrix-js-sdk";
 import { Request, Response } from "express";
@@ -132,7 +132,8 @@ export class PrometheusMetrics {
             * underlying client API HTTP URLs, and that is even messier. So this is
             * the lesser of two evils.
             */
-        const matrixClientPrototype = MatrixClient.prototype;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const matrixClientPrototype = (MatrixClient as any).prototype;
 
         const CLIENT_METHODS = [
             "ban",

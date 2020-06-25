@@ -1,0 +1,1 @@
+Fix bug where `ContentRepo` is undefined due to `matrix-js-sdk` export changes.

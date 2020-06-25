@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import PromClient from "prom-client";
+import PromClient, { Registry } from "prom-client";
 import { AgeCounters } from "./agecounters";
 import MatrixClient from "matrix-js-sdk";
 import { Request, Response } from "express";
@@ -105,8 +105,10 @@ export class PrometheusMetrics {
     private timers: {[name: string]: PromClient.Histogram<string>} = {};
     private counters: {[name: string]: PromClient.Counter<string>} = {};
     private collectors: CollectorFunction[] = [];
-    constructor() {
-        PromClient.collectDefaultMetrics();
+    private register: Registry;
+    constructor(register?: Registry) {
+        this.register = register || PromClient.register;
+        PromClient.collectDefaultMetrics({ register: this.register });
     }
 
     /**
@@ -274,6 +276,7 @@ export class PrometheusMetrics {
             labelNames: opts.labels || [],
             help: opts.help,
             name: name,
+            registers: [ this.register ]
         });
 
         if (refresh) {
@@ -302,7 +305,8 @@ export class PrometheusMetrics {
             new PromClient.Counter({
                 name,
                 help: opts.help,
-                labelNames: opts.labels || []
+                labelNames: opts.labels || [],
+                registers: [ this.register ]
             });
 
         return counter;
@@ -341,6 +345,7 @@ export class PrometheusMetrics {
                 name,
                 help: opts.help,
                 labelNames: opts.labels || [],
+                registers: [ this.register ]
             });
 
         return timer;

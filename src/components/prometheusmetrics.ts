@@ -15,7 +15,7 @@ limitations under the License.
 
 import PromClient, { Registry } from "prom-client";
 import { AgeCounters } from "./agecounters";
-import MatrixClient from "matrix-js-sdk";
+import JsSdk from "matrix-js-sdk";
 import { Request, Response } from "express";
 
 type CollectorFunction = () => void;
@@ -135,7 +135,7 @@ export class PrometheusMetrics {
             * the lesser of two evils.
             */
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const matrixClientPrototype = (MatrixClient as any).prototype;
+        const matrixClientPrototype = (JsSdk as any).MatrixClient.prototype;
 
         const CLIENT_METHODS = [
             "ban",

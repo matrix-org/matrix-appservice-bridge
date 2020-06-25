@@ -44,10 +44,13 @@ module.exports.BridgeContext = require("./components/bridge-context");
 module.exports.AppServiceRegistration = (
     require("matrix-appservice").AppServiceRegistration
 );
-module.exports.ContentRepo = (
-	require("matrix-js-sdk").ContentRepo
-);
 
+const jsSdk = require("matrix-js-sdk");
+
+module.exports.ContentRepo = {
+    getHttpUriForMxc: jsSdk.getHttpUriForMxc,
+    getIdenticonUri: jsSdk.getIdenticonUri,
+}
 
 export * from "./components/prometheusmetrics";
 module.exports.PrometheusMetrics.AgeCounters = require("./components/agecounters").AgeCounters;

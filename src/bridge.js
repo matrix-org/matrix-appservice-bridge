@@ -938,20 +938,22 @@ Bridge.prototype._getPowerLevelEntry = function(roomId) {
  * serve the "/metrics" page in the usual way.
  * The instance will automatically register the Matrix SDK metrics by calling
  * {PrometheusMetrics~registerMatrixSdkMetrics}.
+ * @param {boolean} registerEndpoint Register the /metrics endpoint on the appservice HTTP server. Defaults to true.
+ * @param {Registry?} registry Optionally provide an alternative registry for metrics.
  */
-Bridge.prototype.getPrometheusMetrics = function() {
+Bridge.prototype.getPrometheusMetrics = function(registerEndpoint = true, registry = undefined) {
     if (this._metrics) {
         return this._metrics;
     }
 
-    var metrics = this._metrics = new PrometheusMetrics();
+    const metrics = this._metrics = new PrometheusMetrics(registry);
 
     metrics.registerMatrixSdkMetrics();
 
     // TODO(paul): register some bridge-wide standard ones here
 
     // In case we're called after .run()
-    if (this.appService) {
+    if (this.appService && registerEndpoint) {
         metrics.addAppServicePath(this);
     }
 

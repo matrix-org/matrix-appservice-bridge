@@ -1,4 +1,4 @@
-const AgeCounters = require("../../lib/components/agecounters");
+const AgeCounters = require("../../lib/index").PrometheusMetrics.AgeCounters;
 
 describe("AgeCounters", function() {
     describe("constructor", function() {

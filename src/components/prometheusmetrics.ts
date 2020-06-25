@@ -43,7 +43,7 @@ interface GagueOpts {
     name: string;
     help: string;
     labels?: string[];
-    refresh?: (gauge: PromClient.Gauge<string>) => void,
+    refresh?: (gauge: PromClient.Gauge<string>) => void;
 }
 
 /**
@@ -120,7 +120,7 @@ export class PrometheusMetrics {
             help: "Count of the number of Matrix client API calls made",
             labels: ["method"],
         });
-    
+
         /*
             * We'll now annotate a bunch of the methods in MatrixClient to keep counts
             * of every time they're called. This seems to be neater than trying to
@@ -133,7 +133,7 @@ export class PrometheusMetrics {
             * the lesser of two evils.
             */
         const matrixClientPrototype = MatrixClient.prototype;
-    
+
         const CLIENT_METHODS = [
             "ban",
             "createAlias",
@@ -158,14 +158,14 @@ export class PrometheusMetrics {
             "unban",
             "uploadContent",
         ];
-    
+
         CLIENT_METHODS.forEach(function(method) {
             callCounts.inc({method: method}, 0); // initialise the count to zero
-    
-            var orig = matrixClientPrototype[method];
-            matrixClientPrototype[method] = function() {
+
+            const orig = matrixClientPrototype[method];
+            matrixClientPrototype[method] = function(...args: unknown[]) {
                 callCounts.inc({method: method});
-                return orig.apply(this, arguments);
+                return orig.apply(this, args);
             }
         });
     }
@@ -232,11 +232,11 @@ export class PrometheusMetrics {
             counts.matrixUsersByAge.setGauge(matrixUsersByAgeGauge);
             counts.remoteUsersByAge.setGauge(remoteUsersByAgeGauge);
         });
-    };
+    }
 
     public refresh () {
         this.collectors.forEach((f) => f());
-    };
+    }
 
     /**
      * Adds a new collector function. These collector functions are run whenever
@@ -248,7 +248,7 @@ export class PrometheusMetrics {
      */
     public addCollector (func: CollectorFunction) {
         this.collectors.push(func);
-    };
+    }
 
     /**
      * Adds a new gauge metric.
@@ -272,7 +272,7 @@ export class PrometheusMetrics {
         const gauge = new PromClient.Gauge({
             labelNames: opts.labels || [],
             help: opts.help,
-            name: opts.name,
+            name: name,
         });
 
         if (refresh) {
@@ -280,7 +280,7 @@ export class PrometheusMetrics {
         }
 
         return gauge;
-    };
+    }
 
     /**
      * Adds a new counter metric
@@ -295,9 +295,9 @@ export class PrometheusMetrics {
      * @return {Counter} A counter metric.
      */
     public addCounter (opts: CounterOpts) {
-        var name = [opts.namespace || "bridge", opts.name].join("_");
+        const name = [opts.namespace || "bridge", opts.name].join("_");
 
-        var counter = this.counters[opts.name] =
+        const counter = this.counters[opts.name] =
             new PromClient.Counter({
                 name,
                 help: opts.help,
@@ -305,7 +305,7 @@ export class PrometheusMetrics {
             });
 
         return counter;
-    };
+    }
 
     /**
      * Increments the value of a counter metric
@@ -318,7 +318,7 @@ export class PrometheusMetrics {
         }
 
         this.counters[name].inc(labels);
-    };
+    }
 
     /**
      * Adds a new timer metric, represented by a prometheus Histogram.
@@ -333,17 +333,17 @@ export class PrometheusMetrics {
      * <code>startTimer</code> method.
      */
     public addTimer(opts: CounterOpts) {
-        var name = [opts.namespace || "bridge", opts.name].join("_");
+        const name = [opts.namespace || "bridge", opts.name].join("_");
 
-        var timer = this.timers[opts.name] =
-            new PromClient.Histogram({ 
+        const timer = this.timers[opts.name] =
+            new PromClient.Histogram({
                 name,
                 help: opts.help,
                 labelNames: opts.labels || [],
             });
 
         return timer;
-    };
+    }
 
     /**
      * Begins a new timer observation for a timer metric.
@@ -358,13 +358,14 @@ export class PrometheusMetrics {
         }
 
         return this.timers[name].startTimer(labels);
-    };
+    }
 
     /**
      * Registers the <code>/metrics</code> page generating function with the
      * containing Express app.
      * @param {Bridge} bridge The containing Bridge instance.
      */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public addAppServicePath(bridge: any) {
         bridge.addAppServicePath({
             method: "GET",
@@ -376,7 +377,7 @@ export class PrometheusMetrics {
                 this.refresh();
 
                 try {
-                    var exposition = PromClient.register.metrics();
+                    const exposition = PromClient.register.metrics();
 
                     res.set("Content-Type", "text/plain");
                     res.send(exposition);
@@ -389,5 +390,5 @@ export class PrometheusMetrics {
                 }
             },
         });
-    };
+    }
 }

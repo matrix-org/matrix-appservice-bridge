@@ -276,7 +276,7 @@ export class PrometheusMetrics {
             labelNames: opts.labels || [],
             help: opts.help,
             name: name,
-            registers: [ this.register ]
+            registers: [this.register]
         });
 
         if (refresh) {
@@ -306,7 +306,7 @@ export class PrometheusMetrics {
                 name,
                 help: opts.help,
                 labelNames: opts.labels || [],
-                registers: [ this.register ]
+                registers: [this.register]
             });
 
         return counter;
@@ -345,7 +345,7 @@ export class PrometheusMetrics {
                 name,
                 help: opts.help,
                 labelNames: opts.labels || [],
-                registers: [ this.register ]
+                registers: [this.register]
             });
 
         return timer;

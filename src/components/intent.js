@@ -667,7 +667,7 @@ Intent.prototype._joinGuard = function(roomId, promiseFn) {
 Intent.prototype._ensureJoined = async function(
     roomId, ignoreCache = false, viaServers = undefined, passthroughError = false
 ) {
-    var userId = self.client.credentials.userId;
+    const userId = this.client.credentials.userId;
     const opts = {
         syncRoom: false,
     };
@@ -695,7 +695,7 @@ Intent.prototype._ensureJoined = async function(
       FAIL (bot can't get into the room)
     */
 
-    var d = new Promise.defer();
+    const d = new Promise.defer();
 
     const mark = (r, state) => {
         this.opts.backingStore.setMembership(r, userId, state);

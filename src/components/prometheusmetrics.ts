@@ -128,7 +128,7 @@ export class PrometheusMetrics {
             * of every time they're called. This seems to be neater than trying to
             * intercept all HTTP requests and try to intuit what internal method was
             * invoked based on the HTTP URL.
-            * It's kindof messy to do this because we have to maintain a list of
+            * It's kind of messy to do this because we have to maintain a list of
             * client SDK method names, but the only other alternative is to hook the
             * 'request' function and attempt to parse methods out by inspecting the
             * underlying client API HTTP URLs, and that is even messier. So this is

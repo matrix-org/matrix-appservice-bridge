@@ -535,7 +535,7 @@ describe("Bridge", function() {
                 type: "m.room.member"
             };
             appService.emit("event", joinEvent);
-            intent.join("!flibble:bar").done(function() {
+            intent.join("!flibble:bar").then(() => {
                 expect(client.joinRoom).not.toHaveBeenCalled();
                 done();
             });
@@ -570,7 +570,7 @@ describe("Bridge", function() {
                 // wait the cull time again and use a new intent, still shouldn't join.
                 jasmine.clock().tick(cullTimeMs);
                 return bridge.getIntent("@foo:bar").join("!flibble:bar");
-            }).done(function() {
+            }).then(() => {
                 expect(client.joinRoom).not.toHaveBeenCalled();
                 done();
             });
@@ -608,23 +608,22 @@ describe("Bridge", function() {
             });
         });
 
-        it("should provision a user with the specified user ID", function(done) {
+        it("should provision a user with the specified user ID", function() {
             var mxUser = new MatrixUser("@foo:bar");
             var provisionedUser = {};
             var botClient = clients["bot"];
             botClient.register.and.returnValue(Promise.resolve({}));
-            bridge.provisionUser(mxUser, provisionedUser).then(function() {
+            return bridge.provisionUser(mxUser, provisionedUser).then(function() {
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
                 // should also be persisted in storage
                 return bridge.getUserStore().getMatrixUser("@foo:bar");
-            }).done(function(usr) {
+            }).then((usr) => {
                 expect(usr).toBeDefined();
                 expect(usr.getId()).toEqual("@foo:bar");
-                done();
             });
         });
 
-        it("should set the display name if one was provided", function(done) {
+        it("should set the display name if one was provided", function() {
             var mxUser = new MatrixUser("@foo:bar");
             var provisionedUser = {
                 name: "Foo Bar"
@@ -634,14 +633,13 @@ describe("Bridge", function() {
             var client = mkMockMatrixClient("@foo:bar");
             client.setDisplayName.and.returnValue(Promise.resolve({}));
             clients["@foo:bar"] = client;
-            bridge.provisionUser(mxUser, provisionedUser).done(function() {
+            return bridge.provisionUser(mxUser, provisionedUser).then(() => {
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
                 expect(client.setDisplayName).toHaveBeenCalledWith("Foo Bar");
-                done();
             });
         });
 
-        it("should set the avatar URL if one was provided", function(done) {
+        it("should set the avatar URL if one was provided", function() {
             var mxUser = new MatrixUser("@foo:bar");
             var provisionedUser = {
                 url: "http://avatar.jpg"
@@ -651,10 +649,9 @@ describe("Bridge", function() {
             var client = mkMockMatrixClient("@foo:bar");
             client.setAvatarUrl.and.returnValue(Promise.resolve({}));
             clients["@foo:bar"] = client;
-            bridge.provisionUser(mxUser, provisionedUser).done(function() {
+            return bridge.provisionUser(mxUser, provisionedUser).then(() => {
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
                 expect(client.setAvatarUrl).toHaveBeenCalledWith("http://avatar.jpg");
-                done();
             });
         });
 

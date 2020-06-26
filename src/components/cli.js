@@ -68,13 +68,13 @@ function Cli(opts) {
     this._bridgeConfig = null;
     this._args = null;
 }
-/**                                                                                                                                                                                                                                                                          
- * Get the parsed arguments. Only set after run is called and arguments parsed.                            
- * @return {?Object} The parsed arguments                                                                                             
- */                                                                                                                                   
-Cli.prototype.getArgs = function () {                                                                                            
-    return this._args                                                                                                                 
-} 
+/**
+ * Get the parsed arguments. Only set after run is called and arguments parsed.
+ * @return {?Object} The parsed arguments
+ */
+Cli.prototype.getArgs = function () {
+    return this._args
+}
 /**
  * Get the loaded and parsed bridge config. Only set after run() has been called.
  * @return {?Object} The config

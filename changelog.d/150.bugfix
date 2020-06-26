@@ -1,0 +1,1 @@
+Drain log messages after configuring logging, not just on first message. Thanks @halkeye!

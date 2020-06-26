@@ -58,6 +58,15 @@ class LogWrapper {
 
     error(...messageParts) { this._log(messageParts, 'error') }
 
+    _drain() {
+        if (!this.logger) { return; }
+        while (this.messages.length > 0) {
+            const msg = this.messages[0];
+            this.logger[msg.type](msg.messageParts);
+            this.messages.splice(0, 1);
+        }
+    }
+
     _formatParts(messageParts) {
         return messageParts.map((part) => {
             if (typeof(part) === "object") {
@@ -77,11 +86,7 @@ class LogWrapper {
          * won't be configured so we push to a queue.
          * When the transport becomes ready, the queue
          * is emptied. */
-        while (this.messages.length > 0) {
-            const msg = this.messages[0];
-            this.logger[msg.type](msg.messageParts);
-            this.messages.splice(0, 1);
-        }
+        this._drain();
         this.logger[type](messageParts);
     }
 }
@@ -167,6 +172,7 @@ class Logging {
 
         this.loggers.forEach((wrapper, name) => {
             wrapper.setLogger(this.createLogger(name));
+            wrapper._drain();
         });
     }
 

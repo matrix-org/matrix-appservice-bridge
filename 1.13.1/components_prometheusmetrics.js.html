@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/prometheusmetrics.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/prometheusmetrics.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+/*
+Copyright 2020 The Matrix.org Foundation C.I.C.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+var __importDefault = (this &amp;&amp; this.__importDefault) || function (mod) {
+    return (mod &amp;&amp; mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const prom_client_1 = __importDefault(require("prom-client"));
+const matrix_js_sdk_1 = __importDefault(require("matrix-js-sdk"));
+/**
+ * Prometheus-style /metrics gathering and exporting.
+ * This class provides a central location to register gauge and counter metrics
+ * used to generate the &lt;code>/metrics&lt;/code> page.
+ *
+ * This class depends on having &lt;code>prom-client&lt;/code> installed. It
+ * will attempt to load this module when the constructor is invoked.
+ *
+ * @example &lt;caption>A simple metric that counts the keys in an object:&lt;/caption>
+ *   var metrics = new PrometheusMetrics();
+ *
+ *   var orange = {};
+ *   metrics.addGauge({
+ *       name: "oranges",
+ *       help: "current number of oranges",
+ *       refresh: (gauge) => {
+ *           gauge.set({}, Object.keys(oranges).length);
+ *       },
+ *   });
+ *
+ * @example &lt;caption>Generating values for multiple gauges in a single collector
+ * function.&lt;/caption>
+ *   var metrics = new PrometheusMetrics();
+ *
+ *   var oranges_gauge = metrics.addGauge({
+ *       name: "oranges",
+ *       help: "current number of oranges",
+ *   });
+ *   var apples_gauge = metrics.addGauge({
+ *       name: "apples",
+ *       help: "current number of apples",
+ *   });
+ *
+ *   metrics.addCollector(() => {
+ *       var counts = this._countFruit();
+ *       oranges_gauge.set({}, counts.oranges);
+ *       apples_gauge.set({}, counts.apples);
+ *   });
+ *
+ * @example &lt;caption>Using counters&lt;/caption>
+ *   var metrics = new PrometheusMetrics();
+ *
+ *   metrics.addCollector({
+ *       name: "things_made",
+ *       help: "count of things that we have made",
+ *   });
+ *
+ *   function makeThing() {
+ *       metrics.incCounter("things_made");
+ *       return new Thing();
+ *   }
+ *
+ * @constructor
+ */
+class PrometheusMetrics {
+    constructor(register) {
+        this.timers = {};
+        this.counters = {};
+        this.collectors = [];
+        this.register = register || prom_client_1.default.register;
+        prom_client_1.default.collectDefaultMetrics({ register: this.register });
+    }
+    /**
+    * Registers some exported metrics that relate to operations of the embedded
+    * matrix-js-sdk. In particular, a metric is added that counts the number of
+    * calls to client API endpoints made by the client library.
+    */
+    registerMatrixSdkMetrics() {
+        const callCounts = this.addCounter({
+            name: "matrix_api_calls",
+            help: "Count of the number of Matrix client API calls made",
+            labels: ["method"],
+        });
+        /*
+            * We'll now annotate a bunch of the methods in MatrixClient to keep counts
+            * of every time they're called. This seems to be neater than trying to
+            * intercept all HTTP requests and try to intuit what internal method was
+            * invoked based on the HTTP URL.
+            * It's kind of messy to do this because we have to maintain a list of
+            * client SDK method names, but the only other alternative is to hook the
+            * 'request' function and attempt to parse methods out by inspecting the
+            * underlying client API HTTP URLs, and that is even messier. So this is
+            * the lesser of two evils.
+            */
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const matrixClientPrototype = matrix_js_sdk_1.default.MatrixClient.prototype;
+        const CLIENT_METHODS = [
+            "ban",
+            "createAlias",
+            "createRoom",
+            "getProfileInfo",
+            "getStateEvent",
+            "invite",
+            "joinRoom",
+            "kick",
+            "leave",
+            "register",
+            "roomState",
+            "sendEvent",
+            "sendReceipt",
+            "sendStateEvent",
+            "sendTyping",
+            "setAvatarUrl",
+            "setDisplayName",
+            "setPowerLevel",
+            "setPresence",
+            "setProfileInfo",
+            "unban",
+            "uploadContent",
+        ];
+        CLIENT_METHODS.forEach(function (method) {
+            callCounts.inc({ method: method }, 0); // initialise the count to zero
+            const orig = matrixClientPrototype[method];
+            matrixClientPrototype[method] = function (...args) {
+                callCounts.inc({ method: method });
+                return orig.apply(this, args);
+            };
+        });
+    }
+    /**
+     * Registers some exported metrics that expose counts of various kinds of
+     * objects within the bridge.
+     * @param {BridgeGaugesCallback} counterFunc A function that when invoked
+     * returns the current counts of various items in the bridge.
+     */
+    registerBridgeGauges(counterFunc) {
+        const matrixRoomsGauge = this.addGauge({
+            name: "matrix_configured_rooms",
+            help: "Current count of configured rooms by matrix room ID",
+        });
+        const remoteRoomsGauge = this.addGauge({
+            name: "remote_configured_rooms",
+            help: "Current count of configured rooms by remote room ID",
+        });
+        const matrixGhostsGauge = this.addGauge({
+            name: "matrix_ghosts",
+            help: "Current count of matrix-side ghost users",
+        });
+        const remoteGhostsGauge = this.addGauge({
+            name: "remote_ghosts",
+            help: "Current count of remote-side ghost users",
+        });
+        const matrixRoomsByAgeGauge = this.addGauge({
+            name: "matrix_rooms_by_age",
+            help: "Current count of matrix rooms partitioned by activity age",
+            labels: ["age"],
+        });
+        const remoteRoomsByAgeGauge = this.addGauge({
+            name: "remote_rooms_by_age",
+            help: "Current count of remote rooms partitioned by activity age",
+            labels: ["age"],
+        });
+        const matrixUsersByAgeGauge = this.addGauge({
+            name: "matrix_users_by_age",
+            help: "Current count of matrix users partitioned by activity age",
+            labels: ["age"],
+        });
+        const remoteUsersByAgeGauge = this.addGauge({
+            name: "remote_users_by_age",
+            help: "Current count of remote users partitioned by activity age",
+            labels: ["age"],
+        });
+        this.addCollector(function () {
+            const counts = counterFunc();
+            matrixRoomsGauge.set(counts.matrixRoomConfigs);
+            remoteRoomsGauge.set(counts.remoteRoomConfigs);
+            matrixGhostsGauge.set(counts.matrixGhosts);
+            remoteGhostsGauge.set(counts.remoteGhosts);
+            counts.matrixRoomsByAge.setGauge(matrixRoomsByAgeGauge);
+            counts.remoteRoomsByAge.setGauge(remoteRoomsByAgeGauge);
+            counts.matrixUsersByAge.setGauge(matrixUsersByAgeGauge);
+            counts.remoteUsersByAge.setGauge(remoteUsersByAgeGauge);
+        });
+    }
+    refresh() {
+        this.collectors.forEach((f) => f());
+    }
+    /**
+     * Adds a new collector function. These collector functions are run whenever
+     * the /metrics page is about to be generated, allowing code to update values
+     * of gauges.
+     * @param {Function} func A new collector function.
+     * This function is passed no arguments and is not expected to return anything.
+     * It runs purely to have a side-effect on previously registered gauges.
+     */
+    addCollector(func) {
+        this.collectors.push(func);
+    }
+    /**
+     * Adds a new gauge metric.
+     * @param {Object} opts Options
+     * @param {string=} opts.namespace An optional toplevel namespace name for the
+     * new metric. Default: &lt;code>"bridge"&lt;/code>.
+     * @param {string} opts.name The variable name for the new metric.
+     * @param {string} opts.help Descriptive help text for the new metric.
+     * @param {Array&lt;string>=} opts.labels An optional list of string label names
+     * @param {Function=} opts.refresh An optional function to invoke to generate a
+     * new value for the gauge.
+     * If a refresh function is provided, it is invoked with the gauge as its only
+     * parameter. The function should call the &lt;code>set()&lt;/code> method on this
+     * gauge in order to provide a new value for it.
+     * @return {Gauge} A gauge metric.
+     */
+    addGauge(opts) {
+        const refresh = opts.refresh;
+        const name = [opts.namespace || "bridge", opts.name].join("_");
+        const gauge = new prom_client_1.default.Gauge({
+            labelNames: opts.labels || [],
+            help: opts.help,
+            name: name,
+            registers: [this.register]
+        });
+        if (refresh) {
+            this.collectors.push(() => refresh(gauge));
+        }
+        return gauge;
+    }
+    /**
+     * Adds a new counter metric
+     * @param {Object} opts Options
+     * @param {string} opts.namespace An optional toplevel namespace name for the
+     * new metric. Default: &lt;code>"bridge"&lt;/code>.
+     * @param {string} opts.name The variable name for the new metric.
+     * @param {string} opts.help Descriptive help text for the new metric.
+     * Once created, the value of this metric can be incremented with the
+     * &lt;code>incCounter&lt;/code> method.
+     * @param {Array&lt;string>=} opts.labels An optional list of string label names
+     * @return {Counter} A counter metric.
+     */
+    addCounter(opts) {
+        const name = [opts.namespace || "bridge", opts.name].join("_");
+        const counter = this.counters[opts.name] =
+            new prom_client_1.default.Counter({
+                name,
+                help: opts.help,
+                labelNames: opts.labels || [],
+                registers: [this.register]
+            });
+        return counter;
+    }
+    /**
+     * Increments the value of a counter metric
+     * @param{string} name The name the metric was previously registered as.
+     * @param{Object} labels Optional object containing additional label values.
+     */
+    incCounter(name, labels) {
+        if (!this.counters[name]) {
+            throw new Error("Unrecognised counter metric name '" + name + "'");
+        }
+        this.counters[name].inc(labels);
+    }
+    /**
+     * Adds a new timer metric, represented by a prometheus Histogram.
+     * @param {Object} opts Options
+     * @param {string} opts.namespace An optional toplevel namespace name for the
+     * new metric. Default: &lt;code>"bridge"&lt;/code>.
+     * @param {string} opts.name The variable name for the new metric.
+     * @param {string} opts.help Descriptive help text for the new metric.
+     * @param {Array&lt;string>=} opts.labels An optional list of string label names
+     * @return {Histogram} A histogram metric.
+     * Once created, the value of this metric can be incremented with the
+     * &lt;code>startTimer&lt;/code> method.
+     */
+    addTimer(opts) {
+        const name = [opts.namespace || "bridge", opts.name].join("_");
+        const timer = this.timers[opts.name] =
+            new prom_client_1.default.Histogram({
+                name,
+                help: opts.help,
+                labelNames: opts.labels || [],
+                registers: [this.register]
+            });
+        return timer;
+    }
+    /**
+     * Begins a new timer observation for a timer metric.
+     * @param{string} name The name the metric was previously registered as.
+     * @param{Object} labels Optional object containing additional label values.
+     * @return {function} A function to be called to end the timer and report the
+     * observation.
+     */
+    startTimer(name, labels) {
+        if (!this.timers[name]) {
+            throw Error("Unrecognised timer metric name '" + name + "'");
+        }
+        return this.timers[name].startTimer(labels);
+    }
+    /**
+     * Registers the &lt;code>/metrics&lt;/code> page generating function with the
+     * containing Express app.
+     * @param {Bridge} bridge The containing Bridge instance.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    addAppServicePath(bridge) {
+        bridge.addAppServicePath({
+            method: "GET",
+            path: "/metrics",
+            // TODO: Ideally these metrics would be on a different port.
+            // For now, leave this unauthenticated.
+            checkToken: false,
+            handler: (_req, res) => {
+                this.refresh();
+                try {
+                    const exposition = prom_client_1.default.register.metrics();
+                    res.set("Content-Type", "text/plain");
+                    res.send(exposition);
+                }
+                catch (e) {
+                    res.status(500);
+                    res.set("Content-Type", "text/plain");
+                    res.send(e.toString());
+                }
+            },
+        });
+    }
+}
+exports.PrometheusMetrics = PrometheusMetrics;
+//# sourceMappingURL=prometheusmetrics.js.map</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AgeCounters.html">AgeCounters</a></li><li><a href="AppServiceBot.html">AppServiceBot</a></li><li><a href="Bridge.html">Bridge</a></li><li><a href="BridgeContext.html">BridgeContext</a></li><li><a href="BridgeInternalError.html">BridgeInternalError</a></li><li><a href="global.html#BridgeStore">BridgeStore</a></li><li><a href="Cli.html">Cli</a></li><li><a href="ClientFactory.html">ClientFactory</a></li><li><a href="ClientRequestCache.html">ClientRequestCache</a></li><li><a href="global.html#ConfigValidator">ConfigValidator</a></li><li><a href="EventBridgeStore.html">EventBridgeStore</a></li><li><a href="EventNotHandledError.html">EventNotHandledError</a></li><li><a href="EventQueue.html">EventQueue</a></li><li><a href="EventQueueNone.html">EventQueueNone</a></li><li><a href="EventQueuePerRoom.html">EventQueuePerRoom</a></li><li><a href="EventQueueSingle.html">EventQueueSingle</a></li><li><a href="EventTooOldError.html">EventTooOldError</a></li><li><a href="EventUnknownError.html">EventUnknownError</a></li><li><a href="ForeignNetworkError.html">ForeignNetworkError</a></li><li><a href="Intent.html">Intent</a></li><li><a href="MatrixRoom.html">MatrixRoom</a></li><li><a href="MatrixUser.html">MatrixUser</a></li><li><a href="MembershipCache.html">MembershipCache</a></li><li><a href="PrometheusMetrics.html">PrometheusMetrics</a></li><li><a href="RemoteRoom.html">RemoteRoom</a></li><li><a href="RemoteUser.html">RemoteUser</a></li><li><a href="Request.html">Request</a></li><li><a href="RequestFactory.html">RequestFactory</a></li><li><a href="RoomBridgeStore.html">RoomBridgeStore</a></li><li><a href="RoomLinkValidator.html">RoomLinkValidator</a></li><li><a href="RoomUpgradeHandler.html">RoomUpgradeHandler</a></li><li><a href="StateLookup.html">StateLookup</a></li><li><a href="StoredEvent.html">StoredEvent</a></li><li><a href="UserBridgeStore.html">UserBridgeStore</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultMessage">defaultMessage</a></li><li><a href="global.html#wrap">wrap</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Fri Jun 26 2020 10:17:26 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

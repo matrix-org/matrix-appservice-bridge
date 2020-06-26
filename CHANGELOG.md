@@ -1,3 +1,13 @@
+ 1.13.1 (2020-06-26)
+====================
+
+Bugfixes
+--------
+
+- Drain log messages after configuring logging, not just on first message. Thanks @halkeye! ([\#150](https://github.com/matrix-org/matrix-appservice-bridge/issues/150))
+- Fix bug where `ContentRepo` is undefined due to `matrix-js-sdk` export changes. ([\#171](https://github.com/matrix-org/matrix-appservice-bridge/issues/171))
+
+
 1.13.0 (2020-06-25)
 ==============================
 

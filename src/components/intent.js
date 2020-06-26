@@ -695,12 +695,12 @@ Intent.prototype._ensureJoined = async function(
       FAIL (bot can't get into the room)
     */
 
-    const d = new Promise.defer();
+    const deferredPromise = new Promise.defer();
 
     const mark = (r, state) => {
         this.opts.backingStore.setMembership(r, userId, state);
         if (state === "join") {
-            d.resolve();
+            deferredPromise.resolve();
         }
     }
 
@@ -709,8 +709,8 @@ Intent.prototype._ensureJoined = async function(
     try {
         await this._ensureRegistered();
         if (dontJoin) {
-            d.resolve();
-            return d.promise;
+            deferredPromise.resolve();
+            return deferredPromise.promise;
         }
         try {
             await this.client.joinRoom(roomId, opts);
@@ -736,10 +736,10 @@ Intent.prototype._ensureJoined = async function(
         }
     }
     catch (ex) {
-        d.reject(passthroughError ? ex : Error("Failed to join room"));
+        deferredPromise.reject(passthroughError ? ex : Error("Failed to join room"));
     }
 
-    return d.promise;
+    return deferredPromise.promise;
 };
 
 Intent.prototype._ensureHasPowerLevelFor = function(roomId, eventType) {

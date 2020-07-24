@@ -36,7 +36,7 @@
     "js-yaml": "^3.14.0",
     "matrix-appservice": "^0.4.2",
     "matrix-js-sdk": "^6.0.0",
-    "nedb": "^1.8.3",
+    "nedb": "^1.8.0",
     "nopt": "^4.0.3",
     "p-queue": "^6.6.0",
     "prom-client": "^12.0.0",

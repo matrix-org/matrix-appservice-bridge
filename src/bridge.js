@@ -303,9 +303,7 @@ Bridge.prototype.run = function(port, config, appServiceInstance, hostname) {
     this._clientFactory = self.opts.clientFactory || new ClientFactory({
         url: self.opts.homeserverUrl,
         token: self.opts.registration.getAppServiceToken(),
-        appServiceUserId: (
-            `@${self.opts.registration.getSenderLocalpart()}:${self.opts.domain}`,
-        ),
+        appServiceUserId: `@${self.opts.registration.getSenderLocalpart()}:${self.opts.domain}`,
         clientSchedulerBuilder: function() {
             return new MatrixScheduler(retryAlgorithm, queueAlgorithm);
         },

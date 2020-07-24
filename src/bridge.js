@@ -302,10 +302,8 @@ Bridge.prototype.run = function(port, config, appServiceInstance, hostname) {
 
     this._clientFactory = self.opts.clientFactory || new ClientFactory({
         url: self.opts.homeserverUrl,
-        token: self.opts.registration.as_token,
-        appServiceUserId: (
-            "@" + self.opts.registration.sender_localpart + ":" + self.opts.domain
-        ),
+        token: self.opts.registration.getAppServiceToken(),
+        appServiceUserId: `@${self.opts.registration.getSenderLocalpart()}:${self.opts.domain}`,
         clientSchedulerBuilder: function() {
             return new MatrixScheduler(retryAlgorithm, queueAlgorithm);
         },
@@ -1002,8 +1000,8 @@ Bridge.prototype.registerBridgeGauges = function(counterFunc) {
  */
 Bridge.prototype.requestCheckToken = function(req) {
     if (
-        req.query.access_token !== this.opts.registration.hs_token &&
-        req.get("authorization") !== `Bearer ${this.opts.registration.hs_token}`
+        req.query.access_token !== this.opts.registration.getHomeserverToken() &&
+        req.get("authorization") !== `Bearer ${this.opts.registration.getHomeserverToken()}`
     ) {
         return false;
     }

@@ -74,10 +74,11 @@
     "keyword-spacing": [1, {"before": true, "after": true}],
     "space-before-blocks": [1, "always"],
     "@typescript-eslint/explicit-function-return-type": 0,
-    "@typescript-eslint/camelcase": ["error", { "properties": "never" }],
+    "camelcase": ["error", { "properties": "never" }],
     "@typescript-eslint/ban-ts-ignore": 0,
     "no-unused-vars": 0,
     "strict": ["error", "never" ],
-    "no-var": 2
+    "no-var": 2,
+    "@typescript-eslint/explicit-module-boundary-types": 0
   }
 }

@@ -12,8 +12,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+import Bluebird from "bluebird";
 
-const Bluebird = require("bluebird");
+type DataReady = Promise<object>;
+
+// It's an event, which has no type yet.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ConsumeCallback = (error: Error|null, event: any) => void;
 
 /**
  * Handles the processing order of incoming Matrix events.
@@ -24,7 +29,7 @@ const Bluebird = require("bluebird");
  *
  * Abstract Base Class. Use the factory method `create` to create new instances.
  */
-class EventQueue {
+export class EventQueue {
     /**
      * Private constructor.
      *
@@ -33,15 +38,12 @@ class EventQueue {
      * @param {consumeCallback} consumeFn Function which is called when an event
      *     is consumed.
      */
-    constructor(type, consumeFn) {
-        this.type = type;
-        this._queues = {
-            // $identifier: {
-            //  events: [ {dataReady: } ],
-            //  consuming: true|false
-            // }
-        };
-        this.consumeFn = consumeFn;
+    private queues: { [identifer: string]: {
+        events: Array<{ dataReady: DataReady }>;
+        consuming: boolean;
+    }; } = {};
+    constructor(private type: "none"|"single"|"per_room", protected consumeFn: ConsumeCallback) {
+
     }
 
     /**
@@ -50,22 +52,22 @@ class EventQueue {
      * @param {IMatrixEvent} event The event to enqueue.
      * @param {Promise<object>} dataReady Promise containing data related to the event.
      */
-    push(event, dataReady) {
-        const queue = this._getQueue(event);
+    public push(event: {room_id: string}, dataReady: DataReady) {
+        const queue = this.getQueue(event);
         queue.events.push({
             dataReady: dataReady
         });
     }
 
-    _getQueue(event) {
+    private getQueue(event: {room_id: string}) {
         const identifier = this.type === "per_room" ? event.room_id : "none";
-        if (!this._queues[identifier]) {
-            this._queues[identifier] = {
+        if (!this.queues[identifier]) {
+            this.queues[identifier] = {
                 events: [],
                 consuming: false
             };
         }
-        return this._queues[identifier];
+        return this.queues[identifier];
     }
 
     /**
@@ -73,25 +75,25 @@ class EventQueue {
      *
      * As long as events are enqueued they will continue to be consumed.
      */
-    consume() {
-        Object.keys(this._queues).forEach((identifier) => {
-            if (!this._queues[identifier].consuming) {
-                this._queues[identifier].consuming = true;
-                this._takeNext(identifier);
+    public consume() {
+        Object.keys(this.queues).forEach((identifier) => {
+            if (!this.queues[identifier].consuming) {
+                this.queues[identifier].consuming = true;
+                this.takeNext(identifier);
             }
         });
     }
 
-    _takeNext(identifier) {
-        const events = this._queues[identifier].events;
-        if (events.length === 0) {
-            this._queues[identifier].consuming = false;
+    private takeNext(identifier: string) {
+        const events = this.queues[identifier].events;
+        const entry = events.shift();
+        if (!entry) {
+            this.queues[identifier].consuming = false;
             return;
         }
-        const entry = events.shift();
 
         Bluebird.resolve(entry.dataReady).asCallback(this.consumeFn);
-        entry.dataReady.finally(() => this._takeNext(identifier));
+        entry.dataReady.finally(() => this.takeNext(identifier));
     }
 
     /**
@@ -102,9 +104,9 @@ class EventQueue {
      *     is consumed.
      * @return {EventQueue} The newly created EventQueue.
      */
-    static create(opts, consumeFn) {
+    static create(opts: { type: "none"|"single"|"per_room"}, consumeFn: ConsumeCallback) {
         const type = opts.type;
-        /* eslint-disable no-use-before-define */
+        /* eslint-disable @typescript-eslint/no-use-before-define */
         if (type == "single") {
             return new EventQueueSingle(consumeFn);
         }
@@ -114,7 +116,7 @@ class EventQueue {
         if (type == "none") {
             return new EventQueueNone(consumeFn);
         }
-        /* eslint-enable no-use-before-define */
+        /* eslint-enable @typescript-eslint/no-use-before-define */
         throw Error(`Invalid EventQueue type '${type}'.`);
     }
 }
@@ -124,8 +126,8 @@ class EventQueue {
  *
  * The foremost event is processed as soon as its data is available.
  */
-class EventQueueSingle extends EventQueue {
-    constructor(consumeFn) {
+export class EventQueueSingle extends EventQueue {
+    constructor(consumeFn: ConsumeCallback) {
         super("single", consumeFn);
     }
 }
@@ -135,8 +137,8 @@ class EventQueueSingle extends EventQueue {
  *
  * Events at the head of line are processed as soon as their data is available.
  */
-class EventQueuePerRoom extends EventQueue {
-    constructor(consumeFn) {
+export class EventQueuePerRoom extends EventQueue {
+    constructor(consumeFn: ConsumeCallback) {
         super("per_room", consumeFn);
     }
 }
@@ -146,12 +148,12 @@ class EventQueuePerRoom extends EventQueue {
  *
  * Every event is handled as soon as its data is available.
  */
-class EventQueueNone extends EventQueue {
-    constructor(consumeFn) {
+export class EventQueueNone extends EventQueue {
+    constructor(consumeFn: ConsumeCallback) {
         super("none", consumeFn);
     }
 
-    push(event, dataReady) {
+    push(event: unknown, dataReady: DataReady) {
         // consume the event instantly
         Bluebird.resolve(dataReady).asCallback(this.consumeFn);
     }
@@ -166,10 +168,3 @@ class EventQueueNone extends EventQueue {
  * @param {Error} [err] The error in case the data could not be retrieved.
  * @param {object} data The data associated with the consumed event.
  */
-
-module.exports = {
-    EventQueue,
-    EventQueueSingle,
-    EventQueuePerRoom,
-    EventQueueNone,
-};

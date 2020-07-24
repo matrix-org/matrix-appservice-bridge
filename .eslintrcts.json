@@ -54,7 +54,7 @@
     "no-unreachable": 2,
     "no-unexpected-multiline": 2,
     "no-unused-expressions": 2,
-    "no-use-before-define": [1, "nofunc"],
+    "no-use-before-define": 0,
     "use-isnan": 2,
     "valid-typeof": 2,
     "array-bracket-spacing": [1, "never"],

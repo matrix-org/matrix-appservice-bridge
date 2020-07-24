@@ -1,6 +1,6 @@
 {
   "name": "matrix-appservice-bridge",
-  "version": "1.13.1",
+  "version": "1.13.2",
   "description": "Bridging infrastructure for Matrix Application Services",
   "main": "lib/index.js",
   "scripts": {
@@ -12,8 +12,7 @@
     "lint:ts": "eslint -c .eslintrcts.json --max-warnings 0 src/**/*.ts",
     "test": "BLUEBIRD_DEBUG=1 jasmine --stop-on-failure=true",
     "check": "npm run lint && npm test",
-    "ci-test": "BLUEBIRD_DEBUG=1 nyc -x \"**/spec/**\" --report text jasmine",
-    "prepublish": "npm run build"
+    "ci-test": "BLUEBIRD_DEBUG=1 nyc -x \"**/spec/**\" --report text jasmine"
   },
   "repository": {
     "type": "git",

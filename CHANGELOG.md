@@ -1,4 +1,22 @@
- 1.13.1 (2020-06-26)
+1.13.2 (2020-07-24)
+====================
+
+Bugfixes
+--------
+
+- Fix usages of private properties on `AppserviceRegistration` ([\#179](https://github.com/matrix-org/matrix-appservice-bridge/issues/179))
+
+
+Internal Changes
+----------------
+
+- Update packages to latest versions ([\#175](https://github.com/matrix-org/matrix-appservice-bridge/issues/175))
+- Remove travis-ci configuration file ([\#176](https://github.com/matrix-org/matrix-appservice-bridge/issues/176))
+- Port `EventQueue` to Typescript. ([\#177](https://github.com/matrix-org/matrix-appservice-bridge/issues/177))
+- Run NPM `build` on `prepublish`. ([\#178](https://github.com/matrix-org/matrix-appservice-bridge/issues/178))
+
+
+1.13.1 (2020-06-26)
 ====================
 
 Bugfixes

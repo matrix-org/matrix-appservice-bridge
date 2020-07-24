@@ -11,7 +11,8 @@
     "lint:ts": "eslint -c .eslintrcts.json --max-warnings 0 src/**/*.ts",
     "test": "BLUEBIRD_DEBUG=1 jasmine --stop-on-failure=true",
     "check": "npm run lint && npm test",
-    "ci-test": "BLUEBIRD_DEBUG=1 nyc -x \"**/spec/**\" --report text jasmine"
+    "ci-test": "BLUEBIRD_DEBUG=1 nyc -x \"**/spec/**\" --report text jasmine",
+    "prepublish": "npm run build"
   },
   "repository": {
     "type": "git",

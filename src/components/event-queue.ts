@@ -15,7 +15,10 @@ limitations under the License.
 import Bluebird from "bluebird";
 
 type DataReady = Promise<object>;
-type ConsumeCallback = (error: Error|null, data: any) => void;
+
+// It's an event, which has no type yet.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ConsumeCallback = (error: Error|null, event: any) => void;
 
 /**
  * Handles the processing order of incoming Matrix events.
@@ -35,8 +38,11 @@ export class EventQueue {
      * @param {consumeCallback} consumeFn Function which is called when an event
      *     is consumed.
      */
-    private queues: { [identifer: string]: { events: Array<{ dataReady: DataReady }>, consuming: boolean } } = {};
-    constructor(private type: "none"|"single"|"per_room",protected consumeFn: ConsumeCallback) {
+    private queues: { [identifer: string]: {
+        events: Array<{ dataReady: DataReady }>;
+        consuming: boolean;
+    }; } = {};
+    constructor(private type: "none"|"single"|"per_room", protected consumeFn: ConsumeCallback) {
 
     }
 
@@ -100,7 +106,7 @@ export class EventQueue {
      */
     static create(opts: { type: "none"|"single"|"per_room"}, consumeFn: ConsumeCallback) {
         const type = opts.type;
-        /* eslint-disable no-use-before-define */
+        /* eslint-disable @typescript-eslint/no-use-before-define */
         if (type == "single") {
             return new EventQueueSingle(consumeFn);
         }
@@ -110,7 +116,7 @@ export class EventQueue {
         if (type == "none") {
             return new EventQueueNone(consumeFn);
         }
-        /* eslint-enable no-use-before-define */
+        /* eslint-enable @typescript-eslint/no-use-before-define */
         throw Error(`Invalid EventQueue type '${type}'.`);
     }
 }

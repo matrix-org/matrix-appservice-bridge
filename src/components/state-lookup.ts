@@ -34,9 +34,12 @@ interface StateLookupRoom {
 }
 
 interface StateLookupEvent {
+    // eslint-disable-next-line camelcase
     room_id: string;
+    // eslint-disable-next-line camelcase
     state_key: string;
     type: string;
+    // eslint-disable-next-line camelcase
     event_id: string;
 }
 

@@ -672,10 +672,12 @@ class Intent {
         roomId: string, ignoreCache = false, viaServers?: string[], passthroughError = false
     ) => {
         const userId = this.client.credentials.userId;
-        const opts = {
+        const opts: { syncRoom: boolean, viaServers?: string[]}  = {
             syncRoom: false,
-            viaServers: viaServers ? viaServers : undefined,
         };
+        if (viaServers) {
+            opts.viaServers = viaServers;
+        }
         if (this.opts.backingStore.getMembership(roomId, userId) === "join" && !ignoreCache) {
             return Promise.resolve();
         }

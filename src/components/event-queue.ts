@@ -14,7 +14,7 @@ limitations under the License.
 */
 import Bluebird from "bluebird";
 
-type DataReady = Promise<object>;
+type DataReady = Promise<Record<string, unknown>>;
 
 // It's an event, which has no type yet.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,6 +52,7 @@ export class EventQueue {
      * @param {IMatrixEvent} event The event to enqueue.
      * @param {Promise<object>} dataReady Promise containing data related to the event.
      */
+    // eslint-disable-next-line camelcase
     public push(event: {room_id: string}, dataReady: DataReady) {
         const queue = this.getQueue(event);
         queue.events.push({
@@ -59,6 +60,7 @@ export class EventQueue {
         });
     }
 
+    // eslint-disable-next-line camelcase
     private getQueue(event: {room_id: string}) {
         const identifier = this.type === "per_room" ? event.room_id : "none";
         if (!this.queues[identifier]) {

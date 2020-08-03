@@ -56,10 +56,10 @@ const RULE_SCHEMA = {
  */
 class RoomLinkValidator {
     /**
-     * @param {string} config Config for the validator.
-     * @param {string} config.ruleFile Filename for the rule file.
-     * @param {string} config.rules Rules if not using a rule file, will be
-     *                              overwritten if both is set.
+     * @param {Object} config Config for the validator.
+     * @param {String=} config.ruleFile Filename for the rule file.
+     * @param {String=} config.rules Rules if not using a rule file, will be
+     *                               overwritten if both is set.
      * @param {AppServiceBot} asBot The AS bot.
      */
     constructor (config, asBot) {

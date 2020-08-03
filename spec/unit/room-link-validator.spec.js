@@ -78,7 +78,7 @@ describe("RoomLinkValidator", function() {
         });
         /* eslint-enable no-new */
     });
-    describe("reEvaulateRules", function() {
+    describe("reEvaluateRules", function() {
         it("should construct some regexes", () => {
             const validator = new RoomLinkValidator({
                 rules: {

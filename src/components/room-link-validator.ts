@@ -105,7 +105,7 @@ class RoomLinkValidator {
         return evaluatedRules;
     }
 
-    evaluateRules (rules: any): Rules {
+    private evaluateRules (rules: any): Rules {
         const newRules: Rules = {
             userIds: {
                 conflict: [],

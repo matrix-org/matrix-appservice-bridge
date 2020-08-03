@@ -19,7 +19,8 @@ limitations under the License.
 import util from "util";
 import AppServiceBot from "./app-service-bot";
 import ConfigValidator from "./config-validator";
-const log = require("./logging").get("room-link-validator");
+import logging from "./logging";
+const log = logging.get("room-link-validator");
 const VALIDATION_CACHE_LIFETIME = 30 * 60 * 1000;
 const PASSED = "RLV_PASSED";
 const ERROR = "RVL_ERROR";
@@ -57,7 +58,7 @@ interface Rules {
         exempt: RegExp[];
         conflict: RegExp[];
     };
-};
+}
 
 /**
  * The RoomLinkValidator checks if a room should be linked to a remote
@@ -165,6 +166,7 @@ class RoomLinkValidator {
             return ERROR_CACHED;
         }
         this.conflictCache.delete(roomId);
+        return undefined;
     }
 }
 

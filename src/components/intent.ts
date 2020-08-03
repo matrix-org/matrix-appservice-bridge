@@ -25,18 +25,18 @@ type MatrixClient = {
     },
     ban: (roomId: string, target: string, reason: string) => Promise<any>;
     createAlias: (alias: string, roomId: string) => Promise<any>;
-    createRoom: (opts: Record<string,any>) => Promise<any>;
+    createRoom: (opts: Record<string, unknown>) => Promise<any>;
     fetchRoomEvent: (roomId: string, eventId: string) => Promise<any>;
     getStateEvent: (roomId: string, eventType: string, stateKey: string) => Promise<any>;
     invite: (roomId: string, userId: string) => Promise<any>;
-    joinRoom: (roomId: string, opts: Record<string,any>) => Promise<any>;
+    joinRoom: (roomId: string, opts: Record<string, unknown>) => Promise<any>;
     kick: (roomId: string, target: string, reason: string) => Promise<any>;
     leave: (roomId: string) => Promise<any>;
     register: (localpart: string) => Promise<any>;
     roomState: (roomId: string) => Promise<any>;
-    sendEvent: (roomId: string, type: string, content: Record<string,any>) => Promise<any>;
+    sendEvent: (roomId: string, type: string, content: Record<string, unknown>) => Promise<any>;
     sendReadReceipt: (event: any) => Promise<any>;
-    sendStateEvent: (roomId: string, type: string, content: Record<string, any>, skey: string) => Promise<any>;
+    sendStateEvent: (roomId: string, type: string, content: Record<string, unknown>, skey: string) => Promise<any>;
     sendTyping: (roomId: string, isTyping: boolean) => Promise<any>;
     setAvatarUrl: (url: string) => Promise<any>;
     setDisplayName: (name: string) => Promise<any>;
@@ -53,9 +53,9 @@ type MembershipState = "join" | "invite" | "leave" | null; // null = unknown
 interface IntentOpts {
     backingStore?: {
         getMembership: (roomId: string, userId: string) => MembershipState,
-        getPowerLevelContent: (roomId: string) => Record<string, any>,
+        getPowerLevelContent: (roomId: string) => Record<string, unknown>,
         setMembership: (roomId: string, userId: string, membership: MembershipState) => void,
-        setPowerLevelContent: (roomId: string, content: Record<string, any>) => void,
+        setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => void,
     },
     caching?: {
         ttl?: number,
@@ -65,7 +65,7 @@ interface IntentOpts {
     dontJoin?: boolean;
     enablePresence?: boolean;
     registered?: boolean;
-};
+}
 
 const STATE_EVENT_TYPES = [
     "m.room.name", "m.room.topic", "m.room.power_levels", "m.room.member",
@@ -83,9 +83,9 @@ class Intent {
     private opts: {
         backingStore: {
             getMembership: (roomId: string, userId: string) => MembershipState,
-            getPowerLevelContent: (roomId: string) => Record<string,any>,
+            getPowerLevelContent: (roomId: string) => Record<string, unknown>,
             setMembership: (roomId: string, userId: string, membership: MembershipState) => void,
-            setPowerLevelContent: (roomId: string, content: Record<string,any>) => void,
+            setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => void,
         },
         caching: {
             ttl: number,
@@ -97,52 +97,52 @@ class Intent {
         registered?: boolean;
     };
     private _membershipStates?: Record<string,MembershipState>;
-    private _powerLevels?: Record<string,Record<string,any>>;
+    private _powerLevels?: Record<string,Record<string, unknown>>;
     
     /**
     * Create an entity which can fulfil the intent of a given user.
     * @constructor
-    * @param {MatrixClient} client The matrix client instance whose intent is being
+    * @param client The matrix client instance whose intent is being
     * fulfilled e.g. the entity joining the room when you call intent.join(roomId).
-    * @param {MatrixClient} botClient The client instance for the AS bot itself.
+    * @param botClient The client instance for the AS bot itself.
     * This will be used to perform more priveleged actions such as creating new
     * rooms, sending invites, etc.
-    * @param {Object} opts Options for this Intent instance.
-    * @param {boolean} opts.registered True to inform this instance that the client
+    * @param opts Options for this Intent instance.
+    * @param opts.registered True to inform this instance that the client
     * is already registered. No registration requests will be made from this Intent.
     * Default: false.
-    * @param {boolean} opts.dontCheckPowerLevel True to not check for the right power
+    * @param opts.dontCheckPowerLevel True to not check for the right power
     * level before sending events. Default: false.
     *
-    * @param {Object=} opts.backingStore An object with 4 functions, outlined below.
+    * @param opts.backingStore An object with 4 functions, outlined below.
     * If this Object is supplied, ALL 4 functions must be supplied. If this Object
     * is not supplied, the Intent will maintain its own backing store for membership
     * and power levels, which may scale badly for lots of users.
     *
-    * @param {Function} opts.backingStore.getMembership A function which is called with a
+    * @param opts.backingStore.getMembership A function which is called with a
     * room ID and user ID which should return the membership status of this user as
     * a string e.g "join". `null` should be returned if the membership is unknown.
     *
-    * @param {Function} opts.backingStore.getPowerLevelContent A function which is called
+    * @param opts.backingStore.getPowerLevelContent A function which is called
     * with a room ID which should return the power level content for this room, as an Object.
     * `null` should be returned if there is no known content.
     *
-    * @param {Function} opts.backingStore.setMembership A function with the signature:
+    * @param opts.backingStore.setMembership A function with the signature:
     * function(roomId, userId, membership) which will set the membership of the given user in
     * the given room. This has no return value.
     *
-    * @param {Function} opts.backingStore.setPowerLevelContent A function with the signature:
+    * @param opts.backingStore.setPowerLevelContent A function with the signature:
     * function(roomId, content) which will set the power level content in the given room.
     * This has no return value.
     *
-    * @param {boolean} opts.dontJoin True to not attempt to join a room before
+    * @param opts.dontJoin True to not attempt to join a room before
     * sending messages into it. The surrounding code will have to ensure the correct
     * membership state itself in this case. Default: false.
     *
-    * @param {boolean} [opts.enablePresence=true] True to send presence, false to no-op.
+    * @param opts.enablePresence True to send presence, false to no-op.
     *
-    * @param {Number} opts.caching.ttl How long requests can stay in the cache, in milliseconds.
-    * @param {Number} opts.caching.size How many entries should be kept in the cache, before the oldest is dropped.
+    * @param opts.caching.ttl How long requests can stay in the cache, in milliseconds.
+    * @param opts.caching.size How many entries should be kept in the cache, before the oldest is dropped.
     */
     constructor(private client: MatrixClient, private botClient: MatrixClient, opts: IntentOpts = {}) {
         opts = opts || {};
@@ -183,7 +183,7 @@ class Intent {
                     }
                     this._membershipStates![roomId] = membership;
                 },
-                setPowerLevelContent: (roomId: string, content: Record<string, any>) => {
+                setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => {
                     this._powerLevels![roomId] = content;
                 },
             },
@@ -220,7 +220,7 @@ class Intent {
 
     /**
      * Return the client this Intent is acting on behalf of.
-     * @return {MatrixClient} The client
+     * @return The client
      */
     getClient = () => {
         return this.client;
@@ -231,9 +231,8 @@ class Intent {
      * This will automatically make the client join the room so they can send the
      * message if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
-     * @param {string} roomId The room to send to.
-     * @param {string} text The text string to send.
-     * @return {Promise}
+     * @param roomId The room to send to.
+     * @param text The text string to send.
      */
     sendText = (roomId: string, text: string) => {
         return this.sendMessage(roomId, {
@@ -247,9 +246,8 @@ class Intent {
      * This will automatically make the client join the room so they can set the
      * name if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
-     * @param {string} roomId The room to send to.
-     * @param {string} name The room name.
-     * @return {Promise}
+     * @param roomId The room to send to.
+     * @param name The room name.
      */
     setRoomName = (roomId: string, name: string) => {
         return this.sendStateEvent(roomId, "m.room.name", "", {
@@ -262,9 +260,8 @@ class Intent {
      * This will automatically make the client join the room so they can set the
      * topic if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
-     * @param {string} roomId The room to send to.
-     * @param {string} topic The room topic.
-     * @return {Promise}
+     * @param roomId The room to send to.
+     * @param topic The room topic.
      */
     setRoomTopic = (roomId: string, topic: string) => {
         return this.sendStateEvent(roomId, "m.room.topic", "", {
@@ -280,7 +277,6 @@ class Intent {
      * @param roomId The room to send to.
      * @param avatar The url of the avatar.
      * @param info Extra information about the image. See m.room.avatar for details.
-     * @return {Promise}
      */
     setRoomAvatar = (roomId: string, avatar: string, info?: string) => {
         const content = {
@@ -295,8 +291,7 @@ class Intent {
      * This will automatically make the client join the room so they can send the
      * typing event if they are not already joined.
      * @param roomId The room to send to.
-     * @param {boolean} isTyping True if typing
-     * @return {Promise}
+     * @param isTyping True if typing
      */
     sendTyping = async(roomId: string, isTyping: boolean) => {
         await this._ensureJoined(roomId);
@@ -308,9 +303,8 @@ class Intent {
      * <p>Send a read receipt to a room.</p>
      * This will automatically make the client join the room so they can send the
      * receipt event if they are not already joined.
-     * @param{string} roomId The room to send to.
-     * @param{string} eventId The event ID to set the receipt mark to.
-     * @return {Promise}
+     * @param roomId The room to send to.
+     * @param eventId The event ID to set the receipt mark to.
      */
     sendReadReceipt = async(roomId: string, eventId: string) => {
         const event = new MatrixEvent({
@@ -323,10 +317,9 @@ class Intent {
 
     /**
      * Set the power level of the given target.
-     * @param {string} roomId The room to set the power level in.
-     * @param {string} target The target user ID
-     * @param {number} level The desired level
-     * @return {Promise}
+     * @param roomId The room to set the power level in.
+     * @param target The target user ID
+     * @param level The desired level
      */
     setPowerLevel = async(roomId: string, target: string, level: number) => {
         await this._ensureJoined(roomId);
@@ -339,11 +332,10 @@ class Intent {
      * This will automatically make the client join the room so they can send the
      * message if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
-     * @param {string} roomId The room to send to.
-     * @param {Object} content The event content
-     * @return {Promise}
+     * @param roomId The room to send to.
+     * @param content The event content
      */
-    sendMessage = (roomId: string, content: Record<string, any>) => {
+    sendMessage = (roomId: string, content: Record<string, unknown>) => {
         return this.sendEvent(roomId, "m.room.message", content);
     };
 
@@ -352,12 +344,11 @@ class Intent {
      * This will automatically make the client join the room so they can send the
      * message if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
-     * @param {string} roomId The room to send to.
-     * @param {string} type The event type
-     * @param {Object} content The event content
-     * @return {Promise}
+     * @param roomId The room to send to.
+     * @param type The event type
+     * @param content The event content
      */
-    sendEvent = async(roomId: string, type: string, content: Record<string, any>) => {
+    sendEvent = async(roomId: string, type: string, content: Record<string, unknown>) => {
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type);
         return this._joinGuard(roomId, async() => (
@@ -370,13 +361,12 @@ class Intent {
      * This will automatically make the client join the room so they can send the
      * state if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
-     * @param {string} roomId The room to send to.
-     * @param {string} type The event type
-     * @param {string} skey The state key
-     * @param {Object} content The event content
-     * @return {Promise}
+     * @param roomId The room to send to.
+     * @param type The event type
+     * @param skey The state key
+     * @param content The event content
      */
-    sendStateEvent = async(roomId: string, type: string, skey: string, content: Record<string,any>) => {
+    sendStateEvent = async(roomId: string, type: string, skey: string, content: Record<string, unknown>) => {
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type);
         return this._joinGuard(roomId, async() => (
@@ -388,10 +378,9 @@ class Intent {
      * <p>Get the current room state for a room.</p>
      * This will automatically make the client join the room so they can get the
      * state if they are not already joined.
-     * @param {string} roomId The room to get the state from.
-     * @param {boolean} [useCache=false] Should the request attempt to lookup
+     * @param roomId The room to get the state from.
+     * @param useCache Should the request attempt to lookup
      * state from the cache.
-     * @return {Promise}
      */
     roomState = async (roomId: string, useCache=false) => {
         await this._ensureJoined(roomId);
@@ -403,12 +392,11 @@ class Intent {
 
     /**
      * Create a room with a set of options.
-     * @param {Object} opts Options.
-     * @param {boolean} opts.createAsClient True to create this room as a client and
+     * @param opts Options.
+     * @param opts.createAsClient True to create this room as a client and
      * not the bot: the bot will not join. False to create this room as the bot and
      * auto-join the client. Default: false.
-     * @param {Object} opts.options Options to pass to the client SDK /createRoom API.
-     * @return {Promise}
+     * @param opts.options Options to pass to the client SDK /createRoom API.
      */
     createRoom = async(opts: {createAsClient?: boolean, options: Record<string, any>}) => {
         const cli = opts.createAsClient ? this.client : this.botClient;
@@ -416,13 +404,13 @@ class Intent {
         if (!opts.createAsClient) {
             // invite the client if they aren't already
             options.invite = options.invite || [];
-            if (options.invite.indexOf(this.client.credentials.userId) === -1) {
+            if (!options.invite.includes(this.client.credentials.userId)) {
                 options.invite.push(this.client.credentials.userId);
             }
         }
         // make sure that the thing doing the room creation isn't inviting itself
         // else Synapse hard fails the operation with M_FORBIDDEN
-        if (options.invite && options.invite.indexOf(cli.credentials.userId) !== -1) {
+        if (options.invite && options.invite.includes(cli.credentials.userId)) {
             options.invite.splice(options.invite.indexOf(cli.credentials.userId), 1);
         }
 
@@ -449,9 +437,9 @@ class Intent {
      * <p>Invite a user to a room.</p>
      * This will automatically make the client join the room so they can send the
      * invite if they are not already joined.
-     * @param {string} roomId The room to invite the user to.
-     * @param {string} target The user ID to invite.
-     * @return {Promise} Resolved when invited, else rejected with an error.
+     * @param roomId The room to invite the user to.
+     * @param target The user ID to invite.
+     * @return Resolved when invited, else rejected with an error.
      */
     invite = async(roomId: string, target: string) => {
         await this._ensureJoined(roomId);
@@ -462,10 +450,10 @@ class Intent {
      * <p>Kick a user from a room.</p>
      * This will automatically make the client join the room so they can send the
      * kick if they are not already joined.
-     * @param {string} roomId The room to kick the user from.
-     * @param {string} target The target of the kick operation.
-     * @param {string} reason Optional. The reason for the kick.
-     * @return {Promise} Resolved when kickked, else rejected with an error.
+     * @param roomId The room to kick the user from.
+     * @param target The target of the kick operation.
+     * @param reason Optional. The reason for the kick.
+     * @return Resolved when kickked, else rejected with an error.
      */
     kick = async(roomId: string, target: string, reason: string) => {
         await this._ensureJoined(roomId);
@@ -476,10 +464,10 @@ class Intent {
      * <p>Ban a user from a room.</p>
      * This will automatically make the client join the room so they can send the
      * ban if they are not already joined.
-     * @param {string} roomId The room to ban the user from.
-     * @param {string} target The target of the ban operation.
-     * @param {string} reason Optional. The reason for the ban.
-     * @return {Promise} Resolved when banned, else rejected with an error.
+     * @param roomId The room to ban the user from.
+     * @param target The target of the ban operation.
+     * @param reason Optional. The reason for the ban.
+     * @return Resolved when banned, else rejected with an error.
      */
     ban = async(roomId: string, target: string, reason: string) => {
         await this._ensureJoined(roomId);
@@ -490,9 +478,9 @@ class Intent {
      * <p>Unban a user from a room.</p>
      * This will automatically make the client join the room so they can send the
      * unban if they are not already joined.
-     * @param {string} roomId The room to unban the user from.
-     * @param {string} target The target of the unban operation.
-     * @return {Promise} Resolved when unbanned, else rejected with an error.
+     * @param roomId The room to unban the user from.
+     * @param target The target of the unban operation.
+     * @return Resolved when unbanned, else rejected with an error.
      */
     unban = async(roomId: string, target: string) => {
         await this._ensureJoined(roomId);
@@ -503,10 +491,9 @@ class Intent {
      * <p>Join a room</p>
      * This will automatically send an invite from the bot if it is an invite-only
      * room, which may make the bot attempt to join the room if it isn't already.
-     * @param {string} roomId The room to join.
-     * @param {string[]} viaServers The server names to try and join through in
+     * @param roomId The room to join.
+     * @param viaServers The server names to try and join through in
      * addition to those that are automatically chosen.
-     * @return {Promise}
      */
     join = async(roomId: string, viaServers: string[]) => {
         await this._ensureJoined(roomId, false, viaServers);
@@ -515,8 +502,7 @@ class Intent {
     /**
      * <p>Leave a room</p>
      * This will no-op if the user isn't in the room.
-     * @param {string} roomId The room to leave.
-     * @return {Promise}
+     * @param roomId The room to leave.
      */
     leave = async(roomId: string) => {
         return this.client.leave(roomId);
@@ -524,12 +510,12 @@ class Intent {
 
     /**
      * <p>Get a user's profile information</p>
-     * @param {string} userId The ID of the user whose profile to return
-     * @param {string} info The profile field name to retrieve (e.g. 'displayname'
+     * @param userId The ID of the user whose profile to return
+     * @param info The profile field name to retrieve (e.g. 'displayname'
      * or 'avatar_url'), or null to fetch the entire profile information.
-     * @param {boolean} [useCache=true] Should the request attempt to lookup
+     * @param useCache Should the request attempt to lookup
      * state from the cache.
-     * @return {Promise} A Promise that resolves with the requested user's profile
+     * @return A Promise that resolves with the requested user's profile
      * information
      */
     getProfileInfo = async(userId: string, info: string, useCache=true) => {
@@ -542,8 +528,7 @@ class Intent {
 
     /**
      * <p>Set the user's display name</p>
-     * @param {string} name The new display name
-     * @return {Promise}
+     * @param name The new display name
      */
     setDisplayName = async(name: string) => {
         await this._ensureRegistered();
@@ -552,8 +537,7 @@ class Intent {
 
     /**
      * <p>Set the user's avatar URL</p>
-     * @param {string} url The new avatar URL
-     * @return {Promise}
+     * @param url The new avatar URL
      */
     setAvatarUrl = async(url: string) => {
         await this._ensureRegistered();
@@ -562,9 +546,8 @@ class Intent {
 
     /**
      * Create a new alias mapping.
-     * @param {string} alias The room alias to create
-     * @param {string} roomId The room ID the alias should point at.
-     * @return {Promise}
+     * @param alias The room alias to create
+     * @param roomId The room ID the alias should point at.
      */
     createAlias = async(alias: string, roomId: string) => {
         await this._ensureRegistered();
@@ -573,9 +556,9 @@ class Intent {
 
     /**
      * Set the presence of this user.
-     * @param {string} presence One of "online", "offline" or "unavailable".
-     * @param {string} status_msg The status message to attach.
-     * @return {Promise} Resolves if the presence was set or no-oped, rejects otherwise.
+     * @param presence One of "online", "offline" or "unavailable".
+     * @param status_msg The status message to attach.
+     * @return Resolves if the presence was set or no-oped, rejects otherwise.
      */
     setPresence = async(presence: string, status_msg?: string) => {
         if (!this.opts.enablePresence) {
@@ -587,27 +570,16 @@ class Intent {
     };
 
     /**
-     * @typedef {
-     *       "m.event_not_handled"
-     *     | "m.event_too_old"
-     *     | "m.internal_error"
-     *     | "m.foreign_network_error"
-     *     | "m.event_unknown"
-     * } BridgeErrorReason
-     */
-
-    /**
      * Signals that an error occured while handling an event by the bridge.
      *
      * **Warning**: This function is unstable and is likely to change pending the outcome
      * of https://github.com/matrix-org/matrix-doc/pull/2162.
-     * @param {string} roomID ID of the room in which the error occured.
-     * @param {string} eventID ID of the event for which the error occured.
-     * @param {string} networkName Name of the bridged network.
-     * @param {BridgeErrorReason} reason The reason why the bridge error occured.
-     * @param {string} reason_body A human readable string d
-     * @param {string[]} affectedUsers Array of regex matching all affected users.
-     * @return {Promise}
+     * @param roomID ID of the room in which the error occured.
+     * @param eventID ID of the event for which the error occured.
+     * @param networkName Name of the bridged network.
+     * @param reason The reason why the bridge error occured.
+     * @param reason_body A human readable string d
+     * @param affectedUsers Array of regex matching all affected users.
      */
     unstableSignalBridgeError = async(
         roomID: string,
@@ -635,10 +607,10 @@ class Intent {
      * Get an event in a room.
      * This will automatically make the client join the room so they can get the
      * event if they are not already joined.
-     * @param {string} roomId The room to fetch the event from.
-     * @param {string} eventId The eventId of the event to fetch.
-     * @param {boolean} [useCache=true] Should the request attempt to lookup from the cache.
-     * @return {Promise} Resolves with the content of the event, or rejects if not found.
+     * @param roomId The room to fetch the event from.
+     * @param eventId The eventId of the event to fetch.
+     * @param useCache Should the request attempt to lookup from the cache.
+     * @return Resolves with the content of the event, or rejects if not found.
      */
     getEvent = async(roomId: string, eventId: string, useCache=true) => {
         await this._ensureRegistered();
@@ -652,10 +624,9 @@ class Intent {
      * Get a state event in a room.
      * This will automatically make the client join the room so they can get the
      * state if they are not already joined.
-     * @param {string} roomId The room to get the state from.
-     * @param {string} eventType The event type to fetch.
-     * @param {string} [stateKey=""] The state key of the event to fetch.
-     * @return {Promise}
+     * @param roomId The room to get the state from.
+     * @param eventType The event type to fetch.
+     * @param [stateKey=""] The state key of the event to fetch.
      */
     getStateEvent = async(roomId: string, eventType: string, stateKey = "") => {
         await this._ensureJoined(roomId);
@@ -667,9 +638,9 @@ class Intent {
      * done if this is provided. For example, a /join request won't be sent out if
      * it knows you've already been joined to the room. This function does nothing
      * if a backing store was provided to the Intent.
-     * @param {Object} event The incoming event JSON
+     * @param event The incoming event JSON
      */
-    onEvent = (event: {type: string, content: Record<string, any>, state_key: any, room_id: string}) => {
+    onEvent = (event: {type: string, content: {membership: MembershipState}, state_key: any, room_id: string}) => {
         if (!this._membershipStates || !this._powerLevels) {
             return;
         }
@@ -786,7 +757,7 @@ class Intent {
         return promise.then((eventContent) => {
             this.opts.backingStore.setPowerLevelContent(roomId, eventContent);
             const event = {
-                content: eventContent,
+                content: eventContent as any,
                 room_id: roomId,
                 sender: "",
                 event_id: "_",
@@ -843,7 +814,7 @@ class Intent {
             const res = await this.botClient.register(localpart);
             this.opts.registered = true;
             return res;
-        } catch(err) {
+        } catch (err) {
             if (err.errcode === "M_USER_IN_USE") {
                 this.opts.registered = true;
                 return null;

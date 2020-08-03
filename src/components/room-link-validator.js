@@ -132,7 +132,7 @@ class RoomLinkValidator {
                     }
                 }
                 if (ignoreUser) {
-                    break;
+                    continue;
                 }
                 for (rule of this.rules.userIds.conflict) {
                     if (rule.exec(userId) !== null) {

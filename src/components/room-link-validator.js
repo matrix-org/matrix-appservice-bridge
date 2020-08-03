@@ -64,7 +64,6 @@ class RoomLinkValidator {
      */
     constructor (config, asBot) {
         this.conflictCache = new Map(); // roomId => number
-        this.waitingRooms = new Map(); // roomId => Promise
         this.asBot = asBot;
 
         if (config.ruleFile) {

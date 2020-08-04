@@ -67,7 +67,7 @@ interface Rules {
  * an endpoint specified in the {@link Bridge} class.
  */
 class RoomLinkValidator {
-    private conflictCache: Map<string,number> = new Map();
+    private conflictCache: Map<string, number> = new Map();
     private ruleFile?: string;
     public readonly rules: Rules; // Public to allow unit tests to inspect it.
 
@@ -82,9 +82,11 @@ class RoomLinkValidator {
         if (config.ruleFile) {
             this.ruleFile = config.ruleFile;
             this.rules = this.readRuleFile();
-        } else if (config.rules) {
+        }
+        else if (config.rules) {
             this.rules = this.evaluateRules(config.rules);
-        } else {
+        }
+        else {
             throw new Error("Either config.ruleFile or config.rules must be set");
         }
     }
@@ -161,7 +163,9 @@ class RoomLinkValidator {
 
     private checkConflictCache (roomId: string) {
         const cacheTime = this.conflictCache.get(roomId);
-        if (!cacheTime) return undefined;
+        if (!cacheTime) {
+            return undefined;
+        }
         if (cacheTime > (Date.now() - VALIDATION_CACHE_LIFETIME)) {
             return ERROR_CACHED;
         }

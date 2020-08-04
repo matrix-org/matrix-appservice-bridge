@@ -16,6 +16,7 @@ limitations under the License.
 import Bluebird from "bluebird";
 import MatrixUser from "../models/users/matrix";
 import JsSdk from "matrix-js-sdk";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const { MatrixEvent, RoomMember } = JsSdk as any;
 import ClientRequestCache from "./client-request-cache";
 
@@ -23,28 +24,28 @@ type MatrixClient = {
     credentials: {
         userId: string;
     },
-    ban: (roomId: string, target: string, reason: string) => Promise<any>;
-    createAlias: (alias: string, roomId: string) => Promise<any>;
-    createRoom: (opts: Record<string, unknown>) => Promise<any>;
-    fetchRoomEvent: (roomId: string, eventId: string) => Promise<any>;
-    getStateEvent: (roomId: string, eventType: string, stateKey: string) => Promise<any>;
-    invite: (roomId: string, userId: string) => Promise<any>;
-    joinRoom: (roomId: string, opts: Record<string, unknown>) => Promise<any>;
-    kick: (roomId: string, target: string, reason: string) => Promise<any>;
-    leave: (roomId: string) => Promise<any>;
-    register: (localpart: string) => Promise<any>;
-    roomState: (roomId: string) => Promise<any>;
-    sendEvent: (roomId: string, type: string, content: Record<string, unknown>) => Promise<any>;
-    sendReadReceipt: (event: any) => Promise<any>;
-    sendStateEvent: (roomId: string, type: string, content: Record<string, unknown>, skey: string) => Promise<any>;
-    sendTyping: (roomId: string, isTyping: boolean) => Promise<any>;
-    setAvatarUrl: (url: string) => Promise<any>;
-    setDisplayName: (name: string) => Promise<any>;
-    setPowerLevel: (roomId: string, target: string, level: number, event: any) => Promise<any>;
+    ban: (roomId: string, target: string, reason: string) => Promise<unknown>;
+    createAlias: (alias: string, roomId: string) => Promise<unknown>;
+    createRoom: (opts: Record<string, unknown>) => Promise<unknown>;
+    fetchRoomEvent: (roomId: string, eventId: string) => Promise<unknown>;
+    getStateEvent: (roomId: string, eventType: string, stateKey: string) => Promise<unknown>;
+    invite: (roomId: string, userId: string) => Promise<unknown>;
+    joinRoom: (roomId: string, opts: Record<string, unknown>) => Promise<unknown>;
+    kick: (roomId: string, target: string, reason: string) => Promise<unknown>;
+    leave: (roomId: string) => Promise<unknown>;
+    register: (localpart: string) => Promise<unknown>;
+    roomState: (roomId: string) => Promise<unknown>;
+    sendEvent: (roomId: string, type: string, content: Record<string, unknown>) => Promise<unknown>;
+    sendReadReceipt: (event: unknown) => Promise<unknown>;
+    sendStateEvent: (roomId: string, type: string, content: Record<string, unknown>, skey: string) => Promise<unknown>;
+    sendTyping: (roomId: string, isTyping: boolean) => Promise<unknown>;
+    setAvatarUrl: (url: string) => Promise<unknown>;
+    setDisplayName: (name: string) => Promise<unknown>;
+    setPowerLevel: (roomId: string, target: string, level: number, event: unknown) => Promise<unknown>;
     // eslint-disable-next-line camelcase
-    setPresence: (presence: { presence: string, status_msg?: string }) => Promise<any>;
-    getProfileInfo: (userId: string, info: string) => Promise<any>;
-    unban: (roomId: string, target: string) => Promise<any>;
+    setPresence: (presence: { presence: string, status_msg?: string }) => Promise<unknown>;
+    getProfileInfo: (userId: string, info: string) => Promise<unknown>;
+    unban: (roomId: string, target: string) => Promise<unknown>;
 };
 
 type BridgeErrorReason = "m.event_not_handled" | "m.event_too_old"
@@ -98,9 +99,10 @@ class Intent {
         enablePresence: boolean;
         registered?: boolean;
     }
-    private _membershipStates?: Record<string, MembershipState>;
-    private _powerLevels?: Record<string, Record<string, unknown>>;
-    
+    // These two are only used if no opts.backingStore is provided to the constructor.
+    private _membershipStates: Record<string, MembershipState> = {};
+    private _powerLevels: Record<string, Record<string, unknown>> = {};
+
     /**
     * Create an entity which can fulfil the intent of a given user.
     * @constructor
@@ -159,14 +161,6 @@ class Intent {
                 throw new Error("Intent backingStore missing required functions");
             }
         }
-        else {
-            this._membershipStates = {
-            //  room_id : "join|invite|leave|null"   null=unknown
-            };
-            this._powerLevels = {
-            //  room_id: event.content
-            };
-        }
         this.opts = {
             ...opts,
             backingStore: opts.backingStore || {
@@ -174,19 +168,19 @@ class Intent {
                     if (userId !== this.client.credentials.userId) {
                         return null;
                     }
-                    return this._membershipStates![roomId];
+                    return this._membershipStates[roomId];
                 },
                 getPowerLevelContent: (roomId: string) => {
-                    return this._powerLevels![roomId];
+                    return this._powerLevels[roomId];
                 },
                 setMembership: (roomId: string, userId: string, membership: MembershipState) => {
                     if (userId !== this.client.credentials.userId) {
                         return;
                     }
-                    this._membershipStates![roomId] = membership;
+                    this._membershipStates[roomId] = membership;
                 },
                 setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => {
-                    this._powerLevels![roomId] = content;
+                    this._powerLevels[roomId] = content;
                 },
             },
             caching: {
@@ -199,7 +193,7 @@ class Intent {
             profile: new ClientRequestCache(
                 this.opts.caching.ttl,
                 this.opts.caching.size,
-                (_: any, userId: string, info: string) => {
+                (_: unknown, userId: string, info: string) => {
                     return this.getProfileInfo(userId, info, false);
                 }
             ),
@@ -213,7 +207,7 @@ class Intent {
             event: new ClientRequestCache(
                 this.opts.caching.ttl,
                 this.opts.caching.size,
-                (_: any, roomId: string, eventId: string) => {
+                (_: unknown, roomId: string, eventId: string) => {
                     return this.getEvent(roomId, eventId, false);
                 }
             ),
@@ -400,32 +394,41 @@ class Intent {
      * auto-join the client. Default: false.
      * @param opts.options Options to pass to the client SDK /createRoom API.
      */
-    public async createRoom(opts: {createAsClient?: boolean, options: Record<string, any>}) {
+    public async createRoom(opts: { createAsClient?: boolean, options: Record<string, unknown>}) {
         const cli = opts.createAsClient ? this.client : this.botClient;
         const options = opts.options || {};
         if (!opts.createAsClient) {
             // invite the client if they aren't already
             options.invite = options.invite || [];
-            if (!options.invite.includes(this.client.credentials.userId)) {
+            if (Array.isArray(options.invite) && !options.invite.includes(this.client.credentials.userId)) {
                 options.invite.push(this.client.credentials.userId);
             }
         }
         // make sure that the thing doing the room creation isn't inviting itself
         // else Synapse hard fails the operation with M_FORBIDDEN
-        if (options.invite && options.invite.includes(cli.credentials.userId)) {
+        if (Array.isArray(options.invite) && options.invite.includes(cli.credentials.userId)) {
             options.invite.splice(options.invite.indexOf(cli.credentials.userId), 1);
         }
 
         await this._ensureRegistered();
         const res = await cli.createRoom(options);
+        if (typeof res !== "object" || !res) {
+            const type = res === null ? "null" : typeof res;
+            throw Error(`Expected Matrix Server to answer createRoom with an object, got ${type}.`);
+        }
+        const roomId = (res as Record<string, unknown>).room_id;
+        if (typeof roomId !== "string") {
+            const type = typeof roomId;
+            throw Error(`Expected Matrix Server to answer createRoom with a room_id that is a string, got ${type}.`);
+        }
         // create a fake power level event to give the room creator ops if we
         // don't yet have a power level event.
-        if (this.opts.backingStore.getPowerLevelContent(res.room_id)) {
+        if (this.opts.backingStore.getPowerLevelContent(roomId)) {
             return res;
         }
-        const users: Record<string,number> = {};
+        const users: Record<string, number> = {};
         users[cli.credentials.userId] = 100;
-        this.opts.backingStore.setPowerLevelContent(res.room_id, {
+        this.opts.backingStore.setPowerLevelContent(roomId, {
             users_default: 0,
             events_default: 0,
             state_default: 50,
@@ -565,7 +568,7 @@ class Intent {
     // eslint-disable-next-line camelcase
     public async setPresence(presence: string, status_msg?: string) {
         if (!this.opts.enablePresence) {
-            return;
+            return undefined;
         }
 
         await this._ensureRegistered();
@@ -644,7 +647,7 @@ class Intent {
      * @param event The incoming event JSON
      */
     // eslint-disable-next-line camelcase
-    public onEvent(event: {type: string, content: {membership: MembershipState}, state_key: any, room_id: string}) {
+    public onEvent(event: {type: string, content: {membership: MembershipState}, state_key: unknown, room_id: string}) {
         if (!this._membershipStates || !this._powerLevels) {
             return;
         }
@@ -659,10 +662,11 @@ class Intent {
 
     // Guard a function which returns a promise which may reject if the user is not
     // in the room. If the promise rejects, join the room and retry the function.
-    private async _joinGuard(roomId: string, promiseFn: () => Promise<any>) {
+    private async _joinGuard(roomId: string, promiseFn: () => Promise<unknown>) {
         try {
             return promiseFn();
-        } catch (err) {
+        }
+        catch (err) {
             if (err.errcode !== "M_FORBIDDEN") {
                 // not a guardable error
                 throw err;
@@ -763,7 +767,7 @@ class Intent {
         return promise.then((eventContent) => {
             this.opts.backingStore.setPowerLevelContent(roomId, eventContent);
             const event = {
-                content: eventContent as any,
+                content: eventContent,
                 room_id: roomId,
                 sender: "",
                 event_id: "_",
@@ -822,7 +826,8 @@ class Intent {
             const res = await this.botClient.register(localpart);
             this.opts.registered = true;
             return res;
-        } catch (err) {
+        }
+        catch (err) {
             if (err.errcode === "M_USER_IN_USE") {
                 this.opts.registered = true;
                 return null;

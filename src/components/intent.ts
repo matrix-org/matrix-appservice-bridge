@@ -41,12 +41,14 @@ type MatrixClient = {
     setAvatarUrl: (url: string) => Promise<any>;
     setDisplayName: (name: string) => Promise<any>;
     setPowerLevel: (roomId: string, target: string, level: number, event: any) => Promise<any>;
+    // eslint-disable-next-line camelcase
     setPresence: (presence: { presence: string, status_msg?: string }) => Promise<any>;
     getProfileInfo: (userId: string, info: string) => Promise<any>;
     unban: (roomId: string, target: string) => Promise<any>;
 };
 
-type BridgeErrorReason = "m.event_not_handled" | "m.event_too_old" | "m.internal_error" | "m.foreign_network_error" | "m.event_unknown";
+type BridgeErrorReason = "m.event_not_handled" | "m.event_too_old"
+    | "m.internal_error" | "m.foreign_network_error" | "m.event_unknown";
 
 type MembershipState = "join" | "invite" | "leave" | null; // null = unknown
 
@@ -560,6 +562,7 @@ class Intent {
      * @param status_msg The status message to attach.
      * @return Resolves if the presence was set or no-oped, rejects otherwise.
      */
+    // eslint-disable-next-line camelcase
     public async setPresence(presence: string, status_msg?: string) {
         if (!this.opts.enablePresence) {
             return;

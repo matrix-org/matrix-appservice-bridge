@@ -60,7 +60,7 @@ interface IntentOpts {
     caching?: {
         ttl?: number,
         size?: number,
-    };
+    }
     dontCheckPowerLevel?: boolean;
     dontJoin?: boolean;
     enablePresence?: boolean;
@@ -79,7 +79,7 @@ class Intent {
         profile: ClientRequestCache,
         roomstate: ClientRequestCache,
         event: ClientRequestCache
-    };
+    }
     private opts: {
         backingStore: {
             getMembership: (roomId: string, userId: string) => MembershipState,
@@ -95,9 +95,9 @@ class Intent {
         dontJoin?: boolean;
         enablePresence: boolean;
         registered?: boolean;
-    };
-    private _membershipStates?: Record<string,MembershipState>;
-    private _powerLevels?: Record<string,Record<string, unknown>>;
+    }
+    private _membershipStates?: Record<string, MembershipState>;
+    private _powerLevels?: Record<string, Record<string, unknown>>;
     
     /**
     * Create an entity which can fulfil the intent of a given user.
@@ -224,7 +224,7 @@ class Intent {
      */
     public getClient() {
         return this.client;
-    };
+    }
 
     /**
      * <p>Send a plaintext message to a room.</p>
@@ -239,7 +239,7 @@ class Intent {
             body: text,
             msgtype: "m.text"
         });
-    };
+    }
 
     /**
      * <p>Set the name of a room.</p>
@@ -253,7 +253,7 @@ class Intent {
         return this.sendStateEvent(roomId, "m.room.name", "", {
             name: name
         });
-    };
+    }
 
     /**
      * <p>Set the topic of a room.</p>
@@ -267,7 +267,7 @@ class Intent {
         return this.sendStateEvent(roomId, "m.room.topic", "", {
             topic: topic
         });
-    };
+    }
 
     /**
      * <p>Set the avatar of a room.</p>
@@ -284,7 +284,7 @@ class Intent {
             url: avatar,
         };
         return this.sendStateEvent(roomId, "m.room.avatar", "", content);
-    };
+    }
 
     /**
      * <p>Send a typing event to a room.</p>
@@ -297,7 +297,7 @@ class Intent {
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, "m.typing");
         return this.client.sendTyping(roomId, isTyping);
-    };
+    }
 
     /**
      * <p>Send a read receipt to a room.</p>
@@ -325,7 +325,7 @@ class Intent {
         await this._ensureJoined(roomId);
         const event = await this._ensureHasPowerLevelFor(roomId, "m.room.power_levels");
         return this.client.setPowerLevel(roomId, target, level, event);
-    };
+    }
 
     /**
      * <p>Send an <code>m.room.message</code> event to a room.</p>
@@ -337,7 +337,7 @@ class Intent {
      */
     public sendMessage(roomId: string, content: Record<string, unknown>) {
         return this.sendEvent(roomId, "m.room.message", content);
-    };
+    }
 
     /**
      * <p>Send a message event to a room.</p>
@@ -354,7 +354,7 @@ class Intent {
         return this._joinGuard(roomId, async() => (
             this.client.sendEvent(roomId, type, content)
         ));
-    };
+    }
 
     /**
      * <p>Send a state event to a room.</p>
@@ -372,7 +372,7 @@ class Intent {
         return this._joinGuard(roomId, async() => (
             this.client.sendStateEvent(roomId, type, content, skey)
         ));
-    };
+    }
 
     /**
      * <p>Get the current room state for a room.</p>
@@ -388,7 +388,7 @@ class Intent {
             return this._requestCaches.roomstate.get(roomId);
         }
         return this.client.roomState(roomId);
-    };
+    }
 
     /**
      * Create a room with a set of options.
@@ -431,7 +431,7 @@ class Intent {
             events: {}
         });
         return res;
-    };
+    }
 
     /**
      * <p>Invite a user to a room.</p>
@@ -444,7 +444,7 @@ class Intent {
     public async invite(roomId: string, target: string) {
         await this._ensureJoined(roomId);
         return this.client.invite(roomId, target);
-    };
+    }
 
     /**
      * <p>Kick a user from a room.</p>
@@ -458,7 +458,7 @@ class Intent {
     public async kick(roomId: string, target: string, reason: string) {
         await this._ensureJoined(roomId);
         return this.client.kick(roomId, target, reason);
-    };
+    }
 
     /**
      * <p>Ban a user from a room.</p>
@@ -472,7 +472,7 @@ class Intent {
     public async ban(roomId: string, target: string, reason: string) {
         await this._ensureJoined(roomId);
         return this.client.ban(roomId, target, reason);
-    };
+    }
 
     /**
      * <p>Unban a user from a room.</p>
@@ -485,7 +485,7 @@ class Intent {
     public async unban(roomId: string, target: string) {
         await this._ensureJoined(roomId);
         return this.client.unban(roomId, target);
-    };
+    }
 
     /**
      * <p>Join a room</p>
@@ -497,7 +497,7 @@ class Intent {
      */
     public async join(roomId: string, viaServers: string[]) {
         await this._ensureJoined(roomId, false, viaServers);
-    };
+    }
 
     /**
      * <p>Leave a room</p>
@@ -506,7 +506,7 @@ class Intent {
      */
     public async leave(roomId: string) {
         return this.client.leave(roomId);
-    };
+    }
 
     /**
      * <p>Get a user's profile information</p>
@@ -524,7 +524,7 @@ class Intent {
             return this._requestCaches.profile.get(`${userId}:${info}`, userId, info);
         }
         return this.client.getProfileInfo(userId, info);
-    };
+    }
 
     /**
      * <p>Set the user's display name</p>
@@ -533,7 +533,7 @@ class Intent {
     public async setDisplayName(name: string) {
         await this._ensureRegistered();
         return this.client.setDisplayName(name);
-    };
+    }
 
     /**
      * <p>Set the user's avatar URL</p>
@@ -542,7 +542,7 @@ class Intent {
     public async setAvatarUrl(url: string) {
         await this._ensureRegistered();
         return this.client.setAvatarUrl(url);
-    };
+    }
 
     /**
      * Create a new alias mapping.
@@ -552,7 +552,7 @@ class Intent {
     public async createAlias(alias: string, roomId: string) {
         await this._ensureRegistered();
         return this.client.createAlias(alias, roomId);
-    };
+    }
 
     /**
      * Set the presence of this user.
@@ -567,7 +567,7 @@ class Intent {
 
         await this._ensureRegistered();
         return this.client.setPresence({presence, status_msg});
-    };
+    }
 
     /**
      * Signals that an error occured while handling an event by the bridge.
@@ -618,7 +618,7 @@ class Intent {
             return this._requestCaches.event.get(`${roomId}:${eventId}`, roomId, eventId);
         }
         return this.client.fetchRoomEvent(roomId, eventId);
-    };
+    }
 
     /**
      * Get a state event in a room.
@@ -631,7 +631,7 @@ class Intent {
     public async getStateEvent(roomId: string, eventType: string, stateKey = "") {
         await this._ensureJoined(roomId);
         return this.client.getStateEvent(roomId, eventType, stateKey);
-    };
+    }
 
     /**
      * Inform this Intent class of an incoming event. Various optimisations will be
@@ -640,6 +640,7 @@ class Intent {
      * if a backing store was provided to the Intent.
      * @param event The incoming event JSON
      */
+    // eslint-disable-next-line camelcase
     public onEvent(event: {type: string, content: {membership: MembershipState}, state_key: any, room_id: string}) {
         if (!this._membershipStates || !this._powerLevels) {
             return;
@@ -651,7 +652,7 @@ class Intent {
         else if (event.type === "m.room.power_levels") {
             this._powerLevels[event.room_id] = event.content;
         }
-    };
+    }
 
     // Guard a function which returns a promise which may reject if the user is not
     // in the room. If the promise rejects, join the room and retry the function.
@@ -666,13 +667,13 @@ class Intent {
             await this._ensureJoined(roomId, true);
             return promiseFn();
         }
-    };
+    }
 
     private async _ensureJoined(
         roomId: string, ignoreCache = false, viaServers?: string[], passthroughError = false
     ) {
         const userId = this.client.credentials.userId;
-        const opts: { syncRoom: boolean, viaServers?: string[]}  = {
+        const opts: { syncRoom: boolean, viaServers?: string[] } = {
             syncRoom: false,
         };
         if (viaServers) {
@@ -701,8 +702,8 @@ class Intent {
 
         const deferredPromise = Bluebird.defer();
 
-        const mark = (roomId: string, state: MembershipState) => {
-            this.opts.backingStore.setMembership(roomId, userId, state);
+        const mark = (room: string, state: MembershipState) => {
+            this.opts.backingStore.setMembership(room, userId, state);
             if (state === "join") {
                 deferredPromise.resolve();
             }
@@ -744,7 +745,7 @@ class Intent {
         }
 
         return deferredPromise.promise;
-    };
+    }
 
     private async _ensureHasPowerLevelFor(roomId: string, eventType: string) {
         if (this.opts.dontCheckPowerLevel && eventType !== "m.room.power_levels") {
@@ -768,7 +769,9 @@ class Intent {
             }
             const powerLevelEvent = new MatrixEvent(event);
             // What level do we need for this event type?
-            const defaultLevel = STATE_EVENT_TYPES.includes(eventType) ? event.content.state_default : event.content.events_default;
+            const defaultLevel = STATE_EVENT_TYPES.includes(eventType)
+                ? event.content.state_default
+                : event.content.events_default;
             const requiredLevel = event.content.events[eventType] || defaultLevel;
 
             // Parse out what level the client has by abusing the JS SDK
@@ -804,7 +807,7 @@ class Intent {
             }
             return Promise.resolve(powerLevelEvent);
         });
-    };
+    }
 
     private async _ensureRegistered() {
         if (this.opts.registered) {
@@ -823,7 +826,7 @@ class Intent {
             }
             throw err;
         }
-    };
+    }
 }
 
 module.exports = Intent;

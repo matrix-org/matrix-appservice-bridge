@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-module.exports.ClientFactory = require("./components/client-factory");
+export * from "./components/client-factory";
 module.exports.Intent = require("./components/intent");
 module.exports.AppServiceBot = require("./components/app-service-bot");
 module.exports.StateLookup = require("./components/state-lookup").StateLookup;

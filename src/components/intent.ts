@@ -222,7 +222,7 @@ class Intent {
      * Return the client this Intent is acting on behalf of.
      * @return The client
      */
-    getClient = () => {
+    public getClient() {
         return this.client;
     };
 
@@ -234,7 +234,7 @@ class Intent {
      * @param roomId The room to send to.
      * @param text The text string to send.
      */
-    sendText = (roomId: string, text: string) => {
+    public sendText(roomId: string, text: string) {
         return this.sendMessage(roomId, {
             body: text,
             msgtype: "m.text"
@@ -249,7 +249,7 @@ class Intent {
      * @param roomId The room to send to.
      * @param name The room name.
      */
-    setRoomName = (roomId: string, name: string) => {
+    public setRoomName(roomId: string, name: string) {
         return this.sendStateEvent(roomId, "m.room.name", "", {
             name: name
         });
@@ -263,7 +263,7 @@ class Intent {
      * @param roomId The room to send to.
      * @param topic The room topic.
      */
-    setRoomTopic = (roomId: string, topic: string) => {
+    public setRoomTopic(roomId: string, topic: string) {
         return this.sendStateEvent(roomId, "m.room.topic", "", {
             topic: topic
         });
@@ -278,7 +278,7 @@ class Intent {
      * @param avatar The url of the avatar.
      * @param info Extra information about the image. See m.room.avatar for details.
      */
-    setRoomAvatar = (roomId: string, avatar: string, info?: string) => {
+    public setRoomAvatar(roomId: string, avatar: string, info?: string) {
         const content = {
             info,
             url: avatar,
@@ -293,7 +293,7 @@ class Intent {
      * @param roomId The room to send to.
      * @param isTyping True if typing
      */
-    sendTyping = async(roomId: string, isTyping: boolean) => {
+    public async sendTyping(roomId: string, isTyping: boolean) {
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, "m.typing");
         return this.client.sendTyping(roomId, isTyping);
@@ -306,7 +306,7 @@ class Intent {
      * @param roomId The room to send to.
      * @param eventId The event ID to set the receipt mark to.
      */
-    sendReadReceipt = async(roomId: string, eventId: string) => {
+    public async sendReadReceipt(roomId: string, eventId: string) {
         const event = new MatrixEvent({
             room_id: roomId,
             event_id: eventId,
@@ -321,7 +321,7 @@ class Intent {
      * @param target The target user ID
      * @param level The desired level
      */
-    setPowerLevel = async(roomId: string, target: string, level: number) => {
+    public async setPowerLevel(roomId: string, target: string, level: number) {
         await this._ensureJoined(roomId);
         const event = await this._ensureHasPowerLevelFor(roomId, "m.room.power_levels");
         return this.client.setPowerLevel(roomId, target, level, event);
@@ -335,7 +335,7 @@ class Intent {
      * @param roomId The room to send to.
      * @param content The event content
      */
-    sendMessage = (roomId: string, content: Record<string, unknown>) => {
+    public sendMessage(roomId: string, content: Record<string, unknown>) {
         return this.sendEvent(roomId, "m.room.message", content);
     };
 
@@ -348,7 +348,7 @@ class Intent {
      * @param type The event type
      * @param content The event content
      */
-    sendEvent = async(roomId: string, type: string, content: Record<string, unknown>) => {
+    public async sendEvent(roomId: string, type: string, content: Record<string, unknown>) {
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type);
         return this._joinGuard(roomId, async() => (
@@ -366,7 +366,7 @@ class Intent {
      * @param skey The state key
      * @param content The event content
      */
-    sendStateEvent = async(roomId: string, type: string, skey: string, content: Record<string, unknown>) => {
+    public async sendStateEvent(roomId: string, type: string, skey: string, content: Record<string, unknown>) {
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type);
         return this._joinGuard(roomId, async() => (
@@ -382,7 +382,7 @@ class Intent {
      * @param useCache Should the request attempt to lookup
      * state from the cache.
      */
-    roomState = async (roomId: string, useCache=false) => {
+    public async roomState(roomId: string, useCache=false) {
         await this._ensureJoined(roomId);
         if (useCache) {
             return this._requestCaches.roomstate.get(roomId);
@@ -398,7 +398,7 @@ class Intent {
      * auto-join the client. Default: false.
      * @param opts.options Options to pass to the client SDK /createRoom API.
      */
-    createRoom = async(opts: {createAsClient?: boolean, options: Record<string, any>}) => {
+    public async createRoom(opts: {createAsClient?: boolean, options: Record<string, any>}) {
         const cli = opts.createAsClient ? this.client : this.botClient;
         const options = opts.options || {};
         if (!opts.createAsClient) {
@@ -441,7 +441,7 @@ class Intent {
      * @param target The user ID to invite.
      * @return Resolved when invited, else rejected with an error.
      */
-    invite = async(roomId: string, target: string) => {
+    public async invite(roomId: string, target: string) {
         await this._ensureJoined(roomId);
         return this.client.invite(roomId, target);
     };
@@ -455,7 +455,7 @@ class Intent {
      * @param reason Optional. The reason for the kick.
      * @return Resolved when kickked, else rejected with an error.
      */
-    kick = async(roomId: string, target: string, reason: string) => {
+    public async kick(roomId: string, target: string, reason: string) {
         await this._ensureJoined(roomId);
         return this.client.kick(roomId, target, reason);
     };
@@ -469,7 +469,7 @@ class Intent {
      * @param reason Optional. The reason for the ban.
      * @return Resolved when banned, else rejected with an error.
      */
-    ban = async(roomId: string, target: string, reason: string) => {
+    public async ban(roomId: string, target: string, reason: string) {
         await this._ensureJoined(roomId);
         return this.client.ban(roomId, target, reason);
     };
@@ -482,7 +482,7 @@ class Intent {
      * @param target The target of the unban operation.
      * @return Resolved when unbanned, else rejected with an error.
      */
-    unban = async(roomId: string, target: string) => {
+    public async unban(roomId: string, target: string) {
         await this._ensureJoined(roomId);
         return this.client.unban(roomId, target);
     };
@@ -495,7 +495,7 @@ class Intent {
      * @param viaServers The server names to try and join through in
      * addition to those that are automatically chosen.
      */
-    join = async(roomId: string, viaServers: string[]) => {
+    public async join(roomId: string, viaServers: string[]) {
         await this._ensureJoined(roomId, false, viaServers);
     };
 
@@ -504,7 +504,7 @@ class Intent {
      * This will no-op if the user isn't in the room.
      * @param roomId The room to leave.
      */
-    leave = async(roomId: string) => {
+    public async leave(roomId: string) {
         return this.client.leave(roomId);
     };
 
@@ -518,7 +518,7 @@ class Intent {
      * @return A Promise that resolves with the requested user's profile
      * information
      */
-    getProfileInfo = async(userId: string, info: string, useCache=true) => {
+    public async getProfileInfo(userId: string, info: string, useCache=true) {
         await this._ensureRegistered();
         if (useCache) {
             return this._requestCaches.profile.get(`${userId}:${info}`, userId, info);
@@ -530,7 +530,7 @@ class Intent {
      * <p>Set the user's display name</p>
      * @param name The new display name
      */
-    setDisplayName = async(name: string) => {
+    public async setDisplayName(name: string) {
         await this._ensureRegistered();
         return this.client.setDisplayName(name);
     };
@@ -539,7 +539,7 @@ class Intent {
      * <p>Set the user's avatar URL</p>
      * @param url The new avatar URL
      */
-    setAvatarUrl = async(url: string) => {
+    public async setAvatarUrl(url: string) {
         await this._ensureRegistered();
         return this.client.setAvatarUrl(url);
     };
@@ -549,7 +549,7 @@ class Intent {
      * @param alias The room alias to create
      * @param roomId The room ID the alias should point at.
      */
-    createAlias = async(alias: string, roomId: string) => {
+    public async createAlias(alias: string, roomId: string) {
         await this._ensureRegistered();
         return this.client.createAlias(alias, roomId);
     };
@@ -560,7 +560,7 @@ class Intent {
      * @param status_msg The status message to attach.
      * @return Resolves if the presence was set or no-oped, rejects otherwise.
      */
-    setPresence = async(presence: string, status_msg?: string) => {
+    public async setPresence(presence: string, status_msg?: string) {
         if (!this.opts.enablePresence) {
             return;
         }
@@ -581,13 +581,13 @@ class Intent {
      * @param reason_body A human readable string d
      * @param affectedUsers Array of regex matching all affected users.
      */
-    unstableSignalBridgeError = async(
+    public async unstableSignalBridgeError(
         roomID: string,
         eventID: string,
         networkName: string,
         reason: BridgeErrorReason,
         affectedUsers: string[],
-    ) => {
+    ) {
         return this.sendEvent(
             roomID,
             "de.nasnotfound.bridge_error",
@@ -612,7 +612,7 @@ class Intent {
      * @param useCache Should the request attempt to lookup from the cache.
      * @return Resolves with the content of the event, or rejects if not found.
      */
-    getEvent = async(roomId: string, eventId: string, useCache=true) => {
+    public async getEvent(roomId: string, eventId: string, useCache=true) {
         await this._ensureRegistered();
         if (useCache) {
             return this._requestCaches.event.get(`${roomId}:${eventId}`, roomId, eventId);
@@ -628,7 +628,7 @@ class Intent {
      * @param eventType The event type to fetch.
      * @param [stateKey=""] The state key of the event to fetch.
      */
-    getStateEvent = async(roomId: string, eventType: string, stateKey = "") => {
+    public async getStateEvent(roomId: string, eventType: string, stateKey = "") {
         await this._ensureJoined(roomId);
         return this.client.getStateEvent(roomId, eventType, stateKey);
     };
@@ -640,7 +640,7 @@ class Intent {
      * if a backing store was provided to the Intent.
      * @param event The incoming event JSON
      */
-    onEvent = (event: {type: string, content: {membership: MembershipState}, state_key: any, room_id: string}) => {
+    public onEvent(event: {type: string, content: {membership: MembershipState}, state_key: any, room_id: string}) {
         if (!this._membershipStates || !this._powerLevels) {
             return;
         }
@@ -655,22 +655,22 @@ class Intent {
 
     // Guard a function which returns a promise which may reject if the user is not
     // in the room. If the promise rejects, join the room and retry the function.
-    private _joinGuard = (roomId: string, promiseFn: () => Promise<any>) => {
-        return () => {
-            return promiseFn().catch(async(err) => {
-                if (err.errcode !== "M_FORBIDDEN") {
-                    // not a guardable error
-                    throw err;
-                }
-                await this._ensureJoined(roomId, true);
-                return promiseFn();
-            });
-        };
+    private async _joinGuard(roomId: string, promiseFn: () => Promise<any>) {
+        try {
+            return promiseFn();
+        } catch (err) {
+            if (err.errcode !== "M_FORBIDDEN") {
+                // not a guardable error
+                throw err;
+            }
+            await this._ensureJoined(roomId, true);
+            return promiseFn();
+        }
     };
 
-    private _ensureJoined = async(
+    private async _ensureJoined(
         roomId: string, ignoreCache = false, viaServers?: string[], passthroughError = false
-    ) => {
+    ) {
         const userId = this.client.credentials.userId;
         const opts: { syncRoom: boolean, viaServers?: string[]}  = {
             syncRoom: false,
@@ -746,7 +746,7 @@ class Intent {
         return deferredPromise.promise;
     };
 
-    private _ensureHasPowerLevelFor = (roomId: string, eventType: string) => {
+    private async _ensureHasPowerLevelFor(roomId: string, eventType: string) {
         if (this.opts.dontCheckPowerLevel && eventType !== "m.room.power_levels") {
             return Promise.resolve();
         }
@@ -806,7 +806,7 @@ class Intent {
         });
     };
 
-    private _ensureRegistered = async() => {
+    private async _ensureRegistered() {
         if (this.opts.registered) {
             return "registered=true";
         }

@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-type LogWrapCallback = (err: Error, response: { statusCode: number }, body: any) => void;
-type OriginalRequest = (opts: any, cb: LogWrapCallback) => void;
+type LogWrapCallback = (err: Error, response: { statusCode: number }, body: Record<string, unknown>) => void;
+type OriginalRequest = (opts: Record<string, unknown>, cb: LogWrapCallback) => void;
 
 /**
  * @constructor
@@ -34,7 +34,7 @@ type OriginalRequest = (opts: any, cb: LogWrapCallback) => void;
  * scheduler that schedules events to be sent to the HS.
  */
 export class ClientFactory {
-    private clients: { [request_id: string]: { [user_id: string]: any} } = {};
+    private clients: { [requestId: string]: { [userId: string]: any} } = {};
     private sdk: any;
     private clientSchedulerBuilder: () => {};
     private url: string = "";
@@ -71,7 +71,7 @@ export class ClientFactory {
                 (opts.body ? JSON.stringify(opts.body).substring(0, 80) : "")
             );
             // Make the request
-            origRequest(opts, function(err: Error, response: { statusCode: number }, body: any) {
+            origRequest(opts, function(err: Error, response: { statusCode: number }, body: Record<string,unknown>) {
                 // Response logging
                 const httpCode = response ? response.statusCode : null;
                 const responsePrefix = logPrefix + " HTTP " + httpCode;

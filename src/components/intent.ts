@@ -56,9 +56,9 @@ type MembershipState = "join" | "invite" | "leave" | null; // null = unknown
 interface IntentOpts {
     backingStore?: {
         getMembership: (roomId: string, userId: string) => MembershipState,
-        getPowerLevelContent: (roomId: string) => Record<string, unknown>,
+        getPowerLevelContent: (roomId: string) => PowerLevelContent,
         setMembership: (roomId: string, userId: string, membership: MembershipState) => void,
-        setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => void,
+        setPowerLevelContent: (roomId: string, content: PowerLevelContent) => void,
     },
     caching?: {
         ttl?: number,
@@ -77,6 +77,21 @@ const STATE_EVENT_TYPES = [
 const DEFAULT_CACHE_TTL = 90000;
 const DEFAULT_CACHE_SIZE = 1024;
 
+type PowerLevelContent = {
+    // eslint-disable-next-line camelcase
+    state_default: number;
+    // eslint-disable-next-line camelcase
+    events_default: number;
+    // eslint-disable-next-line camelcase
+    users_default: number;
+    users: {
+        [userId: string]: number;
+    },
+    events: {
+        [eventType: string]: number;
+    }
+};
+
 class Intent {
     private _requestCaches: {
         profile: ClientRequestCache,
@@ -86,9 +101,9 @@ class Intent {
     private opts: {
         backingStore: {
             getMembership: (roomId: string, userId: string) => MembershipState,
-            getPowerLevelContent: (roomId: string) => Record<string, unknown>,
+            getPowerLevelContent: (roomId: string) => PowerLevelContent,
             setMembership: (roomId: string, userId: string, membership: MembershipState) => void,
-            setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => void,
+            setPowerLevelContent: (roomId: string, content: PowerLevelContent) => void,
         },
         caching: {
             ttl: number,
@@ -101,7 +116,7 @@ class Intent {
     }
     // These two are only used if no opts.backingStore is provided to the constructor.
     private _membershipStates: Record<string, MembershipState> = {};
-    private _powerLevels: Record<string, Record<string, unknown>> = {};
+    private _powerLevels: Record<string, PowerLevelContent> = {};
 
     /**
     * Create an entity which can fulfil the intent of a given user.
@@ -179,7 +194,7 @@ class Intent {
                     }
                     this._membershipStates[roomId] = membership;
                 },
-                setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => {
+                setPowerLevelContent: (roomId: string, content: PowerLevelContent) => {
                     this._powerLevels[roomId] = content;
                 },
             },
@@ -656,7 +671,7 @@ class Intent {
             this._membershipStates[event.room_id] = event.content.membership;
         }
         else if (event.type === "m.room.power_levels") {
-            this._powerLevels[event.room_id] = event.content;
+            this._powerLevels[event.room_id] = event.content as unknown as PowerLevelContent;
         }
     }
 
@@ -762,7 +777,7 @@ class Intent {
         const plContent = this.opts.backingStore.getPowerLevelContent(roomId);
         let promise = Promise.resolve(plContent);
         if (!plContent) {
-            promise = this.client.getStateEvent(roomId, "m.room.power_levels", "");
+            promise = this.client.getStateEvent(roomId, "m.room.power_levels", "") as Promise<PowerLevelContent>;
         }
         return promise.then((eventContent) => {
             this.opts.backingStore.setPowerLevelContent(roomId, eventContent);

@@ -19,17 +19,17 @@ type OriginalRequest = (opts: any, cb: LogWrapCallback) => void;
 
 /**
  * @constructor
- * @param {Object} opts Options for this factory
- * @param {*=} opts.sdk The Matrix JS SDK require() to use.
- * @param {string=} opts.url The Client-Server base HTTP URL. This must be set
+ * @param opts Options for this factory
+ * @param opts.sdk The Matrix JS SDK require() to use.
+ * @param opts.url The Client-Server base HTTP URL. This must be set
  * prior to calling getClientAs(). See configure() to set this after instantiation.
- * @param {string=} opts.token The application service token to use. This must
+ * @param opts.token The application service token to use. This must
  * be set prior to calling getClientAs(). See configure() to set this after
  * instantiation.
- * @param {string=} opts.appServiceUserId The application service's user ID. Must
+ * @param opts.appServiceUserId The application service's user ID. Must
  * be set prior to calling getClientAs(). See configure() to set this after
  * instantiation.
- * @param {function=} opts.clientSchedulerBuilder Optional. A function that
+ * @param opts.clientSchedulerBuilder A function that
  * returns a new client scheduler to use in place of the default event
  * scheduler that schedules events to be sent to the HS.
  */
@@ -41,7 +41,7 @@ export class ClientFactory {
     private token: string = "";
     private botUserId: string= "";
 
-    constructor(opts: { sdk?: any, url: string, token: string, appServiceUserId: string, clientSchedulerBuilder: any}) {
+    constructor(opts?: { sdk?: any, url: string, token?: string, appServiceUserId?: string, clientSchedulerBuilder?: any}) {
         opts = opts || {};
         this.sdk = opts.sdk || require("matrix-js-sdk");
         this.clientSchedulerBuilder = opts.clientSchedulerBuilder || function() {};
@@ -50,7 +50,7 @@ export class ClientFactory {
 
     /**
      * Set a function to be called when logging requests and responses.
-     * @param {Function} func The function to invoke. The first arg is the string to
+     * @param func The function to invoke. The first arg is the string to
      * log. The second arg is a boolean which is 'true' if the log is an error.
      */
     public setLogFunction(func: (msg: string, error?: boolean) => void) {
@@ -100,15 +100,15 @@ export class ClientFactory {
     /**
      * Construct a new Matrix JS SDK Client. Calling this twice with the same args
      * will return the *same* client instance.
-     * @param {?string} userId Required. The user_id to scope the client to. A new
+     * @param userId The user_id to scope the client to. A new
      * client will be created per user ID. If this is null, a client scoped to the
      * application service *itself* will be created.
-     * @param {Request=} request Optional. The request ID to additionally scope the
+     * @param request The request ID to additionally scope the
      * client to. If set, this will create a new client per user ID / request combo.
      * This factory will dispose the created client instance when the request is
      * resolved.
      */
-    public getClientAs(userId: string, request: any) {
+    public getClientAs(userId?: string, request?: any) {
         const reqId = request ? request.getId() : "-";
         const userIdKey = userId || "bot";
 
@@ -158,9 +158,9 @@ export class ClientFactory {
 
     /**
      * Configure the factory for generating clients.
-     * @param {string} baseUrl The base URL to create clients with.
-     * @param {string} appServiceToken The AS token to use as the access_token
-     * @param {string} appServiceUserId The AS's user_id
+     * @param baseUrl The base URL to create clients with.
+     * @param appServiceToken The AS token to use as the access_token
+     * @param appServiceUserId The AS's user_id
      */
     public configure(baseUrl: string, appServiceToken: string, appServiceUserId: string) {
         this.url = baseUrl;

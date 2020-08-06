@@ -115,11 +115,11 @@ class RoomLinkValidator {
                 exempt: [],
             }
         };
-        const vettedRules: { userId?: unknown } = (rules && typeof rules === "object") ? rules : {};
-        const vettedUserId: { conflict?: unknown, exempt?: unknown } =
-            (vettedRules.userId && typeof vettedRules.userId === "object") ? vettedRules.userId : {};
-        if (Array.isArray(vettedUserId.conflict)) {
-            vettedUserId.conflict.forEach((regexStr: unknown) => {
+        const vettedRules: { userIds?: unknown } = (rules && typeof rules === "object") ? rules : {};
+        const vettedUserIds: { conflict?: unknown, exempt?: unknown } =
+            (vettedRules.userIds && typeof vettedRules.userIds === "object") ? vettedRules.userIds : {};
+        if (Array.isArray(vettedUserIds.conflict)) {
+            vettedUserIds.conflict.forEach((regexStr: unknown) => {
                 if (typeof regexStr !== 'string' || util.types.isRegExp(regexStr)) {
                     log.warn(`All elements in userIds.conflict must be strings. Found ${typeof regexStr}.`);
                     return;
@@ -127,8 +127,8 @@ class RoomLinkValidator {
                 newRules.userIds.conflict.push(RegExp(regexStr));
             });
         }
-        if (Array.isArray(vettedUserId.exempt)) {
-            vettedUserId.exempt.forEach((regexStr: unknown) => {
+        if (Array.isArray(vettedUserIds.exempt)) {
+            vettedUserIds.exempt.forEach((regexStr: unknown) => {
                 if (typeof regexStr !== 'string' || util.types.isRegExp(regexStr)) {
                     log.warn(`All elements in userIds.exempt must be strings. Found ${typeof regexStr}.`);
                     return;

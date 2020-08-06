@@ -33,20 +33,28 @@ type OriginalRequest = (opts: Record<string, unknown>, cb: LogWrapCallback) => v
  * returns a new client scheduler to use in place of the default event
  * scheduler that schedules events to be sent to the HS.
  */
+
+interface ClientFactoryOpts {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sdk?: any;
+    url?: string;
+    token?: string;
+    appServiceUserId?: string;
+    clientSchedulerBuilder?: () => unknown;
+}
+
 export class ClientFactory {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private clients: { [requestId: string]: { [userId: string]: any} } = {};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private sdk: any;
-    private clientSchedulerBuilder: () => {};
+    private clientSchedulerBuilder?: () => unknown;
     private url = "";
     private token = "";
     private botUserId= "";
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    constructor(opts: { sdk?: any, url?: string, token?: string, appServiceUserId?: string, clientSchedulerBuilder?: any} = {}) {
+    constructor(opts: ClientFactoryOpts = {}) {
         this.sdk = opts.sdk || require("matrix-js-sdk");
-        this.clientSchedulerBuilder = opts.clientSchedulerBuilder || function() {};
         this.configure(opts.url || "", opts.token || "", opts.appServiceUserId || "");
     }
 
@@ -59,6 +67,7 @@ export class ClientFactory {
         if (!func) {
             return;
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.sdk.wrapRequest((origRequest: OriginalRequest, opts: any, callback: LogWrapCallback) => {
             const logPrefix = (
                 (opts._matrix_opts && opts._matrix_opts._reqId ?
@@ -110,6 +119,7 @@ export class ClientFactory {
      * This factory will dispose the created client instance when the request is
      * resolved.
      */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public getClientAs(userId?: string, request?: any) {
         const reqId = request ? request.getId() : "-";
         const userIdKey = userId || "bot";
@@ -122,7 +132,9 @@ export class ClientFactory {
 
         // create a new client
         const queryParams: {
+            // eslint-disable-next-line camelcase
             user_id?: string;
+            // eslint-disable-next-line camelcase
             access_token?: string;
         } = {};
         if (userId) {
@@ -135,7 +147,7 @@ export class ClientFactory {
             baseUrl: this.url,
             userId: userId || this.botUserId, // NB: no clobber so we don't set ?user_id=BOT
             queryParams: queryParams,
-            scheduler: this.clientSchedulerBuilder(),
+            scheduler:  this.clientSchedulerBuilder ? this.clientSchedulerBuilder() : undefined,
             localTimeoutMs: 1000 * 60 * 2, // Time out CS-API calls after 2mins
         };
         client = this.sdk.createClient(clientOpts);

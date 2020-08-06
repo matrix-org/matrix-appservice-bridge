@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/* eslint-disable @typescript-eslint/no-var-requires */
+
 module.exports.ClientFactory = require("./components/client-factory");
 module.exports.Intent = require("./components/intent");
 module.exports.AppServiceBot = require("./components/app-service-bot");

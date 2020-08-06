@@ -34,18 +34,20 @@ type OriginalRequest = (opts: Record<string, unknown>, cb: LogWrapCallback) => v
  * scheduler that schedules events to be sent to the HS.
  */
 export class ClientFactory {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private clients: { [requestId: string]: { [userId: string]: any} } = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private sdk: any;
     private clientSchedulerBuilder: () => {};
-    private url: string = "";
-    private token: string = "";
-    private botUserId: string= "";
+    private url = "";
+    private token = "";
+    private botUserId= "";
 
-    constructor(opts?: { sdk?: any, url: string, token?: string, appServiceUserId?: string, clientSchedulerBuilder?: any}) {
-        opts = opts || {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    constructor(opts: { sdk?: any, url?: string, token?: string, appServiceUserId?: string, clientSchedulerBuilder?: any} = {}) {
         this.sdk = opts.sdk || require("matrix-js-sdk");
         this.clientSchedulerBuilder = opts.clientSchedulerBuilder || function() {};
-        this.configure(opts.url, opts.token, opts.appServiceUserId);
+        this.configure(opts.url || "", opts.token || "", opts.appServiceUserId || "");
     }
 
     /**
@@ -71,7 +73,7 @@ export class ClientFactory {
                 (opts.body ? JSON.stringify(opts.body).substring(0, 80) : "")
             );
             // Make the request
-            origRequest(opts, function(err: Error, response: { statusCode: number }, body: Record<string,unknown>) {
+            origRequest(opts, function(err: Error, response: { statusCode: number }, body: Record<string, unknown>) {
                 // Response logging
                 const httpCode = response ? response.statusCode : null;
                 const responsePrefix = logPrefix + " HTTP " + httpCode;
@@ -95,7 +97,7 @@ export class ClientFactory {
                 callback(err, response, body);
             });
         });
-    };
+    }
 
     /**
      * Construct a new Matrix JS SDK Client. Calling this twice with the same args
@@ -154,7 +156,7 @@ export class ClientFactory {
         this.clients[reqId][userIdKey] = client;
 
         return client;
-    };
+    }
 
     /**
      * Configure the factory for generating clients.

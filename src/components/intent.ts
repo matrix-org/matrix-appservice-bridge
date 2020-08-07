@@ -174,7 +174,7 @@ export class Intent {
         }
         this.opts = {
             ...opts,
-            backingStore: opts.backingStore || {
+            backingStore: opts.backingStore ? { ...opts.backingStore } : {
                 getMembership: (roomId: string, userId: string) => {
                     if (userId !== this.client.credentials.userId) {
                         return null;

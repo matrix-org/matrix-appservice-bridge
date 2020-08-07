@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import Bluebird from "bluebird";
+import { defer, Defer } from "../utils/promiseutil";
 
 function generateRequestId() {
     return (Math.random() * 1e20).toString(36);
@@ -28,7 +28,7 @@ export class Request<T> {
     private id: string;
     private data: T;
     private startTs: number;
-    private defer: Bluebird.Resolver<unknown>;
+    private defer: Defer<unknown>;
 
     /**
      * Construct a new Request.
@@ -42,7 +42,7 @@ export class Request<T> {
         this.id = opts.id || generateRequestId();
         this.data = opts.data;
         this.startTs = Date.now();
-        this.defer = Bluebird.defer();
+        this.defer = defer();
     }
 
 

@@ -18,6 +18,7 @@ const MatrixUser = require("../models/users/matrix");
 const MatrixEvent = require("matrix-js-sdk").MatrixEvent;
 const RoomMember = require("matrix-js-sdk").RoomMember;
 const ClientRequestCache = require("./client-request-cache");
+const defer = require("../utils/promiseutil").defer;
 
 const STATE_EVENT_TYPES = [
     "m.room.name", "m.room.topic", "m.room.power_levels", "m.room.member",
@@ -695,7 +696,7 @@ Intent.prototype._ensureJoined = async function(
       FAIL (bot can't get into the room)
     */
 
-    const deferredPromise = new Promise.defer();
+    const deferredPromise = new defer();
 
     const mark = (r, state) => {
         this.opts.backingStore.setMembership(r, userId, state);

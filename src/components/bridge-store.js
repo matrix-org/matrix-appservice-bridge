@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 const Promise = require("bluebird");
+const deferPromise = require("../utils/promiseutil").defer;
 
 // wrapper to use promises
 var callbackFn = function(d, err, result) {
@@ -42,7 +43,7 @@ function BridgeStore(db) {
  * @return {Promise}
  */
 BridgeStore.prototype.insert = function(objects, defer) {
-    defer = defer || new Promise.defer();
+    defer = defer || deferPromise();
     this.db.insert(objects, function(err, result) {
         callbackFn(defer, err, result);
     });
@@ -57,7 +58,7 @@ BridgeStore.prototype.insert = function(objects, defer) {
  * @return {Promise}
  */
 BridgeStore.prototype.upsert = function(query, updateVals, defer) {
-    defer = defer || new Promise.defer();
+    defer = defer || deferPromise();
     this.db.update(query, updateVals, {upsert: true}, function(err, result) {
         callbackFn(defer, err, result);
     });
@@ -89,7 +90,7 @@ BridgeStore.prototype.insertIfNotExists = function(query, insertObj) {
  * @return {Promise}
  */
 BridgeStore.prototype.update = function(query, updateVals, defer) {
-    defer = defer || new Promise.defer();
+    defer = defer || deferPromise();
     this.db.update(query, updateVals, {upsert: false}, function(err, result) {
         callbackFn(defer, err, result);
     });
@@ -103,7 +104,7 @@ BridgeStore.prototype.update = function(query, updateVals, defer) {
  * @return {Promise}
  */
 BridgeStore.prototype.delete = function(query, defer) {
-    defer = defer || new Promise.defer();
+    defer = defer || deferPromise();
     this.db.remove(query, {multi: true}, function(err, result) {
         callbackFn(defer, err, result);
     });
@@ -118,7 +119,7 @@ BridgeStore.prototype.delete = function(query, defer) {
  * @return {Promise}
  */
 BridgeStore.prototype.selectOne = function(query, transformFn, defer) {
-    defer = defer || new Promise.defer();
+    defer = defer || deferPromise();
     this.db.findOne(query, function(err, doc) {
         callbackFn(defer, err, transformFn ? transformFn(doc) : doc);
     });
@@ -133,7 +134,7 @@ BridgeStore.prototype.selectOne = function(query, transformFn, defer) {
  * @return {Promise}
  */
 BridgeStore.prototype.select = function(query, transformFn, defer) {
-    defer = defer || new Promise.defer();
+    defer = defer || deferPromise();
     this.db.find(query, function(err, docs) {
         callbackFn(defer, err, transformFn ? transformFn(docs) : docs);
     });

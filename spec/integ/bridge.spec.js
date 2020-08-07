@@ -1,23 +1,23 @@
 "use strict";
-var Promise = require("bluebird");
-var Datastore = require("nedb");
-var fs = require("fs");
-var log = require("../log");
+const Bluebird = require("bluebird");
+const Datastore = require("nedb");
+const fs = require("fs");
+const log = require("../log");
 
-var HS_URL = "http://example.com";
-var HS_DOMAIN = "example.com";
-var BOT_LOCALPART = "the_bridge";
+const HS_URL = "http://example.com";
+const HS_DOMAIN = "example.com";
+const BOT_LOCALPART = "the_bridge";
 
-var TEST_USER_DB_PATH = __dirname + "/test-users.db";
-var TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
-var UserBridgeStore = require("../..").UserBridgeStore;
-var RoomBridgeStore = require("../..").RoomBridgeStore;
-var MatrixUser = require("../..").MatrixUser;
-var RemoteUser = require("../..").RemoteUser;
-var MatrixRoom = require("../..").MatrixRoom;
-var RemoteRoom = require("../..").RemoteRoom;
-var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
-var Bridge = require("../..").Bridge;
+const TEST_USER_DB_PATH = __dirname + "/test-users.db";
+const TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
+const UserBridgeStore = require("../..").UserBridgeStore;
+const RoomBridgeStore = require("../..").RoomBridgeStore;
+const MatrixUser = require("../..").MatrixUser;
+const RemoteUser = require("../..").RemoteUser;
+const MatrixRoom = require("../..").MatrixRoom;
+const RemoteRoom = require("../..").RemoteRoom;
+const AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
+const Bridge = require("../..").Bridge;
 
 const deferPromise = require("../../lib/utils/promiseutil").defer;
 
@@ -53,11 +53,9 @@ describe("Bridge", function() {
             }
             appService._events[name].push(fn);
         });
-        appService.emit = function(name, obj) {
-            var list = appService._events[name] || [];
-            var promises = list.map(function(fn) {
-                return fn(obj);
-            });
+        appService.emit = (name, obj) => {
+            const list = appService._events[name] || [];
+            const promises = list.map((fn) => fn(obj));
             return Promise.all(promises);
         };
         bridgeCtrl = jasmine.createSpyObj("controller", [
@@ -97,7 +95,7 @@ describe("Bridge", function() {
             return defer.promise;
         }
 
-        Promise.all([
+        Bluebird.all([
             loadDatabase(TEST_USER_DB_PATH, UserBridgeStore),
             loadDatabase(TEST_ROOM_DB_PATH, RoomBridgeStore)
         ]).spread(function(userDb, roomDb) {

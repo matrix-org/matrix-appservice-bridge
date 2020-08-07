@@ -1,6 +1,6 @@
 "use strict";
-var Promise = require("bluebird");
-var log = require("../log");
+const Bluebird = require("bluebird");
+const log = require("../log");
 const StateLookup = require("../..").StateLookup;
 
 describe("StateLookup", function() {
@@ -25,7 +25,7 @@ describe("StateLookup", function() {
             cli.roomState.and.returnValue(statePromise.promise);
             var p = lookup.trackRoom("!foo:bar");
             expect(p.isPending()).toBe(true); // not resolved HTTP call yet
-            Promise.delay(5).then(function() {
+            Bluebird.delay(5).then(function() {
                 expect(p.isPending()).toBe(true); // still not resolved HTTP call
                 statePromise.resolve();
                 return p; // Should resolve now HTTP call is resolved

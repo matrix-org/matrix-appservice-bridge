@@ -7,12 +7,12 @@
 // ** customise it for your application service.                       **
 // **********************************************************************
 
-var Bluebird = require("bluebird");
-var Datastore = require("nedb");
+const Bluebird = require("bluebird");
+const Datastore = require("nedb");
 Bluebird.promisifyAll(Datastore.prototype);
-var nopt = require("nopt");
-var path = require("path");
-var fs = require("fs");
+const nopt = require("nopt");
+const path = require("path");
+const fs = require("fs");
 
 const ROOM_DB = "1.0-db/rooms.db";
 

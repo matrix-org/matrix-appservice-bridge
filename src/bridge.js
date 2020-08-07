@@ -14,7 +14,7 @@ limitations under the License.
 */
 
 const Datastore = require("nedb");
-const Promise = require("bluebird");
+const Bluebird = require("bluebird");
 const fs = require("fs");
 const util = require("util");
 const yaml = require("js-yaml");
@@ -231,7 +231,7 @@ function Bridge(opts) {
         getPowerLevelContent: this._getPowerLevelEntry.bind(this)
     };
     this._queue = EventQueue.create(this.opts.queue, this._onConsume.bind(this));
-    this._prevRequestPromise = Promise.resolve();
+    this._prevRequestPromise = Bluebird.resolve();
     this._metrics = null; // an optional PrometheusMetrics instance
     this._roomLinkValidator = null;
     if (opts.roomUpgradeOpts) {
@@ -252,7 +252,7 @@ function Bridge(opts) {
  */
 Bridge.prototype.loadDatabases = function() {
     if (this.opts.disableStores) {
-        return Promise.resolve();
+        return Bluebird.resolve();
     }
     // Load up the databases if they provided file paths to them (or defaults)
     if (typeof this.opts.userStore === "string") {
@@ -268,14 +268,14 @@ Bridge.prototype.loadDatabases = function() {
     // This works because if they provided a string we converted it to a Promise
     // which will be resolved when we have the db instance. If they provided a
     // db instance then this will resolve immediately.
-    return Promise.all([
-        Promise.resolve(this.opts.userStore).then((db) => {
+    return Bluebird.all([
+        Bluebird.resolve(this.opts.userStore).then((db) => {
             this._userStore = db;
         }),
-        Promise.resolve(this.opts.roomStore).then((db) => {
+        Bluebird.resolve(this.opts.roomStore).then((db) => {
             this._roomStore = db;
         }),
-        Promise.resolve(this.opts.eventStore).then((db) => {
+        Bluebird.resolve(this.opts.eventStore).then((db) => {
             this._eventStore = db;
         })
     ]);
@@ -358,7 +358,7 @@ Bridge.prototype.run = function(port, config, appServiceInstance, hostname) {
     this.appService = appServiceInstance || new AppService({
         homeserverToken: this.opts.registration.getHomeserverToken()
     });
-    this.appService.onUserQuery = (userId) => Promise.cast(this._onUserQuery(userId));
+    this.appService.onUserQuery = (userId) => Bluebird.cast(this._onUserQuery(userId));
     this.appService.onAliasQuery = this._onAliasQuery.bind(this);
     this.appService.on("event", this._onEvent.bind(this));
     this.appService.on("http-log", function(line) {
@@ -649,7 +649,7 @@ Bridge.prototype.getBot = function() {
  */
 Bridge.prototype.canProvisionRoom = function(roomId, cache=true) {
     if (this._roomLinkValidator === null) {
-        return Promise.resolve(RLVStatus.PASSED);
+        return Bluebird.resolve(RLVStatus.PASSED);
     }
     return this._roomLinkValidator.validateRoom(roomId, cache);
 }
@@ -713,7 +713,7 @@ Bridge.prototype.getIntentFromLocalpart = function(localpart, request) {
  */
 Bridge.prototype.provisionUser = function (matrixUser, provisionedUser) {
     // For backwards compat
-    return Promise.cast(this._provisionUser(matrixUser, provisionedUser));
+    return Bluebird.cast(this._provisionUser(matrixUser, provisionedUser));
 };
 
 Bridge.prototype._provisionUser = async function(matrixUser, provisionedUser) {
@@ -754,7 +754,7 @@ Bridge.prototype._onUserQuery = async function(userId) {
 
 Bridge.prototype._onAliasQuery = function (alias) {
     // For backwards compat
-    return Promise.cast(this.__onAliasQuery(alias));
+    return Bluebird.cast(this.__onAliasQuery(alias));
 };
 
 Bridge.prototype.__onAliasQuery = async function(alias) {
@@ -787,7 +787,7 @@ Bridge.prototype.__onAliasQuery = async function(alias) {
 }
 
 Bridge.prototype._onEvent = function (event) {
-    return Promise.cast(this.__onEvent(event));
+    return Bluebird.cast(this.__onEvent(event));
 };
 
 // returns a Promise for the request linked to this event for testing.

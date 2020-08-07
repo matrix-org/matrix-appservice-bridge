@@ -1,6 +1,5 @@
 "use strict";
 var Intent = require("../..").Intent;
-var Promise = require("bluebird");
 var log = require("../log");
 
 describe("Intent", function() {

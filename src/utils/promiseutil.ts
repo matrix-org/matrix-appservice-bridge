@@ -25,13 +25,13 @@ export interface Defer<T> {
 export function defer<T>(): Defer<T> {
     let resolve!: (value?: T) => void;
     let reject!: (err?: unknown) => void;
-    const promise = new Bluebird((res, rej) => {
+    const promise = new Bluebird<T>((res, rej) => {
         resolve = res;
-        reject = rej
+        reject = rej;
     });
     return {
         resolve: resolve,
         reject: reject,
-        promise: promise as Bluebird<T>
+        promise: promise,
     };
 }

@@ -19,6 +19,7 @@ import JsSdk from "matrix-js-sdk";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const { MatrixEvent, RoomMember } = JsSdk as any;
 import ClientRequestCache from "./client-request-cache";
+import { defer } from "../utils/promiseutil";
 
 type MatrixClient = {
     credentials: {
@@ -722,7 +723,7 @@ class Intent {
         FAIL (bot can't get into the room)
         */
 
-        const deferredPromise = Bluebird.defer();
+        const deferredPromise = defer();
 
         const mark = (room: string, state: MembershipState) => {
             this.opts.backingStore.setMembership(room, userId, state);

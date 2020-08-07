@@ -19,6 +19,8 @@ var RemoteRoom = require("../..").RemoteRoom;
 var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
 var Bridge = require("../..").Bridge;
 
+const deferPromise = require("../../lib/utils/promiseutil").defer;
+
 describe("Bridge", function() {
     var bridge, bridgeCtrl, appService, clientFactory, appServiceRegistration;
     var roomStore, userStore, clients;
@@ -80,7 +82,7 @@ describe("Bridge", function() {
         });
 
         function loadDatabase(path, Cls) {
-            var defer = Promise.defer();
+            const defer = deferPromise();
             var db = new Datastore({
                 filename: path,
                 autoload: true,

@@ -16,7 +16,7 @@ limitations under the License.
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 module.exports.ClientFactory = require("./components/client-factory");
-module.exports.Intent = require("./components/intent");
+export * from "./components/intent";
 module.exports.AppServiceBot = require("./components/app-service-bot");
 module.exports.StateLookup = require("./components/state-lookup").StateLookup;
 

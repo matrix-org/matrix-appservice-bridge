@@ -1,21 +1,21 @@
 "use strict";
-var Intent = require("../..").Intent;
-var log = require("../log");
+const Intent = require("../..").Intent;
+const log = require("../log");
 
 describe("Intent", function() {
-    var intent, client, botClient;
-    var userId = "@alice:bar";
-    var botUserId = "@bot:user";
-    var roomId = "!foo:bar";
+    let intent, client, botClient;
+    const userId = "@alice:bar";
+    const botUserId = "@bot:user";
+    const roomId = "!foo:bar";
+    const alreadyRegistered = {
+        registered: true
+    };
 
     beforeEach(
     /** @this */
     function() {
         log.beforeEach(this);
-        var alreadyRegistered = {
-            registered: true
-        };
-        var clientFields = [
+        const clientFields = [
             "credentials", "joinRoom", "invite", "leave", "ban", "unban",
             "kick", "getStateEvent", "setPowerLevel", "sendTyping", "sendEvent",
             "sendStateEvent", "setDisplayName", "setAvatarUrl",
@@ -150,9 +150,9 @@ describe("Intent", function() {
     });
 
     describe("sending state events", function() {
-        var validPowerLevels, invalidPowerLevels;
+        let validPowerLevels, invalidPowerLevels;
 
-        beforeEach(function() {
+        beforeEach(() => {
             // not interested in joins, so no-op them.
             intent.onEvent({
                 event_id: "test",
@@ -164,7 +164,7 @@ describe("Intent", function() {
                 }
             });
 
-            var basePowerLevelEvent = {
+            const basePowerLevelEvent = {
                 content: {
                     "ban": 50,
                     "events": {
@@ -259,13 +259,16 @@ describe("Intent", function() {
     });
 
     describe("sending message events", function() {
-        var content = {
+        const content = {
             body: "hello world",
             msgtype: "m.text",
         };
 
         beforeEach(function() {
-            intent.opts.dontCheckPowerLevel = true;
+            intent = new Intent(client, botClient, {
+                ...alreadyRegistered,
+                dontCheckPowerLevel: true,
+            });
             // not interested in joins, so no-op them.
             intent.onEvent({
                 event_id: "test",
@@ -304,7 +307,7 @@ describe("Intent", function() {
         });
 
         it("should try to join the room on M_FORBIDDEN then resend", function() {
-            var isJoined = false;
+            let isJoined = false;
             client.sendEvent.and.callFake(function() {
                 if (isJoined) {
                     return Promise.resolve({
@@ -350,7 +353,7 @@ describe("Intent", function() {
         });
 
         it("should fail if the resend after M_FORBIDDEN fails", function() {
-            var isJoined = false;
+            let isJoined = false;
             client.sendEvent.and.callFake(function() {
                 if (isJoined) {
                     return Promise.reject({
@@ -380,10 +383,13 @@ describe("Intent", function() {
 
     describe("signaling bridge error", function() {
         const reason = "m.event_not_handled"
-        var affectedUsers, eventId, bridge;
+        let affectedUsers, eventId, bridge;
 
         beforeEach(function() {
-            intent.opts.dontCheckPowerLevel = true;
+            intent = new Intent(client, botClient, {
+                ...alreadyRegistered,
+                dontCheckPowerLevel: true,
+            });
             // not interested in joins, so no-op them.
             intent.onEvent({
                 event_id: "test",

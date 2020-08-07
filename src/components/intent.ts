@@ -115,8 +115,8 @@ export class Intent {
         registered?: boolean;
     }
     // These two are only used if no opts.backingStore is provided to the constructor.
-    private _membershipStates: Record<string, MembershipState> = {};
-    private _powerLevels: Record<string, PowerLevelContent> = {};
+    private readonly _membershipStates: Record<string, MembershipState> = {};
+    private readonly _powerLevels: Record<string, PowerLevelContent> = {};
 
     /**
     * Create an entity which can fulfil the intent of a given user.
@@ -164,10 +164,6 @@ export class Intent {
     * @param opts.caching.size How many entries should be kept in the cache, before the oldest is dropped.
     */
     constructor(private client: MatrixClient, private botClient: MatrixClient, opts: IntentOpts = {}) {
-        opts = opts || {};
-
-        opts.enablePresence = opts.enablePresence !== false;
-
         if (opts.backingStore) {
             if (!opts.backingStore.setPowerLevelContent ||
                     !opts.backingStore.getPowerLevelContent ||
@@ -679,7 +675,8 @@ export class Intent {
     // in the room. If the promise rejects, join the room and retry the function.
     private async _joinGuard(roomId: string, promiseFn: () => Promise<unknown>) {
         try {
-            return promiseFn();
+            // await so we can handle the error
+            return await promiseFn();
         }
         catch (err) {
             if (err.errcode !== "M_FORBIDDEN") {
@@ -694,7 +691,7 @@ export class Intent {
     private async _ensureJoined(
         roomId: string, ignoreCache = false, viaServers?: string[], passthroughError = false
     ) {
-        const userId = this.client.credentials.userId;
+        const { userId } = this.client.credentials;
         const opts: { syncRoom: boolean, viaServers?: string[] } = {
             syncRoom: false,
         };

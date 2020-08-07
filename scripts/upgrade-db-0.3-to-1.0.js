@@ -7,9 +7,9 @@
 // ** customise it for your application service.                       **
 // **********************************************************************
 
-var Promise = require("bluebird");
+var Bluebird = require("bluebird");
 var Datastore = require("nedb");
-Promise.promisifyAll(Datastore.prototype);
+Bluebird.promisifyAll(Datastore.prototype);
 var nopt = require("nopt");
 var path = require("path");
 var fs = require("fs");
@@ -83,7 +83,7 @@ function generateLinkId(opts)
     return opts.matrix_id + " " + opts.remote_id;
 }
 
-var upgradeRooms = Promise.coroutine(function*(db) {
+var upgradeRooms = Bluebird.coroutine(function*(db) {
     console.log("Upgrading rooms database");
     // 0.3 rooms.db format:
     // type=matrix, id=<matrix_id> data={...}  -- UNIQUE(id)
@@ -207,7 +207,7 @@ var upgradeRooms = Promise.coroutine(function*(db) {
     }
 });
 
-Promise.coroutine(function*() {
+Bluebird.coroutine(function*() {
     try {
         fs.mkdirSync("1.0-db");
     }

@@ -1,5 +1,5 @@
 const ClientRequestCache = require("../../lib/components/client-request-cache");
-const Promise = require("bluebird");
+const Bluebird = require("bluebird");
 
 describe("ClientRequestCache", function() {
     describe("constructor", function() {
@@ -52,7 +52,7 @@ describe("ClientRequestCache", function() {
                 return "Behold, the *thing*";
             });
             return crc.get("athing").then(() => {
-                return Promise.delay(100);
+                return Bluebird.delay(100);
             }).then(() => {
                 return crc.get("athing");
             }).then((res) => {

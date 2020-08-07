@@ -2,7 +2,6 @@
 var Datastore = require("nedb");
 var fs = require("fs");
 var log = require("../log");
-var Promise = require("bluebird");
 
 var RoomBridgeStore = require("../..").RoomBridgeStore;
 var MatrixRoom = require("../..").MatrixRoom;

@@ -92,7 +92,7 @@ type PowerLevelContent = {
     }
 };
 
-class Intent {
+export class Intent {
     private _requestCaches: {
         profile: ClientRequestCache,
         roomstate: ClientRequestCache,
@@ -851,5 +851,3 @@ class Intent {
         }
     }
 }
-
-module.exports = Intent;

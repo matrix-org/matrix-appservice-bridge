@@ -13,20 +13,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Requests
+export * from "./components/request";
+export * from "./components/request-factory";
+
+export * from "./components/client-factory";
+export * from "./components/intent";
+
 /* eslint-disable @typescript-eslint/no-var-requires */
 
-module.exports.ClientFactory = require("./components/client-factory");
-export * from "./components/intent";
 module.exports.AppServiceBot = require("./components/app-service-bot");
 module.exports.StateLookup = require("./components/state-lookup").StateLookup;
 
 // Config and CLI
 module.exports.Cli = require("./components/cli");
 module.exports.ConfigValidator = require("./components/config-validator");
-
-// Requests
-export * from "./components/request";
-export * from "./components/request-factory";
 
 // Store
 module.exports.BridgeStore = require("./components/bridge-store");

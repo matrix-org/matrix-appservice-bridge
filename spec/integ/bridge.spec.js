@@ -1,23 +1,23 @@
 "use strict";
-var Promise = require("bluebird");
-var Datastore = require("nedb");
-var fs = require("fs");
-var log = require("../log");
+const Bluebird = require("bluebird");
+const Datastore = require("nedb");
+const fs = require("fs");
+const log = require("../log");
 
-var HS_URL = "http://example.com";
-var HS_DOMAIN = "example.com";
-var BOT_LOCALPART = "the_bridge";
+const HS_URL = "http://example.com";
+const HS_DOMAIN = "example.com";
+const BOT_LOCALPART = "the_bridge";
 
-var TEST_USER_DB_PATH = __dirname + "/test-users.db";
-var TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
-var UserBridgeStore = require("../..").UserBridgeStore;
-var RoomBridgeStore = require("../..").RoomBridgeStore;
-var MatrixUser = require("../..").MatrixUser;
-var RemoteUser = require("../..").RemoteUser;
-var MatrixRoom = require("../..").MatrixRoom;
-var RemoteRoom = require("../..").RemoteRoom;
-var AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
-var Bridge = require("../..").Bridge;
+const TEST_USER_DB_PATH = __dirname + "/test-users.db";
+const TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
+const UserBridgeStore = require("../..").UserBridgeStore;
+const RoomBridgeStore = require("../..").RoomBridgeStore;
+const MatrixUser = require("../..").MatrixUser;
+const RemoteUser = require("../..").RemoteUser;
+const MatrixRoom = require("../..").MatrixRoom;
+const RemoteRoom = require("../..").RemoteRoom;
+const AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
+const Bridge = require("../..").Bridge;
 
 const deferPromise = require("../../lib/utils/promiseutil").defer;
 
@@ -53,11 +53,9 @@ describe("Bridge", function() {
             }
             appService._events[name].push(fn);
         });
-        appService.emit = function(name, obj) {
-            var list = appService._events[name] || [];
-            var promises = list.map(function(fn) {
-                return fn(obj);
-            });
+        appService.emit = (name, obj) => {
+            const list = appService._events[name] || [];
+            const promises = list.map((fn) => fn(obj));
             return Promise.all(promises);
         };
         bridgeCtrl = jasmine.createSpyObj("controller", [
@@ -97,7 +95,7 @@ describe("Bridge", function() {
             return defer.promise;
         }
 
-        Promise.all([
+        Bluebird.all([
             loadDatabase(TEST_USER_DB_PATH, UserBridgeStore),
             loadDatabase(TEST_ROOM_DB_PATH, RoomBridgeStore)
         ]).spread(function(userDb, roomDb) {
@@ -186,71 +184,63 @@ describe("Bridge", function() {
             });
         });
 
-        it("should provision the room from the returned object", function(done) {
-            var provisionedRoom = {
+        it("should provision the room from the returned object", async() => {
+            const provisionedRoom = {
                 creationOpts: {
-                    room_alias_name: "foo"
-                }
+                    room_alias_name: "foo",
+                },
             };
             clients["bot"].createRoom.and.returnValue({
-                room_id: "!abc123:bar"
+                room_id: "!abc123:bar",
             });
             bridgeCtrl.onAliasQuery.and.returnValue(provisionedRoom);
             bridge.run(101, {}, appService);
-            appService.onAliasQuery("#foo:bar").done(function() {
-                expect(clients["bot"].createRoom).toHaveBeenCalledWith(
-                    provisionedRoom.creationOpts
-                );
-                done();
-            });
+            await appService.onAliasQuery("#foo:bar");
+            expect(clients["bot"].createRoom).toHaveBeenCalledWith(
+                provisionedRoom.creationOpts
+            );
         });
 
-        it("should store the new matrix room", function(done) {
+        it("should store the new matrix room", async(done) => {
             clients["bot"].createRoom.and.returnValue({
-                room_id: "!abc123:bar"
+                room_id: "!abc123:bar",
             });
             bridgeCtrl.onAliasQuery.and.returnValue({
                 creationOpts: {
-                    room_alias_name: "foo"
-                }
+                    room_alias_name: "foo",
+                },
             });
             bridge.run(101, {}, appService);
-            appService.onAliasQuery("#foo:bar").then(function() {
-                return bridge.getRoomStore().getMatrixRoom("!abc123:bar");
-            }).done(function(room) {
-                expect(room).toBeDefined();
-                if (!room) { done(); return; }
-                expect(room.getId()).toEqual("!abc123:bar");
-                done();
-            });
+            await appService.onAliasQuery("#foo:bar");
+            const room = await bridge.getRoomStore().getMatrixRoom("!abc123:bar");
+            expect(room).toBeDefined();
+            if (!room) { done(); return; }
+            expect(room.getId()).toEqual("!abc123:bar");
+            done();
         });
 
-        it("should store and link the new matrix room if a remote room was supplied",
-        function(done) {
+        it("should store and link the new matrix room if a remote room was supplied", async(done) => {
             clients["bot"].createRoom.and.returnValue({
                 room_id: "!abc123:bar"
             });
             bridgeCtrl.onAliasQuery.and.returnValue({
                 creationOpts: {
-                    room_alias_name: "foo"
+                    room_alias_name: "foo",
                 },
                 remote: new RemoteRoom("__abc__")
             });
             bridge.run(101, {}, appService);
-            appService.onAliasQuery("#foo:bar").then(function() {
-                return bridge.getRoomStore().getLinkedRemoteRooms("!abc123:bar");
-            }).done(function(rooms) {
-                expect(rooms.length).toEqual(1);
-                if (!rooms.length) { done(); return; }
-                expect(rooms[0].getId()).toEqual("__abc__");
-                done();
-            });
+            await appService.onAliasQuery("#foo:bar");
+            const rooms = await bridge.getRoomStore().getLinkedRemoteRooms("!abc123:bar");
+            expect(rooms.length).toEqual(1);
+            if (!rooms.length) { done(); return; }
+            expect(rooms[0].getId()).toEqual("__abc__");
+            done();
         });
     });
 
     describe("onEvent", function() {
-        it("should suppress the event if it is an echo and suppressEcho=true",
-        function(done) {
+        it("should suppress the event if it is an echo and suppressEcho=true", async() => {
             var event = {
                 content: {
                     body: "oh noes!",
@@ -260,12 +250,9 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
-            bridge.run(101, {}, appService).then(function() {
-                return appService.emit("event", event);
-            }).done(function() {
-                expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
-                done();
-            });
+            await bridge.run(101, {}, appService);
+            await appService.emit("event", event);
+            expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
         });
 
         it("should invoke the user-supplied onEvent function with the right args",

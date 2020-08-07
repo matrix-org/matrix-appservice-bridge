@@ -376,11 +376,10 @@ Bridge.prototype.run = function(port, config, appServiceInstance, hostname) {
     }
 
     // We MUST return a Bluebird-Promise instead of a Promise.
-    // This is needed by many tests in this repo.
-    return new Bluebird(async() => {
+    // promise.done() is used by many tests in this repo.
+    return this.loadDatabases().then(async() => {
         await this.appService.listen(port, hostname);
-        return this.loadDatabases();
-    })
+    });
 };
 
 /**

@@ -130,17 +130,20 @@ describe("Bridge", function() {
     });
 
     describe("onUserQuery", function() {
-        it("should invoke the user-supplied onUserQuery function with the right args",
-        function(done) {
-            bridge.run(101, {}, appService);
-            appService.onUserQuery("@alice:bar").catch(function() {}).finally(
-            function() {
+        it("should invoke the user-supplied onUserQuery function with the right args", async() => {
+            await bridge.run(101, {}, appService);
+            try {
+                await appService.onUserQuery("@alice:bar");
+            }
+            catch (error) {
+                // do nothing
+            }
+            finally {
                 expect(bridgeCtrl.onUserQuery).toHaveBeenCalled();
                 var call = bridgeCtrl.onUserQuery.calls.argsFor(0);
                 var mxUser = call[0];
                 expect(mxUser.getId()).toEqual("@alice:bar");
-                done();
-            });
+            }
         });
 
         it("should not provision a user if null is returned from the function",
@@ -153,14 +156,12 @@ describe("Bridge", function() {
             });
         });
 
-        it("should provision the user from the return object", function(done) {
+        it("should provision the user from the return object", async() => {
             bridgeCtrl.onUserQuery.and.returnValue({});
             clients["bot"].register.and.returnValue(Promise.resolve({}));
             bridge.run(101, {}, appService);
-            appService.onUserQuery("@alice:bar").done(function() {
-                expect(clients["bot"].register).toHaveBeenCalledWith("alice");
-                done();
-            });
+            await appService.onUserQuery("@alice:bar");
+            expect(clients["bot"].register).toHaveBeenCalledWith("alice");
         });
     });
 
@@ -282,8 +283,7 @@ describe("Bridge", function() {
             });
         });
 
-        it("should include remote senders in the context if applicable",
-        function(done) {
+        it("should include remote senders in the context if applicable", async() => {
             var event = {
                 content: {
                     body: "oh noes!",
@@ -295,27 +295,22 @@ describe("Bridge", function() {
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
-            bridge.run(101, {}, appService).then(function() {
-                return bridge.getUserStore().linkUsers(
-                    new MatrixUser("@alice:bar"),
-                    new RemoteUser("__alice__")
-                );
-            }).then(function() {
-                return appService.emit("event", event);
-            }).done(function() {
-                expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-                var call = bridgeCtrl.onEvent.calls.argsFor(0);
-                var req = call[0];
-                var ctx = call[1];
-                expect(req.getData()).toEqual(event);
-                expect(ctx.senders.remote.getId()).toEqual("__alice__");
-                expect(ctx.senders.remotes.length).toEqual(1);
-                done();
-            });
+            await bridge.run(101, {}, appService)
+            await bridge.getUserStore().linkUsers(
+                new MatrixUser("@alice:bar"),
+                new RemoteUser("__alice__")
+            );
+            await appService.emit("event", event);
+            expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+            var call = bridgeCtrl.onEvent.calls.argsFor(0);
+            var req = call[0];
+            var ctx = call[1];
+            expect(req.getData()).toEqual(event);
+            expect(ctx.senders.remote.getId()).toEqual("__alice__");
+            expect(ctx.senders.remotes.length).toEqual(1);
         });
 
-        it("should include remote targets in the context if applicable",
-        function(done) {
+        it("should include remote targets in the context if applicable", async() => {
             var event = {
                 content: {
                     membership: "invite"
@@ -327,23 +322,19 @@ describe("Bridge", function() {
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
-            bridge.run(101, {}, appService).then(function() {
-                return bridge.getUserStore().linkUsers(
-                    new MatrixUser("@bob:bar"),
-                    new RemoteUser("__bob__")
-                );
-            }).then(function() {
-                return appService.emit("event", event);
-            }).done(function() {
-                expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-                var call = bridgeCtrl.onEvent.calls.argsFor(0);
-                var req = call[0];
-                var ctx = call[1];
-                expect(req.getData()).toEqual(event);
-                expect(ctx.targets.remote.getId()).toEqual("__bob__");
-                expect(ctx.targets.remotes.length).toEqual(1);
-                done();
-            });
+            await bridge.run(101, {}, appService);
+            await bridge.getUserStore().linkUsers(
+                new MatrixUser("@bob:bar"),
+                new RemoteUser("__bob__")
+            );
+            await appService.emit("event", event);
+            expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+            var call = bridgeCtrl.onEvent.calls.argsFor(0);
+            var req = call[0];
+            var ctx = call[1];
+            expect(req.getData()).toEqual(event);
+            expect(ctx.targets.remote.getId()).toEqual("__bob__");
+            expect(ctx.targets.remotes.length).toEqual(1);
         });
 
         it("should include remote rooms in the context if applicable",
@@ -378,9 +369,8 @@ describe("Bridge", function() {
             });
         });
 
-        it("should omit the context if disableContext is true",
-        function(done) {
-            var event = {
+        it("should omit the context if disableContext is true", async() => {
+            const event = {
                 content: {
                     body: "oh noes!",
                     msgtype: "m.text"
@@ -389,7 +379,7 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
-            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
+            bridgeCtrl.onEvent.and.callFake((req) => { req.resolve(); });
 
             bridge = new Bridge({
                 homeserverUrl: HS_URL,
@@ -402,58 +392,47 @@ describe("Bridge", function() {
                 disableContext: true
             });
 
-            bridge.run(101, {}, appService).then(function() {
-                return appService.emit("event", event);
-            }).done(function() {
-                expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-                var call = bridgeCtrl.onEvent.calls.argsFor(0);
-                var req = call[0];
-                var ctx = call[1];
-                expect(req.getData()).toEqual(event);
-                expect(ctx).toBeNull();
-                done();
-            });
+            await bridge.run(101, {}, appService);
+            await appService.emit("event", event);
+            expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+            var call = bridgeCtrl.onEvent.calls.argsFor(0);
+            var req = call[0];
+            var ctx = call[1];
+            expect(req.getData()).toEqual(event);
+            expect(ctx).toBeNull();
         });
     });
 
-    describe("run", function() {
-        it("should invoke listen(port) on the AppService instance", function() {
-            bridge.run(101, {}, appService);
+    describe("run", () => {
+        it("should invoke listen(port) on the AppService instance", async() => {
+            await bridge.run(101, {}, appService);
             expect(appService.listen).toHaveBeenCalledWith(101, undefined);
         });
-        it("should invoke listen(port, hostname) on the AppService instance", function() {
-            bridge.run(101, {}, appService, "foobar");
+        it("should invoke listen(port, hostname) on the AppService instance", async() => {
+            await bridge.run(101, {}, appService, "foobar");
             expect(appService.listen).toHaveBeenCalledWith(101, "foobar");
         });
     });
 
     describe("getters", function() {
-        it("should be able to getRoomStore", function(done) {
-            bridge.run(101, {}, appService).done(function() {
-                expect(bridge.getRoomStore()).toEqual(roomStore);
-                done();
-            });
+        it("should be able to getRoomStore", async() => {
+            await bridge.run(101, {}, appService);
+            expect(bridge.getRoomStore()).toEqual(roomStore);
         });
 
-        it("should be able to getUserStore", function(done) {
-            bridge.run(101, {}, appService).done(function() {
-                expect(bridge.getUserStore()).toEqual(userStore);
-                done();
-            });
+        it("should be able to getUserStore", async() => {
+            await bridge.run(101, {}, appService);
+            expect(bridge.getUserStore()).toEqual(userStore);
         });
 
-        it("should be able to getRequestFactory", function(done) {
-            bridge.run(101, {}, appService).done(function() {
-                expect(bridge.getRequestFactory()).toBeDefined();
-                done();
-            });
+        it("should be able to getRequestFactory", async() => {
+            await bridge.run(101, {}, appService);
+            expect(bridge.getRequestFactory()).toBeDefined();
         });
 
-        it("should be able to getBot", function(done) {
-            bridge.run(101, {}, appService).done(function() {
-                expect(bridge.getBot()).toBeDefined();
-                done();
-            });
+        it("should be able to getBot", async() => {
+            await bridge.run(101, {}, appService);
+            expect(bridge.getBot()).toBeDefined();
         });
     });
 
@@ -461,12 +440,10 @@ describe("Bridge", function() {
         // 2h which should be long enough to cull it
         var cullTimeMs = 1000 * 60 * 60 * 2;
 
-        beforeEach(function(done) {
+        beforeEach(async() => {
             jasmine.clock().install();
             jasmine.clock().mockDate();
-            bridge.run(101, {}, appService).done(function() {
-                done();
-            });
+            await bridge.run(101, {}, appService);
         });
 
         afterEach(function() {

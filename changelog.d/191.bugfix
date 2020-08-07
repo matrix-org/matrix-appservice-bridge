@@ -1,0 +1,1 @@
+Bridge.run() now throws if it fails to listen to a port instead of creating a floating promise

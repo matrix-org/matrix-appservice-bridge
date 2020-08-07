@@ -23,8 +23,8 @@ module.exports.Cli = require("./components/cli");
 module.exports.ConfigValidator = require("./components/config-validator");
 
 // Requests
-module.exports.Request = require("./components/request");
-module.exports.RequestFactory = require("./components/request-factory");
+export * from "./components/request";
+export * from "./components/request-factory";
 
 // Store
 module.exports.BridgeStore = require("./components/bridge-store");

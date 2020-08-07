@@ -41,7 +41,7 @@ const RoomUpgradeHandler = require("./components/room-upgrade-handler");
 const EventNotHandledError = require("./errors").EventNotHandledError;
 const InternalError = require("./errors").InternalError;
 const EventQueue = require("./components/event-queue").EventQueue;
-const defer = require("./utils/promiseutil").defer;
+const deferPromise = require("./utils/promiseutil").defer;
 
 const log = require("./components/logging").get("bridge");
 
@@ -1015,7 +1015,7 @@ Bridge.prototype.requestCheckToken = function(req) {
 }
 
 function loadDatabase(path, Cls) {
-    const defer = defer();
+    const defer = deferPromise();
     var db = new Datastore({
         filename: path,
         autoload: true,

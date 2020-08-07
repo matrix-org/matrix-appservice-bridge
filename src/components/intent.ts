@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import Bluebird from "bluebird";
 import MatrixUser from "../models/users/matrix";
 import JsSdk from "matrix-js-sdk";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

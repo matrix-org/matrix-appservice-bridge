@@ -186,71 +186,63 @@ describe("Bridge", function() {
             });
         });
 
-        it("should provision the room from the returned object", function(done) {
-            var provisionedRoom = {
+        it("should provision the room from the returned object", async() => {
+            const provisionedRoom = {
                 creationOpts: {
-                    room_alias_name: "foo"
-                }
+                    room_alias_name: "foo",
+                },
             };
             clients["bot"].createRoom.and.returnValue({
-                room_id: "!abc123:bar"
+                room_id: "!abc123:bar",
             });
             bridgeCtrl.onAliasQuery.and.returnValue(provisionedRoom);
             bridge.run(101, {}, appService);
-            appService.onAliasQuery("#foo:bar").done(function() {
-                expect(clients["bot"].createRoom).toHaveBeenCalledWith(
-                    provisionedRoom.creationOpts
-                );
-                done();
-            });
+            await appService.onAliasQuery("#foo:bar");
+            expect(clients["bot"].createRoom).toHaveBeenCalledWith(
+                provisionedRoom.creationOpts
+            );
         });
 
-        it("should store the new matrix room", function(done) {
+        it("should store the new matrix room", async(done) => {
             clients["bot"].createRoom.and.returnValue({
-                room_id: "!abc123:bar"
+                room_id: "!abc123:bar",
             });
             bridgeCtrl.onAliasQuery.and.returnValue({
                 creationOpts: {
-                    room_alias_name: "foo"
-                }
+                    room_alias_name: "foo",
+                },
             });
             bridge.run(101, {}, appService);
-            appService.onAliasQuery("#foo:bar").then(function() {
-                return bridge.getRoomStore().getMatrixRoom("!abc123:bar");
-            }).done(function(room) {
-                expect(room).toBeDefined();
-                if (!room) { done(); return; }
-                expect(room.getId()).toEqual("!abc123:bar");
-                done();
-            });
+            await appService.onAliasQuery("#foo:bar");
+            const room = await bridge.getRoomStore().getMatrixRoom("!abc123:bar");
+            expect(room).toBeDefined();
+            if (!room) { done(); return; }
+            expect(room.getId()).toEqual("!abc123:bar");
+            done();
         });
 
-        it("should store and link the new matrix room if a remote room was supplied",
-        function(done) {
+        it("should store and link the new matrix room if a remote room was supplied", async(done) => {
             clients["bot"].createRoom.and.returnValue({
                 room_id: "!abc123:bar"
             });
             bridgeCtrl.onAliasQuery.and.returnValue({
                 creationOpts: {
-                    room_alias_name: "foo"
+                    room_alias_name: "foo",
                 },
                 remote: new RemoteRoom("__abc__")
             });
             bridge.run(101, {}, appService);
-            appService.onAliasQuery("#foo:bar").then(function() {
-                return bridge.getRoomStore().getLinkedRemoteRooms("!abc123:bar");
-            }).done(function(rooms) {
-                expect(rooms.length).toEqual(1);
-                if (!rooms.length) { done(); return; }
-                expect(rooms[0].getId()).toEqual("__abc__");
-                done();
-            });
+            await appService.onAliasQuery("#foo:bar");
+            const rooms = await bridge.getRoomStore().getLinkedRemoteRooms("!abc123:bar");
+            expect(rooms.length).toEqual(1);
+            if (!rooms.length) { done(); return; }
+            expect(rooms[0].getId()).toEqual("__abc__");
+            done();
         });
     });
 
     describe("onEvent", function() {
-        it("should suppress the event if it is an echo and suppressEcho=true",
-        function(done) {
+        it("should suppress the event if it is an echo and suppressEcho=true", async() => {
             var event = {
                 content: {
                     body: "oh noes!",
@@ -260,12 +252,9 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
-            bridge.run(101, {}, appService).then(function() {
-                return appService.emit("event", event);
-            }).done(function() {
-                expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
-                done();
-            });
+            await bridge.run(101, {}, appService);
+            await appService.emit("event", event);
+            expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
         });
 
         it("should invoke the user-supplied onEvent function with the right args",

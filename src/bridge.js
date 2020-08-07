@@ -248,7 +248,7 @@ function Bridge(opts) {
 
 /**
  * Load the user and room databases. Access them via getUserStore() and getRoomStore().
- * @return {Promise} Resolved/rejected when the user/room databases have been loaded.
+ * @return {Bluebird} Resolved/rejected when the user/room databases have been loaded.
  */
 Bridge.prototype.loadDatabases = function() {
     if (this.opts.disableStores) {
@@ -288,8 +288,9 @@ Bridge.prototype.loadDatabases = function() {
  * @param {AppService=} appServiceInstance The AppService instance to attach to.
  * If not provided, one will be created.
  * @param {String} hostname Optional hostname to bind to. (e.g. 0.0.0.0)
+ * @return {Bluebird} A promise resolving when the bridge is ready
  */
-Bridge.prototype.run = async function(port, config, appServiceInstance, hostname) {
+Bridge.prototype.run = function(port, config, appServiceInstance, hostname) {
     var self = this;
 
     // Load the registration file into an AppServiceRegistration object.
@@ -374,8 +375,12 @@ Bridge.prototype.run = async function(port, config, appServiceInstance, hostname
         this._metrics.addAppServicePath(this);
     }
 
-    await this.appService.listen(port, hostname);
-    return this.loadDatabases();
+    // We MUST return a Bluebird-Promise instead of a Promise.
+    // This is needed by many tests in this repo.
+    return new Bluebird(async() => {
+        await this.appService.listen(port, hostname);
+        return this.loadDatabases();
+    })
 };
 
 /**

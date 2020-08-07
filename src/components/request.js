@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-var Promise = require("bluebird");
+const defer = require("../utils/promiseutil").defer;
 
 function generateRequestId() {
     return (Math.random() * 1e20).toString(36);
@@ -32,7 +32,7 @@ function Request(opts) {
     this.id = opts.id || generateRequestId();
     this.data = opts.data;
     this.startTs = Date.now();
-    this.defer = new Promise.defer();
+    this.defer = new defer();
 }
 
 /**

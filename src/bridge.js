@@ -289,7 +289,7 @@ Bridge.prototype.loadDatabases = function() {
  * If not provided, one will be created.
  * @param {String} hostname Optional hostname to bind to. (e.g. 0.0.0.0)
  */
-Bridge.prototype.run = function(port, config, appServiceInstance, hostname) {
+Bridge.prototype.run = async function(port, config, appServiceInstance, hostname) {
     var self = this;
 
     // Load the registration file into an AppServiceRegistration object.
@@ -374,7 +374,7 @@ Bridge.prototype.run = function(port, config, appServiceInstance, hostname) {
         this._metrics.addAppServicePath(this);
     }
 
-    this.appService.listen(port, hostname);
+    await this.appService.listen(port, hostname);
     return this.loadDatabases();
 };
 

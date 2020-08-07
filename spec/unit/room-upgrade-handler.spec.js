@@ -1,6 +1,6 @@
 const RoomUpgradeHandler = require("../../lib/components/room-upgrade-handler")
 
-describe("RoomLinkValidator", () => {
+describe("RoomUpgradeHandler", () => {
     describe("constructor", () => {
         it("should construct", () => {
             const ruh = new RoomUpgradeHandler({isOpts: true}, {isBridge: true});

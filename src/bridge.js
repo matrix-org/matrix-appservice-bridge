@@ -26,7 +26,7 @@ const MatrixScheduler = require("matrix-js-sdk").MatrixScheduler;
 const BridgeContext = require("./components/bridge-context");
 const ClientFactory = require("./components/client-factory");
 const AppServiceBot = require("./components/app-service-bot");
-const RequestFactory = require("./components/request-factory");
+const RequestFactory = require("./components/request-factory").RequestFactory;
 const Intent = require("./components/intent");
 const RoomBridgeStore = require("./components/room-bridge-store");
 const UserBridgeStore = require("./components/user-bridge-store");
@@ -41,6 +41,7 @@ const RoomUpgradeHandler = require("./components/room-upgrade-handler");
 const EventNotHandledError = require("./errors").EventNotHandledError;
 const InternalError = require("./errors").InternalError;
 const EventQueue = require("./components/event-queue").EventQueue;
+const defer = require("./utils/promiseutil").defer;
 
 const log = require("./components/logging").get("bridge");
 
@@ -1009,7 +1010,7 @@ Bridge.prototype.requestCheckToken = function(req) {
 }
 
 function loadDatabase(path, Cls) {
-    var defer = Promise.defer();
+    const defer = defer();
     var db = new Datastore({
         filename: path,
         autoload: true,

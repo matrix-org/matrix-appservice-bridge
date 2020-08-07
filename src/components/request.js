@@ -32,7 +32,7 @@ function Request(opts) {
     this.id = opts.id || generateRequestId();
     this.data = opts.data;
     this.startTs = Date.now();
-    this.defer = new defer();
+    this.defer = defer();
 }
 
 /**

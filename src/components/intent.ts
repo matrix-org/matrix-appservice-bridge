@@ -199,7 +199,7 @@ export class Intent {
                     }
                     this._membershipStates[roomId] = membership;
                 },
-                setPowerLevelContent: (roomId: string, content: Object) => {
+                setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => {
                     this._powerLevels[roomId] = content;
                 },
             },

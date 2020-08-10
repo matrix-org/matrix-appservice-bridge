@@ -122,12 +122,7 @@ export class StateLookup {
                 () => this._client.roomState(roomId)
             );
             events.forEach((ev) => {
-                if (this.eventTypes[ev.type]) {
-                    if (!r.events[ev.type]) {
-                        r.events[ev.type] = {};
-                    }
-                    r.events[ev.type][ev.state_key] = ev;
-                }
+                this.insertEvent(r, ev);
             });
             return r;
         }
@@ -192,9 +187,22 @@ export class StateLookup {
         }
 
         // blunt update
-        if (!r.events[event.type]) {
-            r.events[event.type] = {};
+        this.insertEvent(r, event);
+    }
+
+    private insertEvent(roomSet: StateLookupRoom, event: StateLookupEvent) {
+        if (typeof event.content !== "object") {
+            // Reject - unexpected content type
+            return;
         }
-        r.events[event.type][event.state_key] = event;
+        if (!event.type || !event.state_key) {
+            // Reject - missing keys
+            return;
+        }
+        // blunt update
+        if (!roomSet.events[event.type]) {
+            roomSet.events[event.type] = {};
+        }
+        roomSet.events[event.type][event.state_key] = event;
     }
 }

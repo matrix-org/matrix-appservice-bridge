@@ -749,12 +749,18 @@ export class Intent {
         return deferredPromise.promise;
     }
 
+    /**
+     * Ensures that the client has the required power level to post the event type.
+     * @param roomId Required as power levels exist inside a room.
+     * @param eventTypes The event type to check the permissions for.
+     * @return If found, the power level event
+     */
     private async _ensureHasPowerLevelFor(roomId: string, eventType: string) {
         if (this.opts.dontCheckPowerLevel && eventType !== "m.room.power_levels") {
-            return;
+            return undefined;
         }
         const userId = this.client.credentials.userId;
-        let plContent = this.opts.backingStore.getPowerLevelContent(roomId)
+        const plContent = this.opts.backingStore.getPowerLevelContent(roomId)
             || await this.client.getStateEvent(roomId, "m.room.power_levels", "");
         const eventContent: PowerLevelContent = plContent && typeof plContent === "object" ? plContent : {};
         this.opts.backingStore.setPowerLevelContent(roomId, eventContent);

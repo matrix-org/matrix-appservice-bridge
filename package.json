@@ -34,7 +34,7 @@
     "is-my-json-valid": "^2.20.5",
     "js-yaml": "^3.14.0",
     "matrix-appservice": "^0.4.2",
-    "matrix-js-sdk": "^6.0.0",
+    "matrix-js-sdk": "^8.0.1",
     "nedb": "^1.8.0",
     "nopt": "^4.0.3",
     "p-queue": "^6.6.0",

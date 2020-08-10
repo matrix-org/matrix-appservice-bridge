@@ -19,11 +19,11 @@ export * from "./components/request-factory";
 
 export * from "./components/client-factory";
 export * from "./components/intent";
+export * from "./components/state-lookup";
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 module.exports.AppServiceBot = require("./components/app-service-bot");
-module.exports.StateLookup = require("./components/state-lookup").StateLookup;
 
 // Config and CLI
 module.exports.Cli = require("./components/cli");
@@ -50,7 +50,7 @@ module.exports.AppServiceRegistration = (
 
 const jsSdk = require("matrix-js-sdk");
 
-module.exports.ContentRepo = {
+export const ContentRepo = {
     getHttpUriForMxc: jsSdk.getHttpUriForMxc,
     getIdenticonUri: jsSdk.getIdenticonUri,
 }

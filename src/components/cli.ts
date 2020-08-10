@@ -18,16 +18,16 @@ import { AppServiceRegistration } from "matrix-appservice"
 import * as fs from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
-import * as nopt from "nopt";
+import nopt from "nopt";
 import ConfigValidator from "./config-validator";
 
 const DEFAULT_PORT = 8090;
 const DEFAULT_FILENAME = "registration.yaml";
 const log = require("./logging").get("cli");
 
-interface CliOpts {
-    run: () => void,
-    generateRegistration?: () => void,
+interface CliOpts<ConfigType extends Record<string, unknown>> {
+    run: (port: number, config: ConfigType|null, registration: AppServiceRegistration|null) => void,
+    generateRegistration?: (reg: AppServiceRegistration, cb: (completedRegistration: AppServiceRegistration) => void) => void,
     bridgeConfig?: {
         affectsRegistration?: boolean;
         schema: string|Record<string,unknown>;
@@ -39,8 +39,8 @@ interface CliOpts {
     port: number;
 }
 
-export class Cli {
-    private bridgeConfig: Record<string, any>|null = null;
+export class Cli<ConfigType extends Record<string, unknown>> {
+    private bridgeConfig: ConfigType|null = null;
     private args: Record<string, any>|null = null;
 
     /**
@@ -64,7 +64,7 @@ export class Cli {
      * file to. Users can overwrite this with -f.
      * @param {boolean=} opts.enableLocalpart Enable '--localpart [-l]'. Default: false.
      */
-    constructor(private opts: CliOpts) {
+    constructor(private opts: CliOpts<ConfigType>) {
         if (this.opts.enableRegistration === undefined) {
             this.opts.enableRegistration = true;
         }
@@ -179,43 +179,45 @@ export class Cli {
     }
 
     private assignConfigFile(configFilePath: string) {
-        var configFile = (this.opts.bridgeConfig && configFilePath) ? configFilePath : null;
-        var config = this.loadConfig(configFile);
+        const configFile = (this.opts.bridgeConfig && configFilePath) ? configFilePath : undefined;
+        const config = this.loadConfig(configFile);
         this.bridgeConfig = config;
     }
 
-    private loadConfig(filename: string) {
-        if (!filename) { return {}; }
+    private loadConfig(filename?: string): ConfigType|null {
+        if (!filename) { return null; }
         log.info("Loading config file %s", filename);
-        var cfg = this.loadYaml(filename);
-        if (typeof cfg === "string") {
-            throw new Error("Config file " + filename + " isn't valid YAML.");
+        const cfg = this.loadYaml(filename);
+        if (!cfg || typeof cfg === "string") {
+            throw Error("Config file " + filename + " isn't valid YAML.");
         }
-        if (!this.opts.bridgeConfig.schema) {
-            return cfg;
+        if (!this.opts.bridgeConfig?.schema) {
+            return cfg as ConfigType; 
         }
-        var validator = new ConfigValidator(this.opts.bridgeConfig.schema);
-        return validator.validate(cfg, this.opts.bridgeConfig.defaults);
+        const validator = new ConfigValidator(this.opts.bridgeConfig.schema);
+        return validator.validate(cfg, this.opts.bridgeConfig.defaults) as ConfigType;
     }
 
     private generateRegistration(appServiceUrl: string, localpart: string) {
         if (!appServiceUrl) {
-            throw new Error("Missing app service URL");
+            throw Error("Missing app service URL");
         }
-        var self = this;
-        var reg = new AppServiceRegistration(appServiceUrl);
+        let reg = new AppServiceRegistration(appServiceUrl);
         if (localpart) {
             reg.setSenderLocalpart(localpart);
         }
-        this.opts.generateRegistration.bind(this)(reg, function(completeReg) {
+        if (!this.opts.generateRegistration) {
+            throw Error('No generateRegistraton function provided');
+        }
+        this.opts.generateRegistration.bind(this)(reg, (completeReg) => {
             reg = completeReg;
-            reg.outputAsYaml(self.opts.registrationPath);
-            console.log("Output registration to: " + self.opts.registrationPath);
+            reg.outputAsYaml(this.opts.registrationPath);
+            log.info("Output registration to: " + this.opts.registrationPath);
             process.exit(0);
         });
     }
 
-    private startWithConfig(config) {
+    private startWithConfig(config: ConfigType|null) {
         this.opts.run(
             this.opts.port, config,
             AppServiceRegistration.fromObject(this.loadYaml(this.opts.registrationPath))
@@ -227,17 +229,17 @@ export class Cli {
     }
 
     private printHelp() {
-        var help = {
+        const help: Record<string,string> = {
             "--help -h": "Display this help message",
             "--file -f": "The registration file to load or save to."
         };
-        var appPart = (process.argv[0] === "node" ?
+        const appPart = (process.argv[0] === "node" ?
             // node file/path
             (process.argv[0] + " " + path.relative(process.cwd(), process.argv[1])) :
             // app-name
             process.argv[0]
         );
-        var usages = [];
+        const usages = [];
 
         if (this.opts.enableRegistration) {
             help["--generate-registration -r"] = "Create a registration YAML file " +
@@ -248,7 +250,7 @@ export class Cli {
                 help["--localpart -l"] = "Registration Option. Valid if -r is set. " +
                 "The user_id localpart to assign to the AS.";
             }
-            var regUsage = "-r [-f /path/to/save/registration.yaml] " +
+            let regUsage = "-r [-f /path/to/save/registration.yaml] " +
                 "-u 'http://localhost:6789'";
             if (this.opts.bridgeConfig && this.opts.bridgeConfig.affectsRegistration) {
                 regUsage += " -c CONFIG_FILE";
@@ -280,33 +282,3 @@ export class Cli {
         });
     }
 }
-
-/**
- * Invoked when you should generate a registration.
- * @callback Cli~generateRegistration
- * @param {AppServiceRegistration} reg A new registration object with the app
- * service url provided by <code>--url</code> set.
- * @param {Function} callback The callback that you should invoke when the
- * registration has been generated. It should be called with the
- * <code>AppServiceRegistration</code> provided in this function.
- * @example
- * generateRegistration: function(reg, callback) {
- *   reg.setHomeserverToken(AppServiceRegistration.generateToken());
- *   reg.setAppServiceToken(AppServiceRegistration.generateToken());
- *   reg.setSenderLocalpart("my_first_bot");
- *   callback(reg);
- * }
- */
-
- /**
- * Invoked when you should run the bridge.
- * @callback Cli~runBridge
- * @param {Number} port The port to listen on.
- * @param {?Object} config The loaded and parsed config.
- * @param {AppServiceRegistration} reg The registration to run as.
- * @example
- * runBridge: function(port, config, reg) {
- *   // configure bridge
- *   // listen on port
- * }
- */

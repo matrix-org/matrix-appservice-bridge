@@ -20,18 +20,19 @@ import * as path from "path";
 import * as yaml from "js-yaml";
 import nopt from "nopt";
 import ConfigValidator from "./config-validator";
+import * as logging from "./logging";
 
 const DEFAULT_PORT = 8090;
 const DEFAULT_FILENAME = "registration.yaml";
-const log = require("./logging").get("cli");
+const log = logging.get("cli");
 
 interface CliOpts<ConfigType extends Record<string, unknown>> {
-    run: (port: number, config: ConfigType|null, registration: AppServiceRegistration|null) => void,
-    generateRegistration?: (reg: AppServiceRegistration, cb: (completedRegistration: AppServiceRegistration) => void) => void,
+    run: (port: number, config: ConfigType|null, registration: AppServiceRegistration|null) => void;
+    generateRegistration?: (reg: AppServiceRegistration, cb: (finalReg: AppServiceRegistration) => void) => void;
     bridgeConfig?: {
         affectsRegistration?: boolean;
-        schema: string|Record<string,unknown>;
-        defaults: string|Record<string,unknown>;
+        schema: string|Record<string, unknown>;
+        defaults: string|Record<string, unknown>;
     };
     registrationPath: string;
     enableRegistration?: boolean;
@@ -39,9 +40,19 @@ interface CliOpts<ConfigType extends Record<string, unknown>> {
     port: number;
 }
 
+interface CliArgs {
+    "generate-registration": boolean;
+    config: string;
+    url: string;
+    localpart: string;
+    port: number;
+    file: string;
+    help: boolean;
+}
+
 export class Cli<ConfigType extends Record<string, unknown>> {
     private bridgeConfig: ConfigType|null = null;
-    private args: Record<string, any>|null = null;
+    private args: CliArgs|null = null;
 
     /**
      * @constructor
@@ -128,7 +139,8 @@ export class Cli<ConfigType extends Record<string, unknown>> {
             "p": "--port",
             "f": "--file",
             "h": "--help"
-        });
+            // We know the typings will be correct.
+        }) as unknown as CliArgs;
 
         if (this.args.file) {
             this.opts.registrationPath = this.args.file;
@@ -192,7 +204,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
             throw Error("Config file " + filename + " isn't valid YAML.");
         }
         if (!this.opts.bridgeConfig?.schema) {
-            return cfg as ConfigType; 
+            return cfg as ConfigType;
         }
         const validator = new ConfigValidator(this.opts.bridgeConfig.schema);
         return validator.validate(cfg, this.opts.bridgeConfig.defaults) as ConfigType;
@@ -229,7 +241,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
     }
 
     private printHelp() {
-        const help: Record<string,string> = {
+        const help: {[flag: string]: string} = {
             "--help -h": "Display this help message",
             "--file -f": "The registration file to load or save to."
         };

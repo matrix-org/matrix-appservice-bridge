@@ -15,38 +15,12 @@ limitations under the License.
 
 import MatrixUser from "../models/users/matrix";
 import JsSdk from "matrix-js-sdk";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const { MatrixEvent, RoomMember } = JsSdk as any;
 import ClientRequestCache from "./client-request-cache";
 import { defer } from "../utils/promiseutil";
 
-type MatrixClient = {
-    credentials: {
-        userId: string;
-    },
-    ban: (roomId: string, target: string, reason: string) => Promise<unknown>;
-    createAlias: (alias: string, roomId: string) => Promise<unknown>;
-    createRoom: (opts: Record<string, unknown>) => Promise<unknown>;
-    fetchRoomEvent: (roomId: string, eventId: string) => Promise<unknown>;
-    getStateEvent: (roomId: string, eventType: string, stateKey: string) => Promise<unknown>;
-    invite: (roomId: string, userId: string) => Promise<unknown>;
-    joinRoom: (roomId: string, opts: Record<string, unknown>) => Promise<unknown>;
-    kick: (roomId: string, target: string, reason: string) => Promise<unknown>;
-    leave: (roomId: string) => Promise<unknown>;
-    register: (localpart: string) => Promise<unknown>;
-    roomState: (roomId: string) => Promise<unknown>;
-    sendEvent: (roomId: string, type: string, content: Record<string, unknown>) => Promise<unknown>;
-    sendReadReceipt: (event: unknown) => Promise<unknown>;
-    sendStateEvent: (roomId: string, type: string, content: Record<string, unknown>, skey: string) => Promise<unknown>;
-    sendTyping: (roomId: string, isTyping: boolean) => Promise<unknown>;
-    setAvatarUrl: (url: string) => Promise<unknown>;
-    setDisplayName: (name: string) => Promise<unknown>;
-    setPowerLevel: (roomId: string, target: string, level: number, event: unknown) => Promise<unknown>;
-    // eslint-disable-next-line camelcase
-    setPresence: (presence: { presence: string, status_msg?: string }) => Promise<unknown>;
-    getProfileInfo: (userId: string, info: string) => Promise<unknown>;
-    unban: (roomId: string, target: string) => Promise<unknown>;
-};
 
 type BridgeErrorReason = "m.event_not_handled" | "m.event_too_old"
     | "m.internal_error" | "m.foreign_network_error" | "m.event_unknown";
@@ -172,7 +146,7 @@ export class Intent {
     * @param opts.caching.ttl How long requests can stay in the cache, in milliseconds.
     * @param opts.caching.size How many entries should be kept in the cache, before the oldest is dropped.
     */
-    constructor(private client: MatrixClient, private botClient: MatrixClient, opts: IntentOpts = {}) {
+    constructor(public readonly client: any, private readonly botClient: any, opts: IntentOpts = {}) {
         if (opts.backingStore) {
             if (!opts.backingStore.setPowerLevelContent ||
                     !opts.backingStore.getPowerLevelContent ||
@@ -335,9 +309,9 @@ export class Intent {
      * Set the power level of the given target.
      * @param roomId The room to set the power level in.
      * @param target The target user ID
-     * @param level The desired level
+     * @param level The desired level. Undefined will remove the users custom power level.
      */
-    public async setPowerLevel(roomId: string, target: string, level: number) {
+    public async setPowerLevel(roomId: string, target: string, level: number|undefined) {
         await this._ensureJoined(roomId);
         const event = await this._ensureHasPowerLevelFor(roomId, "m.room.power_levels");
         return this.client.setPowerLevel(roomId, target, level, event);
@@ -480,7 +454,7 @@ export class Intent {
      * @param reason Optional. The reason for the kick.
      * @return Resolved when kickked, else rejected with an error.
      */
-    public async kick(roomId: string, target: string, reason: string) {
+    public async kick(roomId: string, target: string, reason?: string) {
         await this._ensureJoined(roomId);
         return this.client.kick(roomId, target, reason);
     }
@@ -494,7 +468,7 @@ export class Intent {
      * @param reason Optional. The reason for the ban.
      * @return Resolved when banned, else rejected with an error.
      */
-    public async ban(roomId: string, target: string, reason: string) {
+    public async ban(roomId: string, target: string, reason?: string) {
         await this._ensureJoined(roomId);
         return this.client.ban(roomId, target, reason);
     }
@@ -520,7 +494,7 @@ export class Intent {
      * @param viaServers The server names to try and join through in
      * addition to those that are automatically chosen.
      */
-    public async join(roomId: string, viaServers: string[]) {
+    public async join(roomId: string, viaServers?: string[]) {
         await this._ensureJoined(roomId, false, viaServers);
     }
 

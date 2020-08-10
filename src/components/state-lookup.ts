@@ -18,7 +18,7 @@ import PQueue from "p-queue";
 interface StateLookupOpts {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     client: any; //TODO: Needs to be MatrixClient (once that becomes TypeScript)
-    stateLookupConcurrency: number;
+    stateLookupConcurrency?: number;
     eventTypes?: string[];
     retryStateInMs?: number;
 }
@@ -33,7 +33,7 @@ interface StateLookupRoom {
     };
 }
 
-interface StateLookupEvent {
+export interface StateLookupEvent {
     // eslint-disable-next-line camelcase
     room_id: string;
     // eslint-disable-next-line camelcase
@@ -41,6 +41,7 @@ interface StateLookupEvent {
     type: string;
     // eslint-disable-next-line camelcase
     event_id: string;
+    content: unknown;
 }
 
 const RETRY_STATE_IN_MS = 300;
@@ -96,7 +97,7 @@ export class StateLookup {
      * array of events, which may be empty.
      * @return {?Object|Object[]}
      */
-    public getState(roomId: string, eventType: string, stateKey?: string): unknown|unknown[] {
+    public getState(roomId: string, eventType: string, stateKey?: string): null|StateLookupEvent|StateLookupEvent[] {
         const r = this.dict[roomId];
         if (!r) {
             return stateKey === undefined ? [] : null;
@@ -121,12 +122,7 @@ export class StateLookup {
                 () => this._client.roomState(roomId)
             );
             events.forEach((ev) => {
-                if (this.eventTypes[ev.type]) {
-                    if (!r.events[ev.type]) {
-                        r.events[ev.type] = {};
-                    }
-                    r.events[ev.type][ev.state_key] = ev;
-                }
+                this.insertEvent(r, ev);
             });
             return r;
         }
@@ -191,9 +187,22 @@ export class StateLookup {
         }
 
         // blunt update
-        if (!r.events[event.type]) {
-            r.events[event.type] = {};
+        this.insertEvent(r, event);
+    }
+
+    private insertEvent(roomSet: StateLookupRoom, event: StateLookupEvent) {
+        if (typeof event.content !== "object") {
+            // Reject - unexpected content type
+            return;
         }
-        r.events[event.type][event.state_key] = event;
+        if (!event.type || !event.state_key) {
+            // Reject - missing keys
+            return;
+        }
+        // blunt update
+        if (!roomSet.events[event.type]) {
+            roomSet.events[event.type] = {};
+        }
+        roomSet.events[event.type][event.state_key] = event;
     }
 }

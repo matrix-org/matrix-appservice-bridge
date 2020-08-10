@@ -18,34 +18,31 @@ describe("StateLookup", function() {
         });
     });
 
-    describe("trackRoom", function() {
+    describe("trackRoom", () => {
         it("should return a Promise which is resolved after the HTTP call " +
-        "to /state returns", function(done) {
+        "to /state returns", async() => {
             var statePromise = createStatePromise([]);
             cli.roomState.and.returnValue(statePromise.promise);
             var p = lookup.trackRoom("!foo:bar");
             expect(p.isPending()).toBe(true); // not resolved HTTP call yet
-            Bluebird.delay(5).then(function() {
-                expect(p.isPending()).toBe(true); // still not resolved HTTP call
-                statePromise.resolve();
-                return p; // Should resolve now HTTP call is resolved
-            }).then(function() {
-                done();
-            });
+            await Bluebird.delay(5);
+            expect(p.isPending()).toBe(true); // still not resolved HTTP call
+            statePromise.resolve();
+            await p; // Should resolve now HTTP call is resolved
         });
 
         it("should return the same Promise if called multiple times with the " +
         "same room ID", function() {
-            var statePromise = createStatePromise([]);
+            const statePromise = createStatePromise([]);
             cli.roomState.and.returnValue(statePromise.promise);
-            var p = lookup.trackRoom("!foo:bar");
-            var q = lookup.trackRoom("!foo:bar");
+            const p = lookup.trackRoom("!foo:bar");
+            const q = lookup.trackRoom("!foo:bar");
             expect(p).toBe(q);
         });
 
-        it("should be able to have >1 in-flight track requests at once", function(done) {
-            var stateA = createStatePromise([]);
-            var stateB = createStatePromise([]);
+        it("should be able to have >1 in-flight track requests at once", async() => {
+            const stateA = createStatePromise([]);
+            const stateB = createStatePromise([]);
             cli.roomState.and.callFake(function(roomId) {
                 if (roomId === "!a:foobar") {
                     return stateA.promise;
@@ -55,16 +52,13 @@ describe("StateLookup", function() {
                 }
                 throw new Error("Unexpected room ID: " + roomId);
             });
-            var promiseA = lookup.trackRoom("!a:foobar");
-            var promiseB = lookup.trackRoom("!b:foobar");
+            const promiseA = lookup.trackRoom("!a:foobar");
+            const promiseB = lookup.trackRoom("!b:foobar");
             stateA.resolve();
-            promiseA.then(function() {
-                expect(promiseB.isPending()).toBe(true);
-                stateB.resolve();
-                return promiseB;
-            }).then(function() {
-                done();
-            });
+            await promiseA;
+            expect(promiseB.isPending()).toBe(true);
+            stateB.resolve();
+            await promiseB;
         });
 
         it("should retry the HTTP call on non 4xx, 5xx errors", async function() {
@@ -109,28 +103,28 @@ describe("StateLookup", function() {
         });
     });
 
-    describe("onEvent", function() {
-        it("should update the state lookup map", function(done) {
-            cli.roomState.and.callFake(function(roomId) {
-                return Promise.resolve([
-                    {type: "m.room.name", state_key: "", room_id: "!foo:bar",
-                        content: { name: "Foo" }}
-                ]);
+    describe("onEvent", () => {
+        it("should update the state lookup map", async() => {
+            cli.roomState.and.callFake(async(roomId) => {
+                return [{
+                    type: "m.room.name",
+                    state_key: "",
+                    room_id: "!foo:bar",
+                    content: { name: "Foo" },
+                }];
             });
 
-            lookup.trackRoom("!foo:bar").then(function() {
-                expect(
-                    lookup.getState("!foo:bar", "m.room.name", "").content.name
-                ).toEqual("Foo");
-                lookup.onEvent(
-                    {type: "m.room.name", state_key: "", room_id: "!foo:bar",
-                        content: { name: "Bar" }}
-                );
-                expect(
-                    lookup.getState("!foo:bar", "m.room.name", "").content.name
-                ).toEqual("Bar");
-                done();
-            });
+            await lookup.trackRoom("!foo:bar")
+            expect(
+                lookup.getState("!foo:bar", "m.room.name", "").content.name
+            ).toEqual("Foo");
+            lookup.onEvent(
+                {type: "m.room.name", state_key: "", room_id: "!foo:bar",
+                    content: { name: "Bar" }}
+            );
+            expect(
+                lookup.getState("!foo:bar", "m.room.name", "").content.name
+            ).toEqual("Bar");
         });
 
         it("should clobber events from in-flight track requests", async() => {
@@ -154,10 +148,10 @@ describe("StateLookup", function() {
         });
     });
 
-    describe("getState", function() {
-        beforeEach(function(done) {
-            cli.roomState.and.callFake(function(roomId) {
-                return Promise.resolve([
+    describe("getState", () => {
+        beforeEach(async() => {
+            cli.roomState.and.callFake(async(roomId) => {
+                return [
                     {type: "m.room.name", state_key: "", content: { name: "Foo" }},
                     {type: "m.room.topic", state_key: "", content: { name: "Bar" }},
                     {type: "m.room.member", state_key: "@alice:bar", content: {
@@ -168,12 +162,10 @@ describe("StateLookup", function() {
                         displayname: "Bob",
                         membership: "invite"
                     }},
-                ]);
+                ];
             });
 
-            lookup.trackRoom("!foo:bar").then(function() {
-                done();
-            });
+            await lookup.trackRoom("!foo:bar");
         });
 
         it("should return null for no match with state_key", function() {

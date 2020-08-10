@@ -53,13 +53,15 @@ type BridgeErrorReason = "m.event_not_handled" | "m.event_too_old"
 
 type MembershipState = "join" | "invite" | "leave" | null; // null = unknown
 
+type BackingStore = {
+    getMembership: (roomId: string, userId: string) => MembershipState,
+    getPowerLevelContent: (roomId: string) => Record<string, unknown> | undefined,
+    setMembership: (roomId: string, userId: string, membership: MembershipState) => void,
+    setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => void,
+};
+
 interface IntentOpts {
-    backingStore?: {
-        getMembership: (roomId: string, userId: string) => MembershipState,
-        getPowerLevelContent: (roomId: string) => PowerLevelContent,
-        setMembership: (roomId: string, userId: string, membership: MembershipState) => void,
-        setPowerLevelContent: (roomId: string, content: PowerLevelContent) => void,
-    },
+    backingStore?: BackingStore,
     caching?: {
         ttl?: number,
         size?: number,
@@ -68,6 +70,18 @@ interface IntentOpts {
     dontJoin?: boolean;
     enablePresence?: boolean;
     registered?: boolean;
+}
+
+/**
+ * Returns the first parameter that is a number or 0.
+ */
+const returnFirstNumber = (...args: unknown[]) => {
+    for (const arg of args) {
+        if (typeof arg === "number") {
+            return arg;
+        }
+    }
+    return 0;
 }
 
 const STATE_EVENT_TYPES = [
@@ -79,16 +93,16 @@ const DEFAULT_CACHE_SIZE = 1024;
 
 type PowerLevelContent = {
     // eslint-disable-next-line camelcase
-    state_default: number;
+    state_default?: unknown;
     // eslint-disable-next-line camelcase
-    events_default: number;
+    events_default?: unknown;
     // eslint-disable-next-line camelcase
-    users_default: number;
-    users: {
-        [userId: string]: number;
+    users_default?: unknown;
+    users?: {
+        [userId: string]: unknown;
     },
-    events: {
-        [eventType: string]: number;
+    events?: {
+        [eventType: string]: unknown;
     }
 };
 
@@ -99,12 +113,7 @@ export class Intent {
         event: ClientRequestCache
     }
     private opts: {
-        backingStore: {
-            getMembership: (roomId: string, userId: string) => MembershipState,
-            getPowerLevelContent: (roomId: string) => PowerLevelContent,
-            setMembership: (roomId: string, userId: string, membership: MembershipState) => void,
-            setPowerLevelContent: (roomId: string, content: PowerLevelContent) => void,
-        },
+        backingStore: BackingStore,
         caching: {
             ttl: number,
             size: number,
@@ -190,7 +199,7 @@ export class Intent {
                     }
                     this._membershipStates[roomId] = membership;
                 },
-                setPowerLevelContent: (roomId: string, content: PowerLevelContent) => {
+                setPowerLevelContent: (roomId: string, content: Object) => {
                     this._powerLevels[roomId] = content;
                 },
             },
@@ -768,64 +777,69 @@ export class Intent {
 
     private async _ensureHasPowerLevelFor(roomId: string, eventType: string) {
         if (this.opts.dontCheckPowerLevel && eventType !== "m.room.power_levels") {
-            return Promise.resolve();
+            return;
         }
         const userId = this.client.credentials.userId;
-        const plContent = this.opts.backingStore.getPowerLevelContent(roomId);
-        let promise = Promise.resolve(plContent);
-        if (!plContent) {
-            promise = this.client.getStateEvent(roomId, "m.room.power_levels", "") as Promise<PowerLevelContent>;
+        let plContent = this.opts.backingStore.getPowerLevelContent(roomId)
+            || await this.client.getStateEvent(roomId, "m.room.power_levels", "");
+        const eventContent: PowerLevelContent = plContent && typeof plContent === "object" ? plContent : {};
+        this.opts.backingStore.setPowerLevelContent(roomId, eventContent);
+        const event = {
+            content: typeof eventContent === "object" ? eventContent : {},
+            room_id: roomId,
+            sender: "",
+            event_id: "_",
+            state_key: "",
+            type: "m.room.power_levels"
         }
-        return promise.then((eventContent) => {
-            this.opts.backingStore.setPowerLevelContent(roomId, eventContent);
-            const event = {
-                content: eventContent,
-                room_id: roomId,
-                sender: "",
-                event_id: "_",
-                state_key: "",
-                type: "m.room.power_levels"
-            }
-            const powerLevelEvent = new MatrixEvent(event);
-            // What level do we need for this event type?
-            const defaultLevel = STATE_EVENT_TYPES.includes(eventType)
-                ? event.content.state_default
-                : event.content.events_default;
-            const requiredLevel = event.content.events[eventType] || defaultLevel;
+        const powerLevelEvent = new MatrixEvent(event);
+        // What level do we need for this event type?
+        const defaultLevel = STATE_EVENT_TYPES.includes(eventType)
+            ? event.content.state_default
+            : event.content.events_default;
+        const requiredLevel = returnFirstNumber(
+            // If these are invalid or not provided, default to 0 according to the Spec.
+            // https://matrix.org/docs/spec/client_server/r0.6.0#m-room-power-levels
+            (event.content.events && event.content.events[eventType]),
+            defaultLevel,
+            0
+        );
 
-            // Parse out what level the client has by abusing the JS SDK
-            const roomMember = new RoomMember(roomId, userId);
-            roomMember.setPowerLevelEvent(powerLevelEvent);
 
-            if (requiredLevel > roomMember.powerLevel) {
-                // can the bot update our power level?
-                const bot = new RoomMember(roomId, this.botClient.credentials.userId);
-                bot.setPowerLevelEvent(powerLevelEvent);
-                const levelRequiredToModifyPowerLevels = event.content.events[
-                    "m.room.power_levels"
-                ] || event.content.state_default;
-                if (levelRequiredToModifyPowerLevels > bot.powerLevel) {
-                    // even the bot has no power here.. give up.
-                    throw new Error(
-                        "Cannot ensure client has power level for event " + eventType +
-                        " : client has " + roomMember.powerLevel + " and we require " +
-                        requiredLevel + " and the bot doesn't have permission to " +
-                        "edit the client's power level."
-                    );
-                }
-                // update the client's power level first
-                return this.botClient.setPowerLevel(
-                    roomId, userId, requiredLevel, powerLevelEvent
-                ).then(() => {
-                    // tweak the level for the client to reflect the new reality
-                    const userLevels = powerLevelEvent.getContent().users || {};
-                    userLevels[userId] = requiredLevel;
-                    powerLevelEvent.getContent().users = userLevels;
-                    return Promise.resolve(powerLevelEvent);
-                });
+        // Parse out what level the client has by abusing the JS SDK
+        const roomMember = new RoomMember(roomId, userId);
+        roomMember.setPowerLevelEvent(powerLevelEvent);
+
+        if (requiredLevel > roomMember.powerLevel) {
+            // can the bot update our power level?
+            const bot = new RoomMember(roomId, this.botClient.credentials.userId);
+            bot.setPowerLevelEvent(powerLevelEvent);
+            const levelRequiredToModifyPowerLevels = returnFirstNumber(
+                // If these are invalid or not provided, default to 0 according to the Spec.
+                // https://matrix.org/docs/spec/client_server/r0.6.0#m-room-power-levels
+                event.content.events && event.content.events["m.room.power_levels"],
+                event.content.state_default,
+                0
+            );
+            if (levelRequiredToModifyPowerLevels > bot.powerLevel) {
+                // even the bot has no power here.. give up.
+                throw new Error(
+                    "Cannot ensure client has power level for event " + eventType +
+                    " : client has " + roomMember.powerLevel + " and we require " +
+                    requiredLevel + " and the bot doesn't have permission to " +
+                    "edit the client's power level."
+                );
             }
-            return Promise.resolve(powerLevelEvent);
-        });
+            // update the client's power level first
+            await this.botClient.setPowerLevel(
+                roomId, userId, requiredLevel, powerLevelEvent
+            );
+            // tweak the level for the client to reflect the new reality
+            const userLevels = powerLevelEvent.getContent().users || {};
+            userLevels[userId] = requiredLevel;
+            powerLevelEvent.getContent().users = userLevels;
+        }
+        return powerLevelEvent;
     }
 
     private async _ensureRegistered() {

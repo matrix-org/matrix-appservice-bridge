@@ -22,7 +22,7 @@ type TimeoutFunction = (req: Request<unknown>) => void;
  * A factory which can create {@link Request} objects. Useful for
  * adding "default" handlers to requests.
  */
-export class RequestFactory<T> {
+export class RequestFactory {
     private _resolves: HandlerFunction[] = [];
     private _rejects: HandlerFunction[] = [];
     private _timeouts: {fn: TimeoutFunction, timeout: number}[] = [];
@@ -33,8 +33,8 @@ export class RequestFactory<T> {
      * @param opts The options to pass to the Request constructor, if any.
      * @return A new request object
      */
-    public newRequest(opts: RequestOpts<T>) {
-        const req = new Request(opts);
+    public newRequest<T>(opts?: RequestOpts<T>) {
+        const req = new Request(opts || {data: null});
         req.getPromise().then((res) => {
             this._resolves.forEach((resolveFn) => {
                 resolveFn(req, res);

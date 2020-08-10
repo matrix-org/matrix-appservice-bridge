@@ -110,9 +110,7 @@ export class StateLookup {
             return es[eventType][stateKey] || null;
         }
 
-        return Object.keys(es[eventType]).map(function(skey) {
-            return es[eventType][skey];
-        });
+        return Object.keys(es[eventType]).map(skey => es[eventType][skey]);
     }
 
     private async getInitialState(roomId: string): Promise<StateLookupRoom> {
@@ -195,8 +193,8 @@ export class StateLookup {
             // Reject - unexpected content type
             return;
         }
-        if (!event.type || !event.state_key) {
-            // Reject - missing keys
+        if (typeof event.type !== "string" || typeof event.state_key !== "string") {
+            // Reject - invalid keys
             return;
         }
         // blunt update

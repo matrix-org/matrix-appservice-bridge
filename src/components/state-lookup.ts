@@ -18,7 +18,7 @@ import PQueue from "p-queue";
 interface StateLookupOpts {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     client: any; //TODO: Needs to be MatrixClient (once that becomes TypeScript)
-    stateLookupConcurrency: number;
+    stateLookupConcurrency?: number;
     eventTypes?: string[];
     retryStateInMs?: number;
 }
@@ -33,7 +33,7 @@ interface StateLookupRoom {
     };
 }
 
-interface StateLookupEvent {
+export interface StateLookupEvent {
     // eslint-disable-next-line camelcase
     room_id: string;
     // eslint-disable-next-line camelcase
@@ -41,6 +41,7 @@ interface StateLookupEvent {
     type: string;
     // eslint-disable-next-line camelcase
     event_id: string;
+    content: unknown;
 }
 
 const RETRY_STATE_IN_MS = 300;
@@ -96,7 +97,7 @@ export class StateLookup {
      * array of events, which may be empty.
      * @return {?Object|Object[]}
      */
-    public getState(roomId: string, eventType: string, stateKey?: string): unknown|unknown[] {
+    public getState(roomId: string, eventType: string, stateKey?: string): null|StateLookupEvent|StateLookupEvent[] {
         const r = this.dict[roomId];
         if (!r) {
             return stateKey === undefined ? [] : null;

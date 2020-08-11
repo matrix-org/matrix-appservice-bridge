@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import * as fs from "fs";
-import * as path from "path";
+import path from "path";
 import * as yaml from "js-yaml";
 import nopt from "nopt";
 import { AppServiceRegistration } from "matrix-appservice";

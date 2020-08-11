@@ -56,24 +56,24 @@ export class Cli<ConfigType extends Record<string, unknown>> {
 
     /**
      * @constructor
-     * @param {Object} opts CLI options
-     * @param {Cli~runBridge} opts.run The function called when you should run the bridge.
-     * @param {Cli~generateRegistration} opts.generateRegistration The function
+     * @param opts CLI options
+     * @param opts.run The function called when you should run the bridge.
+     * @param opts.generateRegistration The function
      * called when you should generate a registration.
-     * @param {Object=} opts.bridgeConfig Bridge-specific config info. If null, no
+     * @param opts.bridgeConfig Bridge-specific config info. If null, no
      * --config option will be present in the CLI. Default: null.
-     * @param {boolean=} opts.bridgeConfig.affectsRegistration True to make the
+     * @param opts.bridgeConfig.affectsRegistration True to make the
      * --config option required when generating the registration. The parsed config
      * can be accessed via <code>Cli.getConfig()</code>.
-     * @param {string|Object=} opts.bridgeConfig.schema Path to a schema YAML file
+     * @param opts.bridgeConfig.schema Path to a schema YAML file
      * (string) or the parsed schema file (Object).
-     * @param {Object=} opts.bridgeConfig.defaults The default options for the
+     * @param opts.bridgeConfig.defaults The default options for the
      * config file.
-     * @param {boolean=} opts.enableRegistration Enable '--generate-registration'.
+     * @param opts.enableRegistration Enable '--generate-registration'.
      * Default True.
-     * @param {string=} opts.registrationPath The path to write the registration
+     * @param opts.registrationPath The path to write the registration
      * file to. Users can overwrite this with -f.
-     * @param {boolean=} opts.enableLocalpart Enable '--localpart [-l]'. Default: false.
+     * @param opts.enableLocalpart Enable '--localpart [-l]'. Default: false.
      */
     constructor(private opts: CliOpts<ConfigType>) {
         if (this.opts.enableRegistration === undefined) {

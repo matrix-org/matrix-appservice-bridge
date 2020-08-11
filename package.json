@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "prepare": "npm run build",
-    "gendoc": "jsdoc -r lib -R README.md -P package.json -d .jsdoc",
+    "gendoc": "typedoc",
     "lint": "npm run lint:js && npm run lint:ts",
     "lint:js": "eslint -c .eslintrc.json src/**/*.js spec/**/*.js",
     "lint:ts": "eslint -c .eslintrcts.json src/**/*.ts",

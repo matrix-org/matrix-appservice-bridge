@@ -26,6 +26,8 @@
     "mode": "library",
     "out": ".typedoc",
     "entryPoint": "index",
+    "excludePrivate": true,
+    "excludeNotExported": true,
     "exclude": ["**/index.ts"]
   }
 }

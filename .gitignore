@@ -1,4 +1,4 @@
-.jsdoc
+.typedoc
 ci-lint.xml
 reports
 *.db

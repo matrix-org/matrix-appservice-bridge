@@ -104,6 +104,6 @@ export class Request<T> {
      * request.
      */
     public outcomeFrom(promise: Promise<unknown>) {
-        return promise.then(this.resolve, this.reject);
+        return promise.then(this.resolve.bind(this), this.reject.bind(this));
     }
 }

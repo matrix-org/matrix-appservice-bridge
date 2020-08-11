@@ -19,14 +19,14 @@ export * from "./components/request-factory";
 
 export * from "./components/client-factory";
 export * from "./components/intent";
-export * from "./components/state-lookup";
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 module.exports.AppServiceBot = require("./components/app-service-bot");
+export * from "./components/state-lookup";
 
 // Config and CLI
-module.exports.Cli = require("./components/cli");
+export * from "./components/cli";
 module.exports.ConfigValidator = require("./components/config-validator");
 
 // Store
@@ -44,9 +44,8 @@ module.exports.StoredEvent = require("./models/events/event");
 
 module.exports.Bridge = require("./bridge");
 module.exports.BridgeContext = require("./components/bridge-context");
-module.exports.AppServiceRegistration = (
-    require("matrix-appservice").AppServiceRegistration
-);
+
+export * from "matrix-appservice";
 
 const jsSdk = require("matrix-js-sdk");
 

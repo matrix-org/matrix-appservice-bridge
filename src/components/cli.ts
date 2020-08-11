@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { AppServiceRegistration } from "matrix-appservice"
 import * as fs from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
 import nopt from "nopt";
+import { AppServiceRegistration } from "matrix-appservice";
 import ConfigValidator from "./config-validator";
 import * as logging from "./logging";
 
@@ -113,7 +113,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
     /**
      * Get the path to the registration file. This may be different to the one supplied
      * in the constructor if the user passed a -f flag.
-     * @return {string} The path to the registration file.
+     * @return The path to the registration file.
      */
     public getRegistrationFilePath() {
         return this.opts.registrationPath;

@@ -1,3 +1,33 @@
+1.14.0-rc1 (2020-08-11)
+========================
+
+Features
+--------
+
+- Bump matrix-js-sdk to 8.0.1 ([\#194](https://github.com/matrix-org/matrix-appservice-bridge/issues/194))
+
+
+Bugfixes
+--------
+
+- Refactor RoomLinkValidator to not hastily approve a link if one user is exempt ([\#184](https://github.com/matrix-org/matrix-appservice-bridge/issues/184))
+- Fix bluebird defer warnings by using our own defer implementation. ([\#188](https://github.com/matrix-org/matrix-appservice-bridge/issues/188))
+- Bridge.run() now throws if it fails to listen to a port instead of creating a floating promise ([\#191](https://github.com/matrix-org/matrix-appservice-bridge/issues/191))
+- Fixed some broken typings and defer failures ([\#200](https://github.com/matrix-org/matrix-appservice-bridge/issues/200))
+
+
+Internal Changes
+----------------
+
+- Convert intent.js to TypeScript ([\#185](https://github.com/matrix-org/matrix-appservice-bridge/issues/185))
+- Convert `ClientFactory` to Typescript ([\#186](https://github.com/matrix-org/matrix-appservice-bridge/issues/186))
+- Linter warnings no longer fail the linter, and `no-explicit-any` is a warning. ([\#187](https://github.com/matrix-org/matrix-appservice-bridge/issues/187))
+- Port RequestFactory and Request to Typescript ([\#189](https://github.com/matrix-org/matrix-appservice-bridge/issues/189))
+- Remove some bluebird imports and use async/await in some tests ([\#190](https://github.com/matrix-org/matrix-appservice-bridge/issues/190))
+- Convert Cli to Typescript ([\#195](https://github.com/matrix-org/matrix-appservice-bridge/issues/195))
+- Remove `request` dependency ([\#197](https://github.com/matrix-org/matrix-appservice-bridge/issues/197))
+
+
 1.13.2 (2020-07-24)
 ====================
 

@@ -383,7 +383,7 @@ export class PrometheusMetrics {
                 this.refresh();
 
                 try {
-                    const exposition = PromClient.register.metrics();
+                    const exposition = this.register.metrics();
 
                     res.set("Content-Type", "text/plain");
                     res.send(exposition);

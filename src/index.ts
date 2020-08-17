@@ -36,12 +36,11 @@ module.exports.RoomBridgeStore = require("./components/room-bridge-store");
 module.exports.EventBridgeStore = require("./components/event-bridge-store");
 
 // Models
-module.exports.MatrixUser = require("./models/users/matrix");
 module.exports.RemoteUser = require("./models/users/remote");
-module.exports.RemoteRoom = require("./models/rooms/remote");
 export * from "./models/events/event";
 export * from "./models/rooms/matrix";
 export * from "./models/rooms/remote";
+export * from "./models/users/matrix";
 
 module.exports.Bridge = require("./bridge");
 module.exports.BridgeContext = require("./components/bridge-context");

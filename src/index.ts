@@ -40,6 +40,7 @@ module.exports.MatrixUser = require("./models/users/matrix");
 module.exports.RemoteUser = require("./models/users/remote");
 module.exports.MatrixRoom = require("./models/rooms/matrix");
 module.exports.RemoteRoom = require("./models/rooms/remote");
+export * from "./models/events/event";
 module.exports.StoredEvent = require("./models/events/event");
 
 module.exports.Bridge = require("./bridge");

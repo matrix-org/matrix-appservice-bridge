@@ -14,7 +14,7 @@ limitations under the License.
 */
 
 const BridgeStore = require("./bridge-store");
-const StoredEvent = require("../models/events/event");
+const { StoredEvent } = require("../models/events/event");
 const util = require("util");
 
 /**

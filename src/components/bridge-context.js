@@ -16,7 +16,7 @@ limitations under the License.
 
 const Promise = require("bluebird");
 const MatrixUser = require("../models/users/matrix");
-const MatrixRoom = require("../models/rooms/matrix");
+const MatrixRoom = require("../models/rooms/matrix").MatrixRoom;
 const {wrap} = require("../errors");
 
 /**

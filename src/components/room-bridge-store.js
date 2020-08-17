@@ -57,7 +57,7 @@ limitations under the License.
  */
 
 var BridgeStore = require("./bridge-store");
-var MatrixRoom = require("../models/rooms/matrix");
+var MatrixRoom = require("../models/rooms/matrix").MatrixRoom;
 var RemoteRoom = require("../models/rooms/remote");
 var util = require("util");
 

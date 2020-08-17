@@ -14,7 +14,7 @@ limitations under the License.
 */
 
 const log = require("./logging").get("RoomUpgradeHandler");
-const MatrixRoom = require("../models/rooms/matrix");
+const MatrixRoom = require("../models/rooms/matrix").MatrixRoom;
 const MatrixUser = require("../models/users/matrix");
 
 /**

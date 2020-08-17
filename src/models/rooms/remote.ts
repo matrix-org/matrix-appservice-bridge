@@ -16,15 +16,15 @@ limitations under the License.
 /**
  * Create a remote room.
  * @constructor
- * @param {string} identifier The ID for this room
- * @param {Object=} data The key-value data object to assign to this room.
+ * @param identifier The ID for this room
+ * @param data The key-value data object to assign to this room.
  */
 export class RemoteRoom {
     constructor (public roomId: string, public data: Record<string, unknown> = {}) { }
 
     /**
      * Get the room ID.
-     * @return {string} The room ID
+     * @return The room ID
      */
     public getId() {
         return this.roomId;
@@ -32,7 +32,7 @@ export class RemoteRoom {
 
     /**
      * Serialize all the data about this room, excluding the room ID.
-     * @return {Object} The serialised data
+     * @return The serialised data
      */
     public serialize() {
         return this.data;
@@ -40,8 +40,8 @@ export class RemoteRoom {
 
     /**
      * Get the data value for the given key.
-     * @param {string} key An arbitrary bridge-specific key.
-     * @return {*} Stored data for this key. May be undefined.
+     * @param key An arbitrary bridge-specific key.
+     * @return Stored data for this key. May be undefined.
      */
     public get<T>(key: string) {
         return this.data[key] as T;
@@ -49,8 +49,8 @@ export class RemoteRoom {
 
     /**
      * Set an arbitrary bridge-specific data value for this room.
-     * @param {string} key The key to store the data value under.
-     * @param {*} val The data value. This value should be serializable via
+     * @param key The key to store the data value under.
+     * @param val The data value. This value should be serializable via
      * <code>JSON.stringify(data)</code>.
      */
     public set<T>(key: string, val: T) {

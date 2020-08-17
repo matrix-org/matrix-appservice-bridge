@@ -16,7 +16,7 @@ limitations under the License.
 /**
  * Create a matrix room.
  * @constructor
- * @param {string} roomId The room ID
+ * @param roomId The room ID
  */
 export class MatrixRoom {
     public name?: string;
@@ -30,7 +30,7 @@ export class MatrixRoom {
 
     /**
      * Get the room ID.
-     * @return {string} The room ID
+     * @return The room ID
      */
     public getId() {
         return this.roomId;
@@ -38,8 +38,8 @@ export class MatrixRoom {
 
     /**
      * Get the data value for the given key.
-     * @param {string} key An arbitrary bridge-specific key.
-     * @return {*} Stored data for this key. May be undefined.
+     * @param key An arbitrary bridge-specific key.
+     * @return Stored data for this key. May be undefined.
      */
     public get<T>(key: string) {
         return this._extras[key] as T;
@@ -48,8 +48,8 @@ export class MatrixRoom {
     /**
      * Set an arbitrary bridge-specific data value for this room. This will be serailized
      * under an 'extras' key.
-     * @param {string} key The key to store the data value under.
-     * @param {*} val The data value. This value should be serializable via
+     * @param key The key to store the data value under.
+     * @param val The data value. This value should be serializable via
      * <code>JSON.stringify(data)</code>.
      */
     public set<T>(key: string, val: T) {
@@ -58,7 +58,7 @@ export class MatrixRoom {
 
     /**
      * Serialize data about this room into a JSON object.
-     * @return {Object} The serialised data
+     * @return The serialised data
      */
     public serialize() {
         return {
@@ -70,7 +70,7 @@ export class MatrixRoom {
 
     /**
      * Set data about this room from a serialized data object.
-     * @param {Object} data The serialized data
+     * @param data The serialized data
      */
     public deserialize(data: {name: string, topic: string, extras: Record<string, unknown>}) {
         this.name = data.name;

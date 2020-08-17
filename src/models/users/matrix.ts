@@ -16,15 +16,15 @@ limitations under the License.
 /**
  * Construct a Matrix user.
  * @constructor
- * @param {string} userId The user_id of the user.
- * @param {Object=} data Serialized data values
- * @param {boolean} escape [true] Escape the user's localpart. Modify {@link MatrixUser~ESCAPE_DEFAULT}
+ * @param userId The user_id of the user.
+ * @param data Serialized data values
+ * @param
  *                  to change the default value.
  */
 export class MatrixUser {
     private _localpart: string;
     public readonly host: string;
-    constructor(public userId: string, public readonly _data: Record<string, unknown>, escape=MatrixUser.ESCAPE_DEFAULT) {
+    constructor(public userId: string, public readonly _data: Record<string, unknown> = {}, escape=MatrixUser.ESCAPE_DEFAULT) {
         if (!userId) {
             throw Error("Missing user_id");
         }
@@ -46,7 +46,7 @@ export class MatrixUser {
 
     /**
      * Get the matrix user's ID.
-     * @return {string} The user ID
+     * @return The user ID
      */
     public getId() {
         return this.userId;
@@ -54,7 +54,7 @@ export class MatrixUser {
 
     /**
      * Get the display name for this Matrix user.
-     * @return {?string} The display name.
+     * @return The display name.
      */
     public getDisplayName() {
         return this._data.displayName as string|undefined;
@@ -62,7 +62,7 @@ export class MatrixUser {
 
     /**
      * Set the display name for this Matrix user.
-     * @param {string} name The Matrix display name.
+     * @param name The Matrix display name.
      */
     public setDisplayName(name: string) {
         this._data.displayName = name;
@@ -70,8 +70,8 @@ export class MatrixUser {
 
     /**
      * Get the data value for the given key.
-     * @param {string} key An arbitrary bridge-specific key.
-     * @return {*} Stored data for this key. May be undefined.
+     * @param key An arbitrary bridge-specific key.
+     * @return Stored data for this key. May be undefined.
      */
     public get<T>(key: string) {
         return this._data[key] as T;
@@ -79,8 +79,8 @@ export class MatrixUser {
 
     /**
      * Set an arbitrary bridge-specific data value for this room.
-     * @param {string} key The key to store the data value under.
-     * @param {*} val The data value. This value should be serializable via
+     * @param key The key to store the data value under.
+     * @param val The data value. This value should be serializable via
      * <code>JSON.stringify(data)</code>.
      */
     public set<T>(key: string, val: T) {
@@ -89,7 +89,7 @@ export class MatrixUser {
 
     /**
      * Serialize all the data about this user, excluding the user ID.
-     * @return {Object} The serialised data
+     * @return The serialised data
      */
     public serialize() {
         return {

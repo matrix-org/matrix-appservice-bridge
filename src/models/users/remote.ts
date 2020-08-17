@@ -16,8 +16,8 @@ limitations under the License.
 /**
  * Construct a new Remote user.
  * @constructor
- * @param {string} identifier The unique ID for this user.
- * @param {Object=} data The serialized key-value data object to assign to this user.
+ * @param identifier The unique ID for this user.
+ * @param data The serialized key-value data object to assign to this user.
  * @throws If identifier is not supplied.
  */
 export class RemoteUser {
@@ -38,7 +38,7 @@ export class RemoteUser {
 
     /**
      * Serialize all the data about this room, excluding the room ID.
-     * @return {Object} The serialised data
+     * @return The serialised data
      */
     public serialize() {
         return this.data;
@@ -46,8 +46,8 @@ export class RemoteUser {
 
     /**
      * Get the data value for the given key.
-     * @param {string} key An arbitrary bridge-specific key.
-     * @return {*} Stored data for this key. May be undefined.
+     * @param key An arbitrary bridge-specific key.
+     * @return Stored data for this key. May be undefined.
      */
     public get<T>(key: string) {
         return this.data[key] as T;
@@ -55,8 +55,8 @@ export class RemoteUser {
 
     /**
      * Set an arbitrary bridge-specific data value for this room.
-     * @param {string} key The key to store the data value under.
-     * @param {*} val The data value. This value should be serializable via
+     * @param key The key to store the data value under.
+     * @param val The data value. This value should be serializable via
      * <code>JSON.stringify(data)</code>.
      */
     public set<T>(key: string, val: T) {

@@ -16,11 +16,11 @@ limitations under the License.
 /**
  * Create a store event.
  * @constructor
- * @param {string} roomId The matrix room ID
- * @param {string} eventId The matrix event ID
- * @param {string} remoteRoomId The remote room ID
- * @param {string} remoteEventId The remote event ID
- * @param {any} extras Any extra data that may be included with the event.
+ * @param roomId The matrix room ID
+ * @param eventId The matrix event ID
+ * @param remoteRoomId The remote room ID
+ * @param remoteEventId The remote event ID
+ * @param extras Any extra data that may be included with the event.
  */
 export class StoredEvent {
     constructor(public roomId: string,
@@ -31,7 +31,7 @@ export class StoredEvent {
 
     /**
      * Get the unique ID.
-     * @return {string} A unique ID
+     * @return A unique ID
      */
     public getId() {
         return this.eventId + this.remoteEventId;
@@ -39,7 +39,7 @@ export class StoredEvent {
 
     /**
      * Get the matrix room ID.
-     * @return {string} The room ID
+     * @return The room ID
      */
     public getMatrixRoomId() {
         return this.roomId;
@@ -47,7 +47,7 @@ export class StoredEvent {
 
     /**
      * Get the matrix event ID.
-     * @return {string} The event ID
+     * @return The event ID
      */
     public getMatrixEventId() {
         return this.eventId;
@@ -55,7 +55,7 @@ export class StoredEvent {
 
     /**
      * Get the remote room ID.
-     * @return {string} The remote room ID
+     * @return The remote room ID
      */
     public getRemoteRoomId() {
         return this.remoteRoomId;
@@ -63,7 +63,7 @@ export class StoredEvent {
 
     /**
      * Get the remote event ID.
-     * @return {string} The remote event ID
+     * @return The remote event ID
      */
     public getRemoteEventId() {
         return this.remoteEventId;
@@ -71,8 +71,8 @@ export class StoredEvent {
 
     /**
      * Get the data value for the given key.
-     * @param {string} key An arbitrary bridge-specific key.
-     * @return {*} Stored data for this key. May be undefined.
+     * @param key An arbitrary bridge-specific key.
+     * @return Stored data for this key. May be undefined.
      */
     public get<T>(key: string) {
         return this._extras[key] as T;
@@ -81,8 +81,8 @@ export class StoredEvent {
     /**
      * Set an arbitrary bridge-specific data value for this event. This will be serailized
      * under an 'extras' key.
-     * @param {string} key The key to store the data value under.
-     * @param {*} val The data value. This value should be serializable via
+     * @param key The key to store the data value under.
+     * @param val The data value. This value should be serializable via
      * <code>JSON.stringify(data)</code>.
      */
     public set<T>(key: string, val: T) {
@@ -109,7 +109,7 @@ export class StoredEvent {
 
     /**
      * Set data about this event from a serialized data object.
-     * @param {Object} data The serialized data
+     * @param data The serialized data
      */
     public deserialize(data: { matrix: { roomId: string, eventId: string}, remote: { roomId: string, eventId: string}, extras: Record<string, unknown>}) {
         return new StoredEvent(

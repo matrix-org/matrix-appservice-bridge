@@ -14,20 +14,26 @@ limitations under the License.
 */
 
 /**
- * Create a remote room.
+ * Construct a new Remote user.
  * @constructor
- * @param {string} identifier The ID for this room
- * @param {Object=} data The key-value data object to assign to this room.
+ * @param {string} identifier The unique ID for this user.
+ * @param {Object=} data The serialized key-value data object to assign to this user.
+ * @throws If identifier is not supplied.
  */
-export class RemoteRoom {
-    constructor (public roomId: string, public data: Record<string, unknown> = {}) { }
+export class RemoteUser {
+    constructor (public readonly id: string, public data: Record<string, unknown>) {
+        if (!id) {
+            throw new Error("Missing identifier");
+        }
+        this.data = data || {};
+    }
 
     /**
-     * Get the room ID.
-     * @return {string} The room ID
+     * Get the Remote user ID.
+     * @return The id
      */
     public getId() {
-        return this.roomId;
+        return this.id;
     }
 
     /**

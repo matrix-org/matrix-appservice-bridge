@@ -13,16 +13,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * Create a store event.
- * @constructor
- * @param roomId The matrix room ID
- * @param eventId The matrix event ID
- * @param remoteRoomId The remote room ID
- * @param remoteEventId The remote event ID
- * @param extras Any extra data that may be included with the event.
- */
 export class StoredEvent {
+    /**
+     * Create a store event.
+     * @param roomId The matrix room ID
+     * @param eventId The matrix event ID
+     * @param remoteRoomId The remote room ID
+     * @param remoteEventId The remote event ID
+     * @param _extras Any extra data that may be included with the event.
+     */
     constructor(public roomId: string,
         public eventId: string, public remoteRoomId: string,
         public remoteEventId: string,

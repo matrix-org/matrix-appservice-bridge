@@ -13,13 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * Create a remote room.
- * @constructor
- * @param identifier The ID for this room
- * @param data The key-value data object to assign to this room.
- */
 export class RemoteRoom {
+    /**
+     * Create a remote room.
+     * @param identifier The ID for this room
+     * @param data The key-value data object to assign to this room.
+     */
     constructor (public roomId: string, public data: Record<string, unknown> = {}) { }
 
     /**

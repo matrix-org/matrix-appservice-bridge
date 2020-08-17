@@ -13,14 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * Construct a new Remote user.
- * @constructor
- * @param identifier The unique ID for this user.
- * @param data The serialized key-value data object to assign to this user.
- * @throws If identifier is not supplied.
- */
 export class RemoteUser {
+
+    /**
+     * @param identifier The unique ID for this user.
+     * @param data The serialized key-value data object to assign to this user.
+     * @throws If identifier is not supplied.
+     */
     constructor (public readonly id: string, public data: Record<string, unknown>) {
         if (!id) {
             throw new Error("Missing identifier");

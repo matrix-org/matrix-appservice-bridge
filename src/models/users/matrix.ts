@@ -13,17 +13,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * Construct a Matrix user.
- * @constructor
- * @param userId The user_id of the user.
- * @param data Serialized data values
- * @param
- *                  to change the default value.
- */
 export class MatrixUser {
     private _localpart: string;
     public readonly host: string;
+
+    /**
+     * Construct a Matrix user.
+     * @param userId The userId of the user.
+     * @param data Serialized data values
+     * @param escape Escape the user's localpart. Modify {@link MatrixUser~ESCAPE_DEFAULT}
+     *               to change the default value.
+     */
     constructor(public userId: string, public readonly _data: Record<string, unknown> = {}, escape=MatrixUser.ESCAPE_DEFAULT) {
         if (!userId) {
             throw Error("Missing user_id");

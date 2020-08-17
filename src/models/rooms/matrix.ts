@@ -13,15 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * Create a matrix room.
- * @constructor
- * @param roomId The room ID
- */
 export class MatrixRoom {
     public name?: string;
     public topic?: string;
     private _extras: Record<string, unknown> = {};
+
+    /**
+     * Create a matrix room.
+     * @param roomId The room ID
+     * @param data The room ID
+     */
     constructor(public readonly roomId: string, data?: {name: string, topic: string, extras: Record<string, unknown>}) {
         if (data) {
             this.deserialize(data);

@@ -41,6 +41,7 @@ module.exports.RemoteUser = require("./models/users/remote");
 module.exports.RemoteRoom = require("./models/rooms/remote");
 export * from "./models/events/event";
 export * from "./models/rooms/matrix";
+export * from "./models/rooms/remote";
 
 module.exports.Bridge = require("./bridge");
 module.exports.BridgeContext = require("./components/bridge-context");

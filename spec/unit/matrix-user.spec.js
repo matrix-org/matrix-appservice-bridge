@@ -1,4 +1,4 @@
-const MatrixUser = require("../../lib/models/users/matrix");
+const MatrixUser = require("../..").MatrixUser;
 
 describe("MatrixUser", function() {
     describe("escapeUserId", function() {

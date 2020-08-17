@@ -28,7 +28,7 @@ export class MatrixUser {
         if (!userId) {
             throw Error("Missing user_id");
         }
-        if (_data && typeof _data === "object") {
+        if (_data && typeof _data !== "object") {
             throw Error("data arg must be an Object");
         }
         this.userId = userId;

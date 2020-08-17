@@ -110,7 +110,7 @@ export class StoredEvent {
      * Set data about this event from a serialized data object.
      * @param data The serialized data
      */
-    public deserialize(data: { matrix: { roomId: string, eventId: string}, remote: { roomId: string, eventId: string}, extras: Record<string, unknown>}) {
+    public static deserialize(data: { matrix: { roomId: string, eventId: string}, remote: { roomId: string, eventId: string}, extras: Record<string, unknown>}) {
         return new StoredEvent(
             data.matrix.roomId,
             data.matrix.eventId,

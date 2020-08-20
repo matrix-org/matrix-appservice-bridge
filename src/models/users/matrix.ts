@@ -24,14 +24,13 @@ export class MatrixUser {
      * @param escape Escape the user's localpart. Modify {@link MatrixUser~ESCAPE_DEFAULT}
      *               to change the default value.
      */
-    constructor(public userId: string, public readonly _data: Record<string, unknown> = {}, escape=MatrixUser.ESCAPE_DEFAULT) {
+    constructor(public userId: string, private readonly _data: Record<string, unknown> = {}, escape=MatrixUser.ESCAPE_DEFAULT) {
         if (!userId) {
             throw Error("Missing user_id");
         }
         if (_data && typeof _data !== "object") {
             throw Error("data arg must be an Object");
         }
-        this.userId = userId;
         const split = this.userId.split(":");
         this._localpart = split[0].substring(1);
         this.host = split[1];
@@ -83,7 +82,7 @@ export class MatrixUser {
      * @param val The data value. This value should be serializable via
      * <code>JSON.stringify(data)</code>.
      */
-    public set<T>(key: string, val: T) {
+    public set(key: string, val: unknown) {
         this._data[key] = val;
     }
 

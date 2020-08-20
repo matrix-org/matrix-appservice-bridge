@@ -25,7 +25,7 @@ export class StoredEvent {
     constructor(public roomId: string,
         public eventId: string, public remoteRoomId: string,
         public remoteEventId: string,
-        private _extras: Record<string, unknown> = {}
+        private readonly _extras: Record<string, unknown> = {}
     ) { }
 
     /**
@@ -84,7 +84,7 @@ export class StoredEvent {
      * @param val The data value. This value should be serializable via
      * <code>JSON.stringify(data)</code>.
      */
-    public set<T>(key: string, val: T) {
+    public set(key: string, val: unknown) {
         this._extras[key] = val;
     };
 

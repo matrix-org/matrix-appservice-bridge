@@ -20,7 +20,7 @@ export class RemoteUser {
      * @param data The serialized key-value data object to assign to this user.
      * @throws If identifier is not supplied.
      */
-    constructor (public readonly id: string, public data: Record<string, unknown>) {
+    constructor (public readonly id: string, public readonly data: Record<string, unknown>) {
         if (!id) {
             throw new Error("Missing identifier");
         }
@@ -58,7 +58,7 @@ export class RemoteUser {
      * @param val The data value. This value should be serializable via
      * <code>JSON.stringify(data)</code>.
      */
-    public set<T>(key: string, val: T) {
+    public set(key: string, val: unknown) {
         this.data[key] = val;
     }
 }

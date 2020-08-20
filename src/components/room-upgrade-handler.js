@@ -14,8 +14,8 @@ limitations under the License.
 */
 
 const log = require("./logging").get("RoomUpgradeHandler");
-const MatrixRoom = require("../models/rooms/matrix");
-const MatrixUser = require("../models/users/matrix");
+const MatrixRoom = require("../models/rooms/matrix").MatrixRoom;
+const MatrixUser = require("../models/users/matrix").MatrixUser;
 
 /**
  * Handles migration of rooms when a room upgrade is performed.

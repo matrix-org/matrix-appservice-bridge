@@ -53,8 +53,8 @@ limitations under the License.
  */
 
 var BridgeStore = require("./bridge-store");
-var MatrixUser = require("../models/users/matrix");
-var RemoteUser = require("../models/users/remote");
+const MatrixUser = require("../models/users/matrix").MatrixUser;
+const RemoteUser = require("../models/users/remote").RemoteUser;
 var util = require("util");
 
 /**

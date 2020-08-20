@@ -20,17 +20,16 @@ import JsSdk from "matrix-js-sdk";
 const { MatrixEvent, RoomMember } = JsSdk as any;
 import ClientRequestCache from "./client-request-cache";
 import { defer } from "../utils/promiseutil";
+import { UserMembership } from "./membership-cache";
 
 
 type BridgeErrorReason = "m.event_not_handled" | "m.event_too_old"
     | "m.internal_error" | "m.foreign_network_error" | "m.event_unknown";
 
-type MembershipState = "join" | "invite" | "leave" | null; // null = unknown
-
 type BackingStore = {
-    getMembership: (roomId: string, userId: string) => MembershipState,
+    getMembership: (roomId: string, userId: string) => UserMembership,
     getPowerLevelContent: (roomId: string) => Record<string, unknown> | undefined,
-    setMembership: (roomId: string, userId: string, membership: MembershipState) => void,
+    setMembership: (roomId: string, userId: string, membership: UserMembership) => void,
     setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => void,
 };
 
@@ -98,7 +97,7 @@ export class Intent {
         registered?: boolean;
     }
     // These two are only used if no opts.backingStore is provided to the constructor.
-    private readonly _membershipStates: Record<string, MembershipState> = {};
+    private readonly _membershipStates: Record<string, UserMembership> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
 
     /**
@@ -167,7 +166,7 @@ export class Intent {
                 getPowerLevelContent: (roomId: string) => {
                     return this._powerLevels[roomId];
                 },
-                setMembership: (roomId: string, userId: string, membership: MembershipState) => {
+                setMembership: (roomId: string, userId: string, membership: UserMembership) => {
                     if (userId !== this.client.credentials.userId) {
                         return;
                     }
@@ -641,7 +640,7 @@ export class Intent {
      * @param event The incoming event JSON
      */
     // eslint-disable-next-line camelcase
-    public onEvent(event: {type: string, content: {membership: MembershipState}, state_key: unknown, room_id: string}) {
+    public onEvent(event: {type: string, content: {membership: UserMembership}, state_key: unknown, room_id: string}) {
         if (!this._membershipStates || !this._powerLevels) {
             return;
         }
@@ -704,7 +703,7 @@ export class Intent {
 
         const deferredPromise = defer();
 
-        const mark = (room: string, state: MembershipState) => {
+        const mark = (room: string, state: UserMembership) => {
             this.opts.backingStore.setMembership(room, userId, state);
             if (state === "join") {
                 deferredPromise.resolve();

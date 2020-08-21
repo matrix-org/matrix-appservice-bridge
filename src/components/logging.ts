@@ -42,7 +42,6 @@ interface LoggerConfig {
 export class LogWrapper {
     private logger: Logger|null = null;
     private messages: {type: LogLevel, message: string}[] = [];
-    constructor() { }
 
     public setLogger(logger: Logger) {
         this.logger = logger;
@@ -103,7 +102,7 @@ class Logging {
         });
 
         this.colorFn = format((info) => {
-            let level = info.level.toUpperCase() as LogLevel;
+            const level = info.level.toUpperCase() as LogLevel;
             const levelColour = CHALK_LEVELS[info.level as LogLevel];
             if (levelColour) {
                 info.level = chalk.keyword(levelColour)(level);
@@ -156,7 +155,7 @@ class Logging {
         }
 
         if (config.files !== undefined) {
-            for (let filename of Object.keys(config.files)) {
+            for (const filename of Object.keys(config.files)) {
                 const level = config.files[filename];
                 this.transports.push(new DailyRotateFile({
                     filename,
@@ -204,16 +203,16 @@ class Logging {
 }
 
 const instance: Logging = new Logging();
-let isConfigured: boolean = false;
+let isConfigured = false;
 
 export function get(name: string) {
     return instance.get(name);
-};
+}
 
-export function configure (config: LoggerConfig){
+export function configure (config: LoggerConfig) {
     instance.configure(config);
     isConfigured = true;
-};
+}
 
 export function configured() {
     return isConfigured;
@@ -224,5 +223,4 @@ export default {
     get,
     configure,
     configured,
- }
- 
+}

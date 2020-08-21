@@ -82,9 +82,9 @@ type PowerLevelContent = {
 
 export class Intent {
     private _requestCaches: {
-        profile: ClientRequestCache<any>,
-        roomstate: ClientRequestCache<any>,
-        event: ClientRequestCache<any>
+        profile: ClientRequestCache<unknown, [string, string]>,
+        roomstate: ClientRequestCache<unknown, []>,
+        event: ClientRequestCache<unknown, [string, string]>
     }
     private opts: {
         backingStore: BackingStore,
@@ -187,7 +187,7 @@ export class Intent {
             profile: new ClientRequestCache(
                 this.opts.caching.ttl,
                 this.opts.caching.size,
-                (_: unknown, userId: string, info: string) => {
+                (_: string, userId: string, info: string) => {
                     return this.getProfileInfo(userId, info, false);
                 }
             ),
@@ -201,7 +201,7 @@ export class Intent {
             event: new ClientRequestCache(
                 this.opts.caching.ttl,
                 this.opts.caching.size,
-                (_: unknown, roomId: string, eventId: string) => {
+                (_: string, roomId: string, eventId: string) => {
                     return this.getEvent(roomId, eventId, false);
                 }
             ),

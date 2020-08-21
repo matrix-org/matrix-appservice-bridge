@@ -17,7 +17,7 @@ limitations under the License.
 /**
  * Caches requests in memory and handles expiring them.
  */
-export class ClientRequestCache<T> {
+export class ClientRequestCache<T, P extends Array<unknown>> {
     private requestContent = new Map<string, {ts: number, content: T}>();
     /**
      * @param ttl How old a result can be before it gets expired.
@@ -26,7 +26,7 @@ export class ClientRequestCache<T> {
      */
     constructor (private readonly ttl: number,
         private readonly maxSize: number,
-        private readonly requestFunc: (...args: any[]) => Promise<T>) {
+        private readonly requestFunc: (key: string, ...args: P) => Promise<T>) {
         if (!Number.isInteger(ttl) || ttl <= 0) {
             throw Error("'ttl' must be greater than 0");
         }
@@ -36,8 +36,6 @@ export class ClientRequestCache<T> {
         if (typeof(requestFunc) !== "function") {
             throw Error("'requestFunc' must be a function");
         }
-        this.requestFunc = requestFunc;
-        this.ttl = ttl;
     }
 
     /**
@@ -49,7 +47,7 @@ export class ClientRequestCache<T> {
      * @returns {Promise} The request, or undefined if not retrievable.
      * @throws {Error} If the key is not a string.
      */
-    get(key: string, ...args: any[]) {
+    get(key: string, ...args: P) {
         if (typeof(key) !== "string") {
             throw Error("'key' must be a string");
         }
@@ -60,7 +58,8 @@ export class ClientRequestCache<T> {
         // Delete the old req.
         this.requestContent.delete(key);
         return new Promise<T>((resolve) => {
-            resolve(this.requestFunc.apply(null, [key, ...args]))
+            // TypeScript doesn't understand that `args :P` will satisfy this.requestFunc
+            resolve((this.requestFunc as any).apply(null, [key, ...args]))
         }).then((result) => {
             if (result !== undefined) {
                 this.requestContent.set(key, {

@@ -32,7 +32,7 @@ interface CliOpts<ConfigType extends Record<string, unknown>> {
     bridgeConfig?: {
         affectsRegistration?: boolean;
         schema: string|Record<string, unknown>;
-        defaults: string|Record<string, unknown>;
+        defaults: Record<string, unknown>;
     };
     registrationPath: string;
     enableRegistration?: boolean;

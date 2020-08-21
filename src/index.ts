@@ -27,6 +27,7 @@ export * from "./components/state-lookup";
 
 // Config and CLI
 export * from "./components/cli";
+export * from "./components/config-validator";
 module.exports.ConfigValidator = require("./components/config-validator");
 
 // Store

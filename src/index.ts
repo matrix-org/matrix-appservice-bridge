@@ -61,7 +61,7 @@ module.exports.PrometheusMetrics.AgeCounters = require("./components/agecounters
 module.exports.MembershipCache = require("./components/membership-cache");
 
 // Logging
-module.exports.Logging = require("./components/logging");
+export * as Logging from "./components/logging";
 
 // Consts for RoomLinkValidator
 module.exports.RoomLinkValidatorStatus = require(

@@ -28,7 +28,7 @@ const CHALK_LEVELS: Record<LogLevel, string> = {
     "error": "red",
 }
 
-type MessagePart = any;
+type MessagePart = unknown;
 interface LoggerConfig {
     console?: "error"|"warn"|"info"|"debug"|"off",
     fileDatePattern?: string,
@@ -69,7 +69,7 @@ export class LogWrapper {
             if (typeof(part) === "object") {
                 return util.inspect(part);
             }
-            return part;
+            return String(part);
         });
     }
 

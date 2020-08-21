@@ -15,7 +15,7 @@ limitations under the License.
 */
 import * as fs from "fs";
 import yaml from "js-yaml";
-import Validator from "is-my-json-valid";
+import validator from "is-my-json-valid";
 import extend from "extend";
 
 type Schema = any;
@@ -41,12 +41,12 @@ export default class ConfigValidator {
         if (typeof inputConfig === "string") {
             inputConfig = ConfigValidator.loadFromFile(inputConfig);
         }
-        const js = Validator(this.schema, {
+        const js = validator(this.schema, {
             verbose: true,
         });
         const res = js(inputConfig, this.schema);
         if (!res) {
-            js.errors.forEach(function(error) {
+            js.errors.forEach(error => {
                 console.error(JSON.stringify(error));
                 console.error(`The field ${error.field} is ${error.value}` +
                             ` which ${error.message}`);

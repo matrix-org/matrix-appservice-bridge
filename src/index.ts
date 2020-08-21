@@ -30,8 +30,8 @@ export * from "./components/cli";
 module.exports.ConfigValidator = require("./components/config-validator");
 
 // Store
-module.exports.BridgeStore = require("./components/bridge-store");
-module.exports.UserBridgeStore = require("./components/user-bridge-store");
+export * from "./components/bridge-store";
+export * from "./components/user-bridge-store";
 module.exports.RoomBridgeStore = require("./components/room-bridge-store");
 module.exports.EventBridgeStore = require("./components/event-bridge-store");
 

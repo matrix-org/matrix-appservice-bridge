@@ -18,7 +18,7 @@ import JsSdk from "matrix-js-sdk";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const { MatrixEvent, RoomMember } = JsSdk as any;
-import ClientRequestCache from "./client-request-cache";
+import { ClientRequestCache } from "./client-request-cache";
 import { defer } from "../utils/promiseutil";
 import { UserMembership } from "./membership-cache";
 
@@ -81,9 +81,9 @@ type PowerLevelContent = {
 
 export class Intent {
     private _requestCaches: {
-        profile: ClientRequestCache,
-        roomstate: ClientRequestCache,
-        event: ClientRequestCache
+        profile: ClientRequestCache<unknown, [string, string]>,
+        roomstate: ClientRequestCache<unknown, []>,
+        event: ClientRequestCache<unknown, [string, string]>
     }
     private opts: {
         backingStore: BackingStore,
@@ -186,7 +186,7 @@ export class Intent {
             profile: new ClientRequestCache(
                 this.opts.caching.ttl,
                 this.opts.caching.size,
-                (_: unknown, userId: string, info: string) => {
+                (_: string, userId: string, info: string) => {
                     return this.getProfileInfo(userId, info, false);
                 }
             ),
@@ -200,7 +200,7 @@ export class Intent {
             event: new ClientRequestCache(
                 this.opts.caching.ttl,
                 this.opts.caching.size,
-                (_: unknown, roomId: string, eventId: string) => {
+                (_: string, roomId: string, eventId: string) => {
                     return this.getEvent(roomId, eventId, false);
                 }
             ),

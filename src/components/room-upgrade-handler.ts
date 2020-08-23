@@ -45,6 +45,7 @@ export class RoomUpgradeHandler {
         }
     }
 
+    // eslint-disable-next-line camelcase
     public async onTombstone(ev: {sender: string, room_id: string, content: {replacement_room: string}}) {
         const movingTo = ev.content.replacement_room;
         log.info(`Got tombstone event for ${ev.room_id} -> ${movingTo}`);
@@ -70,7 +71,7 @@ export class RoomUpgradeHandler {
             await intent.join(newRoomId, joinVia);
             return true;
         }
-        catch(ex) {
+        catch (ex) {
             if (ex.errcode === "M_FORBIDDEN") {
                 return false;
             }
@@ -78,6 +79,7 @@ export class RoomUpgradeHandler {
         }
     }
 
+    // eslint-disable-next-line camelcase
     public async onInvite(ev: {room_id: string}) {
         const oldRoomId = this.waitingForInvite.get(ev.room_id);
         if (!oldRoomId) {
@@ -88,7 +90,8 @@ export class RoomUpgradeHandler {
         try {
             await this.joinNewRoom(ev.room_id);
             await this.onJoinedNewRoom(oldRoomId, ev.room_id);
-        } catch (err) {
+        }
+ catch (err) {
             log.error("Couldn't handle room upgrade: ", err);
         }
         return true;
@@ -153,7 +156,7 @@ export class RoomUpgradeHandler {
 
                 // If migrateEntry changed the id of the room, then ensure
                 // that we remove the old one.
-                if (existingId !== newEntry.id) {
+                if (existingId && existingId !== newEntry.id) {
                     await roomStore.removeEntryById(existingId);
                 }
                 await roomStore.upsertEntry(newEntry);

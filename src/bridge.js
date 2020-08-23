@@ -816,7 +816,7 @@ Bridge.prototype.__onEvent = async function(event) {
                 event.content.membership === "invite") {
             // A invite-only room that has been upgraded won't have been joinable,
             // so we are listening for any invites to the new room.
-            const isUpgradeInvite = this._roomUpgradeHandler.onInvite(event);
+            const isUpgradeInvite = await this._roomUpgradeHandler.onInvite(event);
             if (isUpgradeInvite &&
                 this.opts.roomUpgradeOpts.consumeEvent) {
                 return null;

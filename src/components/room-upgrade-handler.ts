@@ -91,7 +91,7 @@ export class RoomUpgradeHandler {
             await this.joinNewRoom(ev.room_id);
             await this.onJoinedNewRoom(oldRoomId, ev.room_id);
         }
- catch (err) {
+        catch (err) {  
             log.error("Couldn't handle room upgrade: ", err);
         }
         return true;

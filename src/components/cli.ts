@@ -28,11 +28,20 @@ const log = logging.get("cli");
 
 interface CliOpts<ConfigType extends Record<string, unknown>> {
     run: (port: number, config: ConfigType|null, registration: AppServiceRegistration|null) => void;
+    onConfigChanged?: (config: ConfigType) => void,
     generateRegistration?: (reg: AppServiceRegistration, cb: (finalReg: AppServiceRegistration) => void) => void;
     bridgeConfig?: {
         affectsRegistration?: boolean;
         schema: string|Record<string, unknown>;
         defaults: Record<string, unknown>;
+        /**
+         * Should the config file be watched for changes.
+         */
+        watchConfig: boolean;
+        /**
+         * How often should the watcher poll for changes on the config file.
+         */
+        watchInterval?: number;
     };
     registrationPath: string;
     enableRegistration?: boolean;
@@ -51,6 +60,7 @@ interface CliArgs {
 }
 
 export class Cli<ConfigType extends Record<string, unknown>> {
+    public static DEFAULT_WATCH_INTERVAL = 2500;
     private bridgeConfig: ConfigType|null = null;
     private args: CliArgs|null = null;
 
@@ -82,6 +92,10 @@ export class Cli<ConfigType extends Record<string, unknown>> {
 
         if (!this.opts.run || typeof this.opts.run !== "function") {
             throw new Error("Requires 'run' function.");
+        }
+
+        if (!this.opts.onConfigChanged && this.opts.bridgeConfig?.watchConfig) {
+            throw new Error('`bridgeConfig.watchConfig` is enabled but `onConfigChanged` is not defined');
         }
 
         if (this.opts.enableRegistration && !this.opts.generateRegistration) {
@@ -122,8 +136,8 @@ export class Cli<ConfigType extends Record<string, unknown>> {
     /**
      * Run the app from the command line. Will parse sys args.
      */
-    public run() {
-        this.args = nopt({
+    public run(args?: CliArgs) {
+        this.args = args || nopt({
             "generate-registration": Boolean,
             "config": path,
             "url": String,
@@ -230,6 +244,24 @@ export class Cli<ConfigType extends Record<string, unknown>> {
     }
 
     private startWithConfig(config: ConfigType|null) {
+        if (this.opts.bridgeConfig?.watchConfig && this.args?.config) {
+            log.info("Will watch config file for changes");
+            fs.watchFile(this.args.config, {
+                persistent: false,
+                interval: this.opts.bridgeConfig.watchInterval || Cli.DEFAULT_WATCH_INTERVAL },
+                (curr: fs.Stats) => {
+                log.info("Config file change detected, reloading");
+                try {
+                    const newConfig = this.loadConfig(this.args?.config);
+                    // onConfigChanged is checked in the constructor
+                    if (newConfig && this.opts.onConfigChanged) {
+                        this.opts.onConfigChanged(newConfig);
+                    }
+                } catch (ex) {
+                    log.warn("Failed to reload config file:", ex);
+                }
+            });
+        }
         this.opts.run(
             this.opts.port, config,
             AppServiceRegistration.fromObject(this.loadYaml(this.opts.registrationPath))

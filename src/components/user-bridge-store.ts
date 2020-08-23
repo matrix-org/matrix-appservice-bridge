@@ -13,8 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import Bridge from "../bridge";
-
 /*
  * User storage format:
  * {
@@ -53,7 +51,6 @@ import Bridge from "../bridge";
  *   matrix_id: "@foo:bar"
  * }
  */
-import * as util from "util";
 import Datastore from "nedb";
 import { BridgeStore } from "./bridge-store";
 import { MatrixUser } from "../models/users/matrix";
@@ -333,7 +330,7 @@ export class UserBridgeStore extends BridgeStore {
      * @param remoteId The remote ID
      * @return A list of user IDs.
      */
-    public getMatrixLinks(remoteId: string) {
+    public getMatrixLinks(remoteId: string): Promise<string[]|null> {
         return this.select({
             type: "union",
             remote_id: remoteId
@@ -347,7 +344,7 @@ export class UserBridgeStore extends BridgeStore {
      * @param matrixId The matrix user ID
      * @return A list of remote IDs.
      */
-    public getRemoteLinks(matrixId: string) {
+    public getRemoteLinks(matrixId: string): Promise<string[]|null> {
         return this.select({
             type: "union",
             matrix_id: matrixId

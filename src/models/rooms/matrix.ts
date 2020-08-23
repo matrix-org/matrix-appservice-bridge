@@ -13,6 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+export interface MatrixRoomData {
+    name?: string;
+    topic?: string;
+    extras: Record<string, unknown>;
+}
+
 export class MatrixRoom {
     public name?: string;
     public topic?: string;
@@ -23,7 +29,7 @@ export class MatrixRoom {
      * @param roomId The room ID
      * @param data The room ID
      */
-    constructor(public readonly roomId: string, data?: {name: string, topic: string, extras: Record<string, unknown>}) {
+    constructor(public readonly roomId: string, data?: MatrixRoomData) {
         if (data) {
             this.deserialize(data);
         }
@@ -61,7 +67,7 @@ export class MatrixRoom {
      * Serialize data about this room into a JSON object.
      * @return The serialised data
      */
-    public serialize() {
+    public serialize(): MatrixRoomData {
         return {
             name: this.name,
             topic: this.topic,
@@ -73,7 +79,7 @@ export class MatrixRoom {
      * Set data about this room from a serialized data object.
      * @param data The serialized data
      */
-    public deserialize(data: {name: string, topic: string, extras: Record<string, unknown>}) {
+    public deserialize(data: MatrixRoomData) {
         this.name = data.name;
         this.topic = data.topic;
         this._extras = data.extras;

@@ -25,7 +25,7 @@ const MatrixScheduler = require("matrix-js-sdk").MatrixScheduler;
 
 const BridgeContext = require("./components/bridge-context");
 const { ClientFactory } = require("./components/client-factory");
-const AppServiceBot = require("./components/app-service-bot");
+const { AppServiceBot } = require("./components/app-service-bot");
 const RequestFactory = require("./components/request-factory").RequestFactory;
 const Intent = require("./components/intent").Intent;
 const RoomBridgeStore = require("./components/room-bridge-store");

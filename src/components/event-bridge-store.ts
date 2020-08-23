@@ -15,7 +15,7 @@ limitations under the License.
 
 import Datastore from "nedb";
 import { BridgeStore } from "./bridge-store";
-import { StoredEvent } from "../models/events/event";
+import { StoredEvent, StoredEventDoc } from "../models/events/event";
 
 /**
  * Construct a store suitable for event mapping information. Data is stored
@@ -46,9 +46,9 @@ export class EventBridgeStore extends BridgeStore {
         return this.selectOne<any, StoredEvent>({
             "matrix.roomId": roomId,
             "matrix.eventId": eventId,
-        }, (this.convertTo(function(doc) {
+        }, (this.convertTo(function(doc: StoredEventDoc) {
             return StoredEvent.deserialize(doc);
-        })) as (doc: any) => StoredEvent);
+        })));
     }
 
     /**
@@ -61,7 +61,7 @@ export class EventBridgeStore extends BridgeStore {
         return this.selectOne({
             "remote.roomId": roomId,
             "remote.eventId": eventId,
-        }, this.convertTo((doc: any) => {
+        }, this.convertTo((doc: StoredEventDoc) => {
             return StoredEvent.deserialize(doc);
         }));
     }

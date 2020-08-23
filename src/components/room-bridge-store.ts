@@ -114,7 +114,7 @@ export class RoomBridgeStore extends BridgeStore {
     public getEntryById(id: string) {
         return this.selectOne({
             id: id
-        }, this.convertTo((doc: RoomStoreEntryDoc) => 
+        }, this.convertTo((doc: RoomStoreEntryDoc) =>
             new RoomBridgeStoreEntry(doc)
         ));
     }
@@ -127,10 +127,10 @@ export class RoomBridgeStore extends BridgeStore {
     public getEntriesByMatrixId(matrixId: string) {
         return this.select({
             matrix_id: matrixId
-        }, this.convertTo((doc: RoomStoreEntryDoc) => 
+        }, this.convertTo((doc: RoomStoreEntryDoc) =>
             new RoomBridgeStoreEntry(doc)
         ));
-    };
+    }
 
     /**
      * A batch version of <code>getEntriesByMatrixId</code>.
@@ -139,7 +139,8 @@ export class RoomBridgeStore extends BridgeStore {
      * to a map of room_id => Entry[]
      */
     public async getEntriesByMatrixIds(ids: string[]) {
-        const docs = await this.select<{ matrix_id: string },RoomStoreEntryDoc>({
+        // eslint-disable-next-line camelcase
+        const docs = await this.select<{ matrix_id: string }, RoomStoreEntryDoc>({
             matrix_id: {
                 $in: ids
             }
@@ -158,7 +159,7 @@ export class RoomBridgeStore extends BridgeStore {
             entries[doc.matrix_id].push(new RoomBridgeStoreEntry(doc));
         });
         return entries;
-    };
+    }
 
     /**
      * Get a list of entries based on the remote_id of each entry.
@@ -168,10 +169,10 @@ export class RoomBridgeStore extends BridgeStore {
     public getEntriesByRemoteId(remoteId: string) {
         return this.select({
             remote_id: remoteId
-        }, this.convertTo((doc: RoomStoreEntryDoc) => 
+        }, this.convertTo((doc: RoomStoreEntryDoc) =>
             new RoomBridgeStoreEntry(doc)
         ));
-    };
+    }
 
     /**
      * Create a link between a matrix room and remote room. This will create an entry with:
@@ -193,8 +194,7 @@ export class RoomBridgeStore extends BridgeStore {
         linkId = linkId || RoomBridgeStore.createUniqueId(
             matrixRoom.getId(), remoteRoom.getId(), this.delimiter
         );
-        var self = this;
-        return self.upsert({
+        return this.upsert({
             id: linkId
         }, {
             id: linkId,
@@ -204,7 +204,7 @@ export class RoomBridgeStore extends BridgeStore {
             matrix: matrixRoom.serialize(),
             data: data
         });
-    };
+    }
 
     /**
      * Create an entry with only a matrix room. Sets the 'id' of the entry to the
@@ -222,7 +222,7 @@ export class RoomBridgeStore extends BridgeStore {
             matrix: matrixRoom.serialize(),
         });
         return this.upsertEntry(entry);
-    };
+    }
 
     /**
      * Get an entry's Matrix room based on the provided room_id. The entry MUST have
@@ -236,7 +236,7 @@ export class RoomBridgeStore extends BridgeStore {
         return this.getEntryById(roomId).then(function(e) {
             return e ? e.matrix : null;
         });
-    };
+    }
 
     /**
      * Get all entries with the given remote_id which have a Matrix room within.
@@ -253,7 +253,7 @@ export class RoomBridgeStore extends BridgeStore {
         }).map(function(e) {
             return e.matrix;
         });
-    };
+    }
 
     /**
      * Get all entries with the given matrix_id which have a Remote room within.
@@ -270,7 +270,7 @@ export class RoomBridgeStore extends BridgeStore {
         }).map(function(e) {
             return e.remote;
         });
-    };
+    }
 
     /**
      * A batched version of <code>getLinkedRemoteRooms</code>.
@@ -289,7 +289,7 @@ export class RoomBridgeStore extends BridgeStore {
             }) as RemoteRoom[];
         }
         return entryMap;
-    };
+    }
 
 
     /**
@@ -305,14 +305,14 @@ export class RoomBridgeStore extends BridgeStore {
      */
     public getEntriesByRemoteRoomData(data: Record<string, unknown>) {
         Object.keys(data).forEach(function(k) {
-            var query = data[k];
+            const query = data[k];
             delete data[k];
             data["remote." + k] = query;
         });
-        return this.select(data, this.convertTo((doc: RoomStoreEntryDoc) => 
+        return this.select(data, this.convertTo((doc: RoomStoreEntryDoc) =>
             new RoomBridgeStoreEntry(doc)
         ));
-    };
+    }
 
     /**
      * Get a list of entries based on a MatrixRoom data value.
@@ -327,14 +327,14 @@ export class RoomBridgeStore extends BridgeStore {
      */
     public getEntriesByMatrixRoomData(data: Record<string, unknown>) {
         Object.keys(data).forEach(function(k) {
-            var query = data[k];
+            const query = data[k];
             delete data[k];
             data["matrix.extras." + k] = query;
         });
-        return this.select(data, this.convertTo((doc: RoomStoreEntryDoc) => 
+        return this.select(data, this.convertTo((doc: RoomStoreEntryDoc) =>
         new RoomBridgeStoreEntry(doc)
     ));
-    };
+    }
 
     /**
      * Get a list of entries based on the link's data value.
@@ -348,14 +348,14 @@ export class RoomBridgeStore extends BridgeStore {
      */
     public getEntriesByLinkData(data: Record<string, unknown>) {
         Object.keys(data).forEach(function(k) {
-            var query = data[k];
+            const query = data[k];
             delete data[k];
             data["data." + k] = query;
         });
-        return this.select(data, this.convertTo((doc: RoomStoreEntryDoc) => 
+        return this.select(data, this.convertTo((doc: RoomStoreEntryDoc) =>
             new RoomBridgeStoreEntry(doc)
         ));
-    };
+    }
 
     /**
      * Remove entries based on remote room data.
@@ -370,12 +370,12 @@ export class RoomBridgeStore extends BridgeStore {
      */
     public removeEntriesByRemoteRoomData(data: Record<string, unknown>) {
         Object.keys(data).forEach(function(k) {
-            var query = data[k];
+            const query = data[k];
             delete data[k];
             data["remote." + k] = query;
         });
         return this.delete(data);
-    };
+    }
 
     /**
      * Remove entries with this remote room id.
@@ -390,7 +390,7 @@ export class RoomBridgeStore extends BridgeStore {
         return this.delete({
         remote_id: remoteId
         });
-    };
+    }
 
     /**
      * Remove entries based on matrix room data.
@@ -405,12 +405,12 @@ export class RoomBridgeStore extends BridgeStore {
      */
     public removeEntriesByMatrixRoomData(data: Record<string, unknown>) {
         Object.keys(data).forEach(function(k) {
-            var query = data[k];
+            const query = data[k];
             delete data[k];
             data["matrix.extras." + k] = query;
         });
         return this.delete(data);
-    };
+    }
 
     /**
      * Remove entries with this matrix room id.
@@ -425,7 +425,7 @@ export class RoomBridgeStore extends BridgeStore {
         return this.delete({
         matrix_id: matrixId
         });
-    };
+    }
 
     /**
      * Remove entries based on the link's data value.
@@ -439,12 +439,12 @@ export class RoomBridgeStore extends BridgeStore {
      */
     public removeEntriesByLinkData(data: Record<string, unknown>) {
         Object.keys(data).forEach(function(k) {
-            var query = data[k];
+            const query = data[k];
             delete data[k];
             data["data." + k] = query;
         });
         return this.delete(data);
-    };
+    }
 
     /**
      * Remove an existing entry based on the provided entry ID.
@@ -465,9 +465,11 @@ export class RoomBridgeStore extends BridgeStore {
 
 interface RoomStoreEntryDoc {
     id?: string;
+    // eslint-disable-next-line camelcase
     remote_id?: string;
+    // eslint-disable-next-line camelcase
     matrix_id?: string;
-    remote?:  Record<string, unknown>;
+    remote?: Record<string, unknown>;
     matrix?: MatrixRoomData;
     data?: Record<string, unknown>;
 }
@@ -479,7 +481,9 @@ export class RoomBridgeStoreEntry {
     public data: Record<string, unknown>;
     constructor(doc?: RoomStoreEntryDoc) {
         this.id = doc?.id || undefined;
+        // eslint-disable-next-line camelcase
         this.matrix = doc?.matrix_id ? new MatrixRoom(doc.matrix_id, doc.matrix) : undefined;
+        // eslint-disable-next-line camelcase
         this.remote = doc?.remote_id ? new RemoteRoom(doc.remote_id, doc.remote) : undefined;
         this.data = doc?.data || {};
     }

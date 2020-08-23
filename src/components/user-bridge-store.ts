@@ -74,6 +74,7 @@ export class UserBridgeStore extends BridgeStore {
         const remoteIds = await this.select({
             type: "union",
             matrix_id: userId
+            // eslint-disable-next-line camelcase
         }, this.convertTo((doc: {remote_id: string}) => {
             return doc.remote_id;
         }))
@@ -81,7 +82,7 @@ export class UserBridgeStore extends BridgeStore {
         return this.select({
             type: "remote",
             id: { $in: remoteIds }
-        }, this.convertTo((doc: {id: string, data: Record<string, unknown>}) => 
+        }, this.convertTo((doc: {id: string, data: Record<string, unknown>}) =>
             new RemoteUser(doc.id, doc.data)
         ));
     }
@@ -95,14 +96,15 @@ export class UserBridgeStore extends BridgeStore {
         const matrixUserIds = await this.select({
             type: "union",
             remote_id: remoteId
+            // eslint-disable-next-line camelcase
         }, this.convertTo((doc: {matrix_id: string}) => {
             return doc.matrix_id;
         }));
-        
+
         return this.select({
             type: "matrix",
             id: { $in: matrixUserIds }
-        }, this.convertTo((doc: {id: string, data: Record<string, unknown>}) => 
+        }, this.convertTo((doc: {id: string, data: Record<string, unknown>}) =>
             new MatrixUser(doc.id, doc.data)
         ));
 }
@@ -118,7 +120,7 @@ export class UserBridgeStore extends BridgeStore {
         return this.selectOne({
             type: "matrix",
             "data.localpart": localpart
-        }, this.convertTo((doc: {id: string, data: Record<string, unknown>}) => 
+        }, this.convertTo((doc: {id: string, data: Record<string, unknown>}) =>
             new MatrixUser(doc.id, doc.data)
         ));
     }
@@ -133,7 +135,7 @@ export class UserBridgeStore extends BridgeStore {
         return this.selectOne({
             type: "matrix",
             id: userId
-        }, this.convertTo((doc: {id: string, data: Record<string, unknown>}) => 
+        }, this.convertTo((doc: {id: string, data: Record<string, unknown>}) =>
             new MatrixUser(doc.id, doc.data)
         ));
     }
@@ -164,7 +166,7 @@ export class UserBridgeStore extends BridgeStore {
         return this.selectOne({
             type: "remote",
             id: id
-        }, this.convertTo((doc: {id: string, data: Record<string, unknown>}) => 
+        }, this.convertTo((doc: {id: string, data: Record<string, unknown>}) =>
             new RemoteUser(doc.id, doc.data)
         ));
     }
@@ -334,6 +336,7 @@ export class UserBridgeStore extends BridgeStore {
         return this.select({
             type: "union",
             remote_id: remoteId
+            // eslint-disable-next-line camelcase
         }, this.convertTo((doc: {matrix_id: string}) =>
             doc.matrix_id
         ));
@@ -348,6 +351,7 @@ export class UserBridgeStore extends BridgeStore {
         return this.select({
             type: "union",
             matrix_id: matrixId
+            // eslint-disable-next-line camelcase
         }, this.convertTo((doc: {remote_id: string}) =>
             doc.remote_id
         ));

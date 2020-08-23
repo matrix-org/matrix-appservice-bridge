@@ -41,7 +41,7 @@ export class MatrixRoom {
      */
     public getId() {
         return this.roomId;
-    };
+    }
 
     /**
      * Get the data value for the given key.
@@ -50,7 +50,7 @@ export class MatrixRoom {
      */
     public get<T>(key: string) {
         return this._extras[key] as T;
-    };
+    }
 
     /**
      * Set an arbitrary bridge-specific data value for this room. This will be serailized
@@ -61,7 +61,7 @@ export class MatrixRoom {
      */
     public set(key: string, val: unknown) {
         this._extras[key] = val;
-    };
+    }
 
     /**
      * Serialize data about this room into a JSON object.
@@ -73,7 +73,7 @@ export class MatrixRoom {
             topic: this.topic,
             extras: this._extras
         };
-    };
+    }
 
     /**
      * Set data about this room from a serialized data object.

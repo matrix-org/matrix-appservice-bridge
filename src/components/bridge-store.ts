@@ -48,7 +48,7 @@ export class BridgeStore {
     /**
      * UPSERT a single document
      */
-    public upsert(query: Query, updateVals: Record<string, unknown>) {
+    public upsert<T>(query: Query, updateVals: T) {
         return this.dbUpdate(query, updateVals, {upsert: true});
     }
 
@@ -134,7 +134,7 @@ export class BridgeStore {
      * @return {Function} A <code>transformFn</code> function to pass to the standard
      * select/delete/upsert/etc methods.
      */
-    public convertTo<T,O>(func: (input: T) => O) {
+    public convertTo<T, O>(func: (input: T) => O) {
         return function(doc: T) {
             return func(doc);
         }

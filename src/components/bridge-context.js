@@ -17,7 +17,7 @@ limitations under the License.
 const Promise = require("bluebird");
 const MatrixUser = require("../models/users/matrix").MatrixUser;
 const MatrixRoom = require("../models/rooms/matrix").MatrixRoom;
-const {wrap} = require("../errors");
+const { wrapError } = require("../errors");
 
 /**
  * Bridge context.
@@ -100,7 +100,7 @@ class BridgeContext {
             if (mxSender) {
                 this.senders.matrix = mxSender;
             }
-        }).catch(e => {throw wrap(e, Error, "Could not retrieve bridge context");})
+        }).catch(e => {throw wrapError(e, Error, "Could not retrieve bridge context");})
         .return(this);
     }
 }

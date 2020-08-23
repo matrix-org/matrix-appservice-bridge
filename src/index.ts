@@ -69,13 +69,5 @@ module.exports.RoomLinkValidatorStatus = require(
 	"./components/room-link-validator"
 ).validationStatuses;
 
-module.exports.unstable = { };
-
 // Errors
-
-module.exports.unstable.EventNotHandledError = require("./errors").EventNotHandledError;
-module.exports.unstable.EventTooOldError = require("./errors").EventTooOldError;
-module.exports.unstable.BridgeInternalError = require("./errors").BridgeInternalError;
-module.exports.unstable.ForeignNetworkError = require("./errors").ForeignNetworkError;
-module.exports.unstable.EventUnknownError = require("./errors").EventUnknownError;
-module.exports.unstable.default_message = require("./errors").default_message;
+export { unstable } from "./errors";

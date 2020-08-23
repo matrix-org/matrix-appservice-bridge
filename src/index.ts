@@ -43,7 +43,7 @@ export * from "./models/users/remote";
 export * from "./models/events/event";
 
 module.exports.Bridge = require("./bridge");
-module.exports.BridgeContext = require("./components/bridge-context");
+export * from "./components/bridge-context";
 
 export * from "matrix-appservice";
 

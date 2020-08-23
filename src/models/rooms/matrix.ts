@@ -35,6 +35,10 @@ export class MatrixRoom {
         }
     }
 
+    public get extras(): Record<string, unknown> {
+        return {...this.extras};
+    }
+
     /**
      * Get the room ID.
      * @return The room ID

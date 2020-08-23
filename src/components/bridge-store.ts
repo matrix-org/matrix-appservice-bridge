@@ -31,12 +31,11 @@ export class BridgeStore {
     private dbFindOne: (query: Query, projection?: any) => Promise<any>;
     private dbFind: (query: Query, projection?: any) => Promise<any>;
     constructor (public readonly db: Datastore) {
-        promisify(this.db.insert);
-        this.dbInsert = promisify(this.db.insert).bind(this);
-        this.dbUpdate = promisify(this.db.update).bind(this);
-        this.dbRemove = promisify(this.db.remove).bind(this);
-        this.dbFindOne = promisify(this.db.findOne).bind(this);
-        this.dbFind = promisify(this.db.find).bind(this);
+        this.dbInsert = promisify(this.db.insert).bind(this.db);
+        this.dbUpdate = promisify(this.db.update).bind(this.db);
+        this.dbRemove = promisify(this.db.remove).bind(this.db);
+        this.dbFindOne = promisify(this.db.findOne).bind(this.db);
+        this.dbFind = promisify(this.db.find).bind(this.db);
     }
 
     /**
@@ -81,8 +80,11 @@ export class BridgeStore {
     /**
      * SELECT a single document.
      */
-    public async selectOne<T, O>(query: Query, transformFn?: (input: T) => O) {
+    public async selectOne<T, O>(query: Query, transformFn?: (input: T) => O): Promise<O|null> {
         const doc = await this.dbFindOne(query);
+        if (!doc) {
+            return null;
+        }
         if (transformFn) {
             return transformFn(doc);
         }
@@ -96,10 +98,16 @@ export class BridgeStore {
      * @param {Deferred=} defer
      * @return {Promise}
      */
-    public async select<T, O>(query: Query, transformFn?: (input: T[]) => O) {
+    public async select<T, O>(query: Query, transformFn?: (input: T) => O) {
         const doc = await this.dbFind(query);
+        if (!doc) {
+            return null;
+        }
         if (transformFn) {
-            return transformFn(doc);
+            if (Array.isArray(doc)) {
+                return doc.map(transformFn);
+            }
+            return [transformFn(doc)];
         }
         return doc as O[];
     }
@@ -127,16 +135,9 @@ export class BridgeStore {
      * select/delete/upsert/etc methods.
      */
     public convertTo<T,O>(func: (input: T) => O) {
-        return function(doc: T|T[]) {
-            if (!doc) { // findOne query will return 'null' on no matches.
-                return null;
-            }
-            if (Array.isArray(doc)) {
-                return doc.map(function(d) {
-                    return func(d);
-                });
-            }
+        return function(doc: T) {
             return func(doc);
         }
     }
+
 }

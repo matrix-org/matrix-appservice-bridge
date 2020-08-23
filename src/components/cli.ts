@@ -22,8 +22,6 @@ import { AppServiceRegistration } from "matrix-appservice";
 import ConfigValidator from "./config-validator";
 import * as logging from "./logging";
 
-const DEFAULT_PORT = 8090;
-const DEFAULT_FILENAME = "registration.yaml";
 const log = logging.get("cli");
 
 interface CliOpts<ConfigType extends Record<string, unknown>> {
@@ -60,7 +58,9 @@ interface CliArgs {
 }
 
 export class Cli<ConfigType extends Record<string, unknown>> {
+    public static DEFAULT_PORT = 8090;
     public static DEFAULT_WATCH_INTERVAL = 2500;
+    public static DEFAULT_FILENAME = "registration.yaml";
     private bridgeConfig: ConfigType|null = null;
     private args: CliArgs|null = null;
 
@@ -106,8 +106,8 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         }
         this.opts.enableLocalpart = Boolean(this.opts.enableLocalpart);
 
-        this.opts.registrationPath = this.opts.registrationPath || DEFAULT_FILENAME;
-        this.opts.port = this.opts.port || DEFAULT_PORT;
+        this.opts.registrationPath = this.opts.registrationPath || Cli.DEFAULT_FILENAME;
+        this.opts.port = this.opts.port || Cli.DEFAULT_PORT;
     }
     /**
      * Get the parsed arguments. Only set after run is called and arguments parsed.
@@ -212,7 +212,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
 
     private loadConfig(filename?: string): ConfigType|null {
         if (!filename) { return null; }
-        log.info("Loading config file %s", filename);
+        log.info("Loading config file", filename);
         const cfg = this.loadYaml(filename);
         if (!cfg || typeof cfg === "string") {
             throw Error("Config file " + filename + " isn't valid YAML.");

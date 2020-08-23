@@ -40,29 +40,27 @@ describe("RoomBridgeStore", function() {
 
     describe("upsertEntry", function() {
         it("should insert an entry and should be retrievable by getEntryById",
-        function(done) {
+        async function() {
             var entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!foo:bar"),
                 remote: new RemoteRoom("#flibble"),
             };
-            store.upsertEntry(entry).then(function() {
+            const e = await store.upsertEntry(entry).then(function() {
                 return store.getEntryById("flibble");
-            }).done(function(e) {
-                expect(e.id).toEqual(entry.id);
-                expect(e.matrix.getId()).toEqual("!foo:bar");
-                expect(e.remote.getId()).toEqual("#flibble");
-                done();
             });
+            expect(e.id).toEqual(entry.id);
+            expect(e.matrix.getId()).toEqual("!foo:bar");
+            expect(e.remote.getId()).toEqual("#flibble");
         });
 
-        it("should update an entry if one with the same 'id' exists", function(done) {
+        it("should update an entry if one with the same 'id' exists", async function() {
             var entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!foo:bar"),
                 remote: new RemoteRoom("#flibble"),
             };
-            store.upsertEntry(entry).then(function() {
+            const e = await store.upsertEntry(entry).then(function() {
                 var entry2 = {
                     id: "flibble",
                     matrix: new MatrixRoom("!woo:bar"),
@@ -71,65 +69,59 @@ describe("RoomBridgeStore", function() {
                 return store.upsertEntry(entry2);
             }).then(function() {
                 return store.getEntryById("flibble");
-            }).done(function(e) {
-                expect(e.id).toEqual("flibble");
-                expect(e.matrix.getId()).toEqual("!woo:bar");
-                expect(e.remote.getId()).toEqual("#wibble");
-                done();
             });
+            expect(e.id).toEqual("flibble");
+            expect(e.matrix.getId()).toEqual("!woo:bar");
+            expect(e.remote.getId()).toEqual("#wibble");
         });
     });
 
     describe("getEntryById", function() {
 
-        it("should return nothing for matching matrix_id or remote_id", function(done) {
+        it("should return nothing for matching matrix_id or remote_id", async function() {
             var entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
                 remote: new RemoteRoom("!nothing:here"),
             };
-            store.upsertEntry(entry).then(function() {
+            const e = await store.upsertEntry(entry).then(function() {
                 return store.getEntryById("!nothing:here");
-            }).done(function(e) {
-                expect(e).toBeNull();
-                done();
-            });
+            })
+            expect(e).toBeNull();
         });
     });
 
     describe("getEntriesByRemoteRoomData", function() {
 
-        it("should return entries based on remote room data", function(done) {
+        it("should return entries based on remote room data", async function() {
             var entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
                 remote: new RemoteRoom("#foo"),
             };
             entry.remote.set("custom", "abc123");
-            store.upsertEntry(entry).then(function() {
+            const e = await store.upsertEntry(entry).then(function() {
                 return store.getEntriesByRemoteRoomData({
                     custom: "abc123"
                 });
-            }).done(function(e) {
-                expect(e).toBeDefined();
-                if (!e) {
-                    done();
-                    return;
-                }
-                expect(e.length).toEqual(1);
-                if (!e[0]) {
-                    done();
-                    return;
-                }
-                expect(e[0].remote.getId()).toEqual("#foo");
-                done();
             });
+            expect(e).toBeDefined();
+            if (!e) {
+                done();
+                return;
+            }
+            expect(e.length).toEqual(1);
+            if (!e[0]) {
+                done();
+                return;
+            }
+            expect(e[0].remote.getId()).toEqual("#foo");
         });
     });
 
     describe("getEntriesByMatrixRoomData", () => {
 
-        it("should return entries based on matrix room data", async(done) => {
+        it("should return entries based on matrix room data", async() => {
             const entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
@@ -151,36 +143,31 @@ describe("RoomBridgeStore", function() {
                 return;
             }
             expect(e[0].matrix.getId()).toEqual("!nothing:here");
-            done();
         });
     });
 
     describe("removeEntriesByRemoteRoomData", function() {
-        it("should remove entries based on remote room data", function(done) {
-            var entry = {
+        it("should remove entries based on remote room data", async function() {
+            const entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
                 remote: new RemoteRoom("#foo"),
             };
             entry.remote.set("custom", "abc123");
-            store.upsertEntry(entry).then(function() {
+            const e = store.upsertEntry(entry).then(function() {
                 return store.getEntryById("flibble");
-            }).then(function(e) {
-                expect(e).not.toBeNull();
-                return store.removeEntriesByRemoteRoomData({
-                    custom: "abc123"
-                });
-            }).then(function() {
-                return store.getEntryById("flibble");
-            }).done(function(e) {
-                expect(e).toBeNull();
-                done();
             });
+            expect(e).not.toBeNull();
+            await store.removeEntriesByRemoteRoomData({
+                custom: "abc123"
+            });
+            const e2 = await store.getEntryById("flibble");
+            expect(e2).toBeNull();
         });
     });
 
     describe("removeEntriesByMatrixRoomData", function() {
-        it("should remove entries based on matrix room data", function(done) {
+        it("should remove entries based on matrix room data", async function() {
             var entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
@@ -192,34 +179,25 @@ describe("RoomBridgeStore", function() {
                 matrix: new MatrixRoom("!foo:bar")
             };
             entry2.matrix.set("custom", "abc123");
-            store.upsertEntry(entry).then(function() {
+            await store.upsertEntry(entry).then(function() {
                 return store.upsertEntry(entry2);
-            }).then(function() {
-                return [
-                    store.getEntryById("flibble"),
-                    store.getEntryById("wibble")
-                ];
-            }).spread(function(e, f) {
-                expect(e).not.toBeNull();
-                expect(f).not.toBeNull();
-                return store.removeEntriesByMatrixRoomData({
-                    custom: "abc123"
-                });
-            }).then(function() {
-                return [
-                    store.getEntryById("flibble"),
-                    store.getEntryById("wibble")
-                ];
-            }).spread(function(e, f) {
-                expect(e).toBeNull();
-                expect(f).toBeNull();
-                done();
             });
+            let res1 = await store.getEntryById("flibble");
+            let res2 = await store.getEntryById("wibble")
+            expect(res1).not.toBeNull();
+            expect(res2).not.toBeNull();
+            await store.removeEntriesByMatrixRoomData({
+                custom: "abc123"
+            });
+            res1 = await store.getEntryById("flibble");
+            res2 = await store.getEntryById("wibble")
+            expect(res1).toBeNull();
+            expect(res2).toBeNull();
         });
     });
 
     describe("removeEntriesByLinkData", function() {
-        it("should remove entries based on link data", function(done) {
+        it("should remove entries based on link data", async function() {
             var entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
@@ -228,7 +206,7 @@ describe("RoomBridgeStore", function() {
                     foo: "bar"
                 }
             };
-            store.linkRooms(entry.matrix, entry.remote, entry.data).then(function() {
+            const res = await store.linkRooms(entry.matrix, entry.remote, entry.data).then(function() {
                 return store.getEntriesByLinkData({foo: "bar"});
             }).then(function(e) {
                 expect(e.length).toEqual(1);
@@ -237,10 +215,9 @@ describe("RoomBridgeStore", function() {
                 });
             }).then(function() {
                 return store.getEntriesByLinkData({foo: "bar"});
-            }).done(function(e) {
-                expect(e.length).toEqual(0);
-                done();
             });
+
+            expect(res.length).toEqual(0);
         });
     });
 

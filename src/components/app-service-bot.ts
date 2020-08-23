@@ -30,7 +30,6 @@ import { StateLookupEvent } from "..";
 export class AppServiceBot {
     private exclusiveUserRegexes: RegExp[];
     constructor (private client: any, registration: AppServiceRegistration, private memberCache: MembershipCache) {
-        const self = this;
         // yank out the exclusive user ID regex strings
         this.exclusiveUserRegexes = [];
         const regOut = registration.getOutput();
@@ -39,7 +38,7 @@ export class AppServiceBot {
                 if (!userEntry.exclusive) {
                     return;
                 }
-                self.exclusiveUserRegexes.push(new RegExp(userEntry.regex));
+                this.exclusiveUserRegexes.push(new RegExp(userEntry.regex));
             });
         }
     }
@@ -57,8 +56,7 @@ export class AppServiceBot {
      * @return {Promise<string[],Error>} Resolves to a list of room IDs.
      */
     public async getJoinedRooms(): Promise<string[]> {
-        const {joined_rooms} = await this.client.getJoinedRooms();
-        return joined_rooms || [];
+        return (await this.client.getJoinedRooms()).joined_rooms || [];
     }
 
     /**
@@ -82,7 +80,8 @@ export class AppServiceBot {
 
     public async getRoomInfo(roomId: string, joinedRoom: {state?: { events: StateLookupEvent[]}} = {}) {
         const stateEvents = joinedRoom.state ? joinedRoom.state.events : [];
-        const roomInfo: {id: string, state: StateLookupEvent[], realJoinedUsers: string[], remoteJoinedUsers: string[]} = {
+        const roomInfo: {id: string, state: StateLookupEvent[], realJoinedUsers: string[], remoteJoinedUsers: string[]}
+         = {
             id: roomId,
             state: stateEvents,
             realJoinedUsers: [],

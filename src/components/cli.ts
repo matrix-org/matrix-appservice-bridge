@@ -249,7 +249,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
             fs.watchFile(this.args.config, {
                 persistent: false,
                 interval: this.opts.bridgeConfig.watchInterval || Cli.DEFAULT_WATCH_INTERVAL },
-                (curr: fs.Stats) => {
+                () => {
                 log.info("Config file change detected, reloading");
                 try {
                     const newConfig = this.loadConfig(this.args?.config);
@@ -257,7 +257,8 @@ export class Cli<ConfigType extends Record<string, unknown>> {
                     if (newConfig && this.opts.onConfigChanged) {
                         this.opts.onConfigChanged(newConfig);
                     }
-                } catch (ex) {
+                }
+                catch (ex) {
                     log.warn("Failed to reload config file:", ex);
                 }
             });

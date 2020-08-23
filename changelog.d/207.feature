@@ -1,0 +1,1 @@
+Add ability to watch the bridge config for changes.

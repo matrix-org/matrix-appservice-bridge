@@ -32,8 +32,8 @@ module.exports.ConfigValidator = require("./components/config-validator");
 // Store
 export * from "./components/bridge-store";
 export * from "./components/user-bridge-store";
-module.exports.RoomBridgeStore = require("./components/room-bridge-store");
-module.exports.EventBridgeStore = require("./components/event-bridge-store");
+export * from "./components/room-bridge-store";
+export * from "./components/event-bridge-store";
 
 // Models
 export * from "./models/rooms/matrix";

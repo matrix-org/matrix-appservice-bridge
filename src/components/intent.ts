@@ -390,6 +390,7 @@ export class Intent {
      * auto-join the client. Default: false.
      * @param opts.options Options to pass to the client SDK /createRoom API.
      */
+    // eslint-disable-next-line camelcase
     public async createRoom(opts: RoomCreationOpts): Promise<{room_id: string}> {
         const cli = opts.createAsClient ? this.client : this.botClient;
         const options = opts.options || {};

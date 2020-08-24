@@ -103,7 +103,7 @@ interface BridgeOpts {
          * will automatically be stored in the associated `userStore`.
          */
         onUserQuery?: (matrixUser: MatrixUser) => {name?: string, url?: string, remote?: RemoteUser}|void;
-        /** 
+        /**
          * The bridge will invoke this function when queried via onAliasQuery. If
          * not supplied, no rooms will be provisioned on alias queries. Provisioned rooms
          * will automatically be stored in the associated `roomStore`. */
@@ -113,11 +113,11 @@ interface BridgeOpts {
          * via onAliasQuery.
          */
         onAliasQueried?: (alias: string, roomId: string) => void;
-        /** 
+        /**
          * Invoked when logging. Defaults to a function which logs to the console.
          * */
         onLog?: (text: string, isError?: boolean) => void;
-        /** 
+        /**
          * The bridge will invoke this function when it sees an upgrade event
          * for a room. If not supplied, no action will be performed on room upgrade.
          * */
@@ -213,20 +213,20 @@ interface BridgeOpts {
          * in out of order events but stops HOL blocking.
          * - If `single`, onEvent calls will be in order but may be slower due to HOL blocking.
          * - If `per_room`, a queue per room ID is made which reduces the impact of HOL blocking to be scoped to a room.
-         * 
+         *
          * Default: `single`.
          */
         type: "none"|"single"|"per_room";
-        /** 
+        /**
          * `true` to only feed through the next event after the request object in the previous
          * call succeeds or fails. It is **vital** that you consistently resolve/reject the
          * request if this is 'true', else you will not get any further events from this queue.
          * To aid debugging this, consider setting a delayed listener on the request factory.
-         * 
+         *
          * If `false`, the mere invockation of onEvent is enough to trigger the next event in the queue.
          * You probably want to set this to `true` if your {@link Bridge~onEvent} is
          * performing async operations where ordering matters (e.g. messages).
-         * 
+         *
          * Default: false.
          * */
         perRequest: boolean;
@@ -236,7 +236,7 @@ interface BridgeOpts {
      * parameters in {@link Bridge.onEvent}. Disabling the context makes the
      * bridge do fewer database lookups, but prevents there from being a
      * `context` parameter.
-     * 
+     *
      * Default: `false`.
      */
     disableContext: boolean;
@@ -286,7 +286,7 @@ export class Bridge {
         if (typeof opts !== "object") {
             throw new Error("opts must be supplied.");
         }
-        var required = [
+        const required = [
             "homeserverUrl", "registration", "domain", "controller"
         ];
         const missingKeys = required.filter(k => !Object.keys(opts).includes(k));
@@ -376,7 +376,7 @@ export class Bridge {
         if (this.opts.disableStores) {
             return;
         }
-    
+
         const storePromises: Promise<BridgeStore>[] = [];
         // Load up the databases if they provided file paths to them (or defaults)
         if (typeof this.opts.userStore === "string") {
@@ -407,7 +407,7 @@ export class Bridge {
  * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
  * @return A promise resolving when the bridge is ready
  */
-    public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname?: string, backlog: number = 10) {
+    public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname?: string, backlog = 10) {
         // Load the registration file into an AppServiceRegistration object.
         if (typeof this.opts.registration === "string") {
             const regObj = yaml.safeLoad(fs.readFileSync(this.opts.registration, 'utf8'));
@@ -416,9 +416,11 @@ export class Bridge {
                 throw Error("Failed to parse registration file");
             }
             this.registration = registration;
-        } else if (this.opts.registration instanceof AppServiceRegistration) {
+        }
+ else if (this.opts.registration instanceof AppServiceRegistration) {
             this.registration = this.opts.registration;
-        } else {
+        }
+ else {
             throw Error('Invalid opts.registration provided');
         }
 
@@ -452,7 +454,7 @@ export class Bridge {
 
         this.requestFactory = new RequestFactory();
         if (this.opts.logRequestOutcome) {
-            this.requestFactory.addDefaultResolveCallback((req) => 
+            this.requestFactory.addDefaultResolveCallback((req) =>
                 this.onLog(
                     "[" + req.getId() + "] SUCCESS (" + req.getDuration() + "ms)"
                 )
@@ -467,7 +469,7 @@ export class Bridge {
         const botIntentOpts: IntentOpts = {
             registered: true,
             backingStore: this.intentBackingStore,
-            ...this.opts.intentOptions?.bot,// copy across opts, if defined
+            ...this.opts.intentOptions?.bot, // copy across opts, if defined
         };
 
         this.botIntent = new Intent(this.botClient, this.botClient, botIntentOpts);
@@ -513,7 +515,8 @@ export class Bridge {
                         if (this.roomLinkValidator) {
                             this.roomLinkValidator?.readRuleFile(req.query.filename as string|undefined);
                             res.status(200).send("Success");
-                        } else {
+                        }
+ else {
                             res.status(404).send("RoomLinkValidator not in use");
                         }
                     }
@@ -533,7 +536,7 @@ export class Bridge {
             clearTimeout(this.intentLastAccessedTimeout);
         }
         this.intentLastAccessedTimeout = setTimeout(() => {
-            var now = Date.now();
+            const now = Date.now();
             for (const [key, entry] of this.intents.entries()) {
                 if (entry.lastAccessed + INTENT_CULL_EVICT_AFTER_MS < now) {
                     this.intents.delete(key);
@@ -581,7 +584,8 @@ export class Bridge {
                     try {
                         const result = await getProtocolFunc(protocol);
                         res.status(200).json(result);
-                    } catch (ex) {
+                    }
+ catch (ex) {
                         respondErr(ex, res)
                     }
                 },
@@ -609,7 +613,8 @@ export class Bridge {
                     try {
                         const result = await getLocationFunc(protocol, req.query as Record<string, string[]|string>);
                         res.status(200).json(result);
-                    } catch (ex) {
+                    }
+ catch (ex) {
                         respondErr(ex, res)
                     }
                 },
@@ -637,7 +642,8 @@ export class Bridge {
                     try {
                         const result = await parseLocationFunc(alias);
                         res.status(200).json(result);
-                    } catch (ex) {
+                    }
+ catch (ex) {
                         respondErr(ex, res)
                     }
                 },
@@ -645,7 +651,7 @@ export class Bridge {
         }
 
         if (lookupController.getUser) {
-            var getUserFunc = lookupController.getUser;
+            const getUserFunc = lookupController.getUser;
 
             this.addAppServicePath({
                 method: "GET",
@@ -665,7 +671,8 @@ export class Bridge {
                     try {
                         const result = await getUserFunc(protocol, req.query as Record<string, string[]|string>);
                         res.status(200).json(result);
-                    } catch (ex) {
+                    }
+ catch (ex) {
                         respondErr(ex, res)
                     }
                 }
@@ -673,7 +680,7 @@ export class Bridge {
         }
 
         if (lookupController.parseUser) {
-            var parseUserFunc = lookupController.parseUser;
+            const parseUserFunc = lookupController.parseUser;
 
             this.addAppServicePath({
                 method: "GET",
@@ -693,7 +700,8 @@ export class Bridge {
                     try {
                         const result = await parseUserFunc(userid);
                         res.status(200).json(result);
-                    } catch (ex) {
+                    }
+ catch (ex) {
                         respondErr(ex, res)
                     }
                 },
@@ -907,7 +915,7 @@ export class Bridge {
         }
         if (!this.botIntent) {
             throw Error('botIntent is not ready yet');
-            return; 
+            return;
         }
         const aliasLocalpart = alias.split(":")[0].substring(1);
         const provisionedRoom = await this.opts.controller.onAliasQuery(alias, aliasLocalpart);
@@ -981,7 +989,8 @@ export class Bridge {
         // We *must* return the result of the request.
         try {
             return await reqPromise;
-        } catch (ex) {
+        }
+ catch (ex) {
             if (ex instanceof EventNotHandledError) {
                 this.handleEventError(event, ex);
             }
@@ -1005,7 +1014,8 @@ export class Bridge {
                 try {
                     // We don't care about the results
                     await this.prevRequestPromise;
-                } finally {
+                }
+ finally {
                     return promise;
                 }
             })();

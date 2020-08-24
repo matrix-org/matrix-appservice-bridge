@@ -16,7 +16,7 @@ limitations under the License.
 let isFirstUseOfWrap = true;
 
 export namespace unstable {
-    
+
 
     export type BridgeErrorReason = "m.event_not_handled" | "m.event_too_old"
     | "m.internal_error" | "m.foreign_network_error" | "m.event_unknown";
@@ -42,7 +42,7 @@ export namespace unstable {
         newError.message += ":\n" + appendMsg;
         return newError;
     }
-    
+
     /**
     * @deprecated Use {@link wrapError}
     */
@@ -52,7 +52,7 @@ export namespace unstable {
         message?: string) {
            if (isFirstUseOfWrap) {
                 console.warn("matrix-appservice-bridge: Use of `unstable.wrap` is deprecated. Please use `unstable.wrapError`.")
-                isFirstUseOfWrap = false;   
+                isFirstUseOfWrap = false;
            }
            return wrapError(oldError, newErrorType, message);
     }

@@ -223,17 +223,13 @@ export class PrometheusMetrics {
         this.addCollector(function () {
             const counts = counterFunc();
 
-            if (counts.matrixRoomConfigs)
-                matrixRoomsGauge.set(counts.matrixRoomConfigs);
+            if (counts.matrixRoomConfigs) {matrixRoomsGauge.set(counts.matrixRoomConfigs);}
 
-            if (counts.remoteRoomConfigs)
-                remoteRoomsGauge.set(counts.remoteRoomConfigs);
+            if (counts.remoteRoomConfigs) {remoteRoomsGauge.set(counts.remoteRoomConfigs);}
 
-            if (counts.matrixGhosts)
-                matrixGhostsGauge.set(counts.matrixGhosts);
+            if (counts.matrixGhosts) {matrixGhostsGauge.set(counts.matrixGhosts);}
 
-            if (counts.remoteGhosts)
-                remoteGhostsGauge.set(counts.remoteGhosts);
+            if (counts.remoteGhosts) {remoteGhostsGauge.set(counts.remoteGhosts);}
 
             counts.matrixRoomsByAge?.setGauge(matrixRoomsByAgeGauge);
             counts.remoteRoomsByAge?.setGauge(remoteRoomsByAgeGauge);

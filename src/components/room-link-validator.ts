@@ -178,4 +178,4 @@ export enum ValidationStatus {
     ERROR_USER_CONFLICT,
     ERROR_CACHED,
     ERROR,
-};
+}

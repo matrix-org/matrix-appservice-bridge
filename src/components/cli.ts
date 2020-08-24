@@ -32,14 +32,6 @@ interface CliOpts<ConfigType extends Record<string, unknown>> {
         affectsRegistration?: boolean;
         schema: string|Record<string, unknown>;
         defaults: Record<string, unknown>;
-        /**
-         * Should the config file be watched for changes.
-         */
-        watchConfig: boolean;
-        /**
-         * How often should the watcher poll for changes on the config file.
-         */
-        watchInterval?: number;
     };
     registrationPath: string;
     enableRegistration?: boolean;
@@ -92,10 +84,6 @@ export class Cli<ConfigType extends Record<string, unknown>> {
 
         if (!this.opts.run || typeof this.opts.run !== "function") {
             throw new Error("Requires 'run' function.");
-        }
-
-        if (!this.opts.onConfigChanged && this.opts.bridgeConfig?.watchConfig) {
-            throw new Error('`bridgeConfig.watchConfig` is enabled but `onConfigChanged` is not defined');
         }
 
         if (this.opts.enableRegistration && !this.opts.generateRegistration) {
@@ -201,17 +189,19 @@ export class Cli<ConfigType extends Record<string, unknown>> {
             this.opts.port = this.args.port;
         }
         this.assignConfigFile(this.args.config);
-        this.startWithConfig(this.bridgeConfig);
+        this.startWithConfig(this.bridgeConfig, this.args.config);
     }
 
     private assignConfigFile(configFilePath: string) {
         const configFile = (this.opts.bridgeConfig && configFilePath) ? configFilePath : undefined;
+        if (!configFile) {
+            return null;
+        }
         const config = this.loadConfig(configFile);
         this.bridgeConfig = config;
     }
 
-    private loadConfig(filename?: string): ConfigType|null {
-        if (!filename) { return null; }
+    private loadConfig(filename: string): ConfigType {
         log.info("Loading config file", filename);
         const cfg = this.loadYaml(filename);
         if (!cfg || typeof cfg === "string") {
@@ -243,18 +233,16 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         });
     }
 
-    private startWithConfig(config: ConfigType|null) {
-        if (this.opts.bridgeConfig?.watchConfig && this.args?.config) {
-            log.info("Will watch config file for changes");
-            fs.watchFile(this.args.config, {
-                persistent: false,
-                interval: this.opts.bridgeConfig.watchInterval || Cli.DEFAULT_WATCH_INTERVAL },
+    private startWithConfig(config: ConfigType|null, configFilename: string) {
+        if (this.opts.onConfigChanged && this.opts.bridgeConfig) {
+            log.info("Will listen for SIGHUP");
+            process.on("SIGHUP",
                 () => {
-                log.info("Config file change detected, reloading");
+                log.info("Got SIGHUP, reloading config file");
                 try {
-                    const newConfig = this.loadConfig(this.args?.config);
-                    // onConfigChanged is checked in the constructor
-                    if (newConfig && this.opts.onConfigChanged) {
+                    const newConfig = this.loadConfig(configFilename);
+                    // onConfigChanged is checked above, but for Typescript's sake.
+                    if (this.opts.onConfigChanged) {
                         this.opts.onConfigChanged(newConfig);
                     }
                 }

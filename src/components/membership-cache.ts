@@ -17,13 +17,10 @@ limitations under the License.
  * Caches membership of virtual users to rooms in memory
  * and also stores the state of whether users are registered.
  */
-class MembershipCache {
-    constructor () {
-        this._membershipMap = {
-            // room_id: { user_id: "join|invite|leave|ban|null" }   null=unknown
-        };
-        this._registeredUsers = new Set();
-    }
+export type UserMembership = "join"|"invite"|"leave"|"ban"|null;
+export class MembershipCache {
+    private membershipMap: {[roomId: string]: { [userId: string]: UserMembership }} = {};
+    private registeredUsers = new Set<string>();
 
     /**
      * Get's the *cached* state of a user's membership for a room.
@@ -32,15 +29,15 @@ class MembershipCache {
      *
      * This only caches users from the appservice.
      *
-     * @param {string}} roomId Room id to check the state of.
-     * @param {string} userId The userid to check the state of.
-     * @returns {string} The membership state of the user, e.g. "joined"
+     * @param roomId Room id to check the state of.
+     * @param userId The userid to check the state of.
+     * @returns The membership state of the user, e.g. "joined"
      */
-    getMemberEntry(roomId, userId) {
-        if (this._membershipMap[roomId] === undefined) {
+    getMemberEntry(roomId: string, userId: string): UserMembership {
+        if (this.membershipMap[roomId] === undefined) {
             return null;
         }
-        return this._membershipMap[roomId][userId];
+        return this.membershipMap[roomId][userId];
     }
 
     /**
@@ -50,27 +47,29 @@ class MembershipCache {
      * This DOES NOT set the actual membership of the room.
      *
      * This only caches users from the appservice.
-     * @param {string} roomId Room id to set the state of.
-     * @param {string} userId The userid to set the state of.
-     * @param {string} membership The membership value to set for the user
+     * @param roomId Room id to set the state of.
+     * @param userId The userid to set the state of.
+     * @param membership The membership value to set for the user
      *                       e.g joined.
      */
-    setMemberEntry(roomId, userId, membership) {
-        if (this._membershipMap[roomId] === undefined) {
-            this._membershipMap[roomId] = {};
+    setMemberEntry(roomId: string, userId: string, membership: UserMembership) {
+        if (this.membershipMap[roomId] === undefined) {
+            this.membershipMap[roomId] = {};
         }
 
         // Bans and invites do not mean the user exists.
         if (membership === "join" || membership === "leave") {
-            this._registeredUsers.add(userId);
+            this.registeredUsers.add(userId);
         }
 
-        this._membershipMap[roomId][userId] = membership;
+        this.membershipMap[roomId][userId] = membership;
     }
 
-    isUserRegistered(userId) {
-        return this._registeredUsers.has(userId);
+    /**
+     * Is a user considered registered with the homeserver.
+     * @param userId A Matrix userId
+     */
+    isUserRegistered(userId: string) {
+        return this.registeredUsers.has(userId);
     }
 }
-
-module.exports = MembershipCache;

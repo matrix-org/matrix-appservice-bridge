@@ -27,6 +27,7 @@ export * from "./components/state-lookup";
 
 // Config and CLI
 export * from "./components/cli";
+export * from "./components/config-validator";
 module.exports.ConfigValidator = require("./components/config-validator");
 
 // Store
@@ -58,7 +59,7 @@ export * from "./components/prometheusmetrics";
 module.exports.PrometheusMetrics.AgeCounters = require("./components/agecounters").AgeCounters;
 
 // Caches
-module.exports.MembershipCache = require("./components/membership-cache");
+export * from "./components/membership-cache";
 
 // Logging
 export * as Logging from "./components/logging";

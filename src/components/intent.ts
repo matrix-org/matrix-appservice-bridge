@@ -21,20 +21,18 @@ const { MatrixEvent, RoomMember } = JsSdk as any;
 import { ClientRequestCache } from "./client-request-cache";
 import { defer } from "../utils/promiseutil";
 import { UserMembership } from "./membership-cache";
+import { unstable } from "../errors";
+import BridgeErrorReason = unstable.BridgeErrorReason;
 
-
-type BridgeErrorReason = "m.event_not_handled" | "m.event_too_old"
-    | "m.internal_error" | "m.foreign_network_error" | "m.event_unknown";
-
-type BackingStore = {
+export type IntentBackingStore = {
     getMembership: (roomId: string, userId: string) => UserMembership,
     getPowerLevelContent: (roomId: string) => Record<string, unknown> | undefined,
     setMembership: (roomId: string, userId: string, membership: UserMembership) => void,
     setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => void,
 };
 
-interface IntentOpts {
-    backingStore?: BackingStore,
+export interface IntentOpts {
+    backingStore?: IntentBackingStore,
     caching?: {
         ttl?: number,
         size?: number,
@@ -43,6 +41,11 @@ interface IntentOpts {
     dontJoin?: boolean;
     enablePresence?: boolean;
     registered?: boolean;
+}
+
+export interface RoomCreationOpts {
+    createAsClient?: boolean;
+    options: Record<string, unknown>;
 }
 
 /**
@@ -64,7 +67,7 @@ const STATE_EVENT_TYPES = [
 const DEFAULT_CACHE_TTL = 90000;
 const DEFAULT_CACHE_SIZE = 1024;
 
-type PowerLevelContent = {
+export type PowerLevelContent = {
     // eslint-disable-next-line camelcase
     state_default?: unknown;
     // eslint-disable-next-line camelcase
@@ -86,7 +89,7 @@ export class Intent {
         event: ClientRequestCache<unknown, [string, string]>
     }
     private opts: {
-        backingStore: BackingStore,
+        backingStore: IntentBackingStore,
         caching: {
             ttl: number,
             size: number,
@@ -387,7 +390,7 @@ export class Intent {
      * auto-join the client. Default: false.
      * @param opts.options Options to pass to the client SDK /createRoom API.
      */
-    public async createRoom(opts: { createAsClient?: boolean, options: Record<string, unknown>}) {
+    public async createRoom(opts: RoomCreationOpts): Promise<{room_id: string}> {
         const cli = opts.createAsClient ? this.client : this.botClient;
         const options = opts.options || {};
         if (!opts.createAsClient) {
@@ -583,7 +586,7 @@ export class Intent {
     public async unstableSignalBridgeError(
         roomID: string,
         eventID: string,
-        networkName: string,
+        networkName: string|undefined,
         reason: BridgeErrorReason,
         affectedUsers: string[],
     ) {

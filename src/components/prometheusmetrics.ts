@@ -20,15 +20,15 @@ import { Request, Response } from "express";
 
 type CollectorFunction = () => void;
 
-interface BridgeGaugesCounts {
-    matrixRoomConfigs: number;
-    remoteRoomConfigs: number;
-    matrixGhosts: number;
-    remoteGhosts: number;
-    matrixRoomsByAge: AgeCounters;
-    remoteRoomsByAge: AgeCounters;
-    matrixUsersByAge: AgeCounters;
-    remoteUsersByAge: AgeCounters;
+export interface BridgeGaugesCounts {
+    matrixRoomConfigs?: number;
+    remoteRoomConfigs?: number;
+    matrixGhosts?: number;
+    remoteGhosts?: number;
+    matrixRoomsByAge?: AgeCounters;
+    remoteRoomsByAge?: AgeCounters;
+    matrixUsersByAge?: AgeCounters;
+    remoteUsersByAge?: AgeCounters;
 }
 
 interface CounterOpts {
@@ -223,17 +223,23 @@ export class PrometheusMetrics {
         this.addCollector(function () {
             const counts = counterFunc();
 
-            matrixRoomsGauge.set(counts.matrixRoomConfigs);
-            remoteRoomsGauge.set(counts.remoteRoomConfigs);
+            if (counts.matrixRoomConfigs)
+                matrixRoomsGauge.set(counts.matrixRoomConfigs);
 
-            matrixGhostsGauge.set(counts.matrixGhosts);
-            remoteGhostsGauge.set(counts.remoteGhosts);
+            if (counts.remoteRoomConfigs)
+                remoteRoomsGauge.set(counts.remoteRoomConfigs);
 
-            counts.matrixRoomsByAge.setGauge(matrixRoomsByAgeGauge);
-            counts.remoteRoomsByAge.setGauge(remoteRoomsByAgeGauge);
+            if (counts.matrixGhosts)
+                matrixGhostsGauge.set(counts.matrixGhosts);
 
-            counts.matrixUsersByAge.setGauge(matrixUsersByAgeGauge);
-            counts.remoteUsersByAge.setGauge(remoteUsersByAgeGauge);
+            if (counts.remoteGhosts)
+                remoteGhostsGauge.set(counts.remoteGhosts);
+
+            counts.matrixRoomsByAge?.setGauge(matrixRoomsByAgeGauge);
+            counts.remoteRoomsByAge?.setGauge(remoteRoomsByAgeGauge);
+
+            counts.matrixUsersByAge?.setGauge(matrixUsersByAgeGauge);
+            counts.remoteUsersByAge?.setGauge(remoteUsersByAgeGauge);
         });
     }
 

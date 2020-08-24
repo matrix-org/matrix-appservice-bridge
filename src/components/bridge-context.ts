@@ -108,7 +108,7 @@ export class BridgeContext {
             }
         }
         catch (ex) {
-            throw unstable.wrapError(ex, Error, "Could not retrieve bridge context");
+            throw unstable.wrapError(ex, unstable.EventNotHandledError, "Could not retrieve bridge context");
         }
         return this;
     }

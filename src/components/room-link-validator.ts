@@ -22,10 +22,6 @@ import ConfigValidator from "./config-validator";
 import logging from "./logging";
 const log = logging.get("room-link-validator");
 const VALIDATION_CACHE_LIFETIME = 30 * 60 * 1000;
-const PASSED = "RLV_PASSED";
-const ERROR = "RVL_ERROR";
-const ERROR_USER_CONFLICT = "RVL_USER_CONFLICT";
-const ERROR_CACHED = "RVL_ERROR_CACHED";
 
 const RULE_SCHEMA = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -53,7 +49,7 @@ const RULE_SCHEMA = {
 
 const VALIDATOR = new ConfigValidator(RULE_SCHEMA);
 
-interface Rules {
+export interface Rules {
     userIds: {
         exempt: RegExp[];
         conflict: RegExp[];
@@ -66,7 +62,7 @@ interface Rules {
  * in a seperate config from the bridge config. It can be reloaded by triggering
  * an endpoint specified in the {@link Bridge} class.
  */
-class RoomLinkValidator {
+export class RoomLinkValidator {
     private conflictCache: Map<string, number> = new Map();
     private ruleFile?: string;
     public readonly rules: Rules; // Public to allow unit tests to inspect it.
@@ -78,7 +74,7 @@ class RoomLinkValidator {
      *                               overwritten if both is set.
      * @param asBot The AS bot.
      */
-    constructor(config: {ruleFile?: string, rules: Rules}, private asBot: AppServiceBot) {
+    constructor(config: {ruleFile?: string, rules?: Rules}, private asBot: AppServiceBot) {
         if (config.ruleFile) {
             this.ruleFile = config.ruleFile;
             this.rules = this.readRuleFile();
@@ -158,10 +154,10 @@ class RoomLinkValidator {
             }
         }
         if (isValid) {
-            return PASSED;
+            return ValidationStatus.PASSED;
         }
         this.conflictCache.set(roomId, Date.now());
-        throw ERROR_USER_CONFLICT;
+        throw ValidationStatus.ERROR_USER_CONFLICT;
     }
 
     private checkConflictCache (roomId: string) {
@@ -170,19 +166,16 @@ class RoomLinkValidator {
             return undefined;
         }
         if (cacheTime > (Date.now() - VALIDATION_CACHE_LIFETIME)) {
-            return ERROR_CACHED;
+            return ValidationStatus.ERROR_CACHED;
         }
         this.conflictCache.delete(roomId);
         return undefined;
     }
 }
 
-module.exports = {
-    validationStatuses: {
-        PASSED,
-        ERROR_USER_CONFLICT,
-        ERROR_CACHED,
-        ERROR,
-    },
-    RoomLinkValidator
+export enum ValidationStatus {
+    PASSED,
+    ERROR_USER_CONFLICT,
+    ERROR_CACHED,
+    ERROR,
 };

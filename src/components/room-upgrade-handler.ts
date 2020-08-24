@@ -20,7 +20,8 @@ import { RoomBridgeStore, RoomBridgeStoreEntry } from "./room-bridge-store";
 
 const log = logging.get("RoomUpgradeHandler");
 
-interface RoomUpgradeHandlerOpts {
+export interface RoomUpgradeHandlerOpts {
+    consumeEvent: boolean;
     migrateGhosts: boolean;
     migrateStoreEntries: boolean;
     onRoomMigrated?: (oldRoomId: string, newRoomId: string) => Promise<void>|void;
@@ -170,11 +171,7 @@ export class RoomUpgradeHandler {
     }
 
     private migrateEntry(entry: RoomBridgeStoreEntry, newRoomId: string) {
-        entry.matrix = new MatrixRoom(newRoomId, {
-            name: entry.matrix?.name,
-            topic: entry.matrix?.topic,
-            extras: entry.matrix?.extras || {},
-        });
+        entry.matrix = new MatrixRoom(newRoomId, entry.matrix?.serialize());
         return entry;
     }
 }

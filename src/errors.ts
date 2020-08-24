@@ -13,7 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+let isFirstUseOfWrap = true;
+
 export namespace unstable {
+    
     /**
      * Append the old error message to the new one and keep its stack trace.
      * Example:
@@ -35,6 +38,20 @@ export namespace unstable {
         }
         newError.message += ":\n" + appendMsg;
         return newError;
+    }
+    
+    /**
+    * @deprecated Use {@link wrapError}
+    */
+    export function wrap<T extends Error>(
+        oldError: Error|string,
+        newErrorType: { new (message: string): T },
+        message: string) {
+           if (isFirstUseOfWrap) {
+                console.warn("matrix-appservice-bridge: Use of `unstable.wrap` is deprecated. Please use `unstable.wrapError`.")
+                isFirstUseOfWrap = false;   
+           }
+           return wrapError(oldError, newErrorType, message);
     }
 
     /**

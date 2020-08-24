@@ -12,99 +12,100 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+import * as util from "util";
+import winston, { Logger, format, Logform } from "winston";
+import "winston-daily-rotate-file";
+import * as chalk from "chalk";
+import * as Transport from 'winston-transport';
+import { DailyRotateFile } from "winston/lib/winston/transports";
 
-const util = require("util");
+type LogLevel = "debug"|"info"|"warn"|"error";
 
-let winston = null;
-try {
-    winston = require("winston");
-}
-catch (ex) {
-    // Missing winston, which is fine.
-    if (ex.message !== "Cannot find module 'winston'") {
-        throw ex;
-    }
-}
-let chalk, format, formatterFn, colorFn;
-if (winston) {
-    require('winston-daily-rotate-file');
-    chalk = require("chalk");
-    format = winston.format;
-}
-
-const CHALK_LEVELS = {
+const CHALK_LEVELS: Record<LogLevel, string> = {
     "debug": "blue",
     "info": "green",
     "warn": "yellow",
     "error": "red",
 }
 
-
-class LogWrapper {
-    constructor() {
-        this.logger = null;
-        this.messages = []; // {type: string, messageParts: [object]}
+type MessagePart = unknown;
+interface LoggerConfig {
+    console?: "error"|"warn"|"info"|"debug"|"off",
+    fileDatePattern?: string,
+    timestampFormat?: string,
+    files?: {
+        [filename: string]: "error"|"warn"|"info"|"debug"|"off",
     }
+    maxFiles?: number,
+}
 
-    setLogger(logger) {
+export class LogWrapper {
+    private logger: Logger|null = null;
+    private messages: {type: LogLevel, message: string}[] = [];
+
+    public setLogger(logger: Logger) {
         this.logger = logger;
     }
 
-    debug(...messageParts) { this._log(messageParts, 'debug') }
+    public debug(...messageParts: MessagePart[]) { this.log(messageParts, 'debug') }
 
-    info(...messageParts) { this._log(messageParts, 'info') }
+    public info(...messageParts: MessagePart[]) { this.log(messageParts, 'info') }
 
-    warn(...messageParts) { this._log(messageParts, 'warn') }
+    public warn(...messageParts: MessagePart[]) { this.log(messageParts, 'warn') }
 
-    error(...messageParts) { this._log(messageParts, 'error') }
+    public error(...messageParts: MessagePart[]) { this.log(messageParts, 'error') }
 
-    _drain() {
+    public drain() {
         if (!this.logger) { return; }
         while (this.messages.length > 0) {
             const msg = this.messages[0];
-            this.logger[msg.type](msg.messageParts);
+            this.logger[msg.type](msg.message);
             this.messages.splice(0, 1);
         }
     }
 
-    _formatParts(messageParts) {
+    private formatParts(messageParts: MessagePart[]): string[] {
         return messageParts.map((part) => {
             if (typeof(part) === "object") {
                 return util.inspect(part);
             }
-            return part;
+            return String(part);
         });
     }
 
-    _log(messageParts, type) {
-        messageParts = this._formatParts(messageParts).join(" ");
+    private log(messageParts: MessagePart[], type: LogLevel) {
+        const formattedParts = this.formatParts(messageParts).join(" ");
         if (this.logger === null) {
-            this.messages.push({type, messageParts});
+            this.messages.push({type, message: formattedParts});
             return;
         }
         /* When we first start logging, the transports
          * won't be configured so we push to a queue.
          * When the transport becomes ready, the queue
          * is emptied. */
-        this._drain();
-        this.logger[type](messageParts);
+        this.drain();
+        this.logger[type](formattedParts);
     }
 }
 
 class Logging {
+    private loggers: Map<string, LogWrapper> = new Map();
+    private formatterFn: Logform.Format;
+    private colorFn: Logform.FormatWrap;
+    private transports: Transport[];
+    private config: LoggerConfig|null = null;
     constructor() {
-        this.loggers = new Map();
-        this.transports = null;
+        this.transports = [];
 
-        formatterFn = format.printf((info) => {
+        this.formatterFn = format.printf((info) => {
             return `${info.timestamp} ${info.level} ${info.label} ${info.message}`;
         });
 
-        colorFn = format((info, opts) => {
-            let level = info.level.toUpperCase();
-            const levelColour = CHALK_LEVELS[info.level];
+        this.colorFn = format((info) => {
+            const level = info.level.toUpperCase() as LogLevel;
+            const levelColour = CHALK_LEVELS[info.level as LogLevel];
             if (levelColour) {
-                info.level = chalk[levelColour](level);
+                info.level = chalk.keyword(levelColour)(level);
             }
             return info;
         })
@@ -119,7 +120,7 @@ class Logging {
         }
         maxFiles: 5
     */
-    configure(config={}) {
+    configure(config: LoggerConfig = {}) {
         if (!config.fileDatePattern) {
             config.fileDatePattern = "YYYY-MM-DD";
         }
@@ -145,25 +146,20 @@ class Logging {
         this.transports = [];
         if (config.console !== undefined && config.console !== "off") {
             this.transports.push(new (winston.transports.Console)({
-                json: false,
-                name: "console",
                 level: config.console,
                 format: format.combine(
-                    colorFn(),
-                    formatterFn
+                    this.colorFn(),
+                    this.formatterFn
                 )
             }));
         }
 
         if (config.files !== undefined) {
-            let i = 0;
-            for (let filename of Object.keys(config.files)) {
+            for (const filename of Object.keys(config.files)) {
                 const level = config.files[filename];
-                i++;
-                this.transports.push(new (winston.transports.DailyRotateFile)({
+                this.transports.push(new DailyRotateFile({
                     filename,
                     datePattern: config.fileDatePattern,
-                    name: `logfile` + i,
                     level,
                     maxFiles: config.maxFiles > 0 ? config.maxFiles : undefined
                 }));
@@ -172,67 +168,59 @@ class Logging {
 
         this.loggers.forEach((wrapper, name) => {
             wrapper.setLogger(this.createLogger(name));
-            wrapper._drain();
+            wrapper.drain();
         });
     }
 
-    get(name) {
-        if (!this.loggers.has(name)) {
-            const wrapper = new LogWrapper()
-            this.loggers.set(name, wrapper);
-            /* We won't assign create and assign a logger until
-             * the transports are ready */
-            if (this.transports !== null) {
-                wrapper.setLogger(this.createLogger(name));
-            }
+    public get(name: string) {
+        const existingLogger = this.loggers.get(name);
+        if (existingLogger) {
+            return existingLogger;
         }
-        return this.loggers.get(name);
+        const wrapper = new LogWrapper()
+        this.loggers.set(name, wrapper);
+        /* We won't assign create and assign a logger until
+            * the transports are ready */
+        if (this.transports !== null) {
+            wrapper.setLogger(this.createLogger(name));
+        }
+        return wrapper;
     }
 
-    createLogger(name) {
+    public createLogger(name: string) {
         const logger = winston.createLogger({
             transports: this.transports,
             format: format.combine(
                 format.timestamp({
-                    format: this.config.timestampFormat,
+                    format: this.config?.timestampFormat,
                 }),
                 format.label({label: name}),
-                formatterFn
+                this.formatterFn
             ),
         });
         return logger;
     }
 }
 
-let instance;
-let configured = false;
-if (winston) {
-    instance = new Logging();
-}
-else {
-    // We don't have winston, so just log to the console.
-    instance = {
-        get: (name) => {
-            const logWrapper = new LogWrapper();
-            // Console has all the functions already.
-            logWrapper.setLogger(console);
-            return logWrapper;
-        },
-        configure: () => {
-            // No-op this.
-        },
-    };
+const instance: Logging = new Logging();
+let isConfigured = false;
+
+export function get(name: string) {
+    return instance.get(name);
 }
 
-module.exports = {
-    get: (name) => {
-        return instance.get(name);
-    },
-    configure: (config) => {
-        instance.configure(config);
-        configured = true;
-    },
-    configured: () => {
-        return configured;
-    }
+export function configure (config: LoggerConfig) {
+    instance.configure(config);
+    isConfigured = true;
+}
+
+export function configured() {
+    return isConfigured;
+}
+
+// Backwards compat
+export default {
+    get,
+    configure,
+    configured,
 }

@@ -20,14 +20,13 @@ export * from "./components/request-factory";
 export * from "./components/client-factory";
 export * from "./components/intent";
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-
-module.exports.AppServiceBot = require("./components/app-service-bot");
+export * from "./components/app-service-bot";
 export * from "./components/state-lookup";
 
 // Config and CLI
 export * from "./components/cli";
 export * from "./components/config-validator";
+/* eslint-disable @typescript-eslint/no-var-requires */
 module.exports.ConfigValidator = require("./components/config-validator");
 
 // Store

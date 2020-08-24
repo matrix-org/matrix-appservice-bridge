@@ -22,9 +22,9 @@ import { StateLookupEvent } from "..";
  * Construct an AS bot user which has various helper methods.
  * @constructor
  * @param {MatrixClient} client The client instance configured for the AS bot.
- * @param {AppServiceRegistration} registration The registration that the bot
+ * @param registration The registration that the bot
  * is following. Used to determine which user IDs it is controlling.
- * @param {MembershipCache} memberCache The bridges membership cache instance,
+ * @param memberCache The bridges membership cache instance,
  * for storing membership the bot has discovered.
  */
 export class AppServiceBot {
@@ -53,7 +53,7 @@ export class AppServiceBot {
 
     /**
      * Get a list of joined room IDs for the AS bot.
-     * @return {Promise<string[],Error>} Resolves to a list of room IDs.
+     * @return Resolves to a list of room IDs.
      */
     public async getJoinedRooms(): Promise<string[]> {
         return (await this.client.getJoinedRooms()).joined_rooms || [];
@@ -62,8 +62,8 @@ export class AppServiceBot {
     /**
      * Get a map of joined user IDs for the given room ID. The values in the map are objects
      * with a 'display_name' and 'avatar_url' properties. These properties may be null.
-     * @param {string} roomId The room to get a list of joined user IDs in.
-     * @return {Promise<Object,Error>} Resolves to a map of user ID => display_name avatar_url
+     * @param roomId The room to get a list of joined user IDs in.
+     * @return Resolves to a map of user ID => display_name avatar_url
      */
     public async getJoinedMembers(roomId: string) {
         const res: {joined: string[]} = await this.client.getJoinedRoomMembers(roomId);

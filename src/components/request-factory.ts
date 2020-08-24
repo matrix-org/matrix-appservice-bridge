@@ -47,8 +47,7 @@ export class RequestFactory {
 
         this._timeouts.forEach(function(timeoutObj) {
             setTimeout(function() {
-                const promise = req.getPromise();
-                if (!promise.isPending()) {
+                if (!req.isPending) {
                     return;
                 }
                 timeoutObj.fn(req);

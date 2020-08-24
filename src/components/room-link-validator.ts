@@ -18,7 +18,7 @@ limitations under the License.
  */
 import util from "util";
 import { AppServiceBot } from "./app-service-bot";
-import ConfigValidator from "./config-validator";
+import { ConfigValidator } from "./config-validator";
 import logging from "./logging";
 const log = logging.get("room-link-validator");
 const VALIDATION_CACHE_LIFETIME = 30 * 60 * 1000;
@@ -154,10 +154,10 @@ export class RoomLinkValidator {
             }
         }
         if (isValid) {
-            return ValidationStatus.PASSED;
+            return RoomLinkValidatorStatus.PASSED;
         }
         this.conflictCache.set(roomId, Date.now());
-        throw ValidationStatus.ERROR_USER_CONFLICT;
+        throw RoomLinkValidatorStatus.ERROR_USER_CONFLICT;
     }
 
     private checkConflictCache (roomId: string) {
@@ -166,14 +166,14 @@ export class RoomLinkValidator {
             return undefined;
         }
         if (cacheTime > (Date.now() - VALIDATION_CACHE_LIFETIME)) {
-            return ValidationStatus.ERROR_CACHED;
+            return RoomLinkValidatorStatus.ERROR_CACHED;
         }
         this.conflictCache.delete(roomId);
         return undefined;
     }
 }
 
-export enum ValidationStatus {
+export enum RoomLinkValidatorStatus {
     PASSED,
     ERROR_USER_CONFLICT,
     ERROR_CACHED,

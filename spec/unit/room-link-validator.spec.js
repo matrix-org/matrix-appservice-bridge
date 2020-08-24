@@ -1,6 +1,6 @@
 const RVL = require("../../lib/components/room-link-validator")
 const RoomLinkValidator = RVL.RoomLinkValidator;
-const Statuses = RVL.validationStatuses;
+const Statuses = RVL.RoomLinkValidatorStatus;
 
 const AsBotMock = {
     cachedCalled: false,

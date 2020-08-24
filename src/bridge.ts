@@ -35,7 +35,7 @@ import { MatrixUser } from "./models/users/matrix"
 import { MatrixRoom } from "./models/rooms/matrix"
 import { PrometheusMetrics, BridgeGaugesCounts } from "./components/prometheusmetrics"
 import { MembershipCache, UserMembership } from "./components/membership-cache"
-import { RoomLinkValidator, ValidationStatus, Rules } from "./components/room-link-validator"
+import { RoomLinkValidator, RoomLinkValidatorStatus, Rules } from "./components/room-link-validator"
 import { RoomUpgradeHandler, RoomUpgradeHandlerOpts } from "./components/room-upgrade-handler";
 import { EventQueue } from "./components/event-queue";
 import * as logging from "./components/logging";
@@ -107,7 +107,7 @@ interface BridgeOpts {
          * The bridge will invoke this function when queried via onAliasQuery. If
          * not supplied, no rooms will be provisioned on alias queries. Provisioned rooms
          * will automatically be stored in the associated `roomStore`. */
-        onAliasQuery?: (alias: string, aliasLocalpart: string) => {creationOpts: RoomCreationOpts, remote?: RemoteRoom};
+        onAliasQuery?: (alias: string, aliasLocalpart: string) => {creationOpts: Record<string, unknown>, remote?: RemoteRoom};
         /**
          * The bridge will invoke this function when a room has been created
          * via onAliasQuery.
@@ -382,11 +382,20 @@ export class Bridge {
         if (typeof this.opts.userStore === "string") {
             storePromises.push(loadDatabase(this.opts.userStore, UserBridgeStore));
         }
+        else if (this.opts.userStore) {
+            storePromises.push(Promise.resolve(this.opts.userStore));
+        }
         if (typeof this.opts.roomStore === "string") {
             storePromises.push(loadDatabase(this.opts.roomStore, RoomBridgeStore));
         }
+        else if (this.opts.roomStore) {
+            storePromises.push(Promise.resolve(this.opts.roomStore));
+        }
         if (typeof this.opts.eventStore === "string") {
             storePromises.push(loadDatabase(this.opts.eventStore, EventBridgeStore));
+        }
+        else if (this.opts.eventStore) {
+            storePromises.push(Promise.resolve(this.opts.eventStore));
         }
 
         // This works because if they provided a string we converted it to a Promise
@@ -417,10 +426,10 @@ export class Bridge {
             }
             this.registration = registration;
         }
- else if (this.opts.registration instanceof AppServiceRegistration) {
+        else if (this.opts.registration instanceof AppServiceRegistration) {
             this.registration = this.opts.registration;
         }
- else {
+        else {
             throw Error('Invalid opts.registration provided');
         }
 
@@ -792,7 +801,7 @@ export class Bridge {
      */
     public async canProvisionRoom(roomId: string, cache=true) {
         if (!this.roomLinkValidator) {
-            return ValidationStatus.PASSED;
+            return RoomLinkValidatorStatus.PASSED;
         }
         return this.roomLinkValidator.validateRoom(roomId, cache);
     }
@@ -919,7 +928,7 @@ export class Bridge {
         }
         const aliasLocalpart = alias.split(":")[0].substring(1);
         const provisionedRoom = await this.opts.controller.onAliasQuery(alias, aliasLocalpart);
-        const createRoomResponse = await this.botIntent.createRoom(
+        const createRoomResponse: {room_id: string} = await this.botClient.createRoom(
             provisionedRoom.creationOpts
         );
         const roomId = createRoomResponse.room_id;

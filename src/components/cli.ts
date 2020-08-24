@@ -19,7 +19,7 @@ import path from "path";
 import * as yaml from "js-yaml";
 import nopt from "nopt";
 import { AppServiceRegistration } from "matrix-appservice";
-import ConfigValidator from "./config-validator";
+import { ConfigValidator } from "./config-validator";
 import * as logging from "./logging";
 
 const DEFAULT_PORT = 8090;
@@ -206,7 +206,13 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         if (!this.opts.bridgeConfig?.schema) {
             return cfg as ConfigType;
         }
-        const validator = new ConfigValidator(this.opts.bridgeConfig.schema);
+        let validator: ConfigValidator;
+        if (typeof this.opts.bridgeConfig.schema === "string") {
+            validator = ConfigValidator.fromSchemaFile(this.opts.bridgeConfig.schema);
+        }
+        else {
+            validator = new ConfigValidator(this.opts.bridgeConfig.schema);
+        }
         return validator.validate(cfg, this.opts.bridgeConfig.defaults) as ConfigType;
     }
 

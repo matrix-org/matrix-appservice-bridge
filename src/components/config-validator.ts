@@ -20,7 +20,7 @@ import extend from "extend";
 
 type Schema = any;
 
-export default class ConfigValidator {
+export class ConfigValidator {
 
     /**
      * Construct a validator of YAML files.
@@ -67,9 +67,7 @@ export default class ConfigValidator {
         return result;
     }
 
-    private static fromSchemaFile(filename: string): ConfigValidator {
+    public static fromSchemaFile(filename: string): ConfigValidator {
         return new ConfigValidator(ConfigValidator.loadFromFile(filename));
     }
 }
-
-module.exports = ConfigValidator;

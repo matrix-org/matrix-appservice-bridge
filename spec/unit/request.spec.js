@@ -35,7 +35,7 @@ describe("Request", function() {
 
     it("resolve should resolve the promise in getPromise", function(done) {
         req = new Request();
-        req.getPromise().done(function(thing) {
+        req.getPromise().then(function(thing) {
             expect(thing).toEqual("flibble");
             done();
         })

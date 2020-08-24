@@ -17,7 +17,6 @@ import PromClient, { Registry } from "prom-client";
 import { AgeCounters } from "./agecounters";
 import JsSdk from "matrix-js-sdk";
 import { Request, Response } from "express";
-
 type CollectorFunction = () => void;
 
 export interface BridgeGaugesCounts {
@@ -100,8 +99,8 @@ interface GagueOpts {
  *
  * @constructor
  */
-
 export class PrometheusMetrics {
+    public static AgeCounters = AgeCounters;
     private timers: {[name: string]: PromClient.Histogram<string>} = {};
     private counters: {[name: string]: PromClient.Counter<string>} = {};
     private collectors: CollectorFunction[] = [];

@@ -1,5 +1,5 @@
 "use strict";
-var ConfigValidator = require("../..").ConfigValidator;
+const { ConfigValidator } = require("../..");
 var log = require("../log");
 
 describe("ConfigValidator", function() {

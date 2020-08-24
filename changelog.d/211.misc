@@ -1,1 +1,1 @@
-Typescriptify bridge errors
+Typescriptify bridge errors. **Breaking**: The `wrap` function has been renamed to `wrapError`.

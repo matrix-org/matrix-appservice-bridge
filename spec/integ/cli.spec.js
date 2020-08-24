@@ -3,7 +3,7 @@ const os = require("os");
 const { Cli } = require("../..");
 const { Logging } = require("../..");
 const path = require('path');
-
+const { defer } = require("../../lib/utils/promiseutil");
 Logging.configure();
 
 let tempDir;
@@ -87,22 +87,21 @@ describe("Cli", () => {
         expect(runCalledWith[2].getOutput()).toEqual(registrationFileContent);
     });
 
-    it("should detect config file changes", async () => {
+    it("should reload config on SIGHUP", async () => {
         const newConfigData = {"b": "var", "c": false};
         const configFile = await writeConfigFile({"a": "var", "b": true});
-        let newConfigFile = null;
+        const configDefer = defer();
         const cli = new Cli({
             enableRegistration: false,
             registrationPath: await writeRegistrationFile(),
             bridgeConfig: { watchConfig: true, watchInterval: 100 },
-            onConfigChanged: (config) => { newConfigFile = config },
+            onConfigChanged: (config) => { configDefer.resolve(config); },
             run: (...args) => { }
         });
         cli.run({config: configFile});
         await writeConfigFile(newConfigData);
-
-        // Wait for changes, 3 x the interval to be safe.
-        await new Promise(r => setTimeout(r, 300));
-        expect(newConfigFile).toEqual(newConfigData);
+        // Send ourselves a signal
+        process.kill(process.pid, "SIGHUP");
+        expect(await configDefer.promise).toEqual(newConfigData);
     });
 })

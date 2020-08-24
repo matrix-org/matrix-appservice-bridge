@@ -195,7 +195,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
     private assignConfigFile(configFilePath: string) {
         const configFile = (this.opts.bridgeConfig && configFilePath) ? configFilePath : undefined;
         if (!configFile) {
-            return null;
+            return;
         }
         const config = this.loadConfig(configFile);
         this.bridgeConfig = config;

@@ -113,10 +113,9 @@ export class BridgeStore {
      * Set a UNIQUE key constraint on the given field.
      * @param fieldName The field name. Use dot notation for nested objects.
      * @param sparse Allow sparse entries (undefined won't cause a key
-     * violation). Default: false.
+     * violation).
      */
-    public setUnique(fieldName: string, sparse: boolean) {
-        sparse = sparse || false;
+    public setUnique(fieldName: string, sparse = false) {
         this.db.ensureIndex({
             fieldName: fieldName,
             unique: true,

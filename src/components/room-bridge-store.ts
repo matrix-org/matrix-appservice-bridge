@@ -81,7 +81,7 @@ export class RoomBridgeStore extends BridgeStore {
      * If a unique 'id' is not given, the store will generate one by concatenating
      * the `matrix_id` and the `remote_id`. The delimiter
      * used is a property on this store and can be modified.
-     * 
+     *
      * The structure of Entry objects means that it is efficient to select based
      * off the 'id', 'matrix_id' or 'remote_id'. Additional indexes can be added
      * manually.

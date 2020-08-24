@@ -21,7 +21,7 @@ import { StoredEvent, StoredEventDoc } from "../models/events/event";
  * Construct a store suitable for event mapping information. Data is stored
  * as {@link StoredEvent}s.
  * @constructor
- * @param {Datastore} db The connected NEDB database instance
+ * @param db The connected NEDB database instance
  */
 export class EventBridgeStore extends BridgeStore {
     constructor(db: Datastore) { super(db) }

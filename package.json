@@ -7,9 +7,8 @@
     "build": "tsc --project tsconfig.json",
     "prepare": "npm run build",
     "gendoc": "jsdoc -r lib -R README.md -P package.json -d .jsdoc",
-    "lint": "npm run lint:js && npm run lint:ts",
-    "lint:js": "eslint -c .eslintrc.json src/**/*.js spec/**/*.js",
-    "lint:ts": "eslint -c .eslintrcts.json src/**/*.ts",
+    "lint": "npm run lint:ts",
+    "lint:ts": "eslint -c .eslintrc.json src/**/*.ts",
     "test": "BLUEBIRD_DEBUG=1 jasmine --stop-on-failure=true",
     "check": "npm run lint && npm test",
     "ci-test": "BLUEBIRD_DEBUG=1 nyc -x \"**/spec/**\" --report text jasmine"

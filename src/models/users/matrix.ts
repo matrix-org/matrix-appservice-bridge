@@ -24,7 +24,9 @@ export class MatrixUser {
      * @param escape Escape the user's localpart. Modify {@link MatrixUser~ESCAPE_DEFAULT}
      *               to change the default value.
      */
-    constructor(public userId: string, private readonly _data: Record<string, unknown> = {}, escape=MatrixUser.ESCAPE_DEFAULT) {
+    constructor(public userId: string,
+        private readonly _data: Record<string, unknown> = {},
+        escape=MatrixUser.ESCAPE_DEFAULT) {
         if (!userId) {
             throw Error("Missing user_id");
         }

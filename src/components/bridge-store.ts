@@ -98,7 +98,7 @@ export class BridgeStore {
     public async select<T, O>(query: Query, transformFn?: (input: T) => O) {
         const doc = await this.dbFind(query);
         if (!doc) {
-            return null;
+            return [];
         }
         if (transformFn) {
             if (Array.isArray(doc)) {

@@ -62,13 +62,13 @@ import { MatrixRoom, MatrixRoomData } from "../models/rooms/matrix";
 import { RemoteRoom } from "../models/rooms/remote";
 
 export class RoomBridgeStore extends BridgeStore {
-    private readonly delimiter = "    ";
+    public delimiter = "    ";
 
     /**
      * Construct a store suitable for room bridging information. Data is stored
-     * as {@link RoomBridgeStore~Entry}s which have the following
-     * <i>serialized</i> format:
-     * <pre>
+     * as {@link RoomBridgeStoreEntry}s which have the following
+     * *serialized* format:
+     * ```
      * {
      *   id: "unique_id",      // customisable
      *   matrix_id: "room_id",
@@ -77,19 +77,17 @@ export class RoomBridgeStore extends BridgeStore {
      *   remote: { serialised remote room info },
      *   data: { ... any additional info ... }
      * }
-     * </pre>
-     * <p>If a unique 'id' is not given, the store will generate one by concatenating
-     * the <code>matrix_id</code> and the <code>remote_id</code>. The delimiter
-     * used is a property on this store and can be modified.</p>
-     * <p>The structure of Entry objects means that it is efficient to select based
+     * ```
+     * If a unique 'id' is not given, the store will generate one by concatenating
+     * the `matrix_id` and the `remote_id`. The delimiter
+     * used is a property on this store and can be modified.
+     *
+     * The structure of Entry objects means that it is efficient to select based
      * off the 'id', 'matrix_id' or 'remote_id'. Additional indexes can be added
-     * manually.</p>
+     * manually.
      * @constructor
-     * @param {Datastore} db The connected NEDB database instance
-     * @param {Object} opts Options for this store.
-     * @property {string} delimiter The delimiter between matrix and
-     * remote IDs. Defaults to three spaces. If the schema of your remote IDs
-     * allows spaces, you will need to change this.
+     * @param db The connected NEDB database instance
+     * @param opts Options for this store.
      */
     constructor(db: Datastore) {
         super(db);
@@ -97,8 +95,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Insert an entry, clobbering based on the ID of the entry.
-     * @param {RoomBridgeStore~Entry} entry
-     * @return {Promise}
+     * @param entry
      */
     public upsertEntry(entry: RoomBridgeStoreEntry) {
         return this.upsert({
@@ -108,8 +105,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Get an existing entry based on the provided entry ID.
-     * @param {String} id The ID of the entry to retrieve.
-     * @return {?RoomBridgeStore~Entry} A promise which resolves to the entry or null.
+     * @param id The ID of the entry to retrieve.
      */
     public getEntryById(id: string) {
         return this.selectOne({
@@ -121,8 +117,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Get a list of entries based on the matrix_id of each entry.
-     * @param {string} matrixId
-     * @return {RoomBridgeStore~Entry[]}
+     * @param matrixId
      */
     public getEntriesByMatrixId(matrixId: string) {
         return this.select({
@@ -134,9 +129,8 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * A batch version of <code>getEntriesByMatrixId</code>.
-     * @param {String[]} ids
-     * @return {Object.<string,RoomBridgeStore~Entry[]>} Resolves
-     * to a map of room_id => Entry[]
+     * @param ids
+     * @return Resolves to a map of room_id => Entry[]
      */
     public async getEntriesByMatrixIds(ids: string[]) {
         // eslint-disable-next-line camelcase
@@ -146,7 +140,7 @@ export class RoomBridgeStore extends BridgeStore {
             }
         });
         if (!docs) {
-            return [];
+            return {};
         }
         const entries: {[matrixId: string]: RoomBridgeStoreEntry[]} = {};
         docs.forEach((doc: RoomStoreEntryDoc) => {
@@ -163,8 +157,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Get a list of entries based on the remote_id of each entry.
-     * @param {String} remoteId
-     * @return {RoomBridgeStore~Entry[]}
+     * @param remoteId
      */
     public getEntriesByRemoteId(remoteId: string) {
         return this.select({
@@ -176,18 +169,15 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Create a link between a matrix room and remote room. This will create an entry with:
-     * <ul>
-     * <li>The matrix_id set to the matrix room ID.</li>
-     * <li>The remote_id set to the remote room ID.</li>
-     * <li>The id set to the id value given OR a concatenation of the matrix and remote IDs
-     * if one is not provided.</li>
-     * </ul>
-     * @param {MatrixRoom} matrixRoom The matrix room
-     * @param {RemoteRoom} remoteRoom The remote room
-     * @param {Object=} data Information about this mapping.
-     * @param {string=} linkId The id value to set. If not given, a unique ID will be
+     * - The matrix_id set to the matrix room ID.
+     * - The remote_id set to the remote room ID.
+     * - The id set to the id value given OR a concatenation of the matrix and remote IDs
+     * if one is not provided.
+     * @param matrixRoom The matrix room
+     * @param remoteRoom The remote room
+     * @param data Information about this mapping.
+     * @param linkId The id value to set. If not given, a unique ID will be
      * created from the matrix_id and remote_id.
-     * @return {Promise}
      */
     public linkRooms(matrixRoom: MatrixRoom, remoteRoom: RemoteRoom, data: Record<string, unknown>, linkId: string) {
         data = data || {};
@@ -211,8 +201,7 @@ export class RoomBridgeStore extends BridgeStore {
      * Matrix room ID. If an entry already exists with this 'id', it will be replaced.
      * This function is useful if you just want to store a room with some data and not
      * worry about any mappings.
-     * @param {MatrixRoom} matrixRoom
-     * @return {Promise}
+     * @param matrixRoom
      * @see RoomBridgeStore#getMatrixRoom
      */
     public setMatrixRoom(matrixRoom: MatrixRoom) {
@@ -228,8 +217,7 @@ export class RoomBridgeStore extends BridgeStore {
      * Get an entry's Matrix room based on the provided room_id. The entry MUST have
      * an 'id' of the room_id and there MUST be a Matrix room contained within the
      * entry for this to return.
-     * @param {string} roomId
-     * @return {?MatrixRoom}
+     * @param roomId
      * @see RoomBridgeStore#setMatrixRoom
      */
     public getMatrixRoom(roomId: string) {
@@ -240,8 +228,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Get all entries with the given remote_id which have a Matrix room within.
-     * @param {string} remoteId
-     * @return {MatrixRoom[]}
+     * @param remoteId
      */
     public async getLinkedMatrixRooms(remoteId: string) {
         const entries = await this.getEntriesByRemoteId(remoteId);
@@ -252,13 +239,12 @@ export class RoomBridgeStore extends BridgeStore {
             return Boolean(e.matrix);
         }).map(function(e) {
             return e.matrix;
-        });
+        }) as MatrixRoom[];
     }
 
     /**
      * Get all entries with the given matrix_id which have a Remote room within.
-     * @param {string} matrixId
-     * @return {RemoteRoom[]}
+     * @param matrixId
      */
     public async getLinkedRemoteRooms(matrixId: string) {
         const entries = await this.getEntriesByMatrixId(matrixId);
@@ -273,9 +259,9 @@ export class RoomBridgeStore extends BridgeStore {
     }
 
     /**
-     * A batched version of <code>getLinkedRemoteRooms</code>.
-     * @param {string[]} matrixIds
-     * @return {Object.<string, RemoteRoom>} A mapping of room_id to RemoteRoom.
+     * A batched version of `getLinkedRemoteRooms`.
+     * @param matrixIds
+     * @return A mapping of room_id to RemoteRoom.
      * @see RoomBridgeStore#getLinkedRemoteRooms
      */
     public async batchGetLinkedRemoteRooms(matrixIds: string[]) {
@@ -294,8 +280,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Get a list of entries based on a RemoteRoom data value.
-     * @param {Object} data The data values to retrieve based from.
-     * @return {RoomBridgeStore~Entry[]} A list of entries
+     * @param data The data values to retrieve based from.
      * @example
      * remoteRoom.set("some_key", "some_val");
      * // store remoteRoom and then:
@@ -316,8 +301,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Get a list of entries based on a MatrixRoom data value.
-     * @param {Object} data The data values to retrieve based from.
-     * @return {RoomBridgeStore~Entry[]} A list of entries
+     * @param data The data values to retrieve based from.
      * @example
      * matrixRoom.set("some_key", "some_val");
      * // store matrixRoom and then:
@@ -338,8 +322,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Get a list of entries based on the link's data value.
-     * @param {Object} data The data values to retrieve based from.
-     * @return {RoomBridgeStore~Entry[]} A list of entries
+     * @param data The data values to retrieve based from.
      * @example
      * store.linkRooms(matrixRoom, remoteRoom, { some_key: "some_val" });
      * store.getEntriesByLinkData({
@@ -359,8 +342,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Remove entries based on remote room data.
-     * @param {Object} data The data to match.
-     * @return {Promise}
+     * @param data The data to match.
      * @example
      * remoteRoom.set("a_key", "a_val");
      * // store remoteRoom and then:
@@ -379,8 +361,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Remove entries with this remote room id.
-     * @param {Object} remoteId The remote id.
-     * @return {Promise}
+     * @param remoteId The remote id.
      * @example
      * new RemoteRoom("foobar");
      * // store the RemoteRoom and then:
@@ -394,8 +375,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Remove entries based on matrix room data.
-     * @param {Object} data The data to match.
-     * @return {Promise}
+     * @param data The data to match.
      * @example
      * matrixRoom.set("a_key", "a_val");
      * // store matrixRoom and then:
@@ -414,8 +394,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Remove entries with this matrix room id.
-     * @param {Object} matrixId The matrix id.
-     * @return {Promise}
+     * @param matrixId The matrix id.
      * @example
      * new MatrixRoom("!foobar:matrix.org");
      * // store the MatrixRoom and then:
@@ -429,8 +408,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Remove entries based on the link's data value.
-     * @param {Object} data The data to match.
-     * @return {Promise}
+     * @param data The data to match.
      * @example
      * store.linkRooms(matrixRoom, remoteRoom, { a_key: "a_val" });
      * store.removeEntriesByLinkData({
@@ -448,8 +426,7 @@ export class RoomBridgeStore extends BridgeStore {
 
     /**
      * Remove an existing entry based on the provided entry ID.
-     * @param {String} id The ID of the entry to remove.
-     * @return {Promise}
+     * @param id The ID of the entry to remove.
      * @example
      * store.removeEntryById("anid");
      */

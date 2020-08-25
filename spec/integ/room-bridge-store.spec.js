@@ -1,35 +1,35 @@
 "use strict";
-var Datastore = require("nedb");
-var fs = require("fs");
-var log = require("../log");
+const Datastore = require("nedb");
+const fs = require("fs");
+const log = require("../log");
 
-var RoomBridgeStore = require("../..").RoomBridgeStore;
-var MatrixRoom = require("../..").MatrixRoom;
-var RemoteRoom = require("../..").RemoteRoom;
-var TEST_DB_PATH = __dirname + "/test.db";
+const RoomBridgeStore = require("../..").RoomBridgeStore;
+const MatrixRoom = require("../..").MatrixRoom;
+const RemoteRoom = require("../..").RemoteRoom;
+const TEST_DB_PATH = __dirname + "/test.db";
 
-describe("RoomBridgeStore", function() {
+describe("RoomBridgeStore", function () {
     var store, db;
 
     beforeEach(
-    /** @this */
-    function(done) {
-        log.beforeEach(this);
-        db = new Datastore({
-            filename: TEST_DB_PATH,
-            autoload: true,
-            onload: function(err) {
-                if (err) {
-                    console.error(err);
-                    return;
+        /** @this */
+        function (done) {
+            log.beforeEach(this);
+            db = new Datastore({
+                filename: TEST_DB_PATH,
+                autoload: true,
+                onload: function (err) {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+                    store = new RoomBridgeStore(db);
+                    done();
                 }
-                store = new RoomBridgeStore(db);
-                done();
-            }
+            });
         });
-    });
 
-    afterEach(function() {
+    afterEach(function () {
         try {
             fs.unlinkSync(TEST_DB_PATH);
         }
@@ -38,72 +38,67 @@ describe("RoomBridgeStore", function() {
         }
     });
 
-    describe("upsertEntry", function() {
+    describe("upsertEntry", function () {
         it("should insert an entry and should be retrievable by getEntryById",
-        async function() {
-            var entry = {
-                id: "flibble",
-                matrix: new MatrixRoom("!foo:bar"),
-                remote: new RemoteRoom("#flibble"),
-            };
-            const e = await store.upsertEntry(entry).then(function() {
-                return store.getEntryById("flibble");
-            });
-            expect(e.id).toEqual(entry.id);
-            expect(e.matrix.getId()).toEqual("!foo:bar");
-            expect(e.remote.getId()).toEqual("#flibble");
-        });
-
-        it("should update an entry if one with the same 'id' exists", async function() {
-            var entry = {
-                id: "flibble",
-                matrix: new MatrixRoom("!foo:bar"),
-                remote: new RemoteRoom("#flibble"),
-            };
-            const e = await store.upsertEntry(entry).then(function() {
-                var entry2 = {
+            async function () {
+                const entry = {
                     id: "flibble",
-                    matrix: new MatrixRoom("!woo:bar"),
-                    remote: new RemoteRoom("#wibble"),
+                    matrix: new MatrixRoom("!foo:bar"),
+                    remote: new RemoteRoom("#flibble"),
                 };
-                return store.upsertEntry(entry2);
-            }).then(function() {
-                return store.getEntryById("flibble");
+                await store.upsertEntry(entry);
+                const e = await store.getEntryById("flibble");
+                expect(e.id).toEqual(entry.id);
+                expect(e.matrix.getId()).toEqual("!foo:bar");
+                expect(e.remote.getId()).toEqual("#flibble");
             });
+
+        it("should update an entry if one with the same 'id' exists", async function () {
+            const entry = {
+                id: "flibble",
+                matrix: new MatrixRoom("!foo:bar"),
+                remote: new RemoteRoom("#flibble"),
+            };
+            await store.upsertEntry(entry);
+            const entry2 = {
+                id: "flibble",
+                matrix: new MatrixRoom("!woo:bar"),
+                remote: new RemoteRoom("#wibble"),
+            };
+            await store.upsertEntry(entry2);
+            const e = await store.getEntryById("flibble");
             expect(e.id).toEqual("flibble");
             expect(e.matrix.getId()).toEqual("!woo:bar");
             expect(e.remote.getId()).toEqual("#wibble");
         });
     });
 
-    describe("getEntryById", function() {
+    describe("getEntryById", function () {
 
-        it("should return nothing for matching matrix_id or remote_id", async function() {
-            var entry = {
+        it("should return nothing for matching matrix_id or remote_id", async function () {
+            const entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
                 remote: new RemoteRoom("!nothing:here"),
             };
-            const e = await store.upsertEntry(entry).then(function() {
-                return store.getEntryById("!nothing:here");
-            })
+            await store.upsertEntry(entry);
+            const e = await store.getEntryById("!nothing:here");
             expect(e).toBeNull();
         });
     });
 
-    describe("getEntriesByRemoteRoomData", function() {
+    describe("getEntriesByRemoteRoomData", function () {
 
-        it("should return entries based on remote room data", async function() {
-            var entry = {
+        it("should return entries based on remote room data", async function () {
+            const entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
                 remote: new RemoteRoom("#foo"),
             };
             entry.remote.set("custom", "abc123");
-            const e = await store.upsertEntry(entry).then(function() {
-                return store.getEntriesByRemoteRoomData({
-                    custom: "abc123"
-                });
+            await store.upsertEntry(entry);
+            const e = await store.getEntriesByRemoteRoomData({
+                custom: "abc123"
             });
             expect(e).toBeDefined();
             if (!e) {
@@ -121,7 +116,7 @@ describe("RoomBridgeStore", function() {
 
     describe("getEntriesByMatrixRoomData", () => {
 
-        it("should return entries based on matrix room data", async() => {
+        it("should return entries based on matrix room data", async () => {
             const entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
@@ -146,17 +141,16 @@ describe("RoomBridgeStore", function() {
         });
     });
 
-    describe("removeEntriesByRemoteRoomData", function() {
-        it("should remove entries based on remote room data", async function() {
+    describe("removeEntriesByRemoteRoomData", function () {
+        it("should remove entries based on remote room data", async function () {
             const entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
                 remote: new RemoteRoom("#foo"),
             };
             entry.remote.set("custom", "abc123");
-            const e = store.upsertEntry(entry).then(function() {
-                return store.getEntryById("flibble");
-            });
+            await store.upsertEntry(entry);
+            const e = store.getEntryById("flibble");
             expect(e).not.toBeNull();
             await store.removeEntriesByRemoteRoomData({
                 custom: "abc123"
@@ -166,22 +160,21 @@ describe("RoomBridgeStore", function() {
         });
     });
 
-    describe("removeEntriesByMatrixRoomData", function() {
-        it("should remove entries based on matrix room data", async function() {
-            var entry = {
+    describe("removeEntriesByMatrixRoomData", function () {
+        it("should remove entries based on matrix room data", async function () {
+            const entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
                 remote: new RemoteRoom("#foo"),
             };
             entry.matrix.set("custom", "abc123");
-            var entry2 = {
+            const entry2 = {
                 id: "wibble",
                 matrix: new MatrixRoom("!foo:bar")
             };
             entry2.matrix.set("custom", "abc123");
-            await store.upsertEntry(entry).then(function() {
-                return store.upsertEntry(entry2);
-            });
+            await store.upsertEntry(entry);
+            await store.upsertEntry(entry2);
             let res1 = await store.getEntryById("flibble");
             let res2 = await store.getEntryById("wibble")
             expect(res1).not.toBeNull();
@@ -196,9 +189,9 @@ describe("RoomBridgeStore", function() {
         });
     });
 
-    describe("removeEntriesByLinkData", function() {
-        it("should remove entries based on link data", async function() {
-            var entry = {
+    describe("removeEntriesByLinkData", function () {
+        it("should remove entries based on link data", async function () {
+            const entry = {
                 id: "flibble",
                 matrix: new MatrixRoom("!nothing:here"),
                 remote: new RemoteRoom("#foo"),
@@ -206,23 +199,20 @@ describe("RoomBridgeStore", function() {
                     foo: "bar"
                 }
             };
-            const res = await store.linkRooms(entry.matrix, entry.remote, entry.data).then(function() {
-                return store.getEntriesByLinkData({foo: "bar"});
-            }).then(function(e) {
-                expect(e.length).toEqual(1);
-                return store.removeEntriesByLinkData({
-                    foo: "bar"
-                });
-            }).then(function() {
-                return store.getEntriesByLinkData({foo: "bar"});
+            await store.linkRooms(entry.matrix, entry.remote, entry.data);
+            const e = await store.getEntriesByLinkData({ foo: "bar" });
+            expect(e.length).toEqual(1);
+            await store.removeEntriesByLinkData({
+                foo: "bar"
             });
+            const res = await store.getEntriesByLinkData({ foo: "bar" });
 
             expect(res.length).toEqual(0);
         });
     });
 
     describe("getEntriesByMatrixId", () => {
-        it("should return for matching matrix_ids", async() => {
+        it("should return for matching matrix_ids", async () => {
             const entry = {
                 id: "id1", matrix: new MatrixRoom("!foo:bar"),
                 remote: new RemoteRoom("#foo")
@@ -242,7 +232,7 @@ describe("RoomBridgeStore", function() {
     });
 
     describe("getEntriesByMatrixIds", () => {
-        it("should return a map of room_id to entry", async() => {
+        it("should return a map of room_id to entry", async () => {
             const entries = [
                 {
                     id: "id1",
@@ -277,7 +267,7 @@ describe("RoomBridgeStore", function() {
     });
 
     describe("getEntriesByRemoteId", () => {
-        it("should return for matching remote_ids", async() => {
+        it("should return for matching remote_ids", async () => {
             const entry = {
                 id: "id1", matrix: new MatrixRoom("!foo:bar"),
                 remote: new RemoteRoom("#foo"),
@@ -296,11 +286,11 @@ describe("RoomBridgeStore", function() {
     });
 
     describe("linkRooms", () => {
-        it("should create a single entry", async() => {
+        it("should create a single entry", async () => {
             const m = new MatrixRoom("!foo:bar");
             m.set("mxkey", "mxval");
             const r = new RemoteRoom("#foo");
-            r.set("remotekey", { "nested": "remote_val"});
+            r.set("remotekey", { "nested": "remote_val" });
             await store.linkRooms(m, r,
                 { some: "data_goes_here" },
                 "_custom_id"
@@ -308,10 +298,10 @@ describe("RoomBridgeStore", function() {
             const entry = await store.getEntryById("_custom_id");
             expect(entry.id).toEqual("_custom_id");
             expect(entry.remote.getId()).toEqual("#foo");
-            expect(entry.remote.get("remotekey")).toEqual({nested: "remote_val"});
+            expect(entry.remote.get("remotekey")).toEqual({ nested: "remote_val" });
             expect(entry.matrix.getId()).toEqual("!foo:bar");
             expect(entry.matrix.get("mxkey")).toEqual("mxval");
-            expect(entry.data).toEqual({some: "data_goes_here"});
+            expect(entry.data).toEqual({ some: "data_goes_here" });
         });
     });
 });

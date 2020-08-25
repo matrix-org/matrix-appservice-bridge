@@ -120,7 +120,7 @@ class Logging {
         }
         maxFiles: 5
     */
-    configure(config: LoggerConfig) {
+    configure(config: LoggerConfig = {}) {
         if (!config.fileDatePattern) {
             config.fileDatePattern = "YYYY-MM-DD";
         }

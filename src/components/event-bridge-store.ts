@@ -21,7 +21,7 @@ import { StoredEvent, StoredEventDoc } from "../models/events/event";
  * Construct a store suitable for event mapping information. Data is stored
  * as {@link StoredEvent}s.
  * @constructor
- * @param {Datastore} db The connected NEDB database instance
+ * @param db The connected NEDB database instance
  */
 export class EventBridgeStore extends BridgeStore {
     constructor(db: Datastore) { super(db) }
@@ -38,9 +38,9 @@ export class EventBridgeStore extends BridgeStore {
 
     /**
      * Get an existing event based on the provided matrix IDs.
-     * @param {string} roomId The ID of the room.
-     * @param {string} eventId The ID of the event.
-     * @return {?StoredEvent} A promise which resolves to the StoredEvent or null.
+     * @param roomId The ID of the room.
+     * @param eventId The ID of the event.
+     * @return A promise which resolves to the StoredEvent or null.
      */
     public getEntryByMatrixId(roomId: string, eventId: string): Promise<StoredEvent|null> {
         return this.selectOne<any, StoredEvent>({
@@ -53,9 +53,9 @@ export class EventBridgeStore extends BridgeStore {
 
     /**
      * Get an existing event based on the provided remote IDs.
-     * @param {string} roomId The ID of the room.
-     * @param {string} eventId The ID of the event.
-     * @return {?StoredEvent} A promise which resolves to the StoredEvent or null.
+     * @param roomId The ID of the room.
+     * @param eventId The ID of the event.
+     * @return A promise which resolves to the StoredEvent or null.
      */
     public getEntryByRemoteId(roomId: string, eventId: string) {
         return this.selectOne({
@@ -68,8 +68,7 @@ export class EventBridgeStore extends BridgeStore {
 
     /**
      * Remove entries based on the event data.
-     * @param {StoredEvent} event The event to remove.
-     * @return {Promise}
+     * @param event The event to remove.
      */
     public removeEvent(event: StoredEvent) {
         return this.delete({
@@ -79,9 +78,8 @@ export class EventBridgeStore extends BridgeStore {
 
     /**
      * Remove entries based on the matrix IDs.
-     * @param {string} roomId The ID of the room.
-     * @param {string} eventId The ID of the event.
-     * @return {Promise}
+     * @param roomId The ID of the room.
+     * @param eventId The ID of the event.
      */
     public removeEventByMatrixId(roomId: string, eventId: string) {
         return this.delete({
@@ -92,9 +90,8 @@ export class EventBridgeStore extends BridgeStore {
 
     /**
      * Remove entries based on the matrix IDs.
-     * @param {string} roomId The ID of the room.
-     * @param {string} eventId The ID of the event.
-     * @return {Promise}
+     * @param roomId The ID of the room.
+     * @param eventId The ID of the event.
      */
     public removeEventByRemoteId(roomId: string, eventId: string) {
         return this.delete({

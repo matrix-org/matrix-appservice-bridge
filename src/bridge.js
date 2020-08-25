@@ -25,7 +25,7 @@ const MatrixScheduler = require("matrix-js-sdk").MatrixScheduler;
 
 const BridgeContext = require("./components/bridge-context");
 const { ClientFactory } = require("./components/client-factory");
-const AppServiceBot = require("./components/app-service-bot");
+const { AppServiceBot } = require("./components/app-service-bot");
 const RequestFactory = require("./components/request-factory").RequestFactory;
 const Intent = require("./components/intent").Intent;
 const RoomBridgeStore = require("./components/room-bridge-store");
@@ -38,8 +38,7 @@ const { MembershipCache } = require("./components/membership-cache");
 const RoomLinkValidator = require("./components/room-link-validator").RoomLinkValidator;
 const RLVStatus = require("./components/room-link-validator").validationStatuses;
 const RoomUpgradeHandler = require("./components/room-upgrade-handler");
-const EventNotHandledError = require("./errors").EventNotHandledError;
-const InternalError = require("./errors").InternalError;
+const { InternalError, EventNotHandledError, wrapError } = require("./errors").unstable;
 const EventQueue = require("./components/event-queue").EventQueue;
 const deferPromise = require("./utils/promiseutil").defer;
 
@@ -890,7 +889,7 @@ Bridge.prototype._getBridgeContext = async function(event) {
 
 Bridge.prototype._handleEventError = function(event, error) {
     if (!(error instanceof EventNotHandledError)) {
-        error = wrap(error, InternalError);
+        error = wrapError(error, InternalError);
     }
     // TODO[V02460@gmail.com]: Send via different means when the bridge bot is
     // unavailable. _MSC2162: Signaling Errors at Bridges_ will have details on

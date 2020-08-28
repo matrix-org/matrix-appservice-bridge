@@ -241,7 +241,6 @@ export class Cli<ConfigType extends Record<string, unknown>> {
                 log.info("Got SIGHUP, reloading config file");
                 try {
                     const newConfig = this.loadConfig(configFilename);
-                    // onConfigChanged is checked above, but for Typescript's sake.
                     if (this.opts.onConfigChanged) {
                         this.opts.onConfigChanged(newConfig);
                     }

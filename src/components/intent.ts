@@ -494,7 +494,7 @@ export class Intent {
      * addition to those that are automatically chosen.
      */
     public async join(roomId: string, viaServers?: string[]) {
-        await this._ensureJoined(roomId, false, viaServers);
+        await this._ensureJoined(roomId, true, viaServers);
     }
 
     /**

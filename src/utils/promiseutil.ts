@@ -14,18 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import Bluebird from "bluebird";
-
 export interface Defer<T> {
     resolve: (value?: T) => void;
     reject: (err?: unknown) => void;
-    promise: Bluebird<T>;
+    promise: Promise<T>;
 }
 
 export function defer<T>(): Defer<T> {
     let resolve!: (value?: T) => void;
     let reject!: (err?: unknown) => void;
-    const promise = new Bluebird<T>((res, rej) => {
+    const promise = new Promise<T>((res, rej) => {
         resolve = res;
         reject = rej;
     });

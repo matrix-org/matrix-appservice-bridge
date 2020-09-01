@@ -26,8 +26,6 @@ export * from "./components/state-lookup";
 // Config and CLI
 export * from "./components/cli";
 export * from "./components/config-validator";
-/* eslint-disable @typescript-eslint/no-var-requires */
-module.exports.ConfigValidator = require("./components/config-validator");
 
 // Store
 export * from "./components/bridge-store";
@@ -41,32 +39,19 @@ export * from "./models/rooms/remote";
 export * from "./models/users/matrix";
 export * from "./models/users/remote";
 export * from "./models/events/event";
-
-module.exports.Bridge = require("./bridge");
+export * from "./bridge";
 export * from "./components/bridge-context";
 
 export * from "matrix-appservice";
+export * from "./components/prometheusmetrics";
+export * from "./components/membership-cache";
+export * as Logging from "./components/logging";
+export { unstable } from "./errors";
 
+/* eslint-disable @typescript-eslint/no-var-requires */
 const jsSdk = require("matrix-js-sdk");
 
 export const ContentRepo = {
     getHttpUriForMxc: jsSdk.getHttpUriForMxc,
     getIdenticonUri: jsSdk.getIdenticonUri,
 }
-
-export * from "./components/prometheusmetrics";
-module.exports.PrometheusMetrics.AgeCounters = require("./components/agecounters").AgeCounters;
-
-// Caches
-export * from "./components/membership-cache";
-
-// Logging
-export * as Logging from "./components/logging";
-
-// Consts for RoomLinkValidator
-module.exports.RoomLinkValidatorStatus = require(
-	"./components/room-link-validator"
-).validationStatuses;
-
-// Errors
-export { unstable } from "./errors";

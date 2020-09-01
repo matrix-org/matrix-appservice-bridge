@@ -17,18 +17,17 @@ import PromClient, { Registry } from "prom-client";
 import { AgeCounters } from "./agecounters";
 import JsSdk from "matrix-js-sdk";
 import { Request, Response } from "express";
-
 type CollectorFunction = () => void;
 
-interface BridgeGaugesCounts {
-    matrixRoomConfigs: number;
-    remoteRoomConfigs: number;
-    matrixGhosts: number;
-    remoteGhosts: number;
-    matrixRoomsByAge: AgeCounters;
-    remoteRoomsByAge: AgeCounters;
-    matrixUsersByAge: AgeCounters;
-    remoteUsersByAge: AgeCounters;
+export interface BridgeGaugesCounts {
+    matrixRoomConfigs?: number;
+    remoteRoomConfigs?: number;
+    matrixGhosts?: number;
+    remoteGhosts?: number;
+    matrixRoomsByAge?: AgeCounters;
+    remoteRoomsByAge?: AgeCounters;
+    matrixUsersByAge?: AgeCounters;
+    remoteUsersByAge?: AgeCounters;
 }
 
 interface CounterOpts {
@@ -100,8 +99,8 @@ interface GagueOpts {
  *
  * @constructor
  */
-
 export class PrometheusMetrics {
+    public static AgeCounters = AgeCounters;
     private timers: {[name: string]: PromClient.Histogram<string>} = {};
     private counters: {[name: string]: PromClient.Counter<string>} = {};
     private collectors: CollectorFunction[] = [];
@@ -223,17 +222,19 @@ export class PrometheusMetrics {
         this.addCollector(function () {
             const counts = counterFunc();
 
-            matrixRoomsGauge.set(counts.matrixRoomConfigs);
-            remoteRoomsGauge.set(counts.remoteRoomConfigs);
+            if (counts.matrixRoomConfigs) {matrixRoomsGauge.set(counts.matrixRoomConfigs);}
 
-            matrixGhostsGauge.set(counts.matrixGhosts);
-            remoteGhostsGauge.set(counts.remoteGhosts);
+            if (counts.remoteRoomConfigs) {remoteRoomsGauge.set(counts.remoteRoomConfigs);}
 
-            counts.matrixRoomsByAge.setGauge(matrixRoomsByAgeGauge);
-            counts.remoteRoomsByAge.setGauge(remoteRoomsByAgeGauge);
+            if (counts.matrixGhosts) {matrixGhostsGauge.set(counts.matrixGhosts);}
 
-            counts.matrixUsersByAge.setGauge(matrixUsersByAgeGauge);
-            counts.remoteUsersByAge.setGauge(remoteUsersByAgeGauge);
+            if (counts.remoteGhosts) {remoteGhostsGauge.set(counts.remoteGhosts);}
+
+            counts.matrixRoomsByAge?.setGauge(matrixRoomsByAgeGauge);
+            counts.remoteRoomsByAge?.setGauge(remoteRoomsByAgeGauge);
+
+            counts.matrixUsersByAge?.setGauge(matrixUsersByAgeGauge);
+            counts.remoteUsersByAge?.setGauge(remoteUsersByAgeGauge);
         });
     }
 

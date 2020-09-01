@@ -20,11 +20,42 @@ import { RoomBridgeStore, RoomBridgeStoreEntry } from "./room-bridge-store";
 
 const log = logging.get("RoomUpgradeHandler");
 
-interface RoomUpgradeHandlerOpts {
+export interface RoomUpgradeHandlerOpts {
+    /**
+     * Should upgrade and invite events be processed after being handled
+     * by the RoomUpgradeHandler. Defaults to `false`.
+     */
+    consumeEvent: boolean;
+    /**
+     * Should ghost users be migrated to the new room. This will leave
+     * any users matching the user regex list in the registration file
+     * from the old room, and join them to the new room.
+     * Defaults to `true`
+     */
     migrateGhosts: boolean;
+    /**
+     * Migrate room store entries automatically. Defaults to `true`
+     */
     migrateStoreEntries: boolean;
+
+    /**
+     * Invoked after a room has been upgraded and it's entries updated.
+     *
+     * @param oldRoomId The old roomId.
+     * @param newRoomId The new roomId.
+     */
     onRoomMigrated?: (oldRoomId: string, newRoomId: string) => Promise<void>|void;
-    migrateEntry?: (entry: RoomBridgeStoreEntry, newRoomId: string) => Promise<RoomBridgeStoreEntry>;
+
+    /**
+     * Invoked when iterating around a rooms entries. Should be used to update entries
+     * with a new room id.
+     *
+     * @param entry The existing entry.
+     * @param newRoomId The new roomId.
+     * @return Return the entry to upsert it,
+     * or null to ignore it.
+     */
+    migrateEntry?: (entry: RoomBridgeStoreEntry, newRoomId: string) => Promise<RoomBridgeStoreEntry|null>;
 }
 
 /**
@@ -45,6 +76,10 @@ export class RoomUpgradeHandler {
         }
     }
 
+    /**
+     * Called when the bridge sees a "m.room.tombstone" event.
+     * @param ev The m.room.tombstone event.
+     */
     // eslint-disable-next-line camelcase
     public async onTombstone(ev: {sender: string, room_id: string, content: {replacement_room: string}}) {
         const movingTo = ev.content.replacement_room;
@@ -79,6 +114,16 @@ export class RoomUpgradeHandler {
         }
     }
 
+
+    /**
+     * Called when an invite event reaches the bridge. This function
+     * will check if the invite is from an upgraded room, and will
+     * join the room if so.
+     * @param ev A Matrix m.room.member event of membership=invite
+     *           directed to the bridge bot
+     * @return True if the invite is from an upgraded room and shouldn't
+     * be processed.
+     */
     // eslint-disable-next-line camelcase
     public async onInvite(ev: {room_id: string}) {
         const oldRoomId = this.waitingForInvite.get(ev.room_id);
@@ -170,52 +215,7 @@ export class RoomUpgradeHandler {
     }
 
     private migrateEntry(entry: RoomBridgeStoreEntry, newRoomId: string) {
-        entry.matrix = new MatrixRoom(newRoomId, {
-            name: entry.matrix?.name,
-            topic: entry.matrix?.topic,
-            extras: entry.matrix?.extras || {},
-        });
+        entry.matrix = new MatrixRoom(newRoomId, entry.matrix?.serialize());
         return entry;
     }
 }
-
-module.exports = RoomUpgradeHandler;
-
- /**
-  * Options to supply to the {@link RoomUpgradeHandler}.
-  * @typedef RoomUpgradeHandler~Options
-  * @type {Object}
-  * @property {RoomUpgradeHandler~MigrateEntry} migrateEntry Called when
-  * the handler wishes to migrate a MatrixRoom entry to a new room_id. If omitted,
-  * {@link RoomUpgradeHandler~_migrateEntry} will be used instead.
-  * @property {RoomUpgradeHandler~onRoomMigrated} onRoomMigrated This is called
-  * when the entries of the room have been migrated, the bridge should do any cleanup it
-  * needs of the old room and setup the new room (ex: Joining ghosts to the new room).
-  * @property {bool} [consumeEvent=true] Consume tombstone or invite events that
-  * are acted on by this handler.
-  * @property {bool} [migrateGhosts=true] If true, migrate all ghost users across to
-  * the new room.
-  * @property {bool} [migrateStoreEntries=true] If true, migrate all ghost users across to
-  * the new room.
-  */
-
-
- /**
- * Invoked when iterating around a rooms entries. Should be used to update entries
- * with a new room id.
- *
- * @callback RoomUpgradeHandler~MigrateEntry
- * @param {RoomBridgeStore~Entry} entry The existing entry.
- * @param {string} newRoomId The new roomId.
- * @return {RoomBridgeStore~Entry} Return the entry to upsert it,
- * or null to ignore it.
- */
-
- /**
-  * Invoked after a room has been upgraded and it's entries updated.
-  *
-  * @callback RoomUpgradeHandler~onRoomMigrated
-  * @param {string} oldRoomId The old roomId.
-  * @param {string} newRoomId The new roomId.
-  */
-

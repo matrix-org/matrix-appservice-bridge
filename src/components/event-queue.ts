@@ -42,9 +42,7 @@ export class EventQueue {
         events: Array<{ dataReady: DataReady }>;
         consuming: boolean;
     }; } = {};
-    constructor(private type: "none"|"single"|"per_room", protected consumeFn: ConsumeCallback) {
-
-    }
+    constructor(private type: "none"|"single"|"per_room", protected consumeFn: ConsumeCallback) { }
 
     /**
      * Push the event and its related data to the queue.

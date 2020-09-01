@@ -179,8 +179,8 @@ export class RoomBridgeStore extends BridgeStore {
      * @param linkId The id value to set. If not given, a unique ID will be
      * created from the matrix_id and remote_id.
      */
-    public linkRooms(matrixRoom: MatrixRoom, remoteRoom: RemoteRoom, data: Record<string, unknown>, linkId: string) {
-        data = data || {};
+    public linkRooms(matrixRoom: MatrixRoom, remoteRoom: RemoteRoom,
+        data: Record<string, unknown>={}, linkId?: string) {
         linkId = linkId || RoomBridgeStore.createUniqueId(
             matrixRoom.getId(), remoteRoom.getId(), this.delimiter
         );

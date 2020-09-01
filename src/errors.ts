@@ -16,17 +16,20 @@ limitations under the License.
 let isFirstUseOfWrap = true;
 
 export namespace unstable {
-    
+
+
+    export type BridgeErrorReason = "m.event_not_handled" | "m.event_too_old"
+    | "m.internal_error" | "m.foreign_network_error" | "m.event_unknown";
     /**
      * Append the old error message to the new one and keep its stack trace.
      * Example:
      *     throw wrapError(e, HighLevelError, "This error is more specific");
      */
-    export function wrapError<T extends Error>(
+    export function wrapError<T extends EventNotHandledError>(
         oldError: Error|string,
         newErrorType: { new (message: string): T },
-        message: string,
-    ) {
+        message = "",
+    ): EventNotHandledError {
         const newError = new newErrorType(message);
         let appendMsg;
         if (oldError instanceof Error) {
@@ -39,17 +42,17 @@ export namespace unstable {
         newError.message += ":\n" + appendMsg;
         return newError;
     }
-    
+
     /**
     * @deprecated Use {@link wrapError}
     */
-    export function wrap<T extends Error>(
+    export function wrap<T extends EventNotHandledError>(
         oldError: Error|string,
         newErrorType: { new (message: string): T },
-        message: string) {
+        message?: string) {
            if (isFirstUseOfWrap) {
                 console.warn("matrix-appservice-bridge: Use of `unstable.wrap` is deprecated. Please use `unstable.wrapError`.")
-                isFirstUseOfWrap = false;   
+                isFirstUseOfWrap = false;
            }
            return wrapError(oldError, newErrorType, message);
     }
@@ -58,11 +61,15 @@ export namespace unstable {
      * Base Error for when the bride can not handle the event.
      */
     export class EventNotHandledError extends Error {
-        protected reason: string;
+        protected internalReason: BridgeErrorReason;
         constructor(message="The event could not be handled by the bridge") {
             super(message);
             this.name = "EventNotHandledError";
-            this.reason = "m.event_not_handled";
+            this.internalReason = "m.event_not_handled";
+        }
+
+        public get reason() {
+            return this.internalReason;
         }
     }
 
@@ -73,7 +80,7 @@ export namespace unstable {
         constructor(message="The event was too old to be handled by the bridge") {
             super(message);
             this.name = "EventTooOldError";
-            this.reason = "m.event_too_old";
+            this.internalReason = "m.event_too_old";
         }
     }
 
@@ -84,7 +91,7 @@ export namespace unstable {
         constructor(message="The bridge experienced an internal error") {
             super(message);
             this.name = "EventTooOldError";
-            this.reason = "m.internal_error";
+            this.internalReason = "m.internal_error";
         }
     }
 
@@ -95,7 +102,7 @@ export namespace unstable {
         constructor(message="The foreign network experienced an error") {
             super(message);
             this.name = "ForeignNetworkError";
-            this.reason = "m.foreign_network_error";
+            this.internalReason = "m.foreign_network_error";
         }
     }
 
@@ -106,7 +113,7 @@ export namespace unstable {
         constructor(message="The event is not known to the bridge") {
             super(message);
             this.name = "EventUnknownError";
-            this.reason = "m.event_unknown";
+            this.internalReason = "m.event_unknown";
         }
     }
 }

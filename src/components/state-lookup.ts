@@ -12,7 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-import Bluebird from "bluebird";
 import PQueue from "p-queue";
 
 interface StateLookupOpts {
@@ -24,8 +23,8 @@ interface StateLookupOpts {
 }
 
 interface StateLookupRoom {
-    syncPromise: Bluebird<StateLookupRoom>;
-    syncComplete: boolean;
+    syncPromise: Promise<StateLookupRoom>;
+    syncPending: boolean;
     events: {
         [eventType: string]: {
             [stateKey: string]: StateLookupEvent;
@@ -146,13 +145,20 @@ export class StateLookup {
      * cannot be tracked.
      */
     public trackRoom(roomId: string) {
-        const r = this.dict[roomId] = this.dict[roomId] || {};
+        const r = this.dict[roomId] = this.dict[roomId] || {
+            syncPending: false,
+        };
         if (r.syncPromise) {
             return r.syncPromise;
         }
         r.events = {};
-        // For backwards compat, we use Bluebird
-        r.syncPromise = Bluebird.resolve(this.getInitialState(roomId));
+
+        r.syncPromise = (async () => {
+            r.syncPending = true;
+            const res = await this.getInitialState(roomId);
+            r.syncPending = false;
+            return res;
+        })();
 
         return r.syncPromise;
     }
@@ -180,7 +186,7 @@ export class StateLookup {
         }
         let r = this.dict[event.room_id];
         // Ensure /sync has completed before trying to update.
-        if (r.syncPromise.isPending()) {
+        if (r.syncPending) {
             r = await r.syncPromise;
         }
 

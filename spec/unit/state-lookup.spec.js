@@ -2,6 +2,7 @@
 const Bluebird = require("bluebird");
 const log = require("../log");
 const StateLookup = require("../..").StateLookup;
+const promiseutil = require("../../lib/utils/promiseutil");
 
 describe("StateLookup", function() {
     var lookup, cli;
@@ -25,7 +26,7 @@ describe("StateLookup", function() {
             cli.roomState.and.returnValue(statePromise.promise);
             var p = lookup.trackRoom("!foo:bar");
             expect(p.isPending()).toBe(true); // not resolved HTTP call yet
-            await Bluebird.delay(5);
+            await promiseutil.delay(5);
             expect(p.isPending()).toBe(true); // still not resolved HTTP call
             statePromise.resolve();
             await p; // Should resolve now HTTP call is resolved

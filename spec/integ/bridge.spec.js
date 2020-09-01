@@ -95,10 +95,10 @@ describe("Bridge", function() {
             return defer.promise;
         }
 
-        Bluebird.all([
+        Promise.all([
             loadDatabase(TEST_USER_DB_PATH, UserBridgeStore),
             loadDatabase(TEST_ROOM_DB_PATH, RoomBridgeStore)
-        ]).spread(function(userDb, roomDb) {
+        ]).then(([userDb, roomDb]) => {
             userStore = userDb;
             roomStore = roomDb;
             bridge = new Bridge({

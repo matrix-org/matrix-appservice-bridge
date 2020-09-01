@@ -33,3 +33,7 @@ export function defer<T>(): Defer<T> {
         promise: promise,
     };
 }
+
+export function delay(delayMs: number) {
+    return new Promise((r) => setTimeout(r, delayMs));
+}

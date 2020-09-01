@@ -23,17 +23,18 @@ const log = logging.get("RoomUpgradeHandler");
 export interface RoomUpgradeHandlerOpts {
     /**
      * Should upgrade and invite events be processed after being handled
-     * by the RoomUpgradeHandler.
+     * by the RoomUpgradeHandler. Defaults to `false`.
      */
     consumeEvent: boolean;
     /**
      * Should ghost users be migrated to the new room. This will leave
      * any users matching the user regex list in the registration file
      * from the old room, and join them to the new room.
+     * Defaults to `true`
      */
     migrateGhosts: boolean;
     /**
-     * Migrate room store entries automatically.
+     * Migrate room store entries automatically. Defaults to `true`
      */
     migrateStoreEntries: boolean;
 
@@ -220,21 +221,3 @@ export class RoomUpgradeHandler {
 }
 
 module.exports = RoomUpgradeHandler;
-
- /**
-  * Options to supply to the {@link RoomUpgradeHandler}.
-  * @typedef RoomUpgradeHandler~Options
-  * @type {Object}
-  * @property {RoomUpgradeHandler~MigrateEntry} migrateEntry Called when
-  * the handler wishes to migrate a MatrixRoom entry to a new room_id. If omitted,
-  * {@link RoomUpgradeHandler~_migrateEntry} will be used instead.
-  * @property {RoomUpgradeHandler~onRoomMigrated} onRoomMigrated This is called
-  * when the entries of the room have been migrated, the bridge should do any cleanup it
-  * needs of the old room and setup the new room (ex: Joining ghosts to the new room).
-  * @property {bool} [consumeEvent=true] Consume tombstone or invite events that
-  * are acted on by this handler.
-  * @property {bool} [migrateGhosts=true] If true, migrate all ghost users across to
-  * the new room.
-  * @property {bool} [migrateStoreEntries=true] If true, migrate all ghost users across to
-  * the new room.
-  */

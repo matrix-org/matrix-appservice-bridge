@@ -19,63 +19,39 @@ export * from "./components/request-factory";
 
 export * from "./components/client-factory";
 export * from "./components/intent";
+
+export * from "./components/app-service-bot";
 export * from "./components/state-lookup";
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-
-module.exports.AppServiceBot = require("./components/app-service-bot");
-
 // Config and CLI
-module.exports.Cli = require("./components/cli");
-module.exports.ConfigValidator = require("./components/config-validator");
+export * from "./components/cli";
+export * from "./components/config-validator";
 
 // Store
-module.exports.BridgeStore = require("./components/bridge-store");
-module.exports.UserBridgeStore = require("./components/user-bridge-store");
-module.exports.RoomBridgeStore = require("./components/room-bridge-store");
-module.exports.EventBridgeStore = require("./components/event-bridge-store");
+export * from "./components/bridge-store";
+export * from "./components/user-bridge-store";
+export * from "./components/room-bridge-store";
+export * from "./components/event-bridge-store";
 
 // Models
-module.exports.MatrixUser = require("./models/users/matrix");
-module.exports.RemoteUser = require("./models/users/remote");
-module.exports.MatrixRoom = require("./models/rooms/matrix");
-module.exports.RemoteRoom = require("./models/rooms/remote");
-module.exports.StoredEvent = require("./models/events/event");
+export * from "./models/rooms/matrix";
+export * from "./models/rooms/remote";
+export * from "./models/users/matrix";
+export * from "./models/users/remote";
+export * from "./models/events/event";
+export * from "./bridge";
+export * from "./components/bridge-context";
 
-module.exports.Bridge = require("./bridge");
-module.exports.BridgeContext = require("./components/bridge-context");
-module.exports.AppServiceRegistration = (
-    require("matrix-appservice").AppServiceRegistration
-);
+export * from "matrix-appservice";
+export * from "./components/prometheusmetrics";
+export * from "./components/membership-cache";
+export * as Logging from "./components/logging";
+export { unstable } from "./errors";
 
+/* eslint-disable @typescript-eslint/no-var-requires */
 const jsSdk = require("matrix-js-sdk");
 
 export const ContentRepo = {
     getHttpUriForMxc: jsSdk.getHttpUriForMxc,
     getIdenticonUri: jsSdk.getIdenticonUri,
 }
-
-export * from "./components/prometheusmetrics";
-module.exports.PrometheusMetrics.AgeCounters = require("./components/agecounters").AgeCounters;
-
-// Caches
-module.exports.MembershipCache = require("./components/membership-cache");
-
-// Logging
-module.exports.Logging = require("./components/logging");
-
-// Consts for RoomLinkValidator
-module.exports.RoomLinkValidatorStatus = require(
-	"./components/room-link-validator"
-).validationStatuses;
-
-module.exports.unstable = { };
-
-// Errors
-
-module.exports.unstable.EventNotHandledError = require("./errors").EventNotHandledError;
-module.exports.unstable.EventTooOldError = require("./errors").EventTooOldError;
-module.exports.unstable.BridgeInternalError = require("./errors").BridgeInternalError;
-module.exports.unstable.ForeignNetworkError = require("./errors").ForeignNetworkError;
-module.exports.unstable.EventUnknownError = require("./errors").EventUnknownError;
-module.exports.unstable.default_message = require("./errors").default_message;

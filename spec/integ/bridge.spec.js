@@ -110,8 +110,10 @@ describe("Bridge", function() {
                 controller: bridgeCtrl,
                 clientFactory: clientFactory
             });
+            return bridge.loadDatabases();
+        }).then(() => {
             done();
-        }).done();
+        });
     });
 
     afterEach(function() {
@@ -185,7 +187,7 @@ describe("Bridge", function() {
             });
         });
 
-        it("should provision the room from the returned object", async() => {
+    it("should provision the room from the returned object", async() => {
             const provisionedRoom = {
                 creationOpts: {
                     room_alias_name: "foo",
@@ -271,7 +273,7 @@ describe("Bridge", function() {
 
             bridge.run(101, {}, appService).then(function() {
                 return appService.emit("event", event);
-            }).done(function() {
+            }).then(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
                 var call = bridgeCtrl.onEvent.calls.argsFor(0);
                 var req = call[0];
@@ -357,7 +359,7 @@ describe("Bridge", function() {
                 );
             }).then(function() {
                 return appService.emit("event", event);
-            }).done(function() {
+            }).then(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
                 var call = bridgeCtrl.onEvent.calls.argsFor(0);
                 var req = call[0];
@@ -406,11 +408,11 @@ describe("Bridge", function() {
     describe("run", () => {
         it("should invoke listen(port) on the AppService instance", async() => {
             await bridge.run(101, {}, appService);
-            expect(appService.listen).toHaveBeenCalledWith(101, undefined);
+            expect(appService.listen).toHaveBeenCalledWith(101, "0.0.0.0", 10);
         });
         it("should invoke listen(port, hostname) on the AppService instance", async() => {
             await bridge.run(101, {}, appService, "foobar");
-            expect(appService.listen).toHaveBeenCalledWith(101, "foobar");
+            expect(appService.listen).toHaveBeenCalledWith(101, "foobar", 10);
         });
     });
 
@@ -569,7 +571,7 @@ describe("Bridge", function() {
     describe("provisionUser", function() {
 
         beforeEach(function(done) {
-            bridge.run(101, {}, appService).done(function() {
+            bridge.run(101, {}, appService).then(function() {
                 done();
             });
         });
@@ -634,7 +636,7 @@ describe("Bridge", function() {
             bridge.provisionUser(mxUser, provisionedUser).then(function() {
                 expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
                 return bridge.getUserStore().getRemoteUsersFromMatrixId("@foo:bar");
-            }).done(function(users) {
+            }).then(function(users) {
                 expect(users.length).toEqual(1);
                 if (users.length > 0) {
                     expect(users[0].getId()).toEqual("__remote__");
@@ -662,64 +664,64 @@ describe("Bridge", function() {
 
     describe("_onEvent", () => {
         it("should not upgrade a room if state_key is not defined", () => {
-            bridge._roomUpgradeHandler = jasmine.createSpyObj("_roomUpgradeHandler", ["onTombstone"]);
-            bridge._roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
+            bridge.roomUpgradeHandler = jasmine.createSpyObj("_roomUpgradeHandler", ["onTombstone"]);
+            bridge.roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
             bridge.opts.roomUpgradeOpts = { consumeEvent: true };
             return bridge.run(101, {}, appService).then(() => {
-                return bridge._onEvent({
+                return bridge.onEvent({
                     type: "m.room.tombstone",
                     state_key: undefined,
                     sender: "@foo:bar",
                 });
             }).then(() => {
-                expect(bridge._roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
+                expect(bridge.roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
             });
         });
 
         it("should not upgrade a room if state_key is not === '' ", () => {
-            bridge._roomUpgradeHandler = jasmine.createSpyObj("_roomUpgradeHandler", ["onTombstone"]);
-            bridge._roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
+            bridge.roomUpgradeHandler = jasmine.createSpyObj("_roomUpgradeHandler", ["onTombstone"]);
+            bridge.roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
             bridge.opts.roomUpgradeOpts = { consumeEvent: true };
             return bridge.run(101, {}, appService).then(() => {
-                return bridge._onEvent({
+                return bridge.onEvent({
                     type: "m.room.tombstone",
                     state_key: "fooobar",
                     sender: "@foo:bar",
                 });
             }).then(() => {
-                expect(bridge._roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
-                return bridge._onEvent({
+                expect(bridge.roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
+                return bridge.onEvent({
                     type: "m.room.tombstone",
                     state_key: 212345,
                     sender: "@foo:bar",
                 });
             }).then(() => {
-                expect(bridge._roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
-                return bridge._onEvent({
+                expect(bridge.roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
+                return bridge.onEvent({
                     type: "m.room.tombstone",
                     state_key: null,
                     sender: "@foo:bar",
                 });
             }).then(() => {
-                expect(bridge._roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
+                expect(bridge.roomUpgradeHandler.onTombstone).not.toHaveBeenCalled();
             });
         });
 
         it("should upgrade a room if state_key == '' is defined", () => {
-            bridge._roomUpgradeHandler = jasmine.createSpyObj("_roomUpgradeHandler", ["onTombstone"]);
-            bridge._roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
+            bridge.roomUpgradeHandler = jasmine.createSpyObj("_roomUpgradeHandler", ["onTombstone"]);
+            bridge.roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
             bridge.opts.roomUpgradeOpts = { consumeEvent: true };
             return bridge.run(101, {}, appService).then(() => {
-                return bridge._onEvent({
+                return bridge.onEvent({
                     type: "m.room.tombstone",
                     state_key: "",
                     sender: "@foo:bar",
                 });
             }).then(() => {
-                expect(bridge._roomUpgradeHandler.onTombstone).toHaveBeenCalled();
+                expect(bridge.roomUpgradeHandler.onTombstone).toHaveBeenCalled();
             });
         });
     });

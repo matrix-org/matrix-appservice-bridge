@@ -13,29 +13,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import MatrixUser from "../models/users/matrix";
+import { MatrixUser } from "../models/users/matrix";
 import JsSdk from "matrix-js-sdk";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const { MatrixEvent, RoomMember } = JsSdk as any;
-import ClientRequestCache from "./client-request-cache";
+import { ClientRequestCache } from "./client-request-cache";
 import { defer } from "../utils/promiseutil";
+import { UserMembership } from "./membership-cache";
+import { unstable } from "../errors";
+import BridgeErrorReason = unstable.BridgeErrorReason;
 
-
-type BridgeErrorReason = "m.event_not_handled" | "m.event_too_old"
-    | "m.internal_error" | "m.foreign_network_error" | "m.event_unknown";
-
-type MembershipState = "join" | "invite" | "leave" | null; // null = unknown
-
-type BackingStore = {
-    getMembership: (roomId: string, userId: string) => MembershipState,
+export type IntentBackingStore = {
+    getMembership: (roomId: string, userId: string) => UserMembership,
     getPowerLevelContent: (roomId: string) => Record<string, unknown> | undefined,
-    setMembership: (roomId: string, userId: string, membership: MembershipState) => void,
+    setMembership: (roomId: string, userId: string, membership: UserMembership) => void,
     setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => void,
 };
 
-interface IntentOpts {
-    backingStore?: BackingStore,
+export interface IntentOpts {
+    backingStore?: IntentBackingStore,
     caching?: {
         ttl?: number,
         size?: number,
@@ -44,6 +41,11 @@ interface IntentOpts {
     dontJoin?: boolean;
     enablePresence?: boolean;
     registered?: boolean;
+}
+
+export interface RoomCreationOpts {
+    createAsClient?: boolean;
+    options: Record<string, unknown>;
 }
 
 /**
@@ -65,7 +67,7 @@ const STATE_EVENT_TYPES = [
 const DEFAULT_CACHE_TTL = 90000;
 const DEFAULT_CACHE_SIZE = 1024;
 
-type PowerLevelContent = {
+export type PowerLevelContent = {
     // eslint-disable-next-line camelcase
     state_default?: unknown;
     // eslint-disable-next-line camelcase
@@ -82,12 +84,12 @@ type PowerLevelContent = {
 
 export class Intent {
     private _requestCaches: {
-        profile: ClientRequestCache,
-        roomstate: ClientRequestCache,
-        event: ClientRequestCache
+        profile: ClientRequestCache<unknown, [string, string]>,
+        roomstate: ClientRequestCache<unknown, []>,
+        event: ClientRequestCache<unknown, [string, string]>
     }
     private opts: {
-        backingStore: BackingStore,
+        backingStore: IntentBackingStore,
         caching: {
             ttl: number,
             size: number,
@@ -98,7 +100,7 @@ export class Intent {
         registered?: boolean;
     }
     // These two are only used if no opts.backingStore is provided to the constructor.
-    private readonly _membershipStates: Record<string, MembershipState> = {};
+    private readonly _membershipStates: Record<string, UserMembership> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
 
     /**
@@ -167,7 +169,7 @@ export class Intent {
                 getPowerLevelContent: (roomId: string) => {
                     return this._powerLevels[roomId];
                 },
-                setMembership: (roomId: string, userId: string, membership: MembershipState) => {
+                setMembership: (roomId: string, userId: string, membership: UserMembership) => {
                     if (userId !== this.client.credentials.userId) {
                         return;
                     }
@@ -187,7 +189,7 @@ export class Intent {
             profile: new ClientRequestCache(
                 this.opts.caching.ttl,
                 this.opts.caching.size,
-                (_: unknown, userId: string, info: string) => {
+                (_: string, userId: string, info: string) => {
                     return this.getProfileInfo(userId, info, false);
                 }
             ),
@@ -201,7 +203,7 @@ export class Intent {
             event: new ClientRequestCache(
                 this.opts.caching.ttl,
                 this.opts.caching.size,
-                (_: unknown, roomId: string, eventId: string) => {
+                (_: string, roomId: string, eventId: string) => {
                     return this.getEvent(roomId, eventId, false);
                 }
             ),
@@ -388,7 +390,8 @@ export class Intent {
      * auto-join the client. Default: false.
      * @param opts.options Options to pass to the client SDK /createRoom API.
      */
-    public async createRoom(opts: { createAsClient?: boolean, options: Record<string, unknown>}) {
+    // eslint-disable-next-line camelcase
+    public async createRoom(opts: RoomCreationOpts): Promise<{room_id: string}> {
         const cli = opts.createAsClient ? this.client : this.botClient;
         const options = opts.options || {};
         if (!opts.createAsClient) {
@@ -584,7 +587,7 @@ export class Intent {
     public async unstableSignalBridgeError(
         roomID: string,
         eventID: string,
-        networkName: string,
+        networkName: string|undefined,
         reason: BridgeErrorReason,
         affectedUsers: string[],
     ) {
@@ -641,7 +644,7 @@ export class Intent {
      * @param event The incoming event JSON
      */
     // eslint-disable-next-line camelcase
-    public onEvent(event: {type: string, content: {membership: MembershipState}, state_key: unknown, room_id: string}) {
+    public onEvent(event: {type: string, content: {membership: UserMembership}, state_key: unknown, room_id: string}) {
         if (!this._membershipStates || !this._powerLevels) {
             return;
         }
@@ -704,7 +707,7 @@ export class Intent {
 
         const deferredPromise = defer();
 
-        const mark = (room: string, state: MembershipState) => {
+        const mark = (room: string, state: UserMembership) => {
             this.opts.backingStore.setMembership(room, userId, state);
             if (state === "join") {
                 deferredPromise.resolve();

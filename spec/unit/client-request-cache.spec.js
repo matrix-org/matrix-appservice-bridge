@@ -1,4 +1,4 @@
-const ClientRequestCache = require("../../lib/components/client-request-cache");
+const { ClientRequestCache } = require("../../lib/components/client-request-cache");
 const Bluebird = require("bluebird");
 
 describe("ClientRequestCache", function() {

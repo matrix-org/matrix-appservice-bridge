@@ -29,6 +29,11 @@ export class Request<T> {
     private data: T;
     private startTs: number;
     private defer: Defer<unknown>;
+    private pending: boolean;
+
+    public get isPending(): boolean {
+        return this.pending;
+    }
 
     /**
      * Construct a new Request.
@@ -43,6 +48,7 @@ export class Request<T> {
         this.data = opts.data;
         this.startTs = Date.now();
         this.defer = defer();
+        this.pending = true;
     }
 
 
@@ -86,6 +92,7 @@ export class Request<T> {
      * @param msg The thing to resolve with.
      */
     public resolve(msg: unknown) {
+        this.pending = false;
         this.defer.resolve(msg);
     }
 
@@ -95,6 +102,7 @@ export class Request<T> {
      * @param msg The thing to reject with.
      */
     public reject(msg: unknown) {
+        this.pending = false;
         this.defer.reject(msg);
     }
 
@@ -104,6 +112,6 @@ export class Request<T> {
      * request.
      */
     public outcomeFrom(promise: Promise<unknown>) {
-        return promise.then(this.resolve, this.reject);
+        return promise.then(this.resolve.bind(this), this.reject.bind(this));
     }
 }

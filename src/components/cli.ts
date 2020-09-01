@@ -22,12 +22,11 @@ import { AppServiceRegistration } from "matrix-appservice";
 import { ConfigValidator } from "./config-validator";
 import * as logging from "./logging";
 
-const DEFAULT_PORT = 8090;
-const DEFAULT_FILENAME = "registration.yaml";
 const log = logging.get("cli");
 
 interface CliOpts<ConfigType extends Record<string, unknown>> {
     run: (port: number, config: ConfigType|null, registration: AppServiceRegistration|null) => void;
+    onConfigChanged?: (config: ConfigType) => void,
     generateRegistration?: (reg: AppServiceRegistration, cb: (finalReg: AppServiceRegistration) => void) => void;
     bridgeConfig?: {
         affectsRegistration?: boolean;
@@ -51,6 +50,9 @@ interface CliArgs {
 }
 
 export class Cli<ConfigType extends Record<string, unknown>> {
+    public static DEFAULT_PORT = 8090;
+    public static DEFAULT_WATCH_INTERVAL = 2500;
+    public static DEFAULT_FILENAME = "registration.yaml";
     private bridgeConfig: ConfigType|null = null;
     private args: CliArgs|null = null;
 
@@ -92,8 +94,8 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         }
         this.opts.enableLocalpart = Boolean(this.opts.enableLocalpart);
 
-        this.opts.registrationPath = this.opts.registrationPath || DEFAULT_FILENAME;
-        this.opts.port = this.opts.port || DEFAULT_PORT;
+        this.opts.registrationPath = this.opts.registrationPath || Cli.DEFAULT_FILENAME;
+        this.opts.port = this.opts.port || Cli.DEFAULT_PORT;
     }
     /**
      * Get the parsed arguments. Only set after run is called and arguments parsed.
@@ -122,8 +124,8 @@ export class Cli<ConfigType extends Record<string, unknown>> {
     /**
      * Run the app from the command line. Will parse sys args.
      */
-    public run() {
-        this.args = nopt({
+    public run(args?: CliArgs) {
+        this.args = args || nopt({
             "generate-registration": Boolean,
             "config": path,
             "url": String,
@@ -187,18 +189,20 @@ export class Cli<ConfigType extends Record<string, unknown>> {
             this.opts.port = this.args.port;
         }
         this.assignConfigFile(this.args.config);
-        this.startWithConfig(this.bridgeConfig);
+        this.startWithConfig(this.bridgeConfig, this.args.config);
     }
 
     private assignConfigFile(configFilePath: string) {
         const configFile = (this.opts.bridgeConfig && configFilePath) ? configFilePath : undefined;
+        if (!configFile) {
+            return;
+        }
         const config = this.loadConfig(configFile);
         this.bridgeConfig = config;
     }
 
-    private loadConfig(filename?: string): ConfigType|null {
-        if (!filename) { return null; }
-        log.info("Loading config file %s", filename);
+    private loadConfig(filename: string): ConfigType {
+        log.info("Loading config file", filename);
         const cfg = this.loadYaml(filename);
         if (!cfg || typeof cfg === "string") {
             throw Error("Config file " + filename + " isn't valid YAML.");
@@ -235,7 +239,23 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         });
     }
 
-    private startWithConfig(config: ConfigType|null) {
+    private startWithConfig(config: ConfigType|null, configFilename: string) {
+        if (this.opts.onConfigChanged && this.opts.bridgeConfig) {
+            log.info("Will listen for SIGHUP");
+            process.on("SIGHUP",
+                () => {
+                log.info("Got SIGHUP, reloading config file");
+                try {
+                    const newConfig = this.loadConfig(configFilename);
+                    if (this.opts.onConfigChanged) {
+                        this.opts.onConfigChanged(newConfig);
+                    }
+                }
+                catch (ex) {
+                    log.warn("Failed to reload config file:", ex);
+                }
+            });
+        }
         this.opts.run(
             this.opts.port, config,
             AppServiceRegistration.fromObject(this.loadYaml(this.opts.registrationPath))

@@ -20,13 +20,13 @@ export * from "./components/request-factory";
 export * from "./components/client-factory";
 export * from "./components/intent";
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-
-module.exports.AppServiceBot = require("./components/app-service-bot");
+export * from "./components/app-service-bot";
 export * from "./components/state-lookup";
 
 // Config and CLI
 export * from "./components/cli";
+export * from "./components/config-validator";
+/* eslint-disable @typescript-eslint/no-var-requires */
 module.exports.ConfigValidator = require("./components/config-validator");
 
 // Store
@@ -61,20 +61,12 @@ module.exports.PrometheusMetrics.AgeCounters = require("./components/agecounters
 export * from "./components/membership-cache";
 
 // Logging
-module.exports.Logging = require("./components/logging");
+export * as Logging from "./components/logging";
 
 // Consts for RoomLinkValidator
 module.exports.RoomLinkValidatorStatus = require(
 	"./components/room-link-validator"
 ).validationStatuses;
 
-module.exports.unstable = { };
-
 // Errors
-
-module.exports.unstable.EventNotHandledError = require("./errors").EventNotHandledError;
-module.exports.unstable.EventTooOldError = require("./errors").EventTooOldError;
-module.exports.unstable.BridgeInternalError = require("./errors").BridgeInternalError;
-module.exports.unstable.ForeignNetworkError = require("./errors").ForeignNetworkError;
-module.exports.unstable.EventUnknownError = require("./errors").EventUnknownError;
-module.exports.unstable.default_message = require("./errors").default_message;
+export { unstable } from "./errors";

@@ -20,7 +20,7 @@ import { RoomBridgeStore } from "./room-bridge-store";
 import { UserBridgeStore } from "./user-bridge-store";
 import { RemoteUser } from "../models/users/remote";
 import { RemoteRoom } from "../models/rooms/remote";
-import { wrap } from "../errors";
+import { unstable } from "../errors";
 
 interface BridgeContextSenders {
     matrix: MatrixUser;
@@ -108,7 +108,7 @@ export class BridgeContext {
             }
         }
         catch (ex) {
-            throw wrap(ex, Error, "Could not retrieve bridge context");
+            throw unstable.wrapError(ex, Error, "Could not retrieve bridge context");
         }
         return this;
     }

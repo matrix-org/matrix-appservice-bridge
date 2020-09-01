@@ -12,81 +12,97 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+import logging from "./logging";
+import { MatrixRoom } from "../models/rooms/matrix";
+import { MatrixUser } from "../models/users/matrix";
+import { Intent } from "./intent";
+import { RoomBridgeStore, RoomBridgeStoreEntry } from "./room-bridge-store";
 
-const log = require("./logging").get("RoomUpgradeHandler");
-const MatrixRoom = require("../models/rooms/matrix").MatrixRoom;
-const MatrixUser = require("../models/users/matrix").MatrixUser;
+const log = logging.get("RoomUpgradeHandler");
+
+interface RoomUpgradeHandlerOpts {
+    migrateGhosts: boolean;
+    migrateStoreEntries: boolean;
+    onRoomMigrated?: (oldRoomId: string, newRoomId: string) => Promise<void>|void;
+    migrateEntry?: (entry: RoomBridgeStoreEntry, newRoomId: string) => Promise<RoomBridgeStoreEntry>;
+}
 
 /**
  * Handles migration of rooms when a room upgrade is performed.
  */
-class RoomUpgradeHandler {
+export class RoomUpgradeHandler {
+    private waitingForInvite = new Map<string, string>(); // newRoomId: oldRoomId
     /**
      * @param {RoomUpgradeHandler~Options} opts
      * @param {Bridge} bridge The parent bridge.
      */
-    constructor(opts, bridge) {
+    constructor(private readonly opts: RoomUpgradeHandlerOpts, private readonly bridge: any) {
         if (opts.migrateGhosts !== false) {
             opts.migrateGhosts = true;
         }
         if (opts.migrateStoreEntries !== false) {
             opts.migrateStoreEntries = true;
         }
-        this._opts = opts;
-        this._bridge = bridge;
-        this._waitingForInvite = new Map(); //newRoomId: oldRoomId
     }
 
-    onTombstone(ev) {
+    // eslint-disable-next-line camelcase
+    public async onTombstone(ev: {sender: string, room_id: string, content: {replacement_room: string}}) {
         const movingTo = ev.content.replacement_room;
         log.info(`Got tombstone event for ${ev.room_id} -> ${movingTo}`);
-        const joinVia = new MatrixUser(ev.sender).domain;
+        const joinVia = new MatrixUser(ev.sender).host;
         // Try to join the new room.
-        return this._joinNewRoom(movingTo, [joinVia]).then((couldJoin) => {
+        try {
+            const couldJoin = await this.joinNewRoom(movingTo, [joinVia]);
             if (couldJoin) {
-                return this._onJoinedNewRoom(ev.room_id, movingTo);
+                return this.onJoinedNewRoom(ev.room_id, movingTo);
             }
-            this._waitingForInvite.set(movingTo, ev.room_id);
+            this.waitingForInvite.set(movingTo, ev.room_id);
             return true;
-        }).catch((err) => {
+        }
+        catch (err) {
             log.error("Couldn't handle room upgrade: ", err);
             return false;
-        });
+        }
     }
 
-    _joinNewRoom(newRoomId, joinVia=[]) {
-        const intent = this._bridge.getIntent();
-        return intent.join(newRoomId, [joinVia]).then(() => {
+    private async joinNewRoom(newRoomId: string, joinVia: string[] = []) {
+        const intent = this.bridge.getIntent() as Intent;
+        try {
+            await intent.join(newRoomId, joinVia);
             return true;
-        }).catch((ex) => {
+        }
+        catch (ex) {
             if (ex.errcode === "M_FORBIDDEN") {
                 return false;
             }
             throw Error("Failed to handle upgrade");
-        })
+        }
     }
 
-    onInvite(ev) {
-        if (!this._waitingForInvite.has(ev.room_id)) {
+    // eslint-disable-next-line camelcase
+    public async onInvite(ev: {room_id: string}) {
+        const oldRoomId = this.waitingForInvite.get(ev.room_id);
+        if (!oldRoomId) {
             return false;
         }
-        const oldRoomId = this._waitingForInvite.get(ev.room_id);
-        this._waitingForInvite.delete(ev.room_id);
+        this.waitingForInvite.delete(ev.room_id);
         log.debug(`Got invite to upgraded room ${ev.room_id}`);
-        this._joinNewRoom(ev.room_id).then(() => {
-            return this._onJoinedNewRoom(oldRoomId, ev.room_id);
-        }).catch((err) => {
+        try {
+            await this.joinNewRoom(ev.room_id);
+            await this.onJoinedNewRoom(oldRoomId, ev.room_id);
+        }
+        catch (err) {
             log.error("Couldn't handle room upgrade: ", err);
-        });
+        }
         return true;
     }
 
-    async _onJoinedNewRoom(oldRoomId, newRoomId) {
+    private async onJoinedNewRoom(oldRoomId: string, newRoomId: string) {
         log.debug(`Joined ${newRoomId}`);
-        const intent = this._bridge.getIntent();
-        const asBot = this._bridge.getBot();
-        if (this._opts.migrateStoreEntries) {
-            const success = await this._migrateStoreEntries(oldRoomId, newRoomId);
+        const intent = this.bridge.getIntent();
+        const asBot = this.bridge.getBot();
+        if (this.opts.migrateStoreEntries) {
+            const success = await this.migrateStoreEntries(oldRoomId, newRoomId);
             if (!success) {
                 log.error("Failed to migrate room entries. Not continuing with migration.");
                 return false;
@@ -94,12 +110,12 @@ class RoomUpgradeHandler {
         }
 
         log.debug(`Migrated entries from ${oldRoomId} to ${newRoomId} successfully.`);
-        if (this._opts.onRoomMigrated) {
+        if (this.opts.onRoomMigrated) {
             // This may or may not be a promise, so await it.
-            await this._opts.onRoomMigrated(oldRoomId, newRoomId);
+            await this.opts.onRoomMigrated(oldRoomId, newRoomId);
         }
 
-        if (!this._opts.migrateGhosts) {
+        if (!this.opts.migrateGhosts) {
             return false;
         }
         try {
@@ -107,7 +123,7 @@ class RoomUpgradeHandler {
             const userIds = Object.keys(members).filter((u) => asBot.isRemoteUser(u));
             log.debug(`Migrating ${userIds.length} ghosts`);
             for (const userId of userIds) {
-                const i = this._bridge.getIntent(userId);
+                const i = this.bridge.getIntent(userId) as Intent;
                 await i.leave(oldRoomId);
                 await i.join(newRoomId);
             }
@@ -120,8 +136,8 @@ class RoomUpgradeHandler {
         return true;
     }
 
-    async _migrateStoreEntries(oldRoomId, newRoomId) {
-        const roomStore = this._bridge.getRoomStore();
+    private async migrateStoreEntries(oldRoomId: string, newRoomId: string) {
+        const roomStore = this.bridge.getRoomStore() as RoomBridgeStore;
         const entries = await roomStore.getEntriesByMatrixId(oldRoomId);
         let success = false;
         // Upgrades are critical to get right, or a room will be stuck
@@ -131,8 +147,8 @@ class RoomUpgradeHandler {
             log.debug(`Migrating room entry ${entry.id}`);
             const existingId = entry.id;
             try {
-                const newEntry = (
-                    this._opts.migrateEntry || this._migrateEntry)(entry, newRoomId);
+                const newEntry = await (
+                    this.opts.migrateEntry || this.migrateEntry)(entry, newRoomId);
 
                 if (!newEntry) {
                     continue;
@@ -140,7 +156,7 @@ class RoomUpgradeHandler {
 
                 // If migrateEntry changed the id of the room, then ensure
                 // that we remove the old one.
-                if (existingId !== newEntry.id) {
+                if (existingId && existingId !== newEntry.id) {
                     await roomStore.removeEntryById(existingId);
                 }
                 await roomStore.upsertEntry(newEntry);
@@ -153,11 +169,11 @@ class RoomUpgradeHandler {
         return success;
     }
 
-    _migrateEntry(entry, newRoomId) {
+    private migrateEntry(entry: RoomBridgeStoreEntry, newRoomId: string) {
         entry.matrix = new MatrixRoom(newRoomId, {
-            name: entry.name,
-            topic: entry.topic,
-            extras: entry._extras,
+            name: entry.matrix?.name,
+            topic: entry.matrix?.topic,
+            extras: entry.matrix?.extras || {},
         });
         return entry;
     }

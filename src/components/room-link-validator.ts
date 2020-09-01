@@ -17,7 +17,7 @@ limitations under the License.
  * The room link validator is used to determine if a room can be bridged.
  */
 import util from "util";
-import AppServiceBot from "./app-service-bot";
+import { AppServiceBot } from "./app-service-bot";
 import ConfigValidator from "./config-validator";
 import logging from "./logging";
 const log = logging.get("room-link-validator");

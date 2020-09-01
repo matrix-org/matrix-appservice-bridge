@@ -20,9 +20,7 @@ import Datastore from "nedb";
 type Query = Record<string, unknown>;
 
 /**
- * Bridge store base class
- * @constructor
- * @param {Datastore} db
+ * Base class for bridge stores.
  */
 export class BridgeStore {
     private dbInsert: (objects: any[]) => Promise<any[]>;
@@ -93,10 +91,9 @@ export class BridgeStore {
 
     /**
      * SELECT a number of documents.
-     * @param {Object} query
-     * @param {Function} transformFn
-     * @param {Deferred=} defer
-     * @return {Promise}
+     * @param query
+     * @param transformFn
+     * @param defer
      */
     public async select<T, O>(query: Query, transformFn?: (input: T) => O) {
         const doc = await this.dbFind(query);
@@ -114,12 +111,11 @@ export class BridgeStore {
 
     /**
      * Set a UNIQUE key constraint on the given field.
-     * @param {string} fieldName The field name. Use dot notation for nested objects.
-     * @param {boolean} sparse Allow sparse entries (undefined won't cause a key
-     * violation). Default: false.
+     * @param fieldName The field name. Use dot notation for nested objects.
+     * @param sparse Allow sparse entries (undefined won't cause a key
+     * violation).
      */
-    public setUnique(fieldName: string, sparse: boolean) {
-        sparse = sparse || false;
+    public setUnique(fieldName: string, sparse = false) {
         this.db.ensureIndex({
             fieldName: fieldName,
             unique: true,
@@ -129,9 +125,9 @@ export class BridgeStore {
 
     /**
      * Convenience method to convert a document to something.
-     * @param {Function} func The function which will be called with a single document
+     * @param func The function which will be called with a single document
      * object. Guaranteed not to be null.
-     * @return {Function} A <code>transformFn</code> function to pass to the standard
+     * @return A `transformFn` function to pass to the standard
      * select/delete/upsert/etc methods.
      */
     public convertTo<T, O>(func: (input: T) => O) {

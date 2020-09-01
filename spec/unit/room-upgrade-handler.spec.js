@@ -1,4 +1,4 @@
-const RoomUpgradeHandler = require("../../lib/components/room-upgrade-handler")
+const { RoomUpgradeHandler } = require("../../lib/components/room-upgrade-handler")
 
 describe("RoomUpgradeHandler", () => {
     describe("constructor", () => {

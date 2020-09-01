@@ -219,5 +219,3 @@ export class RoomUpgradeHandler {
         return entry;
     }
 }
-
-module.exports = RoomUpgradeHandler;

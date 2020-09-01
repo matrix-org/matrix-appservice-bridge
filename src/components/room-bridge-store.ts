@@ -255,7 +255,7 @@ export class RoomBridgeStore extends BridgeStore {
             return Boolean(e.remote);
         }).map(function(e) {
             return e.remote;
-        });
+        }) as RemoteRoom[];
     }
 
     /**

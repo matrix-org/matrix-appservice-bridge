@@ -23,7 +23,7 @@ const AppServiceRegistration = require("matrix-appservice").AppServiceRegistrati
 const AppService = require("matrix-appservice").AppService;
 const MatrixScheduler = require("matrix-js-sdk").MatrixScheduler;
 
-const BridgeContext = require("./components/bridge-context");
+const { BridgeContext } = require("./components/bridge-context");
 const { ClientFactory } = require("./components/client-factory");
 const { AppServiceBot } = require("./components/app-service-bot");
 const RequestFactory = require("./components/request-factory").RequestFactory;

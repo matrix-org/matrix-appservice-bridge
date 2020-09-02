@@ -38,12 +38,13 @@ interface CliOpts<ConfigType extends Record<string, unknown>> {
     enableRegistration?: boolean;
     enableLocalpart: boolean;
     port: number;
+    noUrl?: boolean;
 }
 
 interface CliArgs {
     "generate-registration": boolean;
     config: string;
-    url: string;
+    url?: string;
     localpart: string;
     port: number;
     file: string;
@@ -69,6 +70,8 @@ export class Cli<ConfigType extends Record<string, unknown>> {
      * (string) or the parsed schema file (Object).
      * @param opts.bridgeConfig.defaults The default options for the
      * config file.
+     * @param opts.noUrl Don't ask user for appservice url when generating
+     * registration.
      * @param opts.enableRegistration Enable '--generate-registration'.
      * Default True.
      * @param opts.registrationPath The path to write the registration
@@ -147,9 +150,14 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         }
 
         if (this.opts.enableRegistration && this.args["generate-registration"]) {
-            if (!this.args.url) {
+            if (!this.args.url && !this.opts.noUrl) {
                 this.printHelp();
                 console.log("Missing --url [-u]");
+                process.exit(1);
+            }
+            else if (this.args.url && this.opts.noUrl) {
+                this.printHelp();
+                console.log("--url [-u] is not valid option for this bridge.");
                 process.exit(1);
             }
             if (this.args.port) {
@@ -210,11 +218,8 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         return validator.validate(cfg, this.opts.bridgeConfig.defaults) as ConfigType;
     }
 
-    private generateRegistration(appServiceUrl: string, localpart: string) {
-        if (!appServiceUrl) {
-            throw Error("Missing app service URL");
-        }
-        let reg = new AppServiceRegistration(appServiceUrl);
+    private generateRegistration(appServiceUrl: string | undefined, localpart: string) {
+        let reg = new AppServiceRegistration(appServiceUrl || "");
         if (localpart) {
             reg.setSenderLocalpart(localpart);
         }
@@ -256,8 +261,10 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         if (this.opts.enableRegistration) {
             help["--generate-registration -r"] = "Create a registration YAML file " +
             "for this application service";
-            help["--url -u"] = "Registration Option. Required if -r is set. The URL " +
-            "where the application service is listening for HS requests";
+            if (!this.opts.noUrl) {
+                help["--url -u"] = "Registration Option. Required if -r is set. The " +
+                    "URL where the application service is listening for HS requests";
+            }
             if (this.opts.enableLocalpart) {
                 help["--localpart -l"] = "Registration Option. Valid if -r is set. " +
                 "The user_id localpart to assign to the AS.";

@@ -8,9 +8,9 @@
     "prepare": "npm run build",
     "gendoc": "typedoc",
     "lint": "eslint -c .eslintrc.json src/**/*.ts",
-    "test": "BLUEBIRD_DEBUG=1 jasmine --stop-on-failure=true",
+    "test": "jasmine --stop-on-failure=true",
     "check": "npm run lint && npm test",
-    "ci-test": "BLUEBIRD_DEBUG=1 nyc -x \"**/spec/**\" --report text jasmine"
+    "ci-test": "nyc -x \"**/spec/**\" --report text jasmine"
   },
   "repository": {
     "type": "git",

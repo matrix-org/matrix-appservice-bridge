@@ -1,5 +1,4 @@
 "use strict";
-const Bluebird = require("bluebird");
 const log = require("../log");
 const StateLookup = require("../..").StateLookup;
 const promiseutil = require("../../lib/utils/promiseutil");

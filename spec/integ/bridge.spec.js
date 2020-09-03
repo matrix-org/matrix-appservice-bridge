@@ -1,5 +1,4 @@
 "use strict";
-const Bluebird = require("bluebird");
 const Datastore = require("nedb");
 const fs = require("fs");
 const log = require("../log");

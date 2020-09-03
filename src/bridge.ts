@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import Datastore from "nedb";
-import Bluebird from "bluebird";
 import * as fs from "fs";
 import * as util from "util";
 import yaml from "js-yaml";

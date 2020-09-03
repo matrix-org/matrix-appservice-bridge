@@ -48,8 +48,11 @@ export class AgeCounters {
      * X is the unit of time. A unit can be one of 'h, d, w' for hours, days and weeks.
      * 7d would be 7 days. If not given, the periods are 1h, 1d and 7d.
      */
-    constructor(counterPeriods: string[] = ["1h", "1d", "7d"]) {
-        counterPeriods = Array.from(counterPeriods);
+    constructor(counterPeriods?: string[]) {
+        if (counterPeriods) {
+            counterPeriods = Array.from(counterPeriods);
+        }
+        counterPeriods = counterPeriods || ["1h", "1d", "7d"];
         this.counterPeriods = counterPeriods;
         counterPeriods.forEach((periodKey) => {
             if (periodKey.length < 2) {

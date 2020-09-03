@@ -933,9 +933,8 @@ export class Bridge {
         const aliasLocalpart = alias.split(":")[0].substring(1);
         const provisionedRoom = await this.opts.controller.onAliasQuery(alias, aliasLocalpart);
         if (!provisionedRoom) {
-            new Error("Not provisioning room for this alias");
             // Not provisioning room.
-            return;
+            throw Error("Not provisioning room for this alias");
         }
         const createRoomResponse: {room_id: string} = await this.botClient.createRoom(
             provisionedRoom.creationOpts

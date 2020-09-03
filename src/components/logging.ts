@@ -15,7 +15,7 @@ limitations under the License.
 import * as util from "util";
 import winston, { Logger, format, Logform } from "winston";
 import "winston-daily-rotate-file";
-import * as chalk from "chalk";
+import chalk from "chalk";
 import * as Transport from 'winston-transport';
 import { DailyRotateFile } from "winston/lib/winston/transports";
 

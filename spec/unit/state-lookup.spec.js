@@ -1,7 +1,7 @@
 "use strict";
-const Bluebird = require("bluebird");
 const log = require("../log");
 const StateLookup = require("../..").StateLookup;
+const promiseutil = require("../../lib/utils/promiseutil");
 
 describe("StateLookup", function() {
     var lookup, cli;
@@ -24,9 +24,9 @@ describe("StateLookup", function() {
             var statePromise = createStatePromise([]);
             cli.roomState.and.returnValue(statePromise.promise);
             var p = lookup.trackRoom("!foo:bar");
-            expect(p.isPending()).toBe(true); // not resolved HTTP call yet
-            await Bluebird.delay(5);
-            expect(p.isPending()).toBe(true); // still not resolved HTTP call
+            expect(statePromise.isPending).toBe(true); // not resolved HTTP call yet
+            await promiseutil.delay(5);
+            expect(statePromise.isPending).toBe(true); // still not resolved HTTP call
             statePromise.resolve();
             await p; // Should resolve now HTTP call is resolved
         });
@@ -56,7 +56,7 @@ describe("StateLookup", function() {
             const promiseB = lookup.trackRoom("!b:foobar");
             stateA.resolve();
             await promiseA;
-            expect(promiseB.isPending()).toBe(true);
+            expect(stateB.isPending).toBe(true);
             stateB.resolve();
             await promiseB;
         });
@@ -134,7 +134,7 @@ describe("StateLookup", function() {
             ]);
             cli.roomState.and.returnValue(statePromise.promise);
             var p = lookup.trackRoom("!foo:bar");
-            expect(p.isPending()).toBe(true); // not resolved HTTP call yet
+            expect(statePromise.isPending).toBe(true); // not resolved HTTP call yet
             // this event should clobber response from HTTP call
             statePromise.resolve();
             await lookup.onEvent(
@@ -204,13 +204,17 @@ function createStatePromise(returnedStateEvents, rejectErr) {
         resolver = resolve;
         rejecter = reject;
     });
+    let isPending = true;
     return {
         resolve: function() {
+            isPending = false;
             resolver(returnedStateEvents);
         },
         reject: function() {
+            isPending = false;
             rejecter(rejectErr);
         },
+        isPending,
         promise: p
     };
 }

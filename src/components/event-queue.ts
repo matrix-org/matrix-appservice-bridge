@@ -12,8 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-import Bluebird from "bluebird";
-
 type DataReady = Promise<Record<string, unknown>>;
 
 // It's an event, which has no type yet.
@@ -92,7 +90,7 @@ export class EventQueue {
             return;
         }
 
-        Bluebird.resolve(entry.dataReady).asCallback(this.consumeFn);
+        entry.dataReady.then((r) => this.consumeFn(null, r)).catch((error) => this.consumeFn(error, null));
         entry.dataReady.finally(() => this.takeNext(identifier));
     }
 
@@ -155,7 +153,7 @@ export class EventQueueNone extends EventQueue {
 
     push(event: unknown, dataReady: DataReady) {
         // consume the event instantly
-        Bluebird.resolve(dataReady).asCallback(this.consumeFn);
+        dataReady.then((r) => this.consumeFn(null, r)).catch((error) => this.consumeFn(error, null));
     }
 
     consume() {

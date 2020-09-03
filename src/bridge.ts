@@ -422,11 +422,8 @@ export class Bridge {
             }
             this.registration = registration;
         }
-        else if (this.opts.registration instanceof AppServiceRegistration) {
+        else{
             this.registration = this.opts.registration;
-        }
-        else {
-            throw Error('Invalid opts.registration provided');
         }
 
         const asToken = this.registration.getAppServiceToken();

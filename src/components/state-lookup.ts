@@ -153,8 +153,8 @@ export class StateLookup {
         }
         r.events = {};
 
+        r.syncPending = true;
         r.syncPromise = (async () => {
-            r.syncPending = true;
             const res = await this.getInitialState(roomId);
             r.syncPending = false;
             return res;

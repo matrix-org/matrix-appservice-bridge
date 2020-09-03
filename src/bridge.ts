@@ -61,7 +61,7 @@ export interface WeakEvent extends Record<string, unknown> {
     event_id: string;
     room_id: string;
     sender: string;
-    content: unknown;
+    content: Record<string,unknown>;
     unsigned: {
         age: number;
     }

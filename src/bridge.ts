@@ -57,15 +57,15 @@ const INTENT_CULL_CHECK_PERIOD_MS = 1000 * 60; // once per minute
 const INTENT_CULL_EVICT_AFTER_MS = 1000 * 60 * 15; // 15 minutes
 
 export interface WeakEvent extends Record<string, unknown> {
-    event_id: string;
-    room_id: string;
+    event_id: string; // eslint-disable-line camelcase
+    room_id: string; // eslint-disable-line camelcase
     sender: string;
-    content: Record<string,unknown>;
+    content: Record<string, unknown>;
     unsigned: {
         age: number;
     }
-    origin_server_ts: number;
-    state_key: string;
+    origin_server_ts: number; // eslint-disable-line camelcase
+    state_key: string; // eslint-disable-line camelcase
     type: string;
 }
 
@@ -102,12 +102,14 @@ interface BridgeOpts {
          * not supplied, no users will be provisioned on user queries. Provisioned users
          * will automatically be stored in the associated `userStore`.
          */
-        onUserQuery?: (matrixUser: MatrixUser) => PossiblePromise<{name?: string, url?: string, remote?: RemoteUser}|null|void>;
+        onUserQuery?: (matrixUser: MatrixUser) =>
+            PossiblePromise<{name?: string, url?: string, remote?: RemoteUser}|null|void>;
         /**
          * The bridge will invoke this function when queried via onAliasQuery. If
          * not supplied, no rooms will be provisioned on alias queries. Provisioned rooms
          * will automatically be stored in the associated `roomStore`. */
-        onAliasQuery?: (alias: string, aliasLocalpart: string) => PossiblePromise<{creationOpts: Record<string, unknown>, remote?: RemoteRoom}|null|void>;
+        onAliasQuery?: (alias: string, aliasLocalpart: string) =>
+            PossiblePromise<{creationOpts: Record<string, unknown>, remote?: RemoteRoom}|null|void>;
         /**
          * The bridge will invoke this function when a room has been created
          * via onAliasQuery.
@@ -252,7 +254,7 @@ export class Bridge {
     private queue: EventQueue;
     private intentBackingStore: IntentBackingStore;
     private prevRequestPromise: Promise<unknown>;
-    private readonly onLog: (message: string, isError   : boolean) => void;
+    private readonly onLog: (message: string, isError: boolean) => void;
 
     private intentLastAccessedTimeout: NodeJS.Timeout|null = null;
     private botIntent?: Intent;
@@ -402,15 +404,15 @@ export class Bridge {
         this.eventStore = eventStore as EventBridgeStore;
     }
 
-/**
- * Run the bridge (start listening)
- * @param port The port to listen on.
- * @param config Configuration options
- * @param appServiceInstance The AppService instance to attach to.
- * If not provided, one will be created.
- * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
- * @return A promise resolving when the bridge is ready
- */
+    /**
+     * Run the bridge (start listening)
+     * @param port The port to listen on.
+     * @param config Configuration options
+     * @param appServiceInstance The AppService instance to attach to.
+     * If not provided, one will be created.
+     * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
+     * @return A promise resolving when the bridge is ready
+     */
     public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname?: string, backlog = 10) {
         // Load the registration file into an AppServiceRegistration object.
         if (typeof this.opts.registration === "string") {
@@ -421,7 +423,7 @@ export class Bridge {
             }
             this.registration = registration;
         }
-        else{
+        else {
             this.registration = this.opts.registration;
         }
 
@@ -519,7 +521,7 @@ export class Bridge {
                             this.roomLinkValidator?.readRuleFile(req.query.filename as string|undefined);
                             res.status(200).send("Success");
                         }
- else {
+                        else {
                             res.status(404).send("RoomLinkValidator not in use");
                         }
                     }
@@ -531,9 +533,9 @@ export class Bridge {
         }
     }
 
-// Set a timer going which will periodically remove Intent objects to prevent
-// them from accumulating too much. Removal is based on access time (calls to
-// getIntent). Intents expire after `INTENT_CULL_EVICT_AFTER_MS` of not being called.
+    // Set a timer going which will periodically remove Intent objects to prevent
+    // them from accumulating too much. Removal is based on access time (calls to
+    // getIntent). Intents expire after `INTENT_CULL_EVICT_AFTER_MS` of not being called.
     private setupIntentCulling() {
         if (this.intentLastAccessedTimeout) {
             clearTimeout(this.intentLastAccessedTimeout);
@@ -588,7 +590,7 @@ export class Bridge {
                         const result = await getProtocolFunc(protocol);
                         res.status(200).json(result);
                     }
- catch (ex) {
+                    catch (ex) {
                         respondErr(ex, res)
                     }
                 },
@@ -617,7 +619,7 @@ export class Bridge {
                         const result = await getLocationFunc(protocol, req.query as Record<string, string[]|string>);
                         res.status(200).json(result);
                     }
- catch (ex) {
+                    catch (ex) {
                         respondErr(ex, res)
                     }
                 },
@@ -646,7 +648,7 @@ export class Bridge {
                         const result = await parseLocationFunc(alias);
                         res.status(200).json(result);
                     }
- catch (ex) {
+                    catch (ex) {
                         respondErr(ex, res)
                     }
                 },
@@ -675,7 +677,7 @@ export class Bridge {
                         const result = await getUserFunc(protocol, req.query as Record<string, string[]|string>);
                         res.status(200).json(result);
                     }
- catch (ex) {
+                    catch (ex) {
                         respondErr(ex, res)
                     }
                 }
@@ -704,7 +706,7 @@ export class Bridge {
                         const result = await parseUserFunc(userid);
                         res.status(200).json(result);
                     }
- catch (ex) {
+                    catch (ex) {
                         respondErr(ex, res)
                     }
                 },
@@ -722,7 +724,12 @@ export class Bridge {
      * @param {Bridge~appServicePathHandler} opts.handler Function to handle requests
      * to this endpoint.
      */
-    public addAppServicePath(opts: {method: "GET"|"PUT"|"POST"|"DELETE", checkToken?: boolean, path: string, handler: (req: ExRequest, respose: ExResponse, next: NextFunction) => void}) {
+    public addAppServicePath(opts: {
+        method: "GET"|"PUT"|"POST"|"DELETE",
+        checkToken?: boolean,
+        path: string,
+        handler: (req: ExRequest, respose: ExResponse, next: NextFunction) => void,
+    }) {
         // TODO(paul): This is gut-wrenching into the AppService instance itself.
         //   Maybe an API on that object would be good?
         const app: Application = (this.appservice as any).app;
@@ -873,7 +880,10 @@ export class Bridge {
      * @param provisionedUser Provisioning information.
      * @return Resolved when provisioned.
      */
-    public async provisionUser(matrixUser: MatrixUser, provisionedUser?: {name?: string, url?: string, remote?: RemoteUser}) {
+    public async provisionUser(
+        matrixUser: MatrixUser,
+        provisionedUser?: {name?: string, url?: string, remote?: RemoteUser}
+    ) {
         if (!this.clientFactory) {
             throw Error('Cannot call getIntent before calling .run()');
         }
@@ -924,7 +934,6 @@ export class Bridge {
         }
         if (!this.botIntent) {
             throw Error('botIntent is not ready yet');
-            return;
         }
         const aliasLocalpart = alias.split(":")[0].substring(1);
         const provisionedRoom = await this.opts.controller.onAliasQuery(alias, aliasLocalpart);
@@ -932,6 +941,7 @@ export class Bridge {
             // Not provisioning room.
             throw Error("Not provisioning room for this alias");
         }
+        // eslint-disable-next-line camelcase
         const createRoomResponse: {room_id: string} = await this.botClient.createRoom(
             provisionedRoom.creationOpts
         );
@@ -971,6 +981,7 @@ export class Bridge {
         if (this.roomUpgradeHandler && this.appServiceBot) {
             // m.room.tombstone is the event that signals a room upgrade.
             if (event.type === "m.room.tombstone" && isCanonicalState && this.roomUpgradeHandler) {
+                // eslint-disable-next-line camelcase
                 this.roomUpgradeHandler.onTombstone({...event, content: event.content as {replacement_room: string}});
                 if (this.opts.roomUpgradeOpts.consumeEvent) {
                     return null;
@@ -1050,6 +1061,7 @@ export class Bridge {
         this.opts.controller.onEvent(data.request, data.context);
     }
 
+    // eslint-disable-next-line camelcase
     private async getBridgeContext(event: {sender: string, type: string, state_key: string, room_id: string}) {
         if (this.opts.disableContext) {
             return null;
@@ -1068,6 +1080,7 @@ export class Bridge {
         return context.get(this.roomStore, this.userStore);
     }
 
+    // eslint-disable-next-line camelcase
     private handleEventError(event: {room_id: string, event_id: string}, error: EventNotHandledError) {
         if (!this.botIntent) {
             throw Error('Cannot call handleEventError before calling .run()');
@@ -1199,9 +1212,9 @@ export class Bridge {
 
 }
 
-function loadDatabase<T extends BridgeStore>(path: string, cls: new (db: Datastore) => T) {
+function loadDatabase<T extends BridgeStore>(path: string, Cls: new (db: Datastore) => T) {
     const defer = deferPromise<T>();
-    var db = new Datastore({
+    const db = new Datastore({
         filename: path,
         autoload: true,
         onload: function(err) {
@@ -1209,14 +1222,24 @@ function loadDatabase<T extends BridgeStore>(path: string, cls: new (db: Datasto
                 defer.reject(err);
             }
             else {
-                defer.resolve(new cls(db));
+                defer.resolve(new Cls(db));
             }
         }
     });
     return defer.promise;
 }
 
-function retryAlgorithm(event: unknown, attempts: number, err: {httpStatus: number, cors?: string, name: string, data?: { retry_after_ms: number }}) {
+function retryAlgorithm(
+    event: unknown,
+    attempts: number,
+    err: {
+        httpStatus: number,
+        cors?: string,
+        name: string,
+        // eslint-disable-next-line camelcase
+        data?: { retry_after_ms: number },
+    }
+) {
     if (err.httpStatus === 400 || err.httpStatus === 403 || err.httpStatus === 401) {
         // client error; no amount of retrying with save you now.
         return -1;

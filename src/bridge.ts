@@ -1004,10 +1004,11 @@ export class Bridge {
         try {
             return await reqPromise;
         }
- catch (ex) {
+        catch (ex) {
             if (ex instanceof EventNotHandledError) {
                 this.handleEventError(event, ex);
             }
+            throw ex;
         }
     }
 

@@ -33,8 +33,24 @@ interface CliOpts<ConfigType extends Record<string, unknown>> {
         schema: string|Record<string, unknown>;
         defaults: Record<string, unknown>;
     };
-    registrationPath: string;
+    registrationPath?: string;
     enableRegistration?: boolean;
+    enableLocalpart?: boolean;
+    port?: number;
+    noUrl?: boolean;
+}
+
+interface VettedCliOpts<ConfigType extends Record<string, unknown>> {
+    run: (port: number, config: ConfigType | null, registration: AppServiceRegistration | null) => void;
+    onConfigChanged?: (config: ConfigType) => void,
+    generateRegistration?: (reg: AppServiceRegistration, cb: (finalReg: AppServiceRegistration) => void) => void;
+    bridgeConfig?: {
+        affectsRegistration?: boolean;
+        schema: string | Record<string, unknown>;
+        defaults: Record<string, unknown>;
+    };
+    registrationPath: string;
+    enableRegistration: boolean;
     enableLocalpart: boolean;
     port: number;
     noUrl?: boolean;
@@ -56,6 +72,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
     public static DEFAULT_FILENAME = "registration.yaml";
     private bridgeConfig: ConfigType|null = null;
     private args: CliArgs|null = null;
+    private opts: VettedCliOpts<ConfigType>;
 
     /**
      * @constructor
@@ -80,25 +97,25 @@ export class Cli<ConfigType extends Record<string, unknown>> {
      * file to. Users can overwrite this with -f.
      * @param opts.enableLocalpart Enable '--localpart [-l]'. Default: false.
      */
-    constructor(private opts: CliOpts<ConfigType>) {
-        if (this.opts.enableRegistration === undefined) {
-            this.opts.enableRegistration = true;
-        }
-
-        if (!this.opts.run || typeof this.opts.run !== "function") {
+    constructor(opts: CliOpts<ConfigType>) {
+        if (!opts.run || typeof opts.run !== "function") {
             throw new Error("Requires 'run' function.");
         }
 
-        if (this.opts.enableRegistration && !this.opts.generateRegistration) {
+        if (opts.enableRegistration && !opts.generateRegistration) {
             throw new Error(
                 "Registration generation is enabled but no " +
                 "'generateRegistration' function has been provided"
             );
         }
-        this.opts.enableLocalpart = Boolean(this.opts.enableLocalpart);
 
-        this.opts.registrationPath = this.opts.registrationPath || Cli.DEFAULT_FILENAME;
-        this.opts.port = this.opts.port || Cli.DEFAULT_PORT;
+        this.opts = {
+            ...opts,
+            enableRegistration: typeof opts.enableRegistration === 'boolean' ? opts.enableRegistration : true,
+            enableLocalpart: Boolean(opts.enableLocalpart),
+            registrationPath: opts.registrationPath || Cli.DEFAULT_FILENAME,
+            port: opts.port || Cli.DEFAULT_PORT,
+        };
     }
     /**
      * Get the parsed arguments. Only set after run is called and arguments parsed.

@@ -66,7 +66,9 @@ export class AppServiceBot {
      * @return Resolves to a map of user ID => display_name avatar_url
      */
     public async getJoinedMembers(roomId: string) {
-        const res: {joined: string[]} = await this.client.getJoinedRoomMembers(roomId);
+        // eslint-disable-next-line camelcase
+        const res: {joined: Record<string, {display_name: string, avatar: string}>}
+            = await this.client.getJoinedRoomMembers(roomId);
         if (!res.joined) {
             return {};
         }

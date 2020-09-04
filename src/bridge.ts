@@ -46,9 +46,9 @@ import BridgeInternalError = unstable.BridgeInternalError;
 import wrapError = unstable.wrapError;
 import EventNotHandledError = unstable.EventNotHandledError;
 import EventUnknownError = unstable.EventUnknownError;
-import e = require("express");
 import { ThirdpartyProtocolResponse, ThirdpartyLocationResponse, ThirdpartyUserResponse } from "./thirdparty";
 import { RemoteRoom } from "./models/rooms/remote";
+import { Registry } from "prom-client";
 
 const log = logging.get("bridge");
 
@@ -61,7 +61,7 @@ export interface WeakEvent extends Record<string, unknown> {
     event_id: string;
     room_id: string;
     sender: string;
-    content: unknown;
+    content: Record<string,unknown>;
     unsigned: {
         age: number;
     }
@@ -69,6 +69,8 @@ export interface WeakEvent extends Record<string, unknown> {
     state_key: string;
     type: string;
 }
+
+type PossiblePromise<T> = T|Promise<T>;
 
 interface BridgeOpts {
     /**
@@ -101,39 +103,34 @@ interface BridgeOpts {
          * not supplied, no users will be provisioned on user queries. Provisioned users
          * will automatically be stored in the associated `userStore`.
          */
-        onUserQuery?: (matrixUser: MatrixUser) => {name?: string, url?: string, remote?: RemoteUser}|void;
+        onUserQuery?: (matrixUser: MatrixUser) => PossiblePromise<{name?: string, url?: string, remote?: RemoteUser}|null|void>;
         /**
          * The bridge will invoke this function when queried via onAliasQuery. If
          * not supplied, no rooms will be provisioned on alias queries. Provisioned rooms
          * will automatically be stored in the associated `roomStore`. */
-        onAliasQuery?: (alias: string, aliasLocalpart: string) => {creationOpts: Record<string, unknown>, remote?: RemoteRoom};
+        onAliasQuery?: (alias: string, aliasLocalpart: string) => PossiblePromise<{creationOpts: Record<string, unknown>, remote?: RemoteRoom}|null|void>;
         /**
          * The bridge will invoke this function when a room has been created
          * via onAliasQuery.
          */
-        onAliasQueried?: (alias: string, roomId: string) => void;
+        onAliasQueried?: (alias: string, roomId: string) => PossiblePromise<void>;
         /**
          * Invoked when logging. Defaults to a function which logs to the console.
          * */
-        onLog?: (text: string, isError?: boolean) => void;
-        /**
-         * The bridge will invoke this function when it sees an upgrade event
-         * for a room. If not supplied, no action will be performed on room upgrade.
-         * */
-        onRoomUpgrade?: () => void;
+        onLog?: (text: string, isError: boolean) => void;
         /**
          * If supplied, the bridge will respond to third-party entity lookups using the
          * contained helper functions.
          */
         thirdPartyLookup?: {
             protocols: string[];
-            getProtocol(protocol: string): ThirdpartyProtocolResponse|Promise<ThirdpartyProtocolResponse>;
-            getLocation(protocol: string, fields: Record<string, string[]|string>):
-                ThirdpartyLocationResponse[]|Promise<ThirdpartyLocationResponse[]>;
-            parseLocation(alias: string): ThirdpartyLocationResponse[]|Promise<ThirdpartyLocationResponse[]>;
-            getUser(protocol: string, fields: Record<string, string[]|string>):
-             ThirdpartyUserResponse[]|Promise<ThirdpartyUserResponse[]>;
-            parseUser(userid: string): ThirdpartyLocationResponse[]|Promise<ThirdpartyLocationResponse[]>;
+            getProtocol?(protocol: string): PossiblePromise<ThirdpartyProtocolResponse>;
+            getLocation?(protocol: string, fields: Record<string, string[]|string>):
+                PossiblePromise<ThirdpartyLocationResponse[]>;
+            parseLocation?(alias: string): PossiblePromise<ThirdpartyLocationResponse[]>;
+            getUser?(protocol: string, fields: Record<string, string[]|string>):
+                PossiblePromise<ThirdpartyUserResponse[]>;
+            parseUser?(userid: string): PossiblePromise<ThirdpartyLocationResponse[]>;
         };
     };
     /**
@@ -256,7 +253,7 @@ export class Bridge {
     private queue: EventQueue;
     private intentBackingStore: IntentBackingStore;
     private prevRequestPromise: Promise<unknown>;
-    private readonly onLog: (message: string, isError?: boolean) => void;
+    private readonly onLog: (message: string, isError   : boolean) => void;
 
     private intentLastAccessedTimeout: NodeJS.Timeout|null = null;
     private botIntent?: Intent;
@@ -425,11 +422,8 @@ export class Bridge {
             }
             this.registration = registration;
         }
-        else if (this.opts.registration instanceof AppServiceRegistration) {
+        else{
             this.registration = this.opts.registration;
-        }
-        else {
-            throw Error('Invalid opts.registration provided');
         }
 
         const asToken = this.registration.getAppServiceToken();
@@ -446,7 +440,7 @@ export class Bridge {
             },
         });
         this.clientFactory.setLogFunction((text, isErr) => {
-            this.onLog(text, isErr);
+            this.onLog(text, isErr || false);
         });
         this.botClient = this.clientFactory.getClientAs();
         this.appServiceBot = new AppServiceBot(
@@ -464,13 +458,15 @@ export class Bridge {
         if (this.opts.logRequestOutcome) {
             this.requestFactory.addDefaultResolveCallback((req) =>
                 this.onLog(
-                    "[" + req.getId() + "] SUCCESS (" + req.getDuration() + "ms)"
+                    "[" + req.getId() + "] SUCCESS (" + req.getDuration() + "ms)",
+                    false,
                 )
             );
             this.requestFactory.addDefaultRejectCallback((req, err) =>
                 this.onLog(
                     "[" + req.getId() + "] FAILED (" + req.getDuration() + "ms) " +
-                    (err ? util.inspect(err) : "")
+                    (err ? util.inspect(err) : ""),
+                    false,
                 )
             );
         }
@@ -779,6 +775,9 @@ export class Bridge {
      * Retrieve the matrix client factory used when sending matrix requests.
      */
     public getClientFactory() {
+        if (!this.clientFactory) {
+            throw Error('Bridge is not ready');
+        }
         return this.clientFactory;
     }
 
@@ -786,6 +785,9 @@ export class Bridge {
      * Get the AS bot instance.
      */
     public getBot() {
+        if (!this.appServiceBot) {
+            throw Error('Bridge is not ready');
+        }
         return this.appServiceBot;
     }
 
@@ -812,12 +814,12 @@ export class Bridge {
     /**
      * Retrieve an Intent instance for the specified user ID. If no ID is given, an
      * instance for the bot itself is returned.
-     * @param userId The user ID to get an Intent for.
+     * @param userId Optional. The user ID to get an Intent for.
      * @param request Optional. The request instance to tie the MatrixClient
      * instance to. Useful for logging contextual request IDs.
      * @return The intent instance
      */
-    public getIntent(userId: string, request?: Request<unknown>) {
+    public getIntent(userId?: string, request?: Request<unknown>) {
         if (!this.clientFactory) {
             throw Error('Cannot call getIntent before calling .run()');
         }
@@ -927,6 +929,10 @@ export class Bridge {
         }
         const aliasLocalpart = alias.split(":")[0].substring(1);
         const provisionedRoom = await this.opts.controller.onAliasQuery(alias, aliasLocalpart);
+        if (!provisionedRoom) {
+            // Not provisioning room.
+            throw Error("Not provisioning room for this alias");
+        }
         const createRoomResponse: {room_id: string} = await this.botClient.createRoom(
             provisionedRoom.creationOpts
         );
@@ -998,10 +1004,11 @@ export class Bridge {
         try {
             return await reqPromise;
         }
- catch (ex) {
+        catch (ex) {
             if (ex instanceof EventNotHandledError) {
                 this.handleEventError(event, ex);
             }
+            throw ex;
         }
     }
 
@@ -1122,7 +1129,7 @@ export class Bridge {
      * @param {boolean} registerEndpoint Register the /metrics endpoint on the appservice HTTP server. Defaults to true.
      * @param {Registry?} registry Optionally provide an alternative registry for metrics.
      */
-    public getPrometheusMetrics(registerEndpoint = true, registry = undefined): PrometheusMetrics {
+    public getPrometheusMetrics(registerEndpoint = true, registry?: Registry): PrometheusMetrics {
         if (this.metrics) {
             return this.metrics;
         }
@@ -1241,204 +1248,3 @@ function queueAlgorithm(event: {getType: () => string, getRoomId(): string}) {
     // allow all other events continue concurrently.
     return null;
 }
-
-/**
- * @typedef Bridge~ProvisionedUser
- * @type {Object}
- * @property {string=} name The display name to set for the provisioned user.
- * @property {string=} url The avatar URL to set for the provisioned user.
- * @property {RemoteUser=} remote The remote user to link to the provisioned user.
- */
-
-/**
- * @typedef Bridge~ProvisionedRoom
- * @type {Object}
- * @property {Object} creationOpts Room creation options to use when creating the
- * room. Required.
- * @property {RemoteRoom=} remote The remote room to link to the provisioned room.
- */
-
-/**
- * Invoked when the bridge receives a user query from the homeserver. Supports
- * both sync return values and async return values via promises.
- * @callback Bridge~onUserQuery
- * @param {MatrixUser} matrixUser The matrix user queried. Use <code>getId()</code>
- * to get the user ID.
- * @return {?Bridge~ProvisionedUser|Promise<Bridge~ProvisionedUser, Error>}
- * Reject the promise / return null to not provision the user. Resolve the
- * promise / return a {@link Bridge~ProvisionedUser} object to provision the user.
- * @example
- * new Bridge({
- *   controller: {
- *     onUserQuery: function(matrixUser) {
- *       var remoteUser = new RemoteUser("some_remote_id");
- *       return {
- *         name: matrixUser.localpart + " (Bridged)",
- *         url: "http://someurl.com/pic.jpg",
- *         user: remoteUser
- *       };
- *     }
- *   }
- * });
- */
-
-/**
- * Invoked when the bridge receives an alias query from the homeserver. Supports
- * both sync return values and async return values via promises.
- * @callback Bridge~onAliasQuery
- * @param {string} alias The alias queried.
- * @param {string} aliasLocalpart The parsed localpart of the alias.
- * @return {?Bridge~ProvisionedRoom|Promise<Bridge~ProvisionedRoom, Error>}
- * Reject the promise / return null to not provision the room. Resolve the
- * promise / return a {@link Bridge~ProvisionedRoom} object to provision the room.
- * @example
- * new Bridge({
- *   controller: {
- *     onAliasQuery: function(alias, aliasLocalpart) {
- *       return {
- *         creationOpts: {
- *           room_alias_name: aliasLocalpart, // IMPORTANT: must be set to make the link
- *           name: aliasLocalpart,
- *           topic: "Auto-generated bridged room"
- *         }
- *       };
- *     }
- *   }
- * });
- */
-
- /**
-  * Invoked when a response is returned from onAliasQuery. Supports
-  * both sync return values and async return values via promises.
-  * @callback Bridge~onAliasQueried
-  * @param {string} alias The alias queried.
-  * @param {string} roomId The parsed localpart of the alias.
-  */
-
-
- /**
-  * @callback Bridge~onRoomUpgrade
-  * @param {string} oldRoomId The roomId of the old room.
-  * @param {string} newRoomId The roomId of the new room.
-  * @param {string} newVersion The new room version.
-  * @param {Bridge~BridgeContext} context Context for the upgrade event.
-  */
-
- /**
- * Invoked when the bridge receives an event from the homeserver.
- * @callback Bridge~onEvent
- * @param {Request} request The request to resolve or reject depending on the
- * outcome of this request. The 'data' attached to this Request is the raw event
- * JSON received (accessed via <code>request.getData()</code>)
- * @param {Bridge~BridgeContext} context Context for this event, including
- * instantiated client instances.
- */
-
- /**
- * Invoked when the bridge is attempting to log something.
- * @callback Bridge~onLog
- * @param {string} line The text to be logged.
- * @param {boolean} isError True if this line should be treated as an error msg.
- */
-
- /**
-  * Handler function for custom applied HTTP API request paths. This is invoked
-  * as defined by expressjs.
-  * @callback Bridge~appServicePathHandler
-  * @param {Request} req An expressjs Request object the handler can use to
-  * inspect the incoming request.
-  * @param {Response} res An expressjs Response object the handler can use to
-  * send the outgoing response.
-  */
-
- /**
-  * @typedef Bridge~thirdPartyLookup
-  * @type {Object}
-  * @property {string[]} protocols Optional list of recognised protocol names.
-  * If present, lookups for unrecognised protocols will be automatically
-  * rejected.
-  * @property {Bridge~getProtocol} getProtocol Function. Called for requests
-  * for 3PE query metadata.
-  * @property {Bridge~getLocation} getLocation Function. Called for requests
-  * for 3PLs.
-  * @property {Bridge~parseLocation} parseLocation Function. Called for reverse
-  * parse requests on 3PL aliases.
-  * @property {Bridge~getUser} getUser Function. Called for requests for 3PUs.
-  * @property {Bridge~parseUser} parseUser Function. Called for reverse parse
-  * requests on 3PU user IDs.
-  */
-
- /**
-  * Invoked on requests for 3PE query metadata
-  * @callback Bridge~getProtocol
-  * @param {string} protocol The name of the 3PE protocol to query
-  * @return {Promise<Bridge~thirdPartyProtocolResult>} A Promise of metadata
-  * about 3PE queries that can be made for this protocol.
-  */
-
- /**
-  * Returned by getProtocol third-party query metadata requests
-  * @typedef Bridge~thirdPartyProtocolResult
-  * @type {Object}
-  * @property {string[]} [location_fields] Names of the fields required for
-  * location lookups if location queries are supported.
-  * @property {string[]} [user_fields] Names of the fields required for user
-  * lookups if user queries are supported.
-
- /**
-  * Invoked on requests for 3PLs
-  * @callback Bridge~getLocation
-  * @param {string} protocol The name of the 3PE protocol
-  * @param {Object} fields The location query field data as specified by the
-  * specific protocol.
-  * @return {Promise<Bridge~thirdPartyLocationResult[]>} A Promise of a list of
-  * 3PL lookup results.
-  */
-
- /**
-  * Invoked on requests to parse 3PL aliases
-  * @callback Bridge~parseLocation
-  * @param {string} alias The room alias to parse.
-  * @return {Promise<Bridge~thirdPartyLocationResult[]>} A Promise of a list of
-  * 3PL lookup results.
-  */
-
- /**
-  * Returned by getLocation and parseLocation third-party location lookups
-  * @typedef Bridge~thirdPartyLocationResult
-  * @type {Object}
-  * @property {string} alias The Matrix room alias to the portal room
-  * representing this 3PL
-  * @property {string} protocol The name of the 3PE protocol
-  * @property {object} fields The normalised values of the location query field
-  * data.
-  */
-
- /**
-  * Invoked on requests for 3PUs
-  * @callback Bridge~getUser
-  * @param {string} protocol The name of the 3PE protocol
-  * @param {Object} fields The user query field data as specified by the
-  * specific protocol.
-  * @return {Promise<Bridge~thirdPartyUserResult[]>} A Promise of a list of 3PU
-  * lookup results.
-  */
-
- /**
-  * Invoked on requests to parse 3PU user IDs
-  * @callback Bridge~parseUser
-  * @param {string} userid The user ID to parse.
-  * @return {Promise<Bridge~thirdPartyUserResult[]>} A Promise of a list of 3PU
-  * lookup results.
-  */
-
- /**
-  * Returned by getUser and parseUser third-party user lookups
-  * @typedef Bridge~thirdPartyUserResult
-  * @type {Object}
-  * @property {string} userid The Matrix user ID for the ghost representing
-  * this 3PU
-  * @property {string} protocol The name of the 3PE protocol
-  * @property {object} fields The normalised values of the user query field
-  * data.
-  */

@@ -274,7 +274,7 @@ export class RoomBridgeStore extends BridgeStore {
                 return e.remote;
             }) as RemoteRoom[];
         }
-        return entryMap;
+        return result;
     }
 
 
@@ -464,7 +464,6 @@ export class RoomBridgeStoreEntry {
         this.remote = doc?.remote_id ? new RemoteRoom(doc.remote_id, doc.remote) : undefined;
         this.data = doc?.data || {};
     }
-
 
     // not a member function so callers can provide a POJO
     public static serializeEntry(entry: RoomBridgeStoreEntry): RoomStoreEntryDoc {

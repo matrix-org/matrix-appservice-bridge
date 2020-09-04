@@ -58,7 +58,7 @@ export class MatrixUser {
      * @return The display name.
      */
     public getDisplayName() {
-        return this._data.displayName as string|undefined;
+        return this._data.displayName as string|null;
     }
 
     /**

@@ -44,6 +44,7 @@ export * from "./components/bridge-context";
 
 export * from "matrix-appservice";
 export * from "./components/prometheusmetrics";
+export * from "./components/agecounters";
 export * from "./components/membership-cache";
 export * as Logging from "./components/logging";
 export { unstable } from "./errors";

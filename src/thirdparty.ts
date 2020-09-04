@@ -1,7 +1,7 @@
 export interface ProtocolInstance {
     desc: string;
     icon?: string;
-    fields?: Record<string, undefined>;
+    fields?: Record<string, unknown>;
     network_id: string;
 }
 

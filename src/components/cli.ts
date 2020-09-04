@@ -35,7 +35,7 @@ interface CliOpts<ConfigType extends Record<string, unknown>> {
     };
     registrationPath: string;
     enableRegistration?: boolean;
-    enableLocalpart: boolean;
+    enableLocalpart?: boolean;
     port: number;
     noUrl?: boolean;
 }

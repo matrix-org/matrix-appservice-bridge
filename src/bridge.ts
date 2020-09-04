@@ -45,7 +45,6 @@ import { RemoteUser } from "./models/users/remote";
 import BridgeInternalError = unstable.BridgeInternalError;
 import wrapError = unstable.wrapError;
 import EventNotHandledError = unstable.EventNotHandledError;
-import EventUnknownError = unstable.EventUnknownError;
 import { ThirdpartyProtocolResponse, ThirdpartyLocationResponse, ThirdpartyUserResponse } from "./thirdparty";
 import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";

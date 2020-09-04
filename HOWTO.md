@@ -78,7 +78,7 @@ an application service, listen and handle incoming Matrix requests and expose a 
 Open up `index.js` and add this at the bottom of the file:
 ```javascript
 var Cli = require("matrix-appservice-bridge").Cli;
-var Bridge = require("matrix-appservice-bridge").Bridge;
+var Bridge = require("matrix-appservice-bridge").Bridge; // we will use this later
 var AppServiceRegistration = require("matrix-appservice-bridge").AppServiceRegistration;
 
 new Cli({
@@ -244,6 +244,7 @@ var AppServiceRegistration = require("matrix-appservice-bridge").AppServiceRegis
 new Cli({
     registrationPath: "slack-registration.yaml",
     generateRegistration: function(reg, callback) {
+        reg.setId(AppServiceRegistration.generateToken());
         reg.setHomeserverToken(AppServiceRegistration.generateToken());
         reg.setAppServiceToken(AppServiceRegistration.generateToken());
         reg.setSenderLocalpart("slackbot");

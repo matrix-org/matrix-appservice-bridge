@@ -3,6 +3,7 @@
   "version": "1.13.2",
   "description": "Bridging infrastructure for Matrix Application Services",
   "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "prepare": "npm run build",

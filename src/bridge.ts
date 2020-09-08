@@ -26,7 +26,7 @@ import { ClientFactory } from "./components/client-factory"
 import { AppServiceBot } from "./components/app-service-bot"
 import { RequestFactory } from "./components/request-factory";
 import { Request } from "./components/request";
-import { Intent, IntentOpts, IntentBackingStore, PowerLevelContent, RoomCreationOpts } from "./components/intent";
+import { Intent, IntentOpts, IntentBackingStore, PowerLevelContent } from "./components/intent";
 import { RoomBridgeStore } from "./components/room-bridge-store";
 import { UserBridgeStore } from "./components/user-bridge-store";
 import { EventBridgeStore } from "./components/event-bridge-store";
@@ -213,7 +213,176 @@ interface BridgeOpts {
          *
          * Default: `single`.
          */
-        type: "none"|"single"|"per_room";
+        type?: "none"|"single"|"per_room";
+        /**
+         * `true` to only feed through the next event after the request object in the previous
+         * call succeeds or fails. It is **vital** that you consistently resolve/reject the
+         * request if this is 'true', else you will not get any further events from this queue.
+         * To aid debugging this, consider setting a delayed listener on the request factory.
+         *
+         * If `false`, the mere invockation of onEvent is enough to trigger the next event in the queue.
+         * You probably want to set this to `true` if your {@link Bridge~onEvent} is
+         * performing async operations where ordering matters (e.g. messages).
+         *
+         * Default: false.
+         * */
+        perRequest?: boolean;
+    };
+    /**
+     * `true` to disable {@link BridgeContext}
+     * parameters in {@link Bridge.onEvent}. Disabling the context makes the
+     * bridge do fewer database lookups, but prevents there from being a
+     * `context` parameter.
+     *
+     * Default: `false`.
+     */
+    disableContext?: boolean;
+    roomLinkValidation?: {
+        ruleFile?: string;
+        rules?: Rules;
+        triggerEndpoint?: boolean;
+    };
+    authenticateThirdpartyEndpoints?: boolean;
+    roomUpgradeOpts?: RoomUpgradeHandlerOpts;
+}
+
+interface VettedBridgeOpts {
+    /**
+     * Application service registration object or path to the registration file.
+     */
+    registration: AppServiceRegistration | string;
+    /**
+     * The base HS url
+     */
+    homeserverUrl: string;
+    /**
+     * The domain part for user_ids and room aliases e.g. "bar" in "@foo:bar".
+     */
+    domain: string;
+    /**
+     * A human readable string that will be used when the bridge signals errors
+     * to the client. Will not include in error events if ommited.
+     */
+    networkName?: string;
+    /**
+     * The controller logic for the bridge.
+     */
+    controller: {
+        /**
+         * The bridge will invoke when an event has been received from the HS.
+         */
+        onEvent: (request: Request<WeakEvent>, context?: BridgeContext) => void;
+        /**
+         * The bridge will invoke this function when queried via onUserQuery. If
+         * not supplied, no users will be provisioned on user queries. Provisioned users
+         * will automatically be stored in the associated `userStore`.
+         */
+        onUserQuery?: (matrixUser: MatrixUser) =>
+            PossiblePromise<{ name?: string, url?: string, remote?: RemoteUser } | null | void>;
+        /**
+         * The bridge will invoke this function when queried via onAliasQuery. If
+         * not supplied, no rooms will be provisioned on alias queries. Provisioned rooms
+         * will automatically be stored in the associated `roomStore`. */
+        onAliasQuery?: (alias: string, aliasLocalpart: string) =>
+            PossiblePromise<{ creationOpts: Record<string, unknown>, remote?: RemoteRoom } | null | void>;
+        /**
+         * The bridge will invoke this function when a room has been created
+         * via onAliasQuery.
+         */
+        onAliasQueried?: (alias: string, roomId: string) => PossiblePromise<void>;
+        /**
+         * Invoked when logging. Defaults to a function which logs to the console.
+         * */
+        onLog?: (text: string, isError: boolean) => void;
+        /**
+         * If supplied, the bridge will respond to third-party entity lookups using the
+         * contained helper functions.
+         */
+        thirdPartyLookup?: {
+            protocols: string[];
+            getProtocol?(protocol: string): PossiblePromise<ThirdpartyProtocolResponse>;
+            getLocation?(protocol: string, fields: Record<string, string[] | string>):
+                PossiblePromise<ThirdpartyLocationResponse[]>;
+            parseLocation?(alias: string): PossiblePromise<ThirdpartyLocationResponse[]>;
+            getUser?(protocol: string, fields: Record<string, string[] | string>):
+                PossiblePromise<ThirdpartyUserResponse[]>;
+            parseUser?(userid: string): PossiblePromise<ThirdpartyLocationResponse[]>;
+        };
+    };
+    /**
+     * True to disable enabling of stores.
+     * This should be used by bridges that use their own database instances and
+     * do not need any of the included store objects. This implies setting
+     * disableContext to True. Default: false.
+     */
+    disableStores: boolean;
+    /**
+     * The room store instance to use, or the path to the room .db file to load.
+     * A database will be created if this is not specified. If `disableStores` is set,
+     * no database will be created or used.
+     */
+    roomStore: RoomBridgeStore | string;
+    /**
+     * The user store instance to use, or the path to the user .db file to load.
+     * A database will be created if this is not specified. If `disableStores` is set,
+     * no database will be created or used.
+     */
+    userStore: UserBridgeStore | string;
+    /**
+     * The event store instance to use, or the path to the user .db file to load.
+     * A database will NOT be created if this is not specified. If `disableStores` is set,
+     * no database will be created or used.
+     */
+    eventStore?: EventBridgeStore | string;
+    /**
+     * True to stop receiving onEvent callbacks
+     * for events which were sent by a bridge user. Default: true.
+     */
+    suppressEcho: boolean;
+    /**
+     * The client factory instance to use. If not supplied, one will be created.
+     */
+    clientFactory?: ClientFactory;
+    /**
+     * True to enable SUCCESS/FAILED log lines to be sent to onLog. Default: true.
+     */
+    logRequestOutcome: boolean;
+    /**
+     * Escape userIds for non-bot intents with
+     * {@link MatrixUser~escapeUserId}
+     * Default: true
+     */
+    escapeUserIds?: boolean;
+    /**
+     * Options to supply to created Intent instances.
+     */
+    intentOptions: {
+        /**
+         * Options to supply to the bot intent.
+         */
+        bot?: IntentOpts;
+        /**
+         * Options to supply to the client intents.
+         */
+        clients?: IntentOpts;
+    };
+    /**
+     * Options for the `onEvent` queue. When the bridge
+     * receives an incoming transaction, it needs to asyncly query the data store for
+     * contextual info before calling onEvent. A queue is used to keep the onEvent
+     * calls consistent with the arrival order from the incoming transactions.
+     */
+    queue: {
+        /**
+         * The type of queue to use when feeding through to {@link Bridge~onEvent}.
+         * - If `none`, events are fed through as soon as contextual info is obtained, which may result
+         * in out of order events but stops HOL blocking.
+         * - If `single`, onEvent calls will be in order but may be slower due to HOL blocking.
+         * - If `per_room`, a queue per room ID is made which reduces the impact of HOL blocking to be scoped to a room.
+         *
+         * Default: `single`.
+         */
+        type: "none" | "single" | "per_room";
         /**
          * `true` to only feed through the next event after the request object in the previous
          * call succeeds or fails. It is **vital** that you consistently resolve/reject the
@@ -242,8 +411,8 @@ interface BridgeOpts {
         rules?: Rules;
         triggerEndpoint?: boolean;
     };
-    authenticateThirdpartyEndpoints?: boolean;
-    roomUpgradeOpts: RoomUpgradeHandlerOpts;
+    authenticateThirdpartyEndpoints: boolean;
+    roomUpgradeOpts?: RoomUpgradeHandlerOpts;
 }
 
 export class Bridge {
@@ -270,16 +439,18 @@ export class Bridge {
     private registration?: AppServiceRegistration;
     private appservice?: AppService;
 
+    public readonly opts: VettedBridgeOpts;
+
     public get appService() {
         return this.appservice;
     }
 
     /**
      * @param opts Options to pass to the bridge
-     * @param {RoomUpgradeHandler~Options} opts.roomUpgradeOpts Options to supply to
+     * @param opts.roomUpgradeOpts Options to supply to
      * the room upgrade handler. If not defined then upgrades are NOT handled by the bridge.
      */
-    constructor (public readonly opts: BridgeOpts) {
+    constructor (opts: BridgeOpts) {
         if (typeof opts !== "object") {
             throw new Error("opts must be supplied.");
         }
@@ -295,38 +466,23 @@ export class Bridge {
             throw new Error("controller.onEvent is a required function");
         }
 
-
-        if (opts.disableContext === undefined) {
-            opts.disableContext = false;
-        }
-
-        if (opts.disableStores === true) {
-            opts.disableStores = true;
-            opts.disableContext = true;
-        }
-        else {
-            opts.disableStores = false;
-        }
-
-        opts.authenticateThirdpartyEndpoints = opts.authenticateThirdpartyEndpoints || false;
-
-        opts.userStore = opts.userStore || "user-store.db";
-        opts.roomStore = opts.roomStore || "room-store.db";
-
-        opts.intentOptions = opts.intentOptions || {};
-
-        opts.queue = opts.queue || {
-            type: "single",
-            perRequest: false,
+        this.opts = {
+            ...opts,
+            disableContext: opts.disableStores ? true : (opts.disableContext ?? false),
+            disableStores: opts.disableStores ?? false,
+            authenticateThirdpartyEndpoints: opts.authenticateThirdpartyEndpoints ?? false,
+            userStore: opts.userStore || "user-store.db",
+            roomStore: opts.roomStore || "room-store.db",
+            intentOptions: opts.intentOptions || {},
+            queue: {
+                type: opts.queue?.type || "single",
+                perRequest: opts.queue?.perRequest ?? false,
+            },
+            logRequestOutcome: opts.logRequestOutcome ?? true,
+            suppressEcho: opts.suppressEcho ?? true,
         };
-        opts.queue.type = opts.queue.type || "single";
-        if (opts.queue.perRequest === undefined) {
-            opts.queue.perRequest = false;
-        }
-        if (opts.logRequestOutcome === undefined) {
-            opts.logRequestOutcome = true;
-        }
-        this.queue = EventQueue.create(opts.queue, this.onConsume.bind(this));
+
+        this.queue = EventQueue.create(this.opts.queue, this.onConsume.bind(this));
 
         // Default: logger -> log to console
         this.onLog = opts.controller.onLog || function(text, isError) {
@@ -337,13 +493,7 @@ export class Bridge {
             log.info(text);
         };
 
-        // Default: suppress echo -> True
-        if (opts.suppressEcho === undefined) {
-            opts.suppressEcho = true;
-        }
-
         // we'll init these at runtime
-        this.opts = opts;
         this.requestFactory = new RequestFactory();
         this.intents = new Map();
         this.powerlevelMap = new Map();
@@ -357,12 +507,12 @@ export class Bridge {
 
         this.prevRequestPromise = Promise.resolve();
 
-        if (opts.roomUpgradeOpts) {
-            opts.roomUpgradeOpts.consumeEvent = opts.roomUpgradeOpts.consumeEvent !== false ? true : false;
+        if (this.opts.roomUpgradeOpts) {
+            this.opts.roomUpgradeOpts.consumeEvent = this.opts.roomUpgradeOpts.consumeEvent !== false;
             if (this.opts.disableStores) {
-                opts.roomUpgradeOpts.migrateStoreEntries = false;
+                this.opts.roomUpgradeOpts.migrateStoreEntries = false;
             }
-            this.roomUpgradeHandler = new RoomUpgradeHandler(opts.roomUpgradeOpts, this);
+            this.roomUpgradeHandler = new RoomUpgradeHandler(this.opts.roomUpgradeOpts, this);
         }
     }
 
@@ -379,13 +529,13 @@ export class Bridge {
         if (typeof this.opts.userStore === "string") {
             storePromises.push(loadDatabase(this.opts.userStore, UserBridgeStore));
         }
-        else if (this.opts.userStore) {
+        else {
             storePromises.push(Promise.resolve(this.opts.userStore));
         }
         if (typeof this.opts.roomStore === "string") {
             storePromises.push(loadDatabase(this.opts.roomStore, RoomBridgeStore));
         }
-        else if (this.opts.roomStore) {
+        else {
             storePromises.push(Promise.resolve(this.opts.roomStore));
         }
         if (typeof this.opts.eventStore === "string") {
@@ -717,11 +867,11 @@ export class Bridge {
     /**
      * Install a custom handler for an incoming HTTP API request. This allows
      * callers to add extra functionality, implement new APIs, etc...
-     * @param {Object} opts Named options
-     * @param {string} opts.method The HTTP method name.
-     * @param {string} opts.path Path to the endpoint.
-     * @param {string} opts.checkToken Should the token be automatically checked. Defaults to true.
-     * @param {Bridge~appServicePathHandler} opts.handler Function to handle requests
+     * @param opts Named options
+     * @param opts.method The HTTP method name.
+     * @param opts.path Path to the endpoint.
+     * @param opts.checkToken Should the token be automatically checked. Defaults to true.
+     * @param opts.handler Function to handle requests
      * to this endpoint.
      */
     public addAppServicePath(opts: {
@@ -730,9 +880,10 @@ export class Bridge {
         path: string,
         handler: (req: ExRequest, respose: ExResponse, next: NextFunction) => void,
     }) {
-        // TODO(paul): This is gut-wrenching into the AppService instance itself.
-        //   Maybe an API on that object would be good?
-        const app: Application = (this.appservice as any).app;
+        if (!this.appservice) {
+            throw Error('Cannot call addAppServicePath before calling .run()');
+        }
+        const app: Application = this.appservice.expressApp();
         opts.checkToken = opts.checkToken !== undefined ? opts.checkToken : true;
         // TODO(paul): Consider more options:
         //   opts.versions - automatic version filtering and rejecting of
@@ -891,7 +1042,7 @@ export class Bridge {
 
         if (!this.opts.disableStores) {
             if (!this.userStore) {
-                throw Error('Trued to call provisionUser before databases were loaded');
+                throw Error('Tried to call provisionUser before databases were loaded');
             }
             await this.userStore.setMatrixUser(matrixUser);
             if (provisionedUser?.remote) {
@@ -978,7 +1129,7 @@ export class Bridge {
             return null;
         }
 
-        if (this.roomUpgradeHandler && this.appServiceBot) {
+        if (this.roomUpgradeHandler && this.opts.roomUpgradeOpts && this.appServiceBot) {
             // m.room.tombstone is the event that signals a room upgrade.
             if (event.type === "m.room.tombstone" && isCanonicalState && this.roomUpgradeHandler) {
                 // eslint-disable-next-line camelcase
@@ -1241,7 +1392,7 @@ function retryAlgorithm(
     }
 ) {
     if (err.httpStatus === 400 || err.httpStatus === 403 || err.httpStatus === 401) {
-        // client error; no amount of retrying with save you now.
+        // client error; no amount of retrying will save you now.
         return -1;
     }
     // we ship with browser-request which returns { cors: rejected } when trying

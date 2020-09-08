@@ -220,7 +220,7 @@ interface BridgeOpts {
          * request if this is 'true', else you will not get any further events from this queue.
          * To aid debugging this, consider setting a delayed listener on the request factory.
          *
-         * If `false`, the mere invockation of onEvent is enough to trigger the next event in the queue.
+         * If `false`, the mere invocation of onEvent is enough to trigger the next event in the queue.
          * You probably want to set this to `true` if your {@link Bridge~onEvent} is
          * performing async operations where ordering matters (e.g. messages).
          *
@@ -389,7 +389,7 @@ interface VettedBridgeOpts {
          * request if this is 'true', else you will not get any further events from this queue.
          * To aid debugging this, consider setting a delayed listener on the request factory.
          *
-         * If `false`, the mere invockation of onEvent is enough to trigger the next event in the queue.
+         * If `false`, the mere invocation of onEvent is enough to trigger the next event in the queue.
          * You probably want to set this to `true` if your {@link Bridge~onEvent} is
          * performing async operations where ordering matters (e.g. messages).
          *

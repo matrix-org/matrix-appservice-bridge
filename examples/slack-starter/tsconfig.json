@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "system",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "outFile": "./lib/index.js",
+        "sourceMap": true,
+        "moduleResolution": "Node"
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "types": [
+        "node",
+    ],
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts"
+    ]
+}

@@ -730,9 +730,10 @@ export class Bridge {
         path: string,
         handler: (req: ExRequest, respose: ExResponse, next: NextFunction) => void,
     }) {
-        // TODO(paul): This is gut-wrenching into the AppService instance itself.
-        //   Maybe an API on that object would be good?
-        const app: Application = (this.appservice as any).app;
+        if (!this.appservice) {
+            throw Error('Cannot call addAppServicePath before calling .run()');
+        }
+        const app: Application = this.appservice.expressApp();
         opts.checkToken = opts.checkToken !== undefined ? opts.checkToken : true;
         // TODO(paul): Consider more options:
         //   opts.versions - automatic version filtering and rejecting of

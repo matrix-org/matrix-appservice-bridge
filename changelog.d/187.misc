@@ -1,1 +1,0 @@
-Linter warnings no longer fail the linter, and `no-explicit-any` is a warning.

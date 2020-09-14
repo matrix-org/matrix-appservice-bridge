@@ -1,1 +1,0 @@
-Fix bluebird defer warnings by using our own defer implementation.

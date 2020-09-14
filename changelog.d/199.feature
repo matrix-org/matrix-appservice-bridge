@@ -1,1 +1,0 @@
-Use Typedoc over JSDoc for hosted documentation

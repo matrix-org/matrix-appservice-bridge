@@ -1,1 +1,0 @@
-**Breaking**: Typescriptify the room, user and event stores. The stores will now return pure Promises (not Bluebird), which means code that relys on Bluebird features will **break**.

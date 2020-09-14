@@ -1223,7 +1223,7 @@ export class Bridge {
         }
         if (this.appservice) {
             await this.appservice.close();
-            this.appservice = null;
+            this.appservice = undefined;
         }
     }
 

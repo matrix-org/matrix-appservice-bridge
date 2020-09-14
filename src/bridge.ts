@@ -733,7 +733,7 @@ export class Bridge {
         if (!this.appservice) {
             throw Error('Cannot call addAppServicePath before calling .run()');
         }
-        const app: Application = this.appservice.expressApp();
+        const app: Application = this.appservice.expressApp;
         opts.checkToken = opts.checkToken !== undefined ? opts.checkToken : true;
         // TODO(paul): Consider more options:
         //   opts.versions - automatic version filtering and rejecting of
@@ -967,11 +967,12 @@ export class Bridge {
     }
 
     // returns a Promise for the request linked to this event for testing.
-    private async onEvent(event: WeakEvent) {
+    private async onEvent(eventData: Record<string, unknown>) {
         if (!this.registration) {
             // Called before we were ready, which is probably impossible.
             return null;
         }
+        const event = eventData as WeakEvent;
         const isCanonicalState = event.state_key === "";
         this.updateIntents(event);
         if (this.opts.suppressEcho &&

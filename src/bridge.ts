@@ -1362,6 +1362,21 @@ export class Bridge {
         return true;
     }
 
+    /**
+     * Close the appservice HTTP listener, and clear all timeouts.
+     * @returns Resolves when the appservice HTTP listener has stopped
+     */
+    public async close() {
+        if (this.intentLastAccessedTimeout) {
+            clearTimeout(this.intentLastAccessedTimeout);
+            this.intentLastAccessedTimeout = null;
+        }
+        if (this.appservice) {
+            await this.appservice.close();
+            this.appservice = undefined;
+        }
+    }
+
 }
 
 function loadDatabase<T extends BridgeStore>(path: string, Cls: new (db: Datastore) => T) {

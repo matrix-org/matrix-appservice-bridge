@@ -1219,9 +1219,11 @@ export class Bridge {
     public async close() {
         if (this.intentLastAccessedTimeout) {
             clearTimeout(this.intentLastAccessedTimeout);
+            this.intentLastAccessedTimeout = null;
         }
         if (this.appservice) {
             await this.appservice.close();
+            this.appservice = null;
         }
     }
 

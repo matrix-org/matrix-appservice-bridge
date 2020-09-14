@@ -50,7 +50,6 @@
     "no-regex-spaces": "error",
     "no-return-assign": "error",
     "no-self-compare": "error",
-    "no-shadow": "error",
     "no-unreachable": "error",
     "no-unexpected-multiline": "error",
     "no-unused-expressions": "error",
@@ -80,6 +79,7 @@
     "strict": ["error", "never" ],
     "no-var": "error",
     "@typescript-eslint/explicit-module-boundary-types": "off",
-    "@typescript-eslint/no-explicit-any": "warn"
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-shadow": ["error"]
   }
 }

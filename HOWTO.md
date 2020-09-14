@@ -34,15 +34,15 @@ Variables to remember:
 ## Printing out outbound slack requests
 Open up `index.js` and write the following:
 ```javascript
-var http = require("http");
-var qs = require("querystring"); // we will use this later
-var requestLib = require("request"); // we will use this later
-var bridge; // we will use this later
+const http = require("http");
+const qs = require("querystring"); // we will use this later
+const requestLib = require("request"); // we will use this later
+let bridge; // we will use this later
 
 http.createServer(function(request, response) {
     console.log(request.method + " " + request.url);
 
-    var body = "";
+    let body = "";
     request.on("data", function(chunk) {
         body += chunk;
     });
@@ -77,9 +77,9 @@ We now want to do a lot more than just print out a POST request. We need to be a
 an application service, listen and handle incoming Matrix requests and expose a nice CLI to use.
 Open up `index.js` and add this at the bottom of the file:
 ```javascript
-var Cli = require("matrix-appservice-bridge").Cli;
-var Bridge = require("matrix-appservice-bridge").Bridge; // we will use this later
-var AppServiceRegistration = require("matrix-appservice-bridge").AppServiceRegistration;
+const Cli = require("matrix-appservice-bridge").Cli;
+const Bridge = require("matrix-appservice-bridge").Bridge; // we will use this later
+const AppServiceRegistration = require("matrix-appservice-bridge").AppServiceRegistration;
 
 new Cli({
     registrationPath: "slack-registration.yaml",
@@ -147,9 +147,9 @@ user (`@slackbot:domain`) to the room so it can invite virtual slack users.
 Replace the function `request.on("end", function()`, with the following:
 ```javascript
 request.on("end", function() {
-    var params = qs.parse(body);
+    const params = qs.parse(body);
     if (params.user_id !== "USLACKBOT") {
-        var intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
+        const intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
         intent.sendText(ROOM_ID, params.text);
     }
     response.writeHead(200, {"Content-Type": "application/json"});
@@ -176,7 +176,7 @@ remember your allocated webhook url: `$WEBHOOK_URL`.
 Replace the `onEvent: function(request, context)` function created earlier with:
 ```javascript
 onEvent: function(request, context) {
-    var event = request.getData();
+    const event = request.getData();
     // replace with your room ID
     if (event.type !== "m.room.message" || !event.content || event.room_id !== $ROOM_ID) {
         return;
@@ -209,26 +209,26 @@ message will be relayed to the specified slack room. That's it!
 // Usage:
 // node index.js -r -u "http://localhost:9000" # remember to add the registration!
 // node index.js -p 9000
-var http = require("http");
-var qs = require('querystring');
-var requestLib = require("request");
-var bridge;
-var PORT = 9898; // slack needs to hit this port e.g. use "ngrok 9898"
-var ROOM_ID = "!YiuxjYhPLIZGVVkFjT:localhost"; // this room must have join_rules: public
-var SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/AAAA/BBBBB/CCCCC";
+const http = require("http");
+const qs = require('querystring');
+const requestLib = require("request");
+let bridge;
+const PORT = 9898; // slack needs to hit this port e.g. use "ngrok 9898"
+const ROOM_ID = "!YiuxjYhPLIZGVVkFjT:localhost"; // this room must have join_rules: public
+const SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/AAAA/BBBBB/CCCCC";
 
 http.createServer(function(request, response) {
     console.log(request.method + " " + request.url);
 
-    var body = "";
+    let body = "";
     request.on("data", function(chunk) {
         body += chunk;
     });
 
     request.on("end", function() {
-        var params = qs.parse(body);
+        const params = qs.parse(body);
         if (params.user_id !== "USLACKBOT") {
-            var intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
+            const intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
             intent.sendText(ROOM_ID, params.text);
         }
         response.writeHead(200, {"Content-Type": "application/json"});
@@ -237,9 +237,9 @@ http.createServer(function(request, response) {
     });
 }).listen(PORT);
 
-var Cli = require("matrix-appservice-bridge").Cli;
-var Bridge = require("matrix-appservice-bridge").Bridge;
-var AppServiceRegistration = require("matrix-appservice-bridge").AppServiceRegistration;
+const Cli = require("matrix-appservice-bridge").Cli;
+const Bridge = require("matrix-appservice-bridge").Bridge;
+const AppServiceRegistration = require("matrix-appservice-bridge").AppServiceRegistration;
 
 new Cli({
     registrationPath: "slack-registration.yaml",
@@ -263,7 +263,7 @@ new Cli({
                 },
 
                 onEvent: function(request, context) {
-                    var event = request.getData();
+                    const event = request.getData();
                     if (event.type !== "m.room.message" || !event.content || event.room_id !== ROOM_ID) {
                         return;
                     }
@@ -325,7 +325,7 @@ new Cli({
         schema: "slack-config-schema.yaml"
     },
     run: function(port, config) {
-        var slack_webhook_url = config.slack_webhook_url;
+        const slack_webhook_url = config.slack_webhook_url;
         ...
 ```
 

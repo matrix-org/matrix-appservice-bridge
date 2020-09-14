@@ -1,1 +1,0 @@
-Fix issue where providing a custom Registry to getPrometheusMetrics would cause /metrics to emit no response

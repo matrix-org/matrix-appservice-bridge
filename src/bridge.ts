@@ -48,6 +48,7 @@ import EventNotHandledError = unstable.EventNotHandledError;
 import { ThirdpartyProtocolResponse, ThirdpartyLocationResponse, ThirdpartyUserResponse } from "./thirdparty";
 import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
+import { ClientEncryptionStore } from "./components/encryption";
 
 const log = logging.get("bridge");
 
@@ -143,7 +144,7 @@ interface BridgeOpts {
     disableStores?: boolean;
     /**
      * The room store instance to use, or the path to the room .db file to load.
-     * A database will be created if this is not specified. If `disableStores` is set,
+     * A database will be ClientFactoryEncryptionStorecreated if this is not specified. If `disableStores` is set,
      * no database will be created or used.
      */
     roomStore?: RoomBridgeStore|string;
@@ -244,6 +245,11 @@ interface BridgeOpts {
     };
     authenticateThirdpartyEndpoints?: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
+
+    bridgeEncryption: {
+        homeserverUrl: string;
+        store: ClientEncryptionStore;
+    };
 }
 
 interface VettedBridgeOpts {
@@ -413,6 +419,10 @@ interface VettedBridgeOpts {
     };
     authenticateThirdpartyEndpoints: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
+    bridgeEncryption: {
+        homeserverUrl: string;
+        store: ClientEncryptionStore;
+    };
 }
 
 export class Bridge {
@@ -583,7 +593,7 @@ export class Bridge {
         }
 
         this.clientFactory = this.opts.clientFactory || new ClientFactory({
-            url: this.opts.homeserverUrl,
+            url: this.opts.bridgeEncryption?.homeserverUrl || this.opts.homeserverUrl,
             token: asToken,
             appServiceUserId: `@${this.registration.getSenderLocalpart()}:${this.opts.domain}`,
             clientSchedulerBuilder: function() {
@@ -1004,6 +1014,14 @@ export class Bridge {
             ...this.opts.intentOptions?.clients,
         };
         clientIntentOpts.registered = this.membershipCache.isUserRegistered(userId);
+        const encryptionOpts = this.opts.bridgeEncryption;
+        if (encryptionOpts) {
+            clientIntentOpts.encryption = {
+                sessionPromise: encryptionOpts.store.getStoredSession(userId),
+                sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(this.opts.bridgeEncryption.store),
+                homeserverUrl: encryptionOpts.homeserverUrl,
+            };
+        }
         const intent = new Intent(client, this.botClient, clientIntentOpts);
         this.intents.set(key, { intent, lastAccessed: Date.now() });
 
@@ -1049,7 +1067,7 @@ export class Bridge {
                 await this.userStore.linkUsers(matrixUser, provisionedUser.remote);
             }
         }
-        const userClient = this.clientFactory.getClientAs(matrixUser.getId());
+        const userClient = await this.clientFactory.getClientAs(matrixUser.getId());
         if (provisionedUser?.name) {
             await userClient.setDisplayName(provisionedUser.name);
         }

@@ -23,6 +23,10 @@ import { defer } from "../utils/promiseutil";
 import { UserMembership } from "./membership-cache";
 import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
+import { ClientEncryptionSession } from "./encryption";
+import Logging from "./logging";
+
+const log = Logging.get("Intent");
 
 export type IntentBackingStore = {
     getMembership: (roomId: string, userId: string) => UserMembership,
@@ -41,6 +45,11 @@ export interface IntentOpts {
     dontJoin?: boolean;
     enablePresence?: boolean;
     registered?: boolean;
+    encryption?: {
+        sessionPromise: Promise<ClientEncryptionSession|null>;
+        sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
+        homeserverUrl: string;
+    };
 }
 
 export interface RoomCreationOpts {
@@ -102,6 +111,11 @@ export class Intent {
     // These two are only used if no opts.backingStore is provided to the constructor.
     private readonly _membershipStates: Record<string, UserMembership> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
+    private readonly encryption?: {
+        sessionPromise: Promise<ClientEncryptionSession|null>;
+        sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
+        homeserverUrl: string;
+    };
 
     /**
     * Create an entity which can fulfil the intent of a given user.
@@ -157,6 +171,7 @@ export class Intent {
                 throw new Error("Intent backingStore missing required functions");
             }
         }
+        this.encryption = opts.encryption;
         this.opts = {
             ...opts,
             backingStore: opts.backingStore ? { ...opts.backingStore } : {
@@ -825,23 +840,74 @@ export class Intent {
         return powerLevelEvent;
     }
 
+    private async loginForEncryptedClient() {
+        const userId: string = this.client.credentials.userId;
+        const LOGIN_TYPE = "uk.half-shot.unstable.login.appservice";
+        const res = await this.client.login(LOGIN_TYPE, {
+            identifier: {
+                type: "m.id.user",
+                user: userId,
+            }
+        });
+        return {
+            accessToken: res.access_token,
+            deviceId: res.device_id,
+        };
+    }
+
     private async _ensureRegistered() {
-        if (this.opts.registered) {
+        if (this.opts.registered && !this.encryption) {
+            log.debug("_ensureRegistered: Registered, and not encrypted");
             return "registered=true";
         }
-        const userId = this.client.credentials.userId;
-        const localpart = new MatrixUser(userId).localpart;
-        try {
-            const res = await this.botClient.register(localpart);
-            this.opts.registered = true;
-            return res;
-        }
-        catch (err) {
-            if (err.errcode === "M_USER_IN_USE") {
+        console.log("ABC");
+        let registerRes;
+        const userId: string = this.client.credentials.userId;
+        if (!this.opts.registered) {
+            const localpart = new MatrixUser(userId).localpart;
+            try {
+                registerRes = await this.botClient.register(localpart);
                 this.opts.registered = true;
-                return null;
             }
-            throw err;
+            catch (err) {
+                if (err.errcode !== "M_USER_IN_USE") {
+                    throw err;
+                }
+                this.opts.registered = true;
+            }    
         }
+        console.log("");
+
+        if (!this.encryption) {
+            log.debug("_ensureRegistered: Not registered, and not encrypted");
+            // We don't care about encryption, or the encryption is ready.
+            return registerRes;
+        }
+
+        // Encryption enabled, check if we have a session.
+        const session = await this.encryption.sessionPromise;
+        console.log("Before token:", this.client._http.opts.accessToken);
+        if (session) {
+            log.debug("_ensureRegistered: Existing enc session, reusing");
+            // We have existing credentials, set them on the client and run away.
+            this.client._http.opts.accessToken = session.accessToken;
+        }
+        else {
+            log.debug("_ensureRegistered: Attempting encrypted login");
+            // Login as the user
+            const result = await this.loginForEncryptedClient();
+            await this.encryption.sessionCreatedCallback({
+                userId,
+                ...result,
+            });
+        }
+        console.log("After token:", this.client._http.opts.accessToken);
+        // We are using a real user access token.
+        // We delete the whole extraParams object due to a bug with GET requests
+        delete this.client._http.opts.extraParams;
+        // Debug: Start syncing
+        await this.client.startClient({
+            resolveInvitesToProfiles: false,
+        })
     }
 }

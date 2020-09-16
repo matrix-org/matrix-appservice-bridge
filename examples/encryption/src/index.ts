@@ -18,20 +18,21 @@ limitations under the License.
 // node index.js -p 9000
 import { Cli, Bridge, AppServiceRegistration, ClientEncryptionSession, ClientEncryptionStore, Logging} from 'matrix-appservice-bridge';
 
+Logging.configure({
+    console: "debug",
+});
+const log = Logging.get("index");
+
 const encMap = new Map<string, ClientEncryptionSession>();
 const encryptionStore: ClientEncryptionStore = {
     async getStoredSession(userId: string) {
         return encMap.get(userId) || null;
     },
     async setStoredSession(session: ClientEncryptionSession) {
+        log.info("Set session", session.userId, session.deviceId);
         encMap.set(session.userId, session);
     }
 };
-
-Logging.configure({
-    console: "debug",
-});
-const log = Logging.get("index");
 
 new Cli({
     registrationPath: "enc-registration.yaml",

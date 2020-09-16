@@ -882,11 +882,11 @@ export class Intent {
                     throw err;
                 }
                 this.opts.registered = true;
-            }    
+            }
         }
 
         if (!this.encryption) {
-            log.debug("ensureRegistered: Not registered, and not encrypted");
+            log.debug("ensureRegistered: Registered, and not encrypted");
             // We don't care about encryption, or the encryption is ready.
             return registerRes;
         }
@@ -896,14 +896,15 @@ export class Intent {
             try {
                 // Should fall through and find the session.
                 await this.readyPromise;
-            } catch (ex) {
+            }
+            catch (ex) {
                 log.debug("ensureRegistered: failed to ready", ex);
                 // Failed to ready up - fall through and try again.
             }
         }
-        
+
         // Encryption enabled, check if we have a session.
-        const session = await this.encryption.sessionPromise;
+        let session = await this.encryption.sessionPromise;
         if (session) {
             log.debug("ensureRegistered: Existing enc session, reusing");
             // We have existing credentials, set them on the client and run away.
@@ -914,7 +915,7 @@ export class Intent {
                 log.debug("ensureRegistered: Attempting encrypted login");
                 // Login as the user
                 const result = await this.loginForEncryptedClient();
-                const session = {
+                session = {
                     userId,
                     ...result,
                 };
@@ -928,5 +929,6 @@ export class Intent {
         // We are using a real user access token.
         // We delete the whole extraParams object due to a bug with GET requests
         delete this.client._http.opts.extraParams;
+        return undefined;
     }
 }

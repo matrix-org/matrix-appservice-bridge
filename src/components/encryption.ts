@@ -14,22 +14,22 @@ export interface ClientEncryptionStore {
     setStoredSession(session: ClientEncryptionSession): Promise<void>;
 }
 
-const SYNC_FILTER = {
-    room: {
-        include_leave: false,
-        state: {
-            limit: 0,
-        },
-        timeline: {
-            types: ["m.room.encrypted"],
-            // To reduce load, ideally we wouldn't care at all.
-            lazy_load_members: true,
-        },
-        account_data: {
-            limit: 0,
-        }
-    }
-};
+// const SYNC_FILTER = {
+//     room: {
+//         include_leave: false,
+//         state: {
+//             limit: 0,
+//         },
+//         timeline: {
+//             types: ["m.room.encrypted"],
+//             // To reduce load, ideally we wouldn't care at all.
+//             lazy_load_members: true,
+//         },
+//         account_data: {
+//             limit: 0,
+//         }
+//     }
+// };
 
 export class EncryptedEventBroker {
     constructor(
@@ -43,14 +43,14 @@ export class EncryptedEventBroker {
 
     private handledEvents = new Set<string>();
     private userForRoom = new Map<string, string>();
-    
+
     private eventsPendingSync = new Set<string>();
     // We should probably make these LRUs eventually
     private eventsPendingAS: WeakEvent[] = [];
 
     /**
      * Called when the bridge gets an event through an appservice transaction.
-     * @param event 
+     * @param event
      * @returns Should the event be passthrough
      */
     public async onASEvent(event: WeakEvent) {
@@ -66,7 +66,7 @@ export class EncryptedEventBroker {
         if (syncedEvent) {
             log.info("Got sync event before AS event");
             this.onEvent(syncedEvent);
-            return;
+            return false;
         }
 
         // We need to determine if anyone is syncing for this room?

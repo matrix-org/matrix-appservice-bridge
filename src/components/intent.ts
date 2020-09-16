@@ -520,7 +520,7 @@ export class Intent {
      * @return A Promise that resolves with the requested user's profile
      * information
      */
-    public async getProfileInfo(userId: string, info: string, useCache=true) {
+    public async getProfileInfo(userId: string, info: "avatar_url"|"displayname"|null = null, useCache = true) {
         await this._ensureRegistered();
         if (useCache) {
             return this._requestCaches.profile.get(`${userId}:${info}`, userId, info);

@@ -48,6 +48,7 @@ export interface IntentOpts {
     encryption?: {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
+        ensureSyncingCallback: () => Promise<void>;
         homeserverUrl: string;
     };
 }
@@ -114,8 +115,10 @@ export class Intent {
     private readonly encryption?: {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
+        ensureSyncingCallback: () => Promise<void>;
         homeserverUrl: string;
     };
+    private readyPromise?: Promise<unknown>;
 
     /**
     * Create an entity which can fulfil the intent of a given user.
@@ -356,6 +359,11 @@ export class Intent {
      * @param content The event content
      */
     public async sendEvent(roomId: string, type: string, content: Record<string, unknown>) {
+        if (this.encryption) {
+            // We *need* to sync before we can send a message.
+            await this.ensureRegistered();
+            await this.encryption.ensureSyncingCallback();
+        }
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type);
         return this._joinGuard(roomId, async() => (
@@ -422,7 +430,7 @@ export class Intent {
             options.invite.splice(options.invite.indexOf(cli.credentials.userId), 1);
         }
 
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         const res = await cli.createRoom(options);
         if (typeof res !== "object" || !res) {
             const type = res === null ? "null" : typeof res;
@@ -536,7 +544,7 @@ export class Intent {
      * information
      */
     public async getProfileInfo(userId: string, info: string, useCache=true) {
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         if (useCache) {
             return this._requestCaches.profile.get(`${userId}:${info}`, userId, info);
         }
@@ -548,7 +556,7 @@ export class Intent {
      * @param name The new display name
      */
     public async setDisplayName(name: string) {
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         return this.client.setDisplayName(name);
     }
 
@@ -557,7 +565,7 @@ export class Intent {
      * @param url The new avatar URL
      */
     public async setAvatarUrl(url: string) {
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         return this.client.setAvatarUrl(url);
     }
 
@@ -567,7 +575,7 @@ export class Intent {
      * @param roomId The room ID the alias should point at.
      */
     public async createAlias(alias: string, roomId: string) {
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         return this.client.createAlias(alias, roomId);
     }
 
@@ -583,7 +591,7 @@ export class Intent {
             return undefined;
         }
 
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         return this.client.setPresence({presence, status_msg});
     }
 
@@ -631,7 +639,7 @@ export class Intent {
      * @return Resolves with the content of the event, or rejects if not found.
      */
     public async getEvent(roomId: string, eventId: string, useCache=true) {
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         if (useCache) {
             return this._requestCaches.event.get(`${roomId}:${eventId}`, roomId, eventId);
         }
@@ -732,7 +740,7 @@ export class Intent {
         const dontJoin = this.opts.dontJoin;
 
         try {
-            await this._ensureRegistered();
+            await this.ensureRegistered();
             if (dontJoin) {
                 deferredPromise.resolve();
                 return deferredPromise.promise;
@@ -855,12 +863,12 @@ export class Intent {
         };
     }
 
-    private async _ensureRegistered() {
+    public async ensureRegistered() {
+        log.debug("Checking if user is registered");
         if (this.opts.registered && !this.encryption) {
-            log.debug("_ensureRegistered: Registered, and not encrypted");
+            log.debug("ensureRegistered: Registered, and not encrypted");
             return "registered=true";
         }
-        console.log("ABC");
         let registerRes;
         const userId: string = this.client.credentials.userId;
         if (!this.opts.registered) {
@@ -876,38 +884,49 @@ export class Intent {
                 this.opts.registered = true;
             }    
         }
-        console.log("");
 
         if (!this.encryption) {
-            log.debug("_ensureRegistered: Not registered, and not encrypted");
+            log.debug("ensureRegistered: Not registered, and not encrypted");
             // We don't care about encryption, or the encryption is ready.
             return registerRes;
         }
 
+        if (this.readyPromise) {
+            log.debug("ensureRegistered: ready promise ongoing");
+            try {
+                // Should fall through and find the session.
+                await this.readyPromise;
+            } catch (ex) {
+                log.debug("ensureRegistered: failed to ready", ex);
+                // Failed to ready up - fall through and try again.
+            }
+        }
+        
         // Encryption enabled, check if we have a session.
         const session = await this.encryption.sessionPromise;
-        console.log("Before token:", this.client._http.opts.accessToken);
         if (session) {
-            log.debug("_ensureRegistered: Existing enc session, reusing");
+            log.debug("ensureRegistered: Existing enc session, reusing");
             // We have existing credentials, set them on the client and run away.
             this.client._http.opts.accessToken = session.accessToken;
         }
         else {
-            log.debug("_ensureRegistered: Attempting encrypted login");
-            // Login as the user
-            const result = await this.loginForEncryptedClient();
-            await this.encryption.sessionCreatedCallback({
-                userId,
-                ...result,
-            });
+            this.readyPromise = (async () => {
+                log.debug("ensureRegistered: Attempting encrypted login");
+                // Login as the user
+                const result = await this.loginForEncryptedClient();
+                const session = {
+                    userId,
+                    ...result,
+                };
+                if (this.encryption) {
+                    this.encryption.sessionPromise = Promise.resolve(session);
+                }
+                await this.encryption?.sessionCreatedCallback(session);
+            })();
+            await this.readyPromise;
         }
-        console.log("After token:", this.client._http.opts.accessToken);
         // We are using a real user access token.
         // We delete the whole extraParams object due to a bug with GET requests
         delete this.client._http.opts.extraParams;
-        // Debug: Start syncing
-        await this.client.startClient({
-            resolveInvitesToProfiles: false,
-        })
     }
 }

@@ -48,7 +48,7 @@ import EventNotHandledError = unstable.EventNotHandledError;
 import { ThirdpartyProtocolResponse, ThirdpartyLocationResponse, ThirdpartyUserResponse } from "./thirdparty";
 import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
-import { ClientEncryptionStore } from "./components/encryption";
+import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
 
 const log = logging.get("bridge");
 
@@ -448,6 +448,7 @@ export class Bridge {
     private eventStore?: EventBridgeStore;
     private registration?: AppServiceRegistration;
     private appservice?: AppService;
+    private eeEventBroker?: EncryptedEventBroker;
 
     public readonly opts: VettedBridgeOpts;
 
@@ -608,6 +609,15 @@ export class Bridge {
             this.botClient, this.registration, this.membershipCache,
         );
 
+        if (this.opts.bridgeEncryption) {
+            this.eeEventBroker = new EncryptedEventBroker(
+                this.membershipCache,
+                this.appServiceBot,
+                this.onEvent.bind(this),
+                this.getIntent.bind(this),
+            );
+        }
+
         if (this.opts.roomLinkValidation !== undefined) {
             this.roomLinkValidator = new RoomLinkValidator(
                 this.opts.roomLinkValidation,
@@ -649,7 +659,16 @@ export class Bridge {
         });
         this.appservice.onUserQuery = (userId) => this.onUserQuery(userId);
         this.appservice.onAliasQuery = this.onAliasQuery.bind(this);
-        this.appservice.on("event", this.onEvent.bind(this));
+        this.appservice.on("event", async (event) => {
+            let passthrough = true;
+            const weakEvent = event as WeakEvent;
+            if (this.eeEventBroker) {
+                passthrough = await this.eeEventBroker.onASEvent(weakEvent);
+            }
+            if (passthrough) {
+                return this.onEvent(weakEvent);
+            }
+        });
         this.appservice.on("http-log", (line) => {
             this.onLog(line, false);
         });
@@ -1019,6 +1038,9 @@ export class Bridge {
             clientIntentOpts.encryption = {
                 sessionPromise: encryptionOpts.store.getStoredSession(userId),
                 sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(this.opts.bridgeEncryption.store),
+                ensureSyncingCallback: async () => {
+                    return this.eeEventBroker?.startSyncingUser(userId!);
+                },
                 homeserverUrl: encryptionOpts.homeserverUrl,
             };
         }
@@ -1135,12 +1157,11 @@ export class Bridge {
     }
 
     // returns a Promise for the request linked to this event for testing.
-    private async onEvent(eventData: Record<string, unknown>) {
+    private async onEvent(event: WeakEvent) {
         if (!this.registration) {
             // Called before we were ready, which is probably impossible.
             return null;
         }
-        const event = eventData as WeakEvent;
         const isCanonicalState = event.state_key === "";
         this.updateIntents(event);
         if (this.opts.suppressEcho &&

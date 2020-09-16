@@ -1008,7 +1008,7 @@ export class Bridge {
             return existingIntent.intent;
         }
 
-        const client = this.clientFactory.getClientAs(userId, request);
+        const client = this.clientFactory.getClientAs(userId, request, !!this.opts.bridgeEncryption);
         const clientIntentOpts: IntentOpts = {
             backingStore: this.intentBackingStore,
             ...this.opts.intentOptions?.clients,

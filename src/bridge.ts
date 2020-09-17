@@ -419,7 +419,7 @@ interface VettedBridgeOpts {
     };
     authenticateThirdpartyEndpoints: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
-    bridgeEncryption: {
+    bridgeEncryption?: {
         homeserverUrl: string;
         store: ClientEncryptionStore;
     };
@@ -1037,7 +1037,7 @@ export class Bridge {
         if (encryptionOpts) {
             clientIntentOpts.encryption = {
                 sessionPromise: encryptionOpts.store.getStoredSession(userId),
-                sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(this.opts.bridgeEncryption.store),
+                sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(encryptionOpts.store),
                 ensureSyncingCallback: async () => {
                     return this.eeEventBroker?.startSyncingUser(userId!);
                 },

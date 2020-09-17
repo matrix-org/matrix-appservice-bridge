@@ -246,7 +246,7 @@ interface BridgeOpts {
     authenticateThirdpartyEndpoints?: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
 
-    bridgeEncryption: {
+    bridgeEncryption?: {
         homeserverUrl: string;
         store: ClientEncryptionStore;
     };

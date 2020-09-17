@@ -2,6 +2,9 @@ import { AppServiceBot, MembershipCache, WeakEvent } from "..";
 import { Intent } from "./intent";
 import Logging from "./logging";
 
+// matrix-js-sdk lacks types
+const { Filter } = require('matrix-js-sdk');
+
 const log = Logging.get("EncryptedEventBroker");
 
 export interface ClientEncryptionSession {
@@ -14,22 +17,22 @@ export interface ClientEncryptionStore {
     setStoredSession(session: ClientEncryptionSession): Promise<void>;
 }
 
-// const SYNC_FILTER = {
-//     room: {
-//         include_leave: false,
-//         state: {
-//             limit: 0,
-//         },
-//         timeline: {
-//             types: ["m.room.encrypted"],
-//             // To reduce load, ideally we wouldn't care at all.
-//             lazy_load_members: true,
-//         },
-//         account_data: {
-//             limit: 0,
-//         }
-//     }
-// };
+const SYNC_FILTER = {
+    room: {
+        include_leave: false,
+        state: {
+            limit: 0,
+        },
+        timeline: {
+            types: ["m.room.encrypted"],
+            // To reduce load, ideally we wouldn't care at all.
+            lazy_load_members: true,
+        },
+        account_data: {
+            limit: 0,
+        }
+    }
+};
 
 export class EncryptedEventBroker {
     constructor(
@@ -144,10 +147,11 @@ export class EncryptedEventBroker {
         matrixClient.on("error", (err: Error) => {
             log.error(`${userId} client error:`, err);
         });
-        // Debug: Start syncing
+        const filter = new Filter(userId);
+        filter.setDefinition(SYNC_FILTER);
         await matrixClient.startClient({
             resolveInvitesToProfiles: false,
-            // filter: SYNC_FILTER,
+            filter,
         });
     }
 }

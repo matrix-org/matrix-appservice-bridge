@@ -32,7 +32,7 @@
     "is-my-json-valid": "^2.20.5",
     "js-yaml": "^3.14.0",
     "matrix-appservice": "^0.5.0",
-    "matrix-js-sdk": "matrix-org/matrix-js-sdk#hs/usingE2EProxy-flag",
+    "matrix-js-sdk": "matrix-org/matrix-js-sdk#develop",
     "nedb": "^1.8.0",
     "nopt": "^4.0.3",
     "p-queue": "^6.6.0",

@@ -82,9 +82,11 @@ export type PowerLevelContent = {
     }
 };
 
+type UserProfileKeys = "avatar_url"|"displayname"|null;
+
 export class Intent {
     private _requestCaches: {
-        profile: ClientRequestCache<unknown, [string, string]>,
+        profile: ClientRequestCache<unknown, [string, UserProfileKeys]>,
         roomstate: ClientRequestCache<unknown, []>,
         event: ClientRequestCache<unknown, [string, string]>
     }
@@ -189,7 +191,7 @@ export class Intent {
             profile: new ClientRequestCache(
                 this.opts.caching.ttl,
                 this.opts.caching.size,
-                (_: string, userId: string, info: string) => {
+                (_: string, userId: string, info: UserProfileKeys) => {
                     return this.getProfileInfo(userId, info, false);
                 }
             ),
@@ -520,7 +522,7 @@ export class Intent {
      * @return A Promise that resolves with the requested user's profile
      * information
      */
-    public async getProfileInfo(userId: string, info: "avatar_url"|"displayname"|null = null, useCache = true) {
+    public async getProfileInfo(userId: string, info: UserProfileKeys = null, useCache = true) {
         await this._ensureRegistered();
         if (useCache) {
             return this._requestCaches.profile.get(`${userId}:${info}`, userId, info);

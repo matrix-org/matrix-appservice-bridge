@@ -1,4 +1,5 @@
 import { AppServiceBot, MembershipCache, WeakEvent } from "..";
+import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent } from "./event-types";
 import { Intent } from "./intent";
 import Logging from "./logging";
 

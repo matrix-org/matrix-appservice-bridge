@@ -49,6 +49,7 @@ export * from "./components/agecounters";
 export * from "./components/membership-cache";
 export * as Logging from "./components/logging";
 export { unstable } from "./errors";
+export * from "./components/event-types";
 
 
 /* eslint-disable @typescript-eslint/no-var-requires */

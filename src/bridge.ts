@@ -49,6 +49,7 @@ import { ThirdpartyProtocolResponse, ThirdpartyLocationResponse, ThirdpartyUserR
 import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
 import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
+import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
 
 const log = logging.get("bridge");
 

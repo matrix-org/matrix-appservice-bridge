@@ -45,7 +45,36 @@ interface DedupePresence {
     status_msg?: string;
     ts: number;
 }
-
+/**
+ * The EncryptedEventBroker ensures that we provide a single encrypted
+ * event to bridges from potentially multiple /sync responses. The broker
+ * is also responsible for starting these syncs depending on which users
+ * can read the room.
+ * 
+ * More broadly speaking, the bridge handles encrypted events currently by
+ * listening over the AS stream for encrypted messages, and then spinning
+ * up a /sync in order to read the message. In order to decrypt them, we
+ * proxy these requests through https://github.com/matrix-org/pantalaimon.
+ * 
+ *   +-------------------+
+ *   |  Homeserver       |
+ *   +--------+----------+
+ *           ^
+ *           | Proxy
+ *           |
+ *           |
+ *   +--------+----------+
+ *   |  Pantalaimon      |
+ *   +--------+----------+
+ *           ^ /sync requests
+ *           |
+ *           |
+ *   +--------+----------+
+ *   |  Bridge           |
+ *   +-------------------+
+ * 
+ * We also gain things like presence, read receipts and typing for free.
+ */
 export class EncryptedEventBroker {
     constructor(
         private membership: MembershipCache,
@@ -170,29 +199,30 @@ export class EncryptedEventBroker {
         this.onEvent(event.event);
     }
 
-    private onTyping(syncUserId: string, event: TypingEvent) {
-        if (this.userForRoom.get(event.room_id) === syncUserId) {
+    private onTyping(syncUserId: string, event: any) {
+        if (this.userForRoom.get(event.getRoomId()) === syncUserId) {
             // Ensure only the selected user for the room syncs this. 
-            this.onEphemeralEvent(event);
+            this.onEphemeralEvent(event.event);
         }
     }
 
-    private onReceipt(syncUserId: string, event: ReadReceiptEvent) {
-        if (this.userForRoom.get(event.room_id) === syncUserId) {
+    private onReceipt(syncUserId: string, event: any) {
+        if (this.userForRoom.get(event.getRoomId()) === syncUserId) {
             // Ensure only the user for the room syncs this.
-            this.onEphemeralEvent(event);
+            this.onEphemeralEvent(event.event);
         }
     }
 
-    private onPresence(event: PresenceEvent) {
+    private onPresence(event: any) {
         // Presence needs to be de-duplicated.
         const now = Date.now();
-        const presenceContent = event.content;
+        const presenceEv = event.event as PresenceEvent;
+        const presenceContent = presenceEv.content;
         const existingPresence = this.receivedPresence.find((p) => {
             p.currently_active === presenceContent.currently_active &&
             p.presence === presenceContent.presence &&
-            p.status_msg === presenceContent.status_msg
-            p.userId === event.sender
+            p.status_msg === presenceContent.status_msg &&
+            p.userId === event.getSender()
         });
         if (existingPresence) {
             // We've handled this already
@@ -202,9 +232,10 @@ export class EncryptedEventBroker {
             currently_active: presenceContent.currently_active,
             presence: presenceContent.presence,
             status_msg: presenceContent.status_msg,
-            userId: event.sender,
+            userId: event.getSender(),
             ts: now,
         });
+        this.onEphemeralEvent(presenceEv);
     }
 
     /**

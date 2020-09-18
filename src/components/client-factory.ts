@@ -148,7 +148,7 @@ export class ClientFactory {
             userId: userId || this.botUserId, // NB: no clobber so we don't set ?user_id=BOT
             queryParams: queryParams,
             scheduler:  this.clientSchedulerBuilder ? this.clientSchedulerBuilder() : undefined,
-            usingE2EProxy: usingE2E,
+            usingExternalCrypto: usingE2E,
             localTimeoutMs: 1000 * 60 * 2, // Time out CS-API calls after 2mins
         };
         client = this.sdk.createClient(clientOpts);

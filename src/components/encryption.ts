@@ -4,9 +4,9 @@ import { WeakEvent } from "./event-types";
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent } from "./event-types";
 import { Intent } from "./intent";
 import Logging from "./logging";
-import { UserMembership } from "./membership-cache";
 
 // matrix-js-sdk lacks types
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { Filter } = require('matrix-js-sdk');
 
 const log = Logging.get("EncryptedEventBroker");
@@ -40,9 +40,9 @@ const SYNC_FILTER = {
 
 interface DedupePresence {
     userId: string;
-    currently_active?: boolean;
+    currentlyActive?: boolean;
     presence: "online"|"offline"|"unavailable";
-    status_msg?: string;
+    statusMsg?: string;
     ts: number;
 }
 /**
@@ -50,12 +50,12 @@ interface DedupePresence {
  * event to bridges from potentially multiple /sync responses. The broker
  * is also responsible for starting these syncs depending on which users
  * can read the room.
- * 
+ *
  * More broadly speaking, the bridge handles encrypted events currently by
  * listening over the AS stream for encrypted messages, and then spinning
  * up a /sync in order to read the message. In order to decrypt them, we
  * proxy these requests through https://github.com/matrix-org/pantalaimon.
- * 
+ *
  *   +-------------------+
  *   |  Homeserver       |
  *   +--------+----------+
@@ -72,7 +72,7 @@ interface DedupePresence {
  *   +--------+----------+
  *   |  Bridge           |
  *   +-------------------+
- * 
+ *
  * We also gain things like presence, read receipts and typing for free.
  */
 export class EncryptedEventBroker {
@@ -104,7 +104,7 @@ export class EncryptedEventBroker {
 
     /**
      * Called when the bridge gets an event through an appservice transaction.
-     * @param event 
+     * @param event
      * @returns Should the event be passthrough
      */
     public async onASEvent(event: WeakEvent) {
@@ -117,7 +117,7 @@ export class EncryptedEventBroker {
             }
             // TODO: If join, should we pre-emptively sync.
         }
-    
+
         if (event.type !== "m.room.encrypted") {
             log.debug(`Ignoring ${event.event_id}, not a encrypted event`);
             // Passthrough directly.
@@ -201,7 +201,7 @@ export class EncryptedEventBroker {
 
     private onTyping(syncUserId: string, event: any) {
         if (this.userForRoom.get(event.getRoomId()) === syncUserId) {
-            // Ensure only the selected user for the room syncs this. 
+            // Ensure only the selected user for the room syncs this.
             this.onEphemeralEvent(event.event);
         }
     }
@@ -218,20 +218,20 @@ export class EncryptedEventBroker {
         const now = Date.now();
         const presenceEv = event.event as PresenceEvent;
         const presenceContent = presenceEv.content;
-        const existingPresence = this.receivedPresence.find((p) => {
-            p.currently_active === presenceContent.currently_active &&
+        const existingPresence = this.receivedPresence.find((p) =>
+            p.currentlyActive === presenceContent.currently_active &&
             p.presence === presenceContent.presence &&
-            p.status_msg === presenceContent.status_msg &&
+            p.statusMsg === presenceContent.status_msg &&
             p.userId === event.getSender()
-        });
+        );
         if (existingPresence) {
             // We've handled this already
             return;
         }
         this.receivedPresence.push({
-            currently_active: presenceContent.currently_active,
+            currentlyActive: presenceContent.currently_active,
             presence: presenceContent.presence,
-            status_msg: presenceContent.status_msg,
+            statusMsg: presenceContent.status_msg,
             userId: event.getSender(),
             ts: now,
         });

@@ -21,12 +21,12 @@ function generateRequestId() {
 
 export interface RequestOpts<T> {
     id?: string;
-    data: T;
+    data?: T;
 }
 
 export class Request<T> {
     private id: string;
-    private data: T;
+    private data?: T;
     private startTs: number;
     private defer: Defer<unknown>;
     private pending: boolean;

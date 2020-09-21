@@ -1,4 +1,17 @@
- 2.0.0-rc1 (2020-09-14)
+ 2.0.0 (2020-09-21)
+===================
+
+**Breaking changes since 1.0**:
+
+- Remove Bluebird Promise support. Promises returned by the library will now be native. ([\#216](https://github.com/matrix-org/matrix-appservice-bridge/issues/216))
+
+Bugfixes
+--------
+
+- Reinstate ability to call getProfileInfo without specifying a profile key. ([\#232](https://github.com/matrix-org/matrix-appservice-bridge/issues/232))
+
+
+2.0.0-rc1 (2020-09-14)
 =======================
 
 Features

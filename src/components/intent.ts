@@ -864,25 +864,30 @@ export class Intent {
         };
     }
 
-    public async ensureRegistered() {
-        log.debug("Checking if user is registered");
-        if (this.opts.registered && !this.encryption) {
+    public async ensureRegistered(forceRegister = false) {
+        const userId: string = this.client.credentials.userId;
+        log.debug(`Checking if user ${this.client.credentials.userId} is registered`);
+        forceRegister = forceRegister || !this.opts.registered;
+        if (!forceRegister && !this.encryption) {
             log.debug("ensureRegistered: Registered, and not encrypted");
             return "registered=true";
         }
         let registerRes;
-        const userId: string = this.client.credentials.userId;
-        if (!this.opts.registered) {
+        if (forceRegister) {
             const localpart = (new MatrixUser(userId)).localpart;
             try {
                 registerRes = await this.botClient.register(localpart);
                 this.opts.registered = true;
             }
-            catch (err) {
-                if (err.errcode !== "M_USER_IN_USE") {
+            catch (err) { 
+                if (err.errcode === "M_EXCLUSIVE" && this.botClient === this.client) {
+                    // Registering the bot will leave it 
+                    this.opts.registered = true;
+                } else if (err.errcode === "M_USER_IN_USE") {
+                    this.opts.registered = true;
+                } else {
                     throw err;
                 }
-                this.opts.registered = true;
             }
         }
 

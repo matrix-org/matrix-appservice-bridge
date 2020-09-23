@@ -151,7 +151,6 @@ describe("Bridge", function() {
         async function(done) {
             bridgeCtrl.onUserQuery.and.returnValue(null);
             await bridge.run(101, {}, appService);
-            console.log(appService.onUserQuery);
             appService.onUserQuery("@alice:bar").catch(function() {}).finally(function() {
                 expect(clients["bot"].register).not.toHaveBeenCalled();
                 done();

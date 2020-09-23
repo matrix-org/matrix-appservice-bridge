@@ -48,7 +48,7 @@ export interface IntentOpts {
     encryption?: {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
-        ensureSyncingCallback: () => Promise<void>;
+        ensureClientSyncingCallback: () => Promise<void>;
         homeserverUrl: string;
     };
 }
@@ -117,7 +117,7 @@ export class Intent {
     private readonly encryption?: {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
-        ensureSyncingCallback: () => Promise<void>;
+        ensureClientSyncingCallback: () => Promise<void>;
         homeserverUrl: string;
     };
     private readyPromise?: Promise<unknown>;
@@ -364,7 +364,7 @@ export class Intent {
         if (this.encryption) {
             // We *need* to sync before we can send a message.
             await this.ensureRegistered();
-            await this.encryption.ensureSyncingCallback();
+            await this.encryption.ensureClientSyncingCallback();
         }
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type);
@@ -873,7 +873,7 @@ export class Intent {
         let registerRes;
         const userId: string = this.client.credentials.userId;
         if (!this.opts.registered) {
-            const localpart = new MatrixUser(userId).localpart;
+            const localpart = (new MatrixUser(userId)).localpart;
             try {
                 registerRes = await this.botClient.register(localpart);
                 this.opts.registered = true;

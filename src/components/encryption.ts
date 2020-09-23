@@ -255,7 +255,7 @@ export class EncryptedEventBroker {
         });
         matrixClient.on("RoomMember.typing", (event: TypingEvent) => this.onTyping(userId, event));
         matrixClient.on("Room.receipt", (event: ReadReceiptEvent) => this.onReceipt(userId, event));
-        matrixClient.on("User.presence", this.onPresence.bind(this));
+        matrixClient.on("User.presence", (event: PresenceEvent) => this.onPresence(event));
         const filter = new Filter(userId);
         filter.setDefinition(SYNC_FILTER);
         await matrixClient.startClient({

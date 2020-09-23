@@ -77,7 +77,6 @@ export class MembershipCache {
         if (!this.membershipMap[roomId]) {
             return null;
         }
-        // Clone so as not to alter the existing map.
         if (!filterFor) {
             return Object.keys(this.membershipMap[roomId]);
         }

@@ -23,7 +23,7 @@ import { defer } from "../utils/promiseutil";
 import { UserMembership } from "./membership-cache";
 import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
-import { ClientEncryptionSession } from "./encryption";
+import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
 
 const log = Logging.get("Intent");
@@ -852,8 +852,7 @@ export class Intent {
 
     private async loginForEncryptedClient() {
         const userId: string = this.client.credentials.userId;
-        const LOGIN_TYPE = "uk.half-shot.unstable.login.appservice";
-        const res = await this.client.login(LOGIN_TYPE, {
+        const res = await this.client.login(APPSERVICE_LOGIN_TYPE, {
             identifier: {
                 type: "m.id.user",
                 user: userId,

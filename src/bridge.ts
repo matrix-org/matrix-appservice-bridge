@@ -560,6 +560,7 @@ export class Bridge {
             this.onLog(text, isErr || false);
         });
         this.botClient = this.clientFactory.getClientAs();
+        await this.checkHomeserverSupport();
         this.appServiceBot = new AppServiceBot(
             this.botClient, this.registration, this.membershipCache,
         );
@@ -1379,6 +1380,21 @@ export class Bridge {
         }
         if (this.eeEventBroker) {
             this.eeEventBroker.close();
+        }
+    }
+
+
+    public async checkHomeserverSupport() {
+        if (!this.botClient) {
+            throw Error("botClient isn't ready yet");
+        }
+        // Min required version
+        if (this.opts.bridgeEncryption) {
+            // Ensure that we have support for /login
+            const loginFlows: {flows: {type: string}[]} = await this.botClient.loginFlows();
+            if (!EncryptedEventBroker.supportsLoginFlow(loginFlows)) {
+                throw Error('To enable support for encryption, your homeserver must support MSC2666');
+            }
         }
     }
 

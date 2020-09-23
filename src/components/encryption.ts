@@ -11,6 +11,8 @@ const { Filter } = require('matrix-js-sdk');
 
 const log = Logging.get("EncryptedEventBroker");
 
+export const APPSERVICE_LOGIN_TYPE = "uk.half-shot.msc2778.login.application_service";
+
 export interface ClientEncryptionSession {
     userId: string;
     deviceId: string;
@@ -271,5 +273,13 @@ export class EncryptedEventBroker {
             client.stopClient();
         }
         clearInterval(this.presenceCleanupInterval);
+    }
+
+    public static supportsLoginFlow(loginFlows: {flows: {type: string}[]}) {
+        return loginFlows.flows.find(
+            flow => flow.type === APPSERVICE_LOGIN_TYPE ||
+            // Future 
+            flow.type === "m.login.application_service"
+        );
     }
 }

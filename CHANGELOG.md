@@ -1,4 +1,13 @@
- 2.0.0 (2020-09-21)
+ 2.1.0-rc1 (2020-09-23)
+=======================
+
+Features
+--------
+
+- Add support for bridging encrypted events via [matrix-org/pantalaimon](https://github.com/matrix-org/pantalaimon). ([\#231](https://github.com/matrix-org/matrix-appservice-bridge/issues/231))
+
+
+2.0.0 (2020-09-21)
 ===================
 
 **Breaking changes since 1.0**:

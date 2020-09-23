@@ -1,1 +1,0 @@
-Add support for bridging encrypted events via [matrix-org/pantalaimon](https://github.com/matrix-org/pantalaimon).

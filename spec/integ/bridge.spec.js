@@ -148,9 +148,10 @@ describe("Bridge", function() {
         });
 
         it("should not provision a user if null is returned from the function",
-        function(done) {
+        async function(done) {
             bridgeCtrl.onUserQuery.and.returnValue(null);
-            bridge.run(101, {}, appService);
+            await bridge.run(101, {}, appService);
+            console.log(appService.onUserQuery);
             appService.onUserQuery("@alice:bar").catch(function() {}).finally(function() {
                 expect(clients["bot"].register).not.toHaveBeenCalled();
                 done();
@@ -160,7 +161,7 @@ describe("Bridge", function() {
         it("should provision the user from the return object", async() => {
             bridgeCtrl.onUserQuery.and.returnValue({});
             clients["bot"].register.and.returnValue(Promise.resolve({}));
-            bridge.run(101, {}, appService);
+            await bridge.run(101, {}, appService);
             await appService.onUserQuery("@alice:bar");
             expect(clients["bot"].register).toHaveBeenCalledWith("alice");
         });
@@ -168,8 +169,8 @@ describe("Bridge", function() {
 
     describe("onAliasQuery", function() {
         it("should invoke the user-supplied onAliasQuery function with the right args",
-        function(done) {
-            bridge.run(101, {}, appService);
+        async function(done) {
+            await bridge.run(101, {}, appService);
             appService.onAliasQuery("#foo:bar").catch(function() {}).finally(function() {
                 expect(bridgeCtrl.onAliasQuery).toHaveBeenCalledWith("#foo:bar", "foo");
                 done();
@@ -177,9 +178,9 @@ describe("Bridge", function() {
         });
 
         it("should not provision a room if null is returned from the function",
-        function(done) {
+        async function(done) {
             bridgeCtrl.onAliasQuery.and.returnValue(null);
-            bridge.run(101, {}, appService);
+            await bridge.run(101, {}, appService);
             appService.onAliasQuery("#foo:bar").catch(function() {
                 expect(clients["bot"].createRoom).not.toHaveBeenCalled();
                 done();
@@ -196,7 +197,7 @@ describe("Bridge", function() {
                 room_id: "!abc123:bar",
             });
             bridgeCtrl.onAliasQuery.and.returnValue(provisionedRoom);
-            bridge.run(101, {}, appService);
+            await bridge.run(101, {}, appService);
             await appService.onAliasQuery("#foo:bar");
             expect(clients["bot"].createRoom).toHaveBeenCalledWith(
                 provisionedRoom.creationOpts
@@ -231,7 +232,7 @@ describe("Bridge", function() {
                 },
                 remote: new RemoteRoom("__abc__")
             });
-            bridge.run(101, {}, appService);
+            await bridge.run(101, {}, appService);
             await appService.onAliasQuery("#foo:bar");
             const rooms = await bridge.getRoomStore().getLinkedRemoteRooms("!abc123:bar");
             expect(rooms.length).toEqual(1);

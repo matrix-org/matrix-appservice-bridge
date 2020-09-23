@@ -686,6 +686,10 @@ export class Bridge {
         this.intentLastAccessedTimeout = setTimeout(() => {
             const now = Date.now();
             for (const [key, entry] of this.intents.entries()) {
+                // Do not delete intents that sync.
+                if (this.eeEventBroker?.shouldAvoidCull(entry.intent)) {
+                    return;
+                }
                 if (entry.lastAccessed + INTENT_CULL_EVICT_AFTER_MS < now) {
                     this.intents.delete(key);
                 }

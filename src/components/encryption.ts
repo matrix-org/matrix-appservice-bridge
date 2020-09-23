@@ -27,6 +27,7 @@ const SYNC_FILTER = {
     room: {
         include_leave: false,
         state: {
+            types: ["a.invalid.type.because.empty.means.all.types"],
             limit: 0,
         },
         timeline: {
@@ -171,6 +172,8 @@ export class EncryptedEventBroker {
         }
 
         // We have no syncing clients for this room. Take the first one.
+        const intent = this.getIntent(membersForRoom[0]);
+        await intent.ensureRegistered();
         await this.startSyncingUser(membersForRoom[0]);
         return false;
     }
@@ -245,8 +248,12 @@ export class EncryptedEventBroker {
     public async startSyncingUser(userId: string) {
         log.info(`Starting to sync ${userId}`);
         const intent = this.getIntent(userId);
-        await intent.ensureRegistered();
         const matrixClient = intent.getClient();
+        const syncState = matrixClient.getSyncState;
+        if (syncState !== null && syncState === "STOPPED") {
+            log.debug("Client is already syncing");
+            return;
+        }
         matrixClient.on("event", this.onSyncEvent.bind(this));
         matrixClient.on("error", (err: Error) => {
             log.error(`${userId} client error:`, err);
@@ -261,6 +268,10 @@ export class EncryptedEventBroker {
             filter,
         });
         this.syncingClients.add(matrixClient);
+    }
+
+    public shouldAvoidCull(intent: Intent) {
+        return this.syncingClients.has(intent.client);
     }
 
     /**

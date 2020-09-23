@@ -611,18 +611,6 @@ export class Bridge {
             ...this.opts.intentOptions?.bot, // copy across opts, if defined
         };
 
-        const encryptionOpts = this.opts.bridgeEncryption;
-        if (encryptionOpts) {
-            botIntentOpts.encryption = {
-                sessionPromise: encryptionOpts.store.getStoredSession(this.botUserId),
-                sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(encryptionOpts.store),
-                ensureClientSyncingCallback: async () => {
-                    return this.eeEventBroker?.startSyncingUser(this.botUserId);
-                },
-                homeserverUrl: encryptionOpts.homeserverUrl,
-            };
-        }
-
         this.botIntent = new Intent(this.botClient, this.botClient, botIntentOpts);
 
         const homeserverToken = this.registration.getHomeserverToken();

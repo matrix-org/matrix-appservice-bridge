@@ -277,9 +277,7 @@ export class EncryptedEventBroker {
 
     public static supportsLoginFlow(loginFlows: {flows: {type: string}[]}) {
         return loginFlows.flows.find(
-            flow => flow.type === APPSERVICE_LOGIN_TYPE ||
-            // Future 
-            flow.type === "m.login.application_service"
+            flow => flow.type === APPSERVICE_LOGIN_TYPE
         );
     }
 }

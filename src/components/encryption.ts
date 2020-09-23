@@ -115,9 +115,7 @@ export class EncryptedEventBroker {
             if (existingSyncUser === event.state_key && event.content.membership !== "join") {
                 // User has left the room (or are banned/invited), they are no longer our sync targets.
                 this.userForRoom.delete(event.room_id);
-                // TODO: Stop syncing entirely?
             }
-            // TODO: If join, should we pre-emptively sync.
         }
 
         if (event.type !== "m.room.encrypted") {

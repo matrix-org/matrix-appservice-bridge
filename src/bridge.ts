@@ -1116,7 +1116,7 @@ export class Bridge {
     private async onEphemeralEvent(event: EphemeralEvent) {
         if (this.opts.controller.onEphemeralEvent) {
             const request = this.requestFactory.newRequest({ data: event });
-            await this.opts.controller.onEphemeralEvent(request);
+            await this.opts.controller.onEphemeralEvent(request as Request<EphemeralEvent>);
         }
     }
 

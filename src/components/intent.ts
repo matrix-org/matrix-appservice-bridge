@@ -879,13 +879,15 @@ export class Intent {
                 registerRes = await this.botClient.register(localpart);
                 this.opts.registered = true;
             }
-            catch (err) { 
+            catch (err) {
                 if (err.errcode === "M_EXCLUSIVE" && this.botClient === this.client) {
-                    // Registering the bot will leave it 
+                    // Registering the bot will leave it
                     this.opts.registered = true;
-                } else if (err.errcode === "M_USER_IN_USE") {
+                }
+ else if (err.errcode === "M_USER_IN_USE") {
                     this.opts.registered = true;
-                } else {
+                }
+ else {
                     throw err;
                 }
             }

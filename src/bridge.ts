@@ -48,6 +48,8 @@ import EventNotHandledError = unstable.EventNotHandledError;
 import { ThirdpartyProtocolResponse, ThirdpartyLocationResponse, ThirdpartyUserResponse } from "./thirdparty";
 import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
+import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
+import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
 
 const log = logging.get("bridge");
 
@@ -56,17 +58,53 @@ const INTENT_CULL_CHECK_PERIOD_MS = 1000 * 60; // once per minute
 // How long a given Intent object can hang around unused for.
 const INTENT_CULL_EVICT_AFTER_MS = 1000 * 60 * 15; // 15 minutes
 
-export interface WeakEvent extends Record<string, unknown> {
-    event_id: string; // eslint-disable-line camelcase
-    room_id: string; // eslint-disable-line camelcase
-    sender: string;
-    content: Record<string, unknown>;
-    unsigned: {
-        age: number;
-    }
-    origin_server_ts: number; // eslint-disable-line camelcase
-    state_key: string; // eslint-disable-line camelcase
-    type: string;
+interface BridgeController {
+    /**
+     * The bridge will invoke when an event has been received from the HS.
+     */
+    onEvent: (request: Request<WeakEvent>, context?: BridgeContext) => void;
+    /**
+     * The bridge will invoke this when a typing, read reciept or presence event
+     * is received from the HS. **This will only work with the `bridgeEncryption`
+     * configuration set.**
+     */
+    onEphemeralEvent?: (request: Request<TypingEvent|ReadReceiptEvent|PresenceEvent>) => void;
+    /**
+     * The bridge will invoke this function when queried via onUserQuery. If
+     * not supplied, no users will be provisioned on user queries. Provisioned users
+     * will automatically be stored in the associated `userStore`.
+     */
+    onUserQuery?: (matrixUser: MatrixUser) =>
+        PossiblePromise<{name?: string, url?: string, remote?: RemoteUser}|null|void>;
+    /**
+     * The bridge will invoke this function when queried via onAliasQuery. If
+     * not supplied, no rooms will be provisioned on alias queries. Provisioned rooms
+     * will automatically be stored in the associated `roomStore`. */
+    onAliasQuery?: (alias: string, aliasLocalpart: string) =>
+        PossiblePromise<{creationOpts: Record<string, unknown>, remote?: RemoteRoom}|null|void>;
+    /**
+     * The bridge will invoke this function when a room has been created
+     * via onAliasQuery.
+     */
+    onAliasQueried?: (alias: string, roomId: string) => PossiblePromise<void>;
+    /**
+     * Invoked when logging. Defaults to a function which logs to the console.
+     * */
+    onLog?: (text: string, isError: boolean) => void;
+    /**
+     * If supplied, the bridge will respond to third-party entity lookups using the
+     * contained helper functions.
+     */
+    thirdPartyLookup?: {
+        protocols: string[];
+        getProtocol?(protocol: string): PossiblePromise<ThirdpartyProtocolResponse>;
+        getLocation?(protocol: string, fields: Record<string, string[]|string>):
+            PossiblePromise<ThirdpartyLocationResponse[]>;
+        parseLocation?(alias: string): PossiblePromise<ThirdpartyLocationResponse[]>;
+        getUser?(protocol: string, fields: Record<string, string[]|string>):
+            PossiblePromise<ThirdpartyUserResponse[]>;
+        parseUser?(userid: string): PossiblePromise<ThirdpartyLocationResponse[]>;
+    };
 }
 
 type PossiblePromise<T> = T|Promise<T>;
@@ -92,48 +130,7 @@ interface BridgeOpts {
     /**
      * The controller logic for the bridge.
      */
-    controller: {
-        /**
-         * The bridge will invoke when an event has been received from the HS.
-         */
-        onEvent: (request: Request<WeakEvent>, context?: BridgeContext) => void;
-        /**
-         * The bridge will invoke this function when queried via onUserQuery. If
-         * not supplied, no users will be provisioned on user queries. Provisioned users
-         * will automatically be stored in the associated `userStore`.
-         */
-        onUserQuery?: (matrixUser: MatrixUser) =>
-            PossiblePromise<{name?: string, url?: string, remote?: RemoteUser}|null|void>;
-        /**
-         * The bridge will invoke this function when queried via onAliasQuery. If
-         * not supplied, no rooms will be provisioned on alias queries. Provisioned rooms
-         * will automatically be stored in the associated `roomStore`. */
-        onAliasQuery?: (alias: string, aliasLocalpart: string) =>
-            PossiblePromise<{creationOpts: Record<string, unknown>, remote?: RemoteRoom}|null|void>;
-        /**
-         * The bridge will invoke this function when a room has been created
-         * via onAliasQuery.
-         */
-        onAliasQueried?: (alias: string, roomId: string) => PossiblePromise<void>;
-        /**
-         * Invoked when logging. Defaults to a function which logs to the console.
-         * */
-        onLog?: (text: string, isError: boolean) => void;
-        /**
-         * If supplied, the bridge will respond to third-party entity lookups using the
-         * contained helper functions.
-         */
-        thirdPartyLookup?: {
-            protocols: string[];
-            getProtocol?(protocol: string): PossiblePromise<ThirdpartyProtocolResponse>;
-            getLocation?(protocol: string, fields: Record<string, string[]|string>):
-                PossiblePromise<ThirdpartyLocationResponse[]>;
-            parseLocation?(alias: string): PossiblePromise<ThirdpartyLocationResponse[]>;
-            getUser?(protocol: string, fields: Record<string, string[]|string>):
-                PossiblePromise<ThirdpartyUserResponse[]>;
-            parseUser?(userid: string): PossiblePromise<ThirdpartyLocationResponse[]>;
-        };
-    };
+    controller: BridgeController;
     /**
      * True to disable enabling of stores.
      * This should be used by bridges that use their own database instances and
@@ -143,7 +140,7 @@ interface BridgeOpts {
     disableStores?: boolean;
     /**
      * The room store instance to use, or the path to the room .db file to load.
-     * A database will be created if this is not specified. If `disableStores` is set,
+     * A database will be ClientFactoryEncryptionStorecreated if this is not specified. If `disableStores` is set,
      * no database will be created or used.
      */
     roomStore?: RoomBridgeStore|string;
@@ -244,6 +241,11 @@ interface BridgeOpts {
     };
     authenticateThirdpartyEndpoints?: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
+
+    bridgeEncryption?: {
+        homeserverUrl: string;
+        store: ClientEncryptionStore;
+    };
 }
 
 interface VettedBridgeOpts {
@@ -267,48 +269,7 @@ interface VettedBridgeOpts {
     /**
      * The controller logic for the bridge.
      */
-    controller: {
-        /**
-         * The bridge will invoke when an event has been received from the HS.
-         */
-        onEvent: (request: Request<WeakEvent>, context?: BridgeContext) => void;
-        /**
-         * The bridge will invoke this function when queried via onUserQuery. If
-         * not supplied, no users will be provisioned on user queries. Provisioned users
-         * will automatically be stored in the associated `userStore`.
-         */
-        onUserQuery?: (matrixUser: MatrixUser) =>
-            PossiblePromise<{ name?: string, url?: string, remote?: RemoteUser } | null | void>;
-        /**
-         * The bridge will invoke this function when queried via onAliasQuery. If
-         * not supplied, no rooms will be provisioned on alias queries. Provisioned rooms
-         * will automatically be stored in the associated `roomStore`. */
-        onAliasQuery?: (alias: string, aliasLocalpart: string) =>
-            PossiblePromise<{ creationOpts: Record<string, unknown>, remote?: RemoteRoom } | null | void>;
-        /**
-         * The bridge will invoke this function when a room has been created
-         * via onAliasQuery.
-         */
-        onAliasQueried?: (alias: string, roomId: string) => PossiblePromise<void>;
-        /**
-         * Invoked when logging. Defaults to a function which logs to the console.
-         * */
-        onLog?: (text: string, isError: boolean) => void;
-        /**
-         * If supplied, the bridge will respond to third-party entity lookups using the
-         * contained helper functions.
-         */
-        thirdPartyLookup?: {
-            protocols: string[];
-            getProtocol?(protocol: string): PossiblePromise<ThirdpartyProtocolResponse>;
-            getLocation?(protocol: string, fields: Record<string, string[] | string>):
-                PossiblePromise<ThirdpartyLocationResponse[]>;
-            parseLocation?(alias: string): PossiblePromise<ThirdpartyLocationResponse[]>;
-            getUser?(protocol: string, fields: Record<string, string[] | string>):
-                PossiblePromise<ThirdpartyUserResponse[]>;
-            parseUser?(userid: string): PossiblePromise<ThirdpartyLocationResponse[]>;
-        };
-    };
+    controller: BridgeController;
     /**
      * True to disable enabling of stores.
      * This should be used by bridges that use their own database instances and
@@ -413,6 +374,10 @@ interface VettedBridgeOpts {
     };
     authenticateThirdpartyEndpoints: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
+    bridgeEncryption?: {
+        homeserverUrl: string;
+        store: ClientEncryptionStore;
+    };
 }
 
 export class Bridge {
@@ -438,11 +403,19 @@ export class Bridge {
     private eventStore?: EventBridgeStore;
     private registration?: AppServiceRegistration;
     private appservice?: AppService;
+    private eeEventBroker?: EncryptedEventBroker;
 
     public readonly opts: VettedBridgeOpts;
 
     public get appService() {
         return this.appservice;
+    }
+
+    public get botUserId() {
+        if (!this.registration) {
+            throw Error('Registration not defined yet');
+        }
+        return `@${this.registration.getSenderLocalpart()}:${this.opts.domain}`;
     }
 
     /**
@@ -583,9 +556,9 @@ export class Bridge {
         }
 
         this.clientFactory = this.opts.clientFactory || new ClientFactory({
-            url: this.opts.homeserverUrl,
+            url: this.opts.bridgeEncryption?.homeserverUrl || this.opts.homeserverUrl,
             token: asToken,
-            appServiceUserId: `@${this.registration.getSenderLocalpart()}:${this.opts.domain}`,
+            appServiceUserId: this.botUserId,
             clientSchedulerBuilder: function() {
                 return new MatrixScheduler(retryAlgorithm, queueAlgorithm);
             },
@@ -594,9 +567,20 @@ export class Bridge {
             this.onLog(text, isErr || false);
         });
         this.botClient = this.clientFactory.getClientAs();
+        await this.checkHomeserverSupport();
         this.appServiceBot = new AppServiceBot(
             this.botClient, this.registration, this.membershipCache,
         );
+
+        if (this.opts.bridgeEncryption) {
+            this.eeEventBroker = new EncryptedEventBroker(
+                this.membershipCache,
+                this.appServiceBot,
+                this.onEvent.bind(this),
+                this.onEphemeralEvent.bind(this),
+                this.getIntent.bind(this),
+            );
+        }
 
         if (this.opts.roomLinkValidation !== undefined) {
             this.roomLinkValidator = new RoomLinkValidator(
@@ -639,7 +623,16 @@ export class Bridge {
         });
         this.appservice.onUserQuery = (userId) => this.onUserQuery(userId);
         this.appservice.onAliasQuery = this.onAliasQuery.bind(this);
-        this.appservice.on("event", this.onEvent.bind(this));
+        this.appservice.on("event", async (event) => {
+            let passthrough = true;
+            const weakEvent = event as WeakEvent;
+            if (this.eeEventBroker) {
+                passthrough = await this.eeEventBroker.onASEvent(weakEvent);
+            }
+            if (passthrough) {
+                return this.onEvent(weakEvent);
+            }
+        });
         this.appservice.on("http-log", (line) => {
             this.onLog(line, false);
         });
@@ -693,6 +686,10 @@ export class Bridge {
         this.intentLastAccessedTimeout = setTimeout(() => {
             const now = Date.now();
             for (const [key, entry] of this.intents.entries()) {
+                // Do not delete intents that sync.
+                if (this.eeEventBroker?.shouldAvoidCull(entry.intent)) {
+                    return;
+                }
                 if (entry.lastAccessed + INTENT_CULL_EVICT_AFTER_MS < now) {
                     this.intents.delete(key);
                 }
@@ -998,12 +995,23 @@ export class Bridge {
             return existingIntent.intent;
         }
 
-        const client = this.clientFactory.getClientAs(userId, request);
+        const client = this.clientFactory.getClientAs(userId, request, !!this.opts.bridgeEncryption);
         const clientIntentOpts: IntentOpts = {
             backingStore: this.intentBackingStore,
             ...this.opts.intentOptions?.clients,
         };
         clientIntentOpts.registered = this.membershipCache.isUserRegistered(userId);
+        const encryptionOpts = this.opts.bridgeEncryption;
+        if (encryptionOpts) {
+            clientIntentOpts.encryption = {
+                sessionPromise: encryptionOpts.store.getStoredSession(userId),
+                sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(encryptionOpts.store),
+                ensureClientSyncingCallback: async () => {
+                    return this.eeEventBroker?.startSyncingUser(userId!);
+                },
+                homeserverUrl: encryptionOpts.homeserverUrl,
+            };
+        }
         const intent = new Intent(client, this.botClient, clientIntentOpts);
         this.intents.set(key, { intent, lastAccessed: Date.now() });
 
@@ -1049,7 +1057,7 @@ export class Bridge {
                 await this.userStore.linkUsers(matrixUser, provisionedUser.remote);
             }
         }
-        const userClient = this.clientFactory.getClientAs(matrixUser.getId());
+        const userClient = await this.clientFactory.getClientAs(matrixUser.getId());
         if (provisionedUser?.name) {
             await userClient.setDisplayName(provisionedUser.name);
         }
@@ -1116,13 +1124,19 @@ export class Bridge {
         }
     }
 
+    private async onEphemeralEvent(event: EphemeralEvent) {
+        if (this.opts.controller.onEphemeralEvent) {
+            const request = this.requestFactory.newRequest({ data: event });
+            await this.opts.controller.onEphemeralEvent(request as Request<EphemeralEvent>);
+        }
+    }
+
     // returns a Promise for the request linked to this event for testing.
-    private async onEvent(eventData: Record<string, unknown>) {
+    private async onEvent(event: WeakEvent) {
         if (!this.registration) {
             // Called before we were ready, which is probably impossible.
             return null;
         }
-        const event = eventData as WeakEvent;
         const isCanonicalState = event.state_key === "";
         this.updateIntents(event);
         if (this.opts.suppressEcho &&
@@ -1156,7 +1170,7 @@ export class Bridge {
         const contextReady = this.getBridgeContext(event);
         const dataReady = contextReady.then(context => ({ request, context }));
 
-        const dataReadyLimited = this.limited(dataReady, request);
+        const dataReadyLimited = this.limited(dataReady);
 
         this.queue.push(event, dataReadyLimited);
         this.queue.consume();
@@ -1183,7 +1197,7 @@ export class Bridge {
      * `perRequest` disabled:
      *     Returns the promise unchanged.
      */
-    private async limited<T>(promise: Promise<T>, request: Request<unknown>): Promise<T> {
+    private async limited<T>(promise: Promise<T>): Promise<T> {
         // queue.perRequest controls whether multiple request can be processed by
         // the bridge at once.
         if (this.opts.queue?.perRequest) {
@@ -1374,6 +1388,24 @@ export class Bridge {
         if (this.appservice) {
             await this.appservice.close();
             this.appservice = undefined;
+        }
+        if (this.eeEventBroker) {
+            this.eeEventBroker.close();
+        }
+    }
+
+
+    public async checkHomeserverSupport() {
+        if (!this.botClient) {
+            throw Error("botClient isn't ready yet");
+        }
+        // Min required version
+        if (this.opts.bridgeEncryption) {
+            // Ensure that we have support for /login
+            const loginFlows: {flows: {type: string}[]} = await this.botClient.loginFlows();
+            if (!EncryptedEventBroker.supportsLoginFlow(loginFlows)) {
+                throw Error('To enable support for encryption, your homeserver must support MSC2666');
+            }
         }
     }
 

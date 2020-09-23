@@ -72,4 +72,20 @@ export class MembershipCache {
     isUserRegistered(userId: string) {
         return this.registeredUsers.has(userId);
     }
+
+    public getMembersForRoom(roomId: string, filterFor?: UserMembership) {
+        if (!this.membershipMap[roomId]) {
+            return null;
+        }
+        if (!filterFor) {
+            return Object.keys(this.membershipMap[roomId]);
+        }
+        const members = [];
+        for (const [userId, membership] of Object.entries(this.membershipMap[roomId])) {
+            if (membership === filterFor) {
+                members.push(userId);
+            }
+        }
+        return members;
+    }
 }

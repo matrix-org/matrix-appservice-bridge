@@ -18,6 +18,7 @@ export * from "./components/request";
 export * from "./components/request-factory";
 
 export * from "./components/client-factory";
+export * from "./components/encryption";
 export * from "./components/intent";
 
 export * from "./components/app-service-bot";
@@ -48,6 +49,8 @@ export * from "./components/agecounters";
 export * from "./components/membership-cache";
 export * as Logging from "./components/logging";
 export { unstable } from "./errors";
+export * from "./components/event-types";
+
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const jsSdk = require("matrix-js-sdk");

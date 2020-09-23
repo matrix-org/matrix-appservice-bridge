@@ -23,6 +23,10 @@ import { defer } from "../utils/promiseutil";
 import { UserMembership } from "./membership-cache";
 import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
+import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
+import Logging from "./logging";
+
+const log = Logging.get("Intent");
 
 export type IntentBackingStore = {
     getMembership: (roomId: string, userId: string) => UserMembership,
@@ -41,6 +45,12 @@ export interface IntentOpts {
     dontJoin?: boolean;
     enablePresence?: boolean;
     registered?: boolean;
+    encryption?: {
+        sessionPromise: Promise<ClientEncryptionSession|null>;
+        sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
+        ensureClientSyncingCallback: () => Promise<void>;
+        homeserverUrl: string;
+    };
 }
 
 export interface RoomCreationOpts {
@@ -104,6 +114,13 @@ export class Intent {
     // These two are only used if no opts.backingStore is provided to the constructor.
     private readonly _membershipStates: Record<string, UserMembership> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
+    private readonly encryption?: {
+        sessionPromise: Promise<ClientEncryptionSession|null>;
+        sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
+        ensureClientSyncingCallback: () => Promise<void>;
+        homeserverUrl: string;
+    };
+    private readyPromise?: Promise<unknown>;
 
     /**
     * Create an entity which can fulfil the intent of a given user.
@@ -159,6 +176,7 @@ export class Intent {
                 throw new Error("Intent backingStore missing required functions");
             }
         }
+        this.encryption = opts.encryption;
         this.opts = {
             ...opts,
             backingStore: opts.backingStore ? { ...opts.backingStore } : {
@@ -343,6 +361,11 @@ export class Intent {
      * @param content The event content
      */
     public async sendEvent(roomId: string, type: string, content: Record<string, unknown>) {
+        if (this.encryption) {
+            // We *need* to sync before we can send a message.
+            await this.ensureRegistered();
+            await this.encryption.ensureClientSyncingCallback();
+        }
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type);
         return this._joinGuard(roomId, async() => (
@@ -409,7 +432,7 @@ export class Intent {
             options.invite.splice(options.invite.indexOf(cli.credentials.userId), 1);
         }
 
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         const res = await cli.createRoom(options);
         if (typeof res !== "object" || !res) {
             const type = res === null ? "null" : typeof res;
@@ -523,7 +546,7 @@ export class Intent {
      * information
      */
     public async getProfileInfo(userId: string, info: UserProfileKeys = null, useCache = true) {
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         if (useCache) {
             return this._requestCaches.profile.get(`${userId}:${info}`, userId, info);
         }
@@ -535,7 +558,7 @@ export class Intent {
      * @param name The new display name
      */
     public async setDisplayName(name: string) {
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         return this.client.setDisplayName(name);
     }
 
@@ -544,7 +567,7 @@ export class Intent {
      * @param url The new avatar URL
      */
     public async setAvatarUrl(url: string) {
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         return this.client.setAvatarUrl(url);
     }
 
@@ -554,7 +577,7 @@ export class Intent {
      * @param roomId The room ID the alias should point at.
      */
     public async createAlias(alias: string, roomId: string) {
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         return this.client.createAlias(alias, roomId);
     }
 
@@ -570,7 +593,7 @@ export class Intent {
             return undefined;
         }
 
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         return this.client.setPresence({presence, status_msg});
     }
 
@@ -618,7 +641,7 @@ export class Intent {
      * @return Resolves with the content of the event, or rejects if not found.
      */
     public async getEvent(roomId: string, eventId: string, useCache=true) {
-        await this._ensureRegistered();
+        await this.ensureRegistered();
         if (useCache) {
             return this._requestCaches.event.get(`${roomId}:${eventId}`, roomId, eventId);
         }
@@ -719,7 +742,7 @@ export class Intent {
         const dontJoin = this.opts.dontJoin;
 
         try {
-            await this._ensureRegistered();
+            await this.ensureRegistered();
             if (dontJoin) {
                 deferredPromise.resolve();
                 return deferredPromise.promise;
@@ -827,23 +850,93 @@ export class Intent {
         return powerLevelEvent;
     }
 
-    private async _ensureRegistered() {
-        if (this.opts.registered) {
+    private async loginForEncryptedClient() {
+        const userId: string = this.client.credentials.userId;
+        const res = await this.client.login(APPSERVICE_LOGIN_TYPE, {
+            identifier: {
+                type: "m.id.user",
+                user: userId,
+            }
+        });
+        return {
+            accessToken: res.access_token,
+            deviceId: res.device_id,
+        };
+    }
+
+    public async ensureRegistered(forceRegister = false) {
+        const userId: string = this.client.credentials.userId;
+        log.debug(`Checking if user ${this.client.credentials.userId} is registered`);
+        forceRegister = forceRegister || !this.opts.registered;
+        if (!forceRegister && !this.encryption) {
+            log.debug("ensureRegistered: Registered, and not encrypted");
             return "registered=true";
         }
-        const userId = this.client.credentials.userId;
-        const localpart = new MatrixUser(userId).localpart;
-        try {
-            const res = await this.botClient.register(localpart);
-            this.opts.registered = true;
-            return res;
-        }
-        catch (err) {
-            if (err.errcode === "M_USER_IN_USE") {
+        let registerRes;
+        if (forceRegister) {
+            const localpart = (new MatrixUser(userId)).localpart;
+            try {
+                registerRes = await this.botClient.register(localpart);
                 this.opts.registered = true;
-                return null;
             }
-            throw err;
+            catch (err) {
+                if (err.errcode === "M_EXCLUSIVE" && this.botClient === this.client) {
+                    // Registering the bot will leave it
+                    this.opts.registered = true;
+                }
+ else if (err.errcode === "M_USER_IN_USE") {
+                    this.opts.registered = true;
+                }
+ else {
+                    throw err;
+                }
+            }
         }
+
+        if (!this.encryption) {
+            log.debug("ensureRegistered: Registered, and not encrypted");
+            // We don't care about encryption, or the encryption is ready.
+            return registerRes;
+        }
+
+        if (this.readyPromise) {
+            log.debug("ensureRegistered: ready promise ongoing");
+            try {
+                // Should fall through and find the session.
+                await this.readyPromise;
+            }
+            catch (ex) {
+                log.debug("ensureRegistered: failed to ready", ex);
+                // Failed to ready up - fall through and try again.
+            }
+        }
+
+        // Encryption enabled, check if we have a session.
+        let session = await this.encryption.sessionPromise;
+        if (session) {
+            log.debug("ensureRegistered: Existing enc session, reusing");
+            // We have existing credentials, set them on the client and run away.
+            this.client._http.opts.accessToken = session.accessToken;
+        }
+        else {
+            this.readyPromise = (async () => {
+                log.debug("ensureRegistered: Attempting encrypted login");
+                // Login as the user
+                const result = await this.loginForEncryptedClient();
+                session = {
+                    userId,
+                    ...result,
+                };
+                if (this.encryption) {
+                    this.encryption.sessionPromise = Promise.resolve(session);
+                }
+                await this.encryption?.sessionCreatedCallback(session);
+            })();
+            await this.readyPromise;
+        }
+        // We are using a real user access token.
+        // We delete the whole extraParams object due to a bug with GET requests
+        delete this.client._http.opts.extraParams;
+        return undefined;
     }
 }

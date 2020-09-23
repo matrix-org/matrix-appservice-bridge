@@ -120,7 +120,7 @@ export class ClientFactory {
      * resolved.
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public getClientAs(userId?: string, request?: any) {
+    public getClientAs(userId?: string, request?: any, usingE2E = false) {
         const reqId = request ? request.getId() : "-";
         const userIdKey = userId || "bot";
 
@@ -148,6 +148,7 @@ export class ClientFactory {
             userId: userId || this.botUserId, // NB: no clobber so we don't set ?user_id=BOT
             queryParams: queryParams,
             scheduler:  this.clientSchedulerBuilder ? this.clientSchedulerBuilder() : undefined,
+            usingExternalCrypto: usingE2E,
             localTimeoutMs: 1000 * 60 * 2, // Time out CS-API calls after 2mins
         };
         client = this.sdk.createClient(clientOpts);

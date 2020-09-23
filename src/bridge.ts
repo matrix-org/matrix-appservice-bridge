@@ -411,6 +411,13 @@ export class Bridge {
         return this.appservice;
     }
 
+    public get botUserId() {
+        if (!this.registration) {
+            throw Error('Registration not defined yet');
+        }
+        return `@${this.registration.getSenderLocalpart()}:${this.opts.domain}`;
+    }
+
     /**
      * @param opts Options to pass to the bridge
      * @param opts.roomUpgradeOpts Options to supply to
@@ -551,7 +558,7 @@ export class Bridge {
         this.clientFactory = this.opts.clientFactory || new ClientFactory({
             url: this.opts.bridgeEncryption?.homeserverUrl || this.opts.homeserverUrl,
             token: asToken,
-            appServiceUserId: `@${this.registration.getSenderLocalpart()}:${this.opts.domain}`,
+            appServiceUserId: this.botUserId,
             clientSchedulerBuilder: function() {
                 return new MatrixScheduler(retryAlgorithm, queueAlgorithm);
             },
@@ -603,6 +610,18 @@ export class Bridge {
             backingStore: this.intentBackingStore,
             ...this.opts.intentOptions?.bot, // copy across opts, if defined
         };
+
+        const encryptionOpts = this.opts.bridgeEncryption;
+        if (encryptionOpts) {
+            botIntentOpts.encryption = {
+                sessionPromise: encryptionOpts.store.getStoredSession(this.botUserId),
+                sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(encryptionOpts.store),
+                ensureClientSyncingCallback: async () => {
+                    return this.eeEventBroker?.startSyncingUser(this.botUserId);
+                },
+                homeserverUrl: encryptionOpts.homeserverUrl,
+            };
+        }
 
         this.botIntent = new Intent(this.botClient, this.botClient, botIntentOpts);
 

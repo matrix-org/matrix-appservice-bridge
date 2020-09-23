@@ -1,3 +1,71 @@
+ 2.0.0 (2020-09-21)
+===================
+
+**Breaking changes since 1.0**:
+
+- Remove Bluebird Promise support. Promises returned by the library will now be native. ([\#216](https://github.com/matrix-org/matrix-appservice-bridge/issues/216))
+
+Bugfixes
+--------
+
+- Reinstate ability to call getProfileInfo without specifying a profile key. ([\#232](https://github.com/matrix-org/matrix-appservice-bridge/issues/232))
+
+
+2.0.0-rc1 (2020-09-14)
+=======================
+
+Features
+--------
+
+- Bump matrix-js-sdk to 8.0.1 ([\#194](https://github.com/matrix-org/matrix-appservice-bridge/issues/194))
+- Use Typedoc over JSDoc for hosted documentation ([\#199](https://github.com/matrix-org/matrix-appservice-bridge/issues/199))
+- The bridge can now optionally reload the config file on a `SIGHUP` signal. Developers should define the `onConfigChanged` callback
+  when constructing `Cli` to make use of this feature. ([\#207](https://github.com/matrix-org/matrix-appservice-bridge/issues/207))
+- **Breaking**: Remove Bluebird Promise support. Promises returned by the library will now be native. ([\#216](https://github.com/matrix-org/matrix-appservice-bridge/issues/216))
+- Make url parameter optional when generating registration. ([\#217](https://github.com/matrix-org/matrix-appservice-bridge/issues/217))
+- Add `Bridge.close` method to close the appservice ([\#227](https://github.com/matrix-org/matrix-appservice-bridge/issues/227))
+
+
+Bugfixes
+--------
+
+- Refactor RoomLinkValidator to not hastily approve a link if one user is exempt ([\#184](https://github.com/matrix-org/matrix-appservice-bridge/issues/184))
+- Fix bluebird defer warnings by using our own defer implementation. ([\#188](https://github.com/matrix-org/matrix-appservice-bridge/issues/188))
+- Bridge.run() now throws if it fails to listen to a port instead of creating a floating promise ([\#191](https://github.com/matrix-org/matrix-appservice-bridge/issues/191))
+- Fixed some broken typings and defer failures ([\#200](https://github.com/matrix-org/matrix-appservice-bridge/issues/200))
+- Fix issue where providing a custom Registry to getPrometheusMetrics would cause /metrics to emit no response ([\#201](https://github.com/matrix-org/matrix-appservice-bridge/issues/201))
+
+
+Internal Changes
+----------------
+
+- Convert intent.js to TypeScript ([\#185](https://github.com/matrix-org/matrix-appservice-bridge/issues/185))
+- Convert `ClientFactory` to Typescript ([\#186](https://github.com/matrix-org/matrix-appservice-bridge/issues/186))
+- Linter warnings no longer fail the linter, and `no-explicit-any` is a warning. ([\#187](https://github.com/matrix-org/matrix-appservice-bridge/issues/187))
+- Port RequestFactory and Request to Typescript ([\#189](https://github.com/matrix-org/matrix-appservice-bridge/issues/189))
+- Remove some bluebird imports and use async/await in some tests ([\#190](https://github.com/matrix-org/matrix-appservice-bridge/issues/190))
+- Convert Cli to Typescript ([\#195](https://github.com/matrix-org/matrix-appservice-bridge/issues/195))
+- Remove `request` dependency ([\#197](https://github.com/matrix-org/matrix-appservice-bridge/issues/197))
+- Typescriptify models/* ([\#202](https://github.com/matrix-org/matrix-appservice-bridge/issues/202))
+- Typescriptify MembershipCache ([\#203](https://github.com/matrix-org/matrix-appservice-bridge/issues/203))
+- Typescriptify ClientRequestCache ([\#204](https://github.com/matrix-org/matrix-appservice-bridge/issues/204))
+- Port Logging to Typescript. This change makes `winston`, `winston-daily-rotate-file` and `chalk` a required dependency. ([\#205](https://github.com/matrix-org/matrix-appservice-bridge/issues/205))
+- Typescriptify ConfigValidator ([\#206](https://github.com/matrix-org/matrix-appservice-bridge/issues/206))
+- **Breaking**: Typescriptify the room, user and event stores. The stores will now return pure Promises (not Bluebird), which means code that relys on Bluebird features will **break**. ([\#208](https://github.com/matrix-org/matrix-appservice-bridge/issues/208))
+- Port RoomUpgradeHandler to Typescript ([\#209](https://github.com/matrix-org/matrix-appservice-bridge/issues/209))
+- Typescriptify BridgeContext ([\#210](https://github.com/matrix-org/matrix-appservice-bridge/issues/210))
+- Typescriptify bridge errors. The `wrap` function has been renamed to `wrapError`. ([\#211](https://github.com/matrix-org/matrix-appservice-bridge/issues/211))
+- Typescriptify AppserviceBot ([\#212](https://github.com/matrix-org/matrix-appservice-bridge/issues/212))
+- Port the `Bridge` object to Typescript and remove javascript linting ([\#213](https://github.com/matrix-org/matrix-appservice-bridge/issues/213))
+- Implement tweaks to typings to support existing bridges ([\#218](https://github.com/matrix-org/matrix-appservice-bridge/issues/218))
+- Upgrade internal tooling to use TypeScript 4 ([\#219](https://github.com/matrix-org/matrix-appservice-bridge/issues/219))
+- Types: Make some options of Cli optional
+  Small corrections to HOWTO.md ([\#224](https://github.com/matrix-org/matrix-appservice-bridge/issues/224))
+- Types: Make some options of Bridge optional
+  Add a project example: slack-starter ([\#225](https://github.com/matrix-org/matrix-appservice-bridge/issues/225))
+- Upgrade dependency: matrix-appservice ([\#226](https://github.com/matrix-org/matrix-appservice-bridge/issues/226))
+
+
 1.13.2 (2020-07-24)
 ====================
 

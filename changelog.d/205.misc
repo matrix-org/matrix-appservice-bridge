@@ -1,1 +1,0 @@
-Port Logging to Typescript. This change makes `winston`, `winston-daily-rotate-file` and `chalk` a required dependency.

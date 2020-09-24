@@ -49,7 +49,6 @@ export interface IntentOpts {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
         ensureClientSyncingCallback: () => Promise<void>;
-        homeserverUrl: string;
     };
 }
 
@@ -118,7 +117,6 @@ export class Intent {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
         ensureClientSyncingCallback: () => Promise<void>;
-        homeserverUrl: string;
     };
     private readyPromise?: Promise<unknown>;
 

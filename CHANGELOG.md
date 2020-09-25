@@ -1,4 +1,13 @@
- 2.1.0-rc1 (2020-09-23)
+ 2.1.0-rc2 (2020-09-25)
+=======================
+
+Bugfixes
+--------
+
+- Ensure that the bridge bot uses the real homeserver URL when encryption is enabled ([\#233](https://github.com/matrix-org/matrix-appservice-bridge/issues/233))
+
+
+2.1.0-rc1 (2020-09-23)
 =======================
 
 Features

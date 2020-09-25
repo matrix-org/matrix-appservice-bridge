@@ -556,7 +556,7 @@ export class Bridge {
         }
 
         this.clientFactory = this.opts.clientFactory || new ClientFactory({
-            url: this.opts.bridgeEncryption?.homeserverUrl || this.opts.homeserverUrl,
+            url: this.opts.homeserverUrl,
             token: asToken,
             appServiceUserId: this.botUserId,
             clientSchedulerBuilder: function() {
@@ -983,7 +983,14 @@ export class Bridge {
                 throw Error('Cannot call getIntent before calling .run()');
             }
             return this.botIntent;
+        } else if (userId === this.botUserId) {
+            if (!this.botIntent) {
+                // This will be defined when .run is called.
+                throw Error('Cannot call getIntent before calling .run()');
+            }
+            return this.botIntent;
         }
+
         if (this.opts.escapeUserIds === undefined || this.opts.escapeUserIds) {
             userId = new MatrixUser(userId).getId(); // Escape the ID
         }
@@ -995,7 +1002,12 @@ export class Bridge {
             return existingIntent.intent;
         }
 
-        const client = this.clientFactory.getClientAs(userId, request, !!this.opts.bridgeEncryption);
+        const client = this.clientFactory.getClientAs(
+            userId,
+            request,
+            this.opts.bridgeEncryption?.homeserverUrl,
+            !!this.opts.bridgeEncryption,
+        );
         const clientIntentOpts: IntentOpts = {
             backingStore: this.intentBackingStore,
             ...this.opts.intentOptions?.clients,
@@ -1009,7 +1021,6 @@ export class Bridge {
                 ensureClientSyncingCallback: async () => {
                     return this.eeEventBroker?.startSyncingUser(userId!);
                 },
-                homeserverUrl: encryptionOpts.homeserverUrl,
             };
         }
         const intent = new Intent(client, this.botClient, clientIntentOpts);

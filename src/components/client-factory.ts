@@ -120,7 +120,7 @@ export class ClientFactory {
      * resolved.
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public getClientAs(userId?: string, request?: any, usingE2E = false) {
+    public getClientAs(userId?: string, request?: any, urlOverride?: string, usingE2E = false) {
         const reqId = request ? request.getId() : "-";
         const userIdKey = userId || "bot";
 
@@ -144,7 +144,7 @@ export class ClientFactory {
         queryParams.access_token = this.token;
         const clientOpts = {
             accessToken: this.token,
-            baseUrl: this.url,
+            baseUrl: urlOverride || this.url,
             userId: userId || this.botUserId, // NB: no clobber so we don't set ?user_id=BOT
             queryParams: queryParams,
             scheduler:  this.clientSchedulerBuilder ? this.clientSchedulerBuilder() : undefined,

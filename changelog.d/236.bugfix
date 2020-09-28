@@ -1,0 +1,1 @@
+WeakEvent should allow for an optional `state_key` and `unsigned` fields.

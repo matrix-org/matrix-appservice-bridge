@@ -5,13 +5,13 @@ export interface WeakEvent extends Record<string, unknown> {
     room_id: string;
     sender: string;
     content: Record<string, unknown>;
-    unsigned: {
-        age: number;
+    unsigned?: {
+        age?: number;
     }
     // eslint-disable-next-line camelcase
     origin_server_ts: number;
     // eslint-disable-next-line camelcase
-    state_key: string;
+    state_key?: string;
     type: string;
 }
 

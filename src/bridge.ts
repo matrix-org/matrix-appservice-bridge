@@ -632,6 +632,7 @@ export class Bridge {
             if (passthrough) {
                 return this.onEvent(weakEvent);
             }
+            return undefined;
         });
         this.appservice.on("http-log", (line) => {
             this.onLog(line, false);
@@ -1228,7 +1229,7 @@ export class Bridge {
     }
 
     // eslint-disable-next-line camelcase
-    private async getBridgeContext(event: {sender: string, type: string, state_key: string, room_id: string}) {
+    private async getBridgeContext(event: {sender: string, type: string, state_key?: string, room_id: string}) {
         if (this.opts.disableContext) {
             return null;
         }
@@ -1276,7 +1277,7 @@ export class Bridge {
     }
 
     private updateIntents(event: WeakEvent) {
-        if (event.type === "m.room.member") {
+        if (event.type === "m.room.member" && event.state_key) {
             const content = event.content as { membership: UserMembership };
             this.membershipCache.setMemberEntry(
                 event.room_id,

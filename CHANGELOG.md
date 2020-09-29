@@ -1,4 +1,13 @@
- 2.1.0-rc2 (2020-09-25)
+ 2.1.0 (2020-09-28)
+===================
+
+Bugfixes
+--------
+
+- WeakEvent should allow for an optional `state_key` and `unsigned` fields. ([\#236](https://github.com/matrix-org/matrix-appservice-bridge/issues/236))
+
+
+2.1.0-rc2 (2020-09-25)
 =======================
 
 Bugfixes

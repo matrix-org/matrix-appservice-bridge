@@ -577,7 +577,8 @@ export class Bridge {
                 this.membershipCache,
                 this.appServiceBot,
                 this.onEvent.bind(this),
-                this.onEphemeralEvent.bind(this),
+                // If the bridge supports pushEphemeral, don't use sync data.
+                !this.registration.pushEphemeral ? this.onEphemeralEvent.bind(this) : undefined,
                 this.getIntent.bind(this),
             );
         }
@@ -634,6 +635,9 @@ export class Bridge {
             }
             return undefined;
         });
+        this.appservice.on("ephemeral", async (event) =>
+            this.onEphemeralEvent(event as unknown as EphemeralEvent)
+        );
         this.appservice.on("http-log", (line) => {
             this.onLog(line, false);
         });

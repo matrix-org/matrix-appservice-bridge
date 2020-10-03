@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { Request } from "./request";
+
 type LogWrapCallback = (err: Error, response: { statusCode: number }, body: Record<string, unknown>) => void;
 type OriginalRequest = (opts: Record<string, unknown>, cb: LogWrapCallback) => void;
 
@@ -119,8 +121,7 @@ export class ClientFactory {
      * This factory will dispose the created client instance when the request is
      * resolved.
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public getClientAs(userId?: string, request?: any, urlOverride?: string, usingE2E = false) {
+    public getClientAs(userId?: string, request?: Request<unknown>, urlOverride?: string, usingE2E = false) {
         const reqId = request ? request.getId() : "-";
         const userIdKey = userId || "bot";
 

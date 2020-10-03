@@ -1,5 +1,4 @@
-"use strict";
-const Intent = require("../..").Intent;
+const { Intent } = require("../..");
 const log = require("../log");
 
 describe("Intent", function() {
@@ -31,11 +30,12 @@ describe("Intent", function() {
 
         it("should /join/$ROOMID if it doesn't know it is already joined",
         function() {
-            client.joinRoom.and.callFake(() => Promise.resolve({}));
-            return intent.join(roomId).then(function() {
+            client.joinRoom.and.callFake(() => Promise.resolve({room_id: roomId}));
+            return intent.join(roomId).then(function(resultRoomId) {
                 expect(client.joinRoom).toHaveBeenCalledWith(
                     roomId, { syncRoom: false }
                 );
+                expect(resultRoomId).toBe(roomId);
             });
         });
 
@@ -49,7 +49,8 @@ describe("Intent", function() {
                     membership: "join"
                 }
             });
-            return intent.join(roomId).then(function() {
+            return intent.join(roomId).then(function(resultRoomId) {
+                expect(resultRoomId).toBe(roomId);
                 expect(client.joinRoom).not.toHaveBeenCalled();
             });
         });
@@ -75,15 +76,16 @@ describe("Intent", function() {
                             error: "Join first"
                         });
                     }
-                    return Promise.resolve({});
+                    return Promise.resolve({room_id: roomId});
                 });
                 botClient.invite.and.callFake(() => Promise.resolve({}));
 
-                return intent.join(roomId).then(function() {
+                return intent.join(roomId).then(function(resultRoomId) {
                     expect(client.joinRoom).toHaveBeenCalledWith(
                         roomId, { syncRoom: false }
                     );
                     expect(botClient.invite).toHaveBeenCalledWith(roomId, userId);
+                    expect(resultRoomId).toBe(roomId);
                 });
             });
 
@@ -108,9 +110,9 @@ describe("Intent", function() {
                         }
                         return Promise.resolve({});
                     });
-                    botClient.joinRoom.and.callFake(() => Promise.resolve({}));
+                    botClient.joinRoom.and.callFake(() => Promise.resolve({room_id: roomId}));
 
-                    return intent.join(roomId).then(function() {
+                    return intent.join(roomId).then(function(resultRoomId) {
                         expect(client.joinRoom).toHaveBeenCalledWith(
                             roomId, { syncRoom: false }
                         );
@@ -118,6 +120,8 @@ describe("Intent", function() {
                         expect(botClient.joinRoom).toHaveBeenCalledWith(
                             roomId, { syncRoom: false }
                         );
+                        expect(resultRoomId).toBe(roomId);
+
                     });
                 });
 
@@ -325,11 +329,12 @@ describe("Intent", function() {
                     room_id: joinRoomId,
                 });
             });
-            return intent.sendMessage(roomId, content).then(function() {
+            return intent.sendMessage(roomId, content).then(function(eventId) {
                 expect(client.sendEvent).toHaveBeenCalledWith(
                     roomId, "m.room.message", content
                 );
                 expect(client.joinRoom).toHaveBeenCalledWith(roomId, { syncRoom: false });
+                expect(eventId).toEqual({event_id: "$12345:6789"});
             });
         });
 

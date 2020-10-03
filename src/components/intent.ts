@@ -516,12 +516,12 @@ export class Intent {
      * <p>Join a room</p>
      * This will automatically send an invite from the bot if it is an invite-only
      * room, which may make the bot attempt to join the room if it isn't already.
-     * @param roomId The room to join.
+     * @param roomIdOrAlias The room ID or room alias to join.
      * @param viaServers The server names to try and join through in
      * addition to those that are automatically chosen.
      */
-    public async join(roomId: string, viaServers?: string[]) {
-        await this._ensureJoined(roomId, false, viaServers);
+    public async join(roomIdOrAlias: string, viaServers?: string[]): Promise<string> {
+        return this._ensureJoined(roomIdOrAlias, false, viaServers);
     }
 
     /**
@@ -698,8 +698,9 @@ export class Intent {
     }
 
     private async _ensureJoined(
-        roomId: string, ignoreCache = false, viaServers?: string[], passthroughError = false
-    ) {
+        roomIdOrAlias: string, ignoreCache = false, viaServers?: string[], passthroughError = false
+    ): Promise<string> {
+        const isRoomId = roomIdOrAlias.startsWith("!");
         const { userId } = this.client.credentials;
         const opts: { syncRoom: boolean, viaServers?: string[] } = {
             syncRoom: false,
@@ -707,8 +708,8 @@ export class Intent {
         if (viaServers) {
             opts.viaServers = viaServers;
         }
-        if (this.opts.backingStore.getMembership(roomId, userId) === "join" && !ignoreCache) {
-            return Promise.resolve();
+        if (isRoomId && this.opts.backingStore.getMembership(roomIdOrAlias, userId) === "join" && !ignoreCache) {
+            return roomIdOrAlias;
         }
 
         /* Logic:
@@ -728,12 +729,12 @@ export class Intent {
         FAIL (bot can't get into the room)
         */
 
-        const deferredPromise = defer();
+        const deferredPromise = defer<string>();
 
         const mark = (room: string, state: UserMembership) => {
             this.opts.backingStore.setMembership(room, userId, state);
             if (state === "join") {
-                deferredPromise.resolve();
+                deferredPromise.resolve(room);
             }
         }
 
@@ -746,25 +747,31 @@ export class Intent {
                 return deferredPromise.promise;
             }
             try {
-                await this.client.joinRoom(roomId, opts);
-                mark(roomId, "join");
+                // eslint-disable-next-line camelcase
+                const { room_id } = await this.client.joinRoom(roomIdOrAlias, opts);
+                mark(room_id, "join");
             }
             catch (ex) {
                 if (ex.errcode !== "M_FORBIDDEN") {
                     throw ex;
                 }
                 try {
+                    if (!isRoomId) {
+                        throw Error("Can't invite via an alias");
+                    }
                     // Try bot inviting client
-                    await this.botClient.invite(roomId, userId);
-                    await this.client.joinRoom(roomId, opts);
-                    mark(roomId, "join");
+                    await this.botClient.invite(roomIdOrAlias, userId);
+                    // eslint-disable-next-line camelcase
+                    const { room_id } = await this.client.joinRoom(roomIdOrAlias, opts);
+                    mark(room_id, "join");
                 }
                 catch (_ex) {
                     // Try bot joining
-                    await this.botClient.joinRoom(roomId, opts)
-                    await this.botClient.invite(roomId, userId);
-                    await this.client.joinRoom(roomId, opts);
-                    mark(roomId, "join");
+                    // eslint-disable-next-line camelcase
+                    const { room_id } = await this.botClient.joinRoom(roomIdOrAlias, opts)
+                    await this.botClient.invite(room_id, userId);
+                    await this.client.joinRoom(room_id, opts);
+                    mark(room_id, "join");
                 }
             }
         }

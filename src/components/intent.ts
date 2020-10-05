@@ -358,7 +358,9 @@ export class Intent {
      * @param type The event type
      * @param content The event content
      */
-    public async sendEvent(roomId: string, type: string, content: Record<string, unknown>) {
+    public async sendEvent(roomId: string, type: string, content: Record<string, unknown>)
+        // eslint-disable-next-line camelcase
+        : Promise<{event_id: string}> {
         if (this.encryption) {
             // We *need* to sync before we can send a message.
             await this.ensureRegistered();
@@ -366,9 +368,10 @@ export class Intent {
         }
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type);
-        return this._joinGuard(roomId, async() => (
-            this.client.sendEvent(roomId, type, content)
-        ));
+        return this._joinGuard(roomId, async() =>
+            // eslint-disable-next-line camelcase
+            this.client.sendEvent(roomId, type, content) as Promise<{event_id: string}>
+        );
     }
 
     /**
@@ -381,12 +384,15 @@ export class Intent {
      * @param skey The state key
      * @param content The event content
      */
-    public async sendStateEvent(roomId: string, type: string, skey: string, content: Record<string, unknown>) {
+    public async sendStateEvent(roomId: string, type: string, skey: string, content: Record<string, unknown>
+        // eslint-disable-next-line camelcase
+        ): Promise<{event_id: string}> {
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type);
-        return this._joinGuard(roomId, async() => (
-            this.client.sendStateEvent(roomId, type, content, skey)
-        ));
+        return this._joinGuard(roomId, async() =>
+            // eslint-disable-next-line camelcase
+            this.client.sendStateEvent(roomId, type, content, skey) as Promise<{event_id: string}>
+        );
     }
 
     /**
@@ -682,7 +688,7 @@ export class Intent {
 
     // Guard a function which returns a promise which may reject if the user is not
     // in the room. If the promise rejects, join the room and retry the function.
-    private async _joinGuard(roomId: string, promiseFn: () => Promise<unknown>) {
+    private async _joinGuard<T>(roomId: string, promiseFn: () => Promise<T>): Promise<T> {
         try {
             // await so we can handle the error
             return await promiseFn();

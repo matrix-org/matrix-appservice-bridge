@@ -50,6 +50,7 @@ import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
 import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
+import { DebugAPI, DebugApiOpts } from "./components/debug-api";
 
 const log = logging.get("bridge");
 
@@ -246,6 +247,8 @@ interface BridgeOpts {
         homeserverUrl: string;
         store: ClientEncryptionStore;
     };
+
+    debugApi?: DebugApiOpts;
 }
 
 interface VettedBridgeOpts {
@@ -378,6 +381,11 @@ interface VettedBridgeOpts {
         homeserverUrl: string;
         store: ClientEncryptionStore;
     };
+
+    /**
+     * A optional debug API for bridges.
+     */
+    debugApi?: DebugApiOpts;
 }
 
 export class Bridge {
@@ -404,6 +412,7 @@ export class Bridge {
     private registration?: AppServiceRegistration;
     private appservice?: AppService;
     private eeEventBroker?: EncryptedEventBroker;
+    private debugApi?: DebugAPI;
 
     public readonly opts: VettedBridgeOpts;
 
@@ -548,6 +557,11 @@ export class Bridge {
         }
         else {
             this.registration = this.opts.registration;
+        }
+
+        if (this.opts.debugApi) {
+            this.debugApi = new DebugAPI(this.opts.debugApi);
+            await this.debugApi.start();
         }
 
         const asToken = this.registration.getAppServiceToken();

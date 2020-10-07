@@ -30,7 +30,7 @@ export class DebugAPI {
         });
     }
 
-    public addDebugRoute(method: "get"|"post"|"put"|"delete", path: string,
+    public addRoute(method: "get"|"post"|"put"|"delete", path: string,
         callback: (req: Request, res: Response) => void) {
         this.app[method](path, callback);
     }

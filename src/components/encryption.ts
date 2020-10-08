@@ -83,7 +83,7 @@ export class EncryptedEventBroker {
         private membership: MembershipCache,
         private asBot: AppServiceBot,
         private onEvent: (weakEvent: WeakEvent) => void,
-        private onEphemeralEvent: (event: EphemeralEvent) => void,
+        private onEphemeralEvent: ((event: EphemeralEvent) => void)|undefined,
         private getIntent: (userId: string) => Intent
         ) {
 
@@ -203,6 +203,9 @@ export class EncryptedEventBroker {
     }
 
     private onTyping(syncUserId: string, event: any) {
+        if (!this.onEphemeralEvent) {
+            return;
+        }
         if (this.userForRoom.get(event.getRoomId()) === syncUserId) {
             // Ensure only the selected user for the room syncs this.
             this.onEphemeralEvent(event.event);
@@ -210,6 +213,9 @@ export class EncryptedEventBroker {
     }
 
     private onReceipt(syncUserId: string, event: any) {
+        if (!this.onEphemeralEvent) {
+            return;
+        }
         if (this.userForRoom.get(event.getRoomId()) === syncUserId) {
             // Ensure only the user for the room syncs this.
             this.onEphemeralEvent(event.event);
@@ -217,6 +223,9 @@ export class EncryptedEventBroker {
     }
 
     private onPresence(event: any) {
+        if (!this.onEphemeralEvent) {
+            return;
+        }
         // Presence needs to be de-duplicated.
         const now = Date.now();
         const presenceEv = event.event as PresenceEvent;
@@ -258,9 +267,11 @@ export class EncryptedEventBroker {
         matrixClient.on("error", (err: Error) => {
             log.error(`${userId} client error:`, err);
         });
-        matrixClient.on("RoomMember.typing", (event: TypingEvent) => this.onTyping(userId, event));
-        matrixClient.on("Room.receipt", (event: ReadReceiptEvent) => this.onReceipt(userId, event));
-        matrixClient.on("User.presence", (event: PresenceEvent) => this.onPresence(event));
+        if (this.onEphemeralEvent) {
+            matrixClient.on("RoomMember.typing", (event: TypingEvent) => this.onTyping(userId, event));
+            matrixClient.on("Room.receipt", (event: ReadReceiptEvent) => this.onReceipt(userId, event));
+            matrixClient.on("User.presence", (event: PresenceEvent) => this.onPresence(event));
+        }
         const filter = new Filter(userId);
         filter.setDefinition(SYNC_FILTER);
         await matrixClient.startClient({

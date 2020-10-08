@@ -1100,9 +1100,6 @@ export class Bridge {
         if (!this.opts.controller.onAliasQuery) {
             return;
         }
-        if (!this.opts.controller.onUserQuery) {
-            return;
-        }
         if (!this.botIntent) {
             throw Error('botIntent is not ready yet');
         }

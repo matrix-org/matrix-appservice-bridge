@@ -1,0 +1,1 @@
+Fix bug where OnAliasQuery would fail to fire if OnUserQuery was not defined

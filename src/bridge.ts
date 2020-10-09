@@ -33,7 +33,7 @@ import { EventBridgeStore } from "./components/event-bridge-store";
 import { MatrixUser } from "./models/users/matrix"
 import { MatrixRoom } from "./models/rooms/matrix"
 import { PrometheusMetrics, BridgeGaugesCounts } from "./components/prometheusmetrics"
-import { MembershipCache, UserMembership } from "./components/membership-cache"
+import { MembershipCache, UserMembership, UserProfile } from "./components/membership-cache"
 import { RoomLinkValidator, RoomLinkValidatorStatus, Rules } from "./components/room-link-validator"
 import { RoomUpgradeHandler, RoomUpgradeHandlerOpts } from "./components/room-upgrade-handler";
 import { EventQueue } from "./components/event-queue";
@@ -475,6 +475,7 @@ export class Bridge {
             setMembership: this.membershipCache.setMemberEntry.bind(this.membershipCache),
             setPowerLevelContent: this.setPowerLevelEntry.bind(this),
             getMembership: this.membershipCache.getMemberEntry.bind(this.membershipCache),
+            getMemberProfile: this.membershipCache.getMemberProfile.bind(this.membershipCache),
             getPowerLevelContent: this.getPowerLevelEntry.bind(this)
         };
 
@@ -1289,11 +1290,23 @@ export class Bridge {
 
     private updateIntents(event: WeakEvent) {
         if (event.type === "m.room.member" && event.state_key) {
-            const content = event.content as { membership: UserMembership };
+            const content = event.content as {
+                membership: UserMembership;
+                displayname?: string;
+                avatar_url?: string;
+            };
+            const profile: UserProfile = {};
+            if (content && content.displayname) {
+                profile.displayname = content.displayname;
+            }
+            if (content && content.avatar_url) {
+                profile.avatar_url = content.avatar_url;
+            }
             this.membershipCache.setMemberEntry(
                 event.room_id,
                 event.state_key,
-                content ? content.membership : null
+                content ? content.membership : null,
+                profile,
             );
         }
         else if (event.type === "m.room.power_levels") {

@@ -575,6 +575,17 @@ export class Intent {
         return this.client.setAvatarUrl(url);
     }
 
+    public async setRoomUserDisplayName(roomId: string, name: string) {
+        // FIXME: the content should be based on the current membership event
+        // (do we have this cached somewhere?).  Also, do nothing if the given
+        // name is the same as what's already there.
+        const content = {
+            membership: "join",
+            displayname: name,
+        };
+        await this.client.sendStateEvent(roomId, 'm.room.member', content, this.client.getUserId());
+    }
+
     /**
      * Create a new alias mapping.
      * @param alias The room alias to create

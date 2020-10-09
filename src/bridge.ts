@@ -412,7 +412,7 @@ export class Bridge {
     private registration?: AppServiceRegistration;
     private appservice?: AppService;
     private eeEventBroker?: EncryptedEventBroker;
-    private debugApi?: DebugAPI;
+    public readonly debugApi?: DebugAPI;
 
     public readonly opts: VettedBridgeOpts;
 
@@ -447,6 +447,9 @@ export class Bridge {
         if (typeof opts.controller.onEvent !== "function") {
             throw new Error("controller.onEvent is a required function");
         }
+
+
+        this.debugApi = opts.debugApi ? new DebugAPI(opts.debugApi) : undefined;
 
         this.opts = {
             ...opts,
@@ -559,8 +562,7 @@ export class Bridge {
             this.registration = this.opts.registration;
         }
 
-        if (this.opts.debugApi) {
-            this.debugApi = new DebugAPI(this.opts.debugApi);
+        if (this.debugApi) {
             await this.debugApi.start();
         }
 
@@ -1419,7 +1421,6 @@ export class Bridge {
             this.eeEventBroker.close();
         }
     }
-
 
     public async checkHomeserverSupport() {
         if (!this.botClient) {

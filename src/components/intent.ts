@@ -20,7 +20,7 @@ import JsSdk from "matrix-js-sdk";
 const { MatrixEvent, RoomMember } = JsSdk as any;
 import { ClientRequestCache } from "./client-request-cache";
 import { defer } from "../utils/promiseutil";
-import { UserMembership } from "./membership-cache";
+import { UserMembership, UserProfile } from "./membership-cache";
 import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
@@ -30,8 +30,9 @@ const log = Logging.get("Intent");
 
 export type IntentBackingStore = {
     getMembership: (roomId: string, userId: string) => UserMembership,
+    getMemberProfile: (roomId: string, userid: string) => UserProfile,
     getPowerLevelContent: (roomId: string) => Record<string, unknown> | undefined,
-    setMembership: (roomId: string, userId: string, membership: UserMembership) => void,
+    setMembership: (roomId: string, userId: string, membership: UserMembership, profile: UserProfile) => void,
     setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => void,
 };
 
@@ -111,7 +112,7 @@ export class Intent {
         registered?: boolean;
     }
     // These two are only used if no opts.backingStore is provided to the constructor.
-    private readonly _membershipStates: Record<string, UserMembership> = {};
+    private readonly _membershipStates: Record<string, [UserMembership, UserProfile]> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
     private readonly encryption?: {
         sessionPromise: Promise<ClientEncryptionSession|null>;
@@ -182,16 +183,22 @@ export class Intent {
                     if (userId !== this.client.credentials.userId) {
                         return null;
                     }
-                    return this._membershipStates[roomId];
+                    return this._membershipStates[roomId] && this._membershipStates[roomId][0];
+                },
+                getMemberProfile: (roomId: string, userId: string) => {
+                    if (userId !== this.client.credentials.userId) {
+                        return {};
+                    }
+                    return this._membershipStates[roomId] && this._membershipStates[roomId][1];
                 },
                 getPowerLevelContent: (roomId: string) => {
                     return this._powerLevels[roomId];
                 },
-                setMembership: (roomId: string, userId: string, membership: UserMembership) => {
+                setMembership: (roomId: string, userId: string, membership: UserMembership, profile: UserProfile) => {
                     if (userId !== this.client.credentials.userId) {
                         return;
                     }
-                    this._membershipStates[roomId] = membership;
+                    this._membershipStates[roomId] = [membership, profile];
                 },
                 setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => {
                     this._powerLevels[roomId] = content;
@@ -575,6 +582,19 @@ export class Intent {
         return this.client.setAvatarUrl(url);
     }
 
+    public async setRoomUserProfile(roomId: string, profile: UserProfile) {
+        const userId = this.client.getUserId();
+        const currProfile = this.opts.backingStore.getMemberProfile(roomId, userId);
+        // Compare the user's current profile (from cache) with the profile
+        // that is requested.  Only send the state event if something that was
+        // requested to change is different from the current value.
+        if (("displayname" in profile && currProfile.displayname != profile.displayname) ||
+            ("avatar_url" in profile && currProfile.avatar_url != profile.avatar_url)) {
+            const content = Object.assign({membership: "join"}, currProfile, profile);
+            await this.client.sendStateEvent(roomId, 'm.room.member', content, userId);
+        }
+    }
+
     /**
      * Create a new alias mapping.
      * @param alias The room alias to create
@@ -672,14 +692,28 @@ export class Intent {
      * if a backing store was provided to the Intent.
      * @param event The incoming event JSON
      */
-    // eslint-disable-next-line camelcase
-    public onEvent(event: {type: string, content: {membership: UserMembership}, state_key: unknown, room_id: string}) {
+    public onEvent(event: {
+        type: string,
+        // eslint-disable-next-line camelcase
+        content: {membership: UserMembership, displayname?: string, avatar_url?: string},
+        // eslint-disable-next-line camelcase
+        state_key: unknown,
+        // eslint-disable-next-line camelcase
+        room_id: string
+    }) {
         if (!this._membershipStates || !this._powerLevels) {
             return;
         }
         if (event.type === "m.room.member" &&
                 event.state_key === this.client.credentials.userId) {
-            this._membershipStates[event.room_id] = event.content.membership;
+            const profile: UserProfile = {};
+            if (event.content.displayname) {
+                profile.displayname = event.content.displayname;
+            }
+            if (event.content.avatar_url) {
+                profile.avatar_url = event.content.avatar_url;
+            }
+            this._membershipStates[event.room_id] = [event.content.membership, profile];
         }
         else if (event.type === "m.room.power_levels") {
             this._powerLevels[event.room_id] = event.content as unknown as PowerLevelContent;
@@ -738,7 +772,7 @@ export class Intent {
         const deferredPromise = defer<string>();
 
         const mark = (room: string, state: UserMembership) => {
-            this.opts.backingStore.setMembership(room, userId, state);
+            this.opts.backingStore.setMembership(room, userId, state, {});
             if (state === "join") {
                 deferredPromise.resolve(room);
             }

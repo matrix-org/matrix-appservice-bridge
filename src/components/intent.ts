@@ -783,7 +783,7 @@ export class Intent {
         const deferredPromise = defer<string>();
 
         const mark = (room: string, state: UserMembership) => {
-            this.opts.backingStore.setMembership(room, userId, state, {});
+            this.opts.backingStore.setMembership(room, this.userId, state, {});
             if (state === "join") {
                 deferredPromise.resolve(room);
             }
@@ -811,7 +811,7 @@ export class Intent {
                         throw Error("Can't invite via an alias");
                     }
                     // Try bot inviting client
-                    await this.botClient.invite(roomIdOrAlias, userId);
+                    await this.botClient.invite(roomIdOrAlias, this.userId);
                     // eslint-disable-next-line camelcase
                     const { room_id } = await this.client.joinRoom(roomIdOrAlias, opts);
                     mark(room_id, "join");
@@ -820,7 +820,7 @@ export class Intent {
                     // Try bot joining
                     // eslint-disable-next-line camelcase
                     const { room_id } = await this.botClient.joinRoom(roomIdOrAlias, opts)
-                    await this.botClient.invite(room_id, userId);
+                    await this.botClient.invite(room_id, this.userId);
                     await this.client.joinRoom(room_id, opts);
                     mark(room_id, "join");
                 }

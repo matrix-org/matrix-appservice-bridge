@@ -1,0 +1,1 @@
+Fix issue where ghost users would not be registered if they've never used the bridge

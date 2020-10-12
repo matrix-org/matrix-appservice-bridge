@@ -878,7 +878,8 @@ export class Intent {
     public async ensureRegistered(forceRegister = false) {
         const userId: string = this.client.credentials.userId;
         log.debug(`Checking if user ${this.client.credentials.userId} is registered`);
-        // We want to skip if and only if all of these are true
+        // We want to skip if and only if all of these conditions are met.
+        // Calling /register twice isn't disasterous, but not calling it *at all* IS.
         if (!forceRegister && this.opts.registered && !this.encryption) {
             log.debug("ensureRegistered: Registered, and not encrypted");
             return "registered=true";

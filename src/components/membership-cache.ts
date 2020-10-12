@@ -18,12 +18,16 @@ limitations under the License.
  * and also stores the state of whether users are registered.
  */
 export type UserMembership = "join"|"invite"|"leave"|"ban"|null;
+export type UserProfile = {
+    displayname?: string;
+    avatar_url?: string; // eslint-disable-line camelcase
+}
 export class MembershipCache {
-    private membershipMap: {[roomId: string]: { [userId: string]: UserMembership }} = {};
+    private membershipMap: {[roomId: string]: { [userId: string]: [UserMembership, UserProfile] }} = {};
     private registeredUsers = new Set<string>();
 
     /**
-     * Get's the *cached* state of a user's membership for a room.
+     * Gets the *cached* state of a user's membership for a room.
      * This DOES NOT check to verify the value is correct (i.e the
      * room may have state reset and left the user from the room).
      *
@@ -34,10 +38,28 @@ export class MembershipCache {
      * @returns The membership state of the user, e.g. "joined"
      */
     getMemberEntry(roomId: string, userId: string): UserMembership {
-        if (this.membershipMap[roomId] === undefined) {
+        if (this.membershipMap[roomId] === undefined || this.membershipMap[roomId][userId] === undefined) {
             return null;
         }
-        return this.membershipMap[roomId][userId];
+        return this.membershipMap[roomId][userId][0];
+    }
+
+    /**
+     * Gets the *cached* state of a user's membership for a room.
+     * This DOES NOT check to verify the value is correct (i.e the
+     * room may have state reset and left the user from the room).
+     *
+     * This only caches users from the appservice.
+     *
+     * @param roomId Room id to check the state of.
+     * @param userId The userid to check the state of.
+     * @returns The member's profile information.
+     */
+    getMemberProfile(roomId: string, userId: string): UserProfile {
+        if (this.membershipMap[roomId] === undefined || this.membershipMap[roomId][userId] === undefined) {
+            return {};
+        }
+        return this.membershipMap[roomId][userId][1];
     }
 
     /**
@@ -52,7 +74,7 @@ export class MembershipCache {
      * @param membership The membership value to set for the user
      *                       e.g joined.
      */
-    setMemberEntry(roomId: string, userId: string, membership: UserMembership) {
+    setMemberEntry(roomId: string, userId: string, membership: UserMembership, profile: UserProfile) {
         if (this.membershipMap[roomId] === undefined) {
             this.membershipMap[roomId] = {};
         }
@@ -62,7 +84,7 @@ export class MembershipCache {
             this.registeredUsers.add(userId);
         }
 
-        this.membershipMap[roomId][userId] = membership;
+        this.membershipMap[roomId][userId] = [membership, profile];
     }
 
     /**
@@ -81,7 +103,7 @@ export class MembershipCache {
             return Object.keys(this.membershipMap[roomId]);
         }
         const members = [];
-        for (const [userId, membership] of Object.entries(this.membershipMap[roomId])) {
+        for (const [userId, [membership, profile]] of Object.entries(this.membershipMap[roomId])) {
             if (membership === filterFor) {
                 members.push(userId);
             }

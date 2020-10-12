@@ -1,0 +1,1 @@
+Add a function to intent to set the user's profile in a room.

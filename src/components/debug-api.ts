@@ -1,6 +1,8 @@
 import inspector from 'inspector';
 import express, { Application, Request, Response } from 'express';
+import Logging from "./logging";
 
+const log = Logging.get("DebugAPI");
 
 export interface DebugApiOpts {
     inspector?: {
@@ -26,7 +28,7 @@ export class DebugAPI {
     public async start(): Promise<unknown> {
         return new Promise((res, rej) => {
             this.app.once("error", rej);
-            this.app.listen(this.opts.port, this.opts.host, res)
+            this.app.listen(this.opts.port, this.opts.host, res);
         });
     }
 

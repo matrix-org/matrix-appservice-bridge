@@ -878,13 +878,13 @@ export class Intent {
     public async ensureRegistered(forceRegister = false) {
         const userId: string = this.client.credentials.userId;
         log.debug(`Checking if user ${this.client.credentials.userId} is registered`);
-        forceRegister = forceRegister || !this.opts.registered;
-        if (!forceRegister && !this.encryption) {
+        // We want to skip if and only if all of these are true
+        if (!forceRegister && this.opts.registered && !this.encryption) {
             log.debug("ensureRegistered: Registered, and not encrypted");
             return "registered=true";
         }
         let registerRes;
-        if (forceRegister) {
+        if (forceRegister || !this.opts.registered) {
             const localpart = (new MatrixUser(userId)).localpart;
             try {
                 registerRes = await this.botClient.register(localpart);

@@ -1,4 +1,28 @@
- 2.1.0 (2020-09-28)
+ 2.2.0-rc1 (2020-10-12)
+===================
+
+Features
+--------
+
+- Update matrix-js-sdk to v8.4.1 ([\#237](https://github.com/matrix-org/matrix-appservice-bridge/issues/237))
+- Add support for ephemeral events from the AS api (MSC2409) ([\#238](https://github.com/matrix-org/matrix-appservice-bridge/issues/238))
+- Return the roomId when calling intent.join ([\#241](https://github.com/matrix-org/matrix-appservice-bridge/issues/241))
+
+
+Bugfixes
+--------
+
+- Fix bug where OnAliasQuery would fail to fire if OnUserQuery was not defined ([\#247](https://github.com/matrix-org/matrix-appservice-bridge/issues/247))
+- Fix issue where ghost users would not be registered if they've never used the bridge ([\#249](https://github.com/matrix-org/matrix-appservice-bridge/issues/249))
+
+
+Internal Changes
+----------------
+
+- Return `event_id` when sending a event or state event ([\#242](https://github.com/matrix-org/matrix-appservice-bridge/issues/242))
+
+
+2.1.0 (2020-09-28)
 ===================
 
 Bugfixes

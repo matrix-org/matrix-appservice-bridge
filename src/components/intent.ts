@@ -180,7 +180,7 @@ export class Intent {
             ...opts,
             backingStore: opts.backingStore ? { ...opts.backingStore } : {
                 getMembership: (roomId: string, userId: string) => {
-                    if (userId !== this.client.credentials.userId) {
+                    if (userId !== this.userId) {
                         return null;
                     }
                     return this._membershipStates[roomId] && this._membershipStates[roomId][0];
@@ -195,7 +195,7 @@ export class Intent {
                     return this._powerLevels[roomId];
                 },
                 setMembership: (roomId: string, userId: string, membership: UserMembership, profile: UserProfile) => {
-                    if (userId !== this.client.credentials.userId) {
+                    if (userId !== this.userId) {
                         return;
                     }
                     this._membershipStates[roomId] = [membership, profile];
@@ -241,6 +241,10 @@ export class Intent {
      */
     public getClient() {
         return this.client;
+    }
+
+    public get userId(): string {
+        return this.client.credentials.userId;
     }
 
     /**
@@ -429,18 +433,19 @@ export class Intent {
     // eslint-disable-next-line camelcase
     public async createRoom(opts: RoomCreationOpts): Promise<{room_id: string}> {
         const cli = opts.createAsClient ? this.client : this.botClient;
+        const { userId } = cli.credentials;
         const options = opts.options || {};
         if (!opts.createAsClient) {
             // invite the client if they aren't already
             options.invite = options.invite || [];
-            if (Array.isArray(options.invite) && !options.invite.includes(this.client.credentials.userId)) {
-                options.invite.push(this.client.credentials.userId);
+            if (Array.isArray(options.invite) && !options.invite.includes(userId)) {
+                options.invite.push(userId);
             }
         }
         // make sure that the thing doing the room creation isn't inviting itself
         // else Synapse hard fails the operation with M_FORBIDDEN
-        if (Array.isArray(options.invite) && options.invite.includes(cli.credentials.userId)) {
-            options.invite.splice(options.invite.indexOf(cli.credentials.userId), 1);
+        if (Array.isArray(options.invite) && options.invite.includes(userId)) {
+            options.invite.splice(options.invite.indexOf(userId), 1);
         }
 
         await this.ensureRegistered();
@@ -460,7 +465,7 @@ export class Intent {
             return res;
         }
         const users: Record<string, number> = {};
-        users[cli.credentials.userId] = 100;
+        users[userId] = 100;
         this.opts.backingStore.setPowerLevelContent(roomId, {
             users_default: 0,
             events_default: 0,
@@ -494,7 +499,10 @@ export class Intent {
      * @return Resolved when kickked, else rejected with an error.
      */
     public async kick(roomId: string, target: string, reason?: string) {
-        await this._ensureJoined(roomId);
+        if (target !== this.userId) {
+            // Only ensure joined if we are not also the kicker
+            await this._ensureJoined(roomId);
+        }
         return this.client.kick(roomId, target, reason);
     }
 
@@ -541,8 +549,12 @@ export class Intent {
      * <p>Leave a room</p>
      * This will no-op if the user isn't in the room.
      * @param roomId The room to leave.
+     * @param reason An optional string to explain why the user left the room.
      */
-    public async leave(roomId: string) {
+    public async leave(roomId: string, reason?: string) {
+        if (reason) {
+            return this.kick(roomId, this.userId, reason)
+        }
         return this.client.leave(roomId);
     }
 
@@ -705,7 +717,8 @@ export class Intent {
             return;
         }
         if (event.type === "m.room.member" &&
-                event.state_key === this.client.credentials.userId) {
+                event.state_key === this.userId &&
+                event.content.membership) {
             const profile: UserProfile = {};
             if (event.content.displayname) {
                 profile.displayname = event.content.displayname;
@@ -741,14 +754,13 @@ export class Intent {
         roomIdOrAlias: string, ignoreCache = false, viaServers?: string[], passthroughError = false
     ): Promise<string> {
         const isRoomId = roomIdOrAlias.startsWith("!");
-        const { userId } = this.client.credentials;
         const opts: { syncRoom: boolean, viaServers?: string[] } = {
             syncRoom: false,
         };
         if (viaServers) {
             opts.viaServers = viaServers;
         }
-        if (isRoomId && this.opts.backingStore.getMembership(roomIdOrAlias, userId) === "join" && !ignoreCache) {
+        if (isRoomId && this.opts.backingStore.getMembership(roomIdOrAlias, this.userId) === "join" && !ignoreCache) {
             return roomIdOrAlias;
         }
 
@@ -772,7 +784,7 @@ export class Intent {
         const deferredPromise = defer<string>();
 
         const mark = (room: string, state: UserMembership) => {
-            this.opts.backingStore.setMembership(room, userId, state, {});
+            this.opts.backingStore.setMembership(room, this.userId, state, {});
             if (state === "join") {
                 deferredPromise.resolve(room);
             }
@@ -800,7 +812,7 @@ export class Intent {
                         throw Error("Can't invite via an alias");
                     }
                     // Try bot inviting client
-                    await this.botClient.invite(roomIdOrAlias, userId);
+                    await this.botClient.invite(roomIdOrAlias, this.userId);
                     // eslint-disable-next-line camelcase
                     const { room_id } = await this.client.joinRoom(roomIdOrAlias, opts);
                     mark(room_id, "join");
@@ -809,7 +821,7 @@ export class Intent {
                     // Try bot joining
                     // eslint-disable-next-line camelcase
                     const { room_id } = await this.botClient.joinRoom(roomIdOrAlias, opts)
-                    await this.botClient.invite(room_id, userId);
+                    await this.botClient.invite(room_id, this.userId);
                     await this.client.joinRoom(room_id, opts);
                     mark(room_id, "join");
                 }
@@ -832,7 +844,7 @@ export class Intent {
         if (this.opts.dontCheckPowerLevel && eventType !== "m.room.power_levels") {
             return undefined;
         }
-        const userId = this.client.credentials.userId;
+        const userId = this.userId;
         const plContent = this.opts.backingStore.getPowerLevelContent(roomId)
             || await this.client.getStateEvent(roomId, "m.room.power_levels", "");
         const eventContent: PowerLevelContent = plContent && typeof plContent === "object" ? plContent : {};
@@ -896,7 +908,7 @@ export class Intent {
     }
 
     private async loginForEncryptedClient() {
-        const userId: string = this.client.credentials.userId;
+        const userId: string = this.userId;
         const res = await this.client.login(APPSERVICE_LOGIN_TYPE, {
             identifier: {
                 type: "m.id.user",

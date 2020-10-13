@@ -433,18 +433,19 @@ export class Intent {
     // eslint-disable-next-line camelcase
     public async createRoom(opts: RoomCreationOpts): Promise<{room_id: string}> {
         const cli = opts.createAsClient ? this.client : this.botClient;
+        const { userId } = cli.credentials;
         const options = opts.options || {};
         if (!opts.createAsClient) {
             // invite the client if they aren't already
             options.invite = options.invite || [];
-            if (Array.isArray(options.invite) && !options.invite.includes(this.userId)) {
-                options.invite.push(this.userId);
+            if (Array.isArray(options.invite) && !options.invite.includes(userId)) {
+                options.invite.push(userId);
             }
         }
         // make sure that the thing doing the room creation isn't inviting itself
         // else Synapse hard fails the operation with M_FORBIDDEN
-        if (Array.isArray(options.invite) && options.invite.includes(cli.userId)) {
-            options.invite.splice(options.invite.indexOf(cli.userId), 1);
+        if (Array.isArray(options.invite) && options.invite.includes(userId)) {
+            options.invite.splice(options.invite.indexOf(userId), 1);
         }
 
         await this.ensureRegistered();
@@ -464,7 +465,7 @@ export class Intent {
             return res;
         }
         const users: Record<string, number> = {};
-        users[cli.userId] = 100;
+        users[userId] = 100;
         this.opts.backingStore.setPowerLevelContent(roomId, {
             users_default: 0,
             events_default: 0,

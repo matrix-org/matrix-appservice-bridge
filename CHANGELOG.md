@@ -1,4 +1,19 @@
- 2.2.0-rc1 (2020-10-12)
+ 2.2.0-rc2 (2020-10-13)
+=======================
+
+Features
+--------
+
+- Add a function to intent to set the user's profile in a room. ([\#248](https://github.com/matrix-org/matrix-appservice-bridge/issues/248))
+
+
+Bugfixes
+--------
+
+- Don't join the room when doing a self-kick ([\#250](https://github.com/matrix-org/matrix-appservice-bridge/issues/250))
+
+
+2.2.0-rc1 (2020-10-12)
 ===================
 
 Features

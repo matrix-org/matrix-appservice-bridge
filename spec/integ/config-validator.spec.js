@@ -57,6 +57,13 @@ describe("ConfigValidator", function() {
                 baz: 100
             }
         });
+        // Ensure defaults isn't modified
+        expect(defaults).toEqual({
+            flibble: "wibble",
+            foo: {
+                baz: 100
+            }
+        });
     });
 
     it("should throw an error for invalid configs", function() {

@@ -20,6 +20,10 @@ import extend from "extend";
 
 type Schema = any;
 
+interface ValidationError extends Error {
+    _validationErrors?: validator.ValidationError[];
+}
+
 export class ConfigValidator {
 
     /**
@@ -50,13 +54,12 @@ export class ConfigValidator {
                 console.error(`The field ${error.field} is ${error.value}` +
                             ` which ${error.message}`);
             });
-            // This is a bit awful, but it's how we return validation errors.
-            const e: any = new Error("Failed to validate file");
+            const e: ValidationError = new Error("Failed to validate file");
             e._validationErrors = js.errors;
             throw e;
         }
         // mux in the default config
-        return extend(true, defaultConfig, inputConfig);
+        return extend(true, {}, defaultConfig, inputConfig);
     }
 
     private static loadFromFile(filename: string): Schema {

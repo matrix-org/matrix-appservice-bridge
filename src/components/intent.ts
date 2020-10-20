@@ -323,7 +323,6 @@ export class Intent {
      */
     public async sendTyping(roomId: string, isTyping: boolean) {
         await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, "m.typing");
         return this.client.sendTyping(roomId, isTyping);
     }
 

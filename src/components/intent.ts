@@ -25,6 +25,7 @@ import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
+import { ReadStream } from "fs";
 
 const log = Logging.get("Intent");
 
@@ -56,6 +57,12 @@ export interface IntentOpts {
 export interface RoomCreationOpts {
     createAsClient?: boolean;
     options: Record<string, unknown>;
+}
+
+export interface FileUploadOpts {
+    name?: string;
+    includeFilename?: boolean;
+    type?: string;
 }
 
 /**
@@ -698,6 +705,15 @@ export class Intent {
     }
 
     /**
+     * Upload a file to the homeserver.
+     * @param content The file contents
+     * @param opts Additional options for the upload.
+     * @returns A MXC URL pointing to the uploaded data.
+     */
+    public async uploadContent(content: Buffer|string|ReadStream, opts: FileUploadOpts = {}): Promise<string> {
+        await this.ensureRegistered();
+        return this.client.uploadContent(content, {...opts, onlyContentUri: true});
+    }
      * Inform this Intent class of an incoming event. Various optimisations will be
      * done if this is provided. For example, a /join request won't be sent out if
      * it knows you've already been joined to the room. This function does nothing

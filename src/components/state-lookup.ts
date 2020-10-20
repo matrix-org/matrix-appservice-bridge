@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import PQueue from "p-queue";
+import { Intent } from "..";
 
 interface StateLookupOpts {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,7 +49,7 @@ const DEFAULT_STATE_CONCURRENCY = 4;
 
 export class StateLookup {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private _client: any;
+    private _client: any|Intent;
     private eventTypes: {[eventType: string]: boolean} = {};
     private dict: { [roomId: string]: StateLookupRoom } = {};
     private lookupQueue: PQueue;
@@ -81,7 +82,7 @@ export class StateLookup {
 
         this.retryStateIn = opts.retryStateInMs || RETRY_STATE_IN_MS;
 
-        this._client = opts.client;
+        this._client = opts.client instanceof Intent ? opts.client.client : opts.client;
         (opts.eventTypes || []).forEach((t) => {
             this.eventTypes[t] = true;
         });

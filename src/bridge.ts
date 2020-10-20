@@ -1462,7 +1462,7 @@ export class Bridge {
         }
         const sentTs = Date.now();
         if (this.selfPingDeferred) {
-            this.selfPingDeferred.defer.reject(new Error(""))
+            this.selfPingDeferred.defer.reject(new Error("Another ping request is being made. Cancelling this one."))
         }
         this.selfPingDeferred = {
             defer: deferPromise(),

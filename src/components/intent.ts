@@ -77,10 +77,6 @@ const returnFirstNumber = (...args: unknown[]) => {
     return 0;
 }
 
-const STATE_EVENT_TYPES = [
-    "m.room.name", "m.room.topic", "m.room.power_levels", "m.room.member",
-    "m.room.join_rules", "m.room.history_visibility"
-];
 const DEFAULT_CACHE_TTL = 90000;
 const DEFAULT_CACHE_SIZE = 1024;
 
@@ -350,7 +346,7 @@ export class Intent {
      */
     public async setPowerLevel(roomId: string, target: string, level: number|undefined) {
         await this._ensureJoined(roomId);
-        const event = await this._ensureHasPowerLevelFor(roomId, "m.room.power_levels");
+        const event = await this._ensureHasPowerLevelFor(roomId, "m.room.power_levels", true);
         return this.client.setPowerLevel(roomId, target, level, event);
     }
 
@@ -384,7 +380,7 @@ export class Intent {
             await this.encryption.ensureClientSyncingCallback();
         }
         await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, type);
+        await this._ensureHasPowerLevelFor(roomId, type, false);
         return this._joinGuard(roomId, async() =>
             // eslint-disable-next-line camelcase
             this.client.sendEvent(roomId, type, content) as Promise<{event_id: string}>
@@ -405,7 +401,7 @@ export class Intent {
         // eslint-disable-next-line camelcase
         ): Promise<{event_id: string}> {
         await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, type);
+        await this._ensureHasPowerLevelFor(roomId, type, true);
         return this._joinGuard(roomId, async() =>
             // eslint-disable-next-line camelcase
             this.client.sendStateEvent(roomId, type, content, skey) as Promise<{event_id: string}>
@@ -878,9 +874,10 @@ export class Intent {
      * Ensures that the client has the required power level to post the event type.
      * @param roomId Required as power levels exist inside a room.
      * @param eventTypes The event type to check the permissions for.
+     * @param isState Are we checking for state permissions or regular event permissions.
      * @return If found, the power level event
      */
-    private async _ensureHasPowerLevelFor(roomId: string, eventType: string) {
+    private async _ensureHasPowerLevelFor(roomId: string, eventType: string, isState: boolean) {
         if (this.opts.dontCheckPowerLevel && eventType !== "m.room.power_levels") {
             return undefined;
         }
@@ -899,7 +896,7 @@ export class Intent {
         }
         const powerLevelEvent = new MatrixEvent(event);
         // What level do we need for this event type?
-        const defaultLevel = STATE_EVENT_TYPES.includes(eventType)
+        const defaultLevel = isState
             ? event.content.state_default
             : event.content.events_default;
         const requiredLevel = returnFirstNumber(

@@ -713,6 +713,31 @@ export class Intent {
         await this.ensureRegistered();
         return this.client.uploadContent(content, {...opts, onlyContentUri: true});
     }
+
+    /**
+     * Set the visibility of a room in the homeserver's room directory.
+     * @param roomId The room
+     * @param visibility Should the room be visible
+     */
+    public async setRoomDirectoryVisibility(roomId: string, visibility: "public"|"private") {
+        await this.ensureRegistered();
+        return this.client.setRoomDirectoryVisibility(roomId, visibility);
+    }
+
+    /**
+     * Set the visibility of a room in the appservice's room directory.
+     * This only works if you have defined the `protocol` in the registration file.
+     * @param roomId The room
+     * @param networkId The network (not protocol) that owns this room. E.g. "freenode" (for an IRC bridge)
+     * @param visibility Should the room be visible
+     */
+    public async setRoomDirectoryVisibilityAppService(roomId: string, networkId: string,
+        visibility: "public"|"private") {
+        await this.ensureRegistered();
+        return this.client.setRoomDirectoryVisibilityAppService(roomId, visibility, networkId);
+    }
+
+    /**
      * Inform this Intent class of an incoming event. Various optimisations will be
      * done if this is provided. For example, a /join request won't be sent out if
      * it knows you've already been joined to the room. This function does nothing

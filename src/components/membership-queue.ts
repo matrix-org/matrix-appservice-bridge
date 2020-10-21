@@ -1,9 +1,12 @@
 import { Bridge } from "../bridge";
-import { Request } from "./request";
 import { get as getLogger } from "./logging";
 import PQueue from "p-queue";
 
 const log = getLogger("MembershipQueue");
+
+export interface ThinRequest {
+    getId(): string;
+}
 
 interface QueueUserItem {
     type: "join"|"leave";
@@ -13,7 +16,7 @@ interface QueueUserItem {
     roomId: string;
     userId: string;
     retry: boolean;
-    req: Request<unknown>;
+    req: ThinRequest;
 }
 
 export interface MembershipQueueOpts {
@@ -54,7 +57,7 @@ export class MembershipQueue {
      * @param req The request entry for logging context
      * @param retry Should the request retry if it fails
      */
-    public async join(roomId: string, userId: string|undefined, req: Request<unknown>, retry = true) {
+    public async join(roomId: string, userId: string|undefined, req: ThinRequest, retry = true) {
         return this.queueMembership({
             roomId,
             userId: userId || this.bridge.botUserId,
@@ -74,7 +77,7 @@ export class MembershipQueue {
      * @param reason Reason for leaving/kicking
      * @param kickUser The user to be kicked. If left blank, this will be a leave.
      */
-    public async leave(roomId: string, userId: string, req: Request<unknown>,
+    public async leave(roomId: string, userId: string, req: ThinRequest,
                        retry = true, reason?: string, kickUser?: string) {
         return this.queueMembership({
             roomId,

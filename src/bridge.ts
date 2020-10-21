@@ -1154,7 +1154,8 @@ export class Bridge {
         const isCanonicalState = event.state_key === "";
         this.updateIntents(event);
         if (this.opts.suppressEcho &&
-                this.registration.isUserMatch(event.sender, true)) {
+                (this.registration.isUserMatch(event.sender, true) ||
+                event.sender === this.botUserId)) {
             return null;
         }
 

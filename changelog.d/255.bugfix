@@ -1,0 +1,1 @@
+Fix a bug where messages would be echoed to the bridge from the bot user, even if `suppressEcho` was on.

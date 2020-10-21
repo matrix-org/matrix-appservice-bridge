@@ -1,4 +1,22 @@
- 2.2.0 (2020-10-15)
+ 2.3.0-rc1 (2020-10-21)
+=======================
+
+Features
+--------
+
+- Add `MembershipQueue` component ([\#251](https://github.com/matrix-org/matrix-appservice-bridge/issues/251))
+- Add function to ping the homeserver to check that the AS can be reached ([\#253](https://github.com/matrix-org/matrix-appservice-bridge/issues/253))
+- Add `uploadContent()`, and `setRoomDirectoryVisibility()` intent functions ([\#254](https://github.com/matrix-org/matrix-appservice-bridge/issues/254))
+
+
+Bugfixes
+--------
+
+- Fix a bug where the default configuration would be overwritten on validation ([\#252](https://github.com/matrix-org/matrix-appservice-bridge/issues/252))
+- Fix a bug where messages would be echoed to the bridge from the bot user, even if `suppressEcho` was on. ([\#255](https://github.com/matrix-org/matrix-appservice-bridge/issues/255))
+
+
+2.2.0 (2020-10-15)
 ===================
 
 No significant changes.

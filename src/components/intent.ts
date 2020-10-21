@@ -25,6 +25,7 @@ import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
+import { ReadStream } from "fs";
 
 const log = Logging.get("Intent");
 
@@ -58,6 +59,12 @@ export interface RoomCreationOpts {
     options: Record<string, unknown>;
 }
 
+export interface FileUploadOpts {
+    name?: string;
+    includeFilename?: boolean;
+    type?: string;
+}
+
 /**
  * Returns the first parameter that is a number or 0.
  */
@@ -70,10 +77,6 @@ const returnFirstNumber = (...args: unknown[]) => {
     return 0;
 }
 
-const STATE_EVENT_TYPES = [
-    "m.room.name", "m.room.topic", "m.room.power_levels", "m.room.member",
-    "m.room.join_rules", "m.room.history_visibility"
-];
 const DEFAULT_CACHE_TTL = 90000;
 const DEFAULT_CACHE_SIZE = 1024;
 
@@ -316,7 +319,6 @@ export class Intent {
      */
     public async sendTyping(roomId: string, isTyping: boolean) {
         await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, "m.typing");
         return this.client.sendTyping(roomId, isTyping);
     }
 
@@ -344,7 +346,7 @@ export class Intent {
      */
     public async setPowerLevel(roomId: string, target: string, level: number|undefined) {
         await this._ensureJoined(roomId);
-        const event = await this._ensureHasPowerLevelFor(roomId, "m.room.power_levels");
+        const event = await this._ensureHasPowerLevelFor(roomId, "m.room.power_levels", true);
         return this.client.setPowerLevel(roomId, target, level, event);
     }
 
@@ -378,7 +380,7 @@ export class Intent {
             await this.encryption.ensureClientSyncingCallback();
         }
         await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, type);
+        await this._ensureHasPowerLevelFor(roomId, type, false);
         return this._joinGuard(roomId, async() =>
             // eslint-disable-next-line camelcase
             this.client.sendEvent(roomId, type, content) as Promise<{event_id: string}>
@@ -399,7 +401,7 @@ export class Intent {
         // eslint-disable-next-line camelcase
         ): Promise<{event_id: string}> {
         await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, type);
+        await this._ensureHasPowerLevelFor(roomId, type, true);
         return this._joinGuard(roomId, async() =>
             // eslint-disable-next-line camelcase
             this.client.sendStateEvent(roomId, type, content, skey) as Promise<{event_id: string}>
@@ -698,6 +700,40 @@ export class Intent {
     }
 
     /**
+     * Upload a file to the homeserver.
+     * @param content The file contents
+     * @param opts Additional options for the upload.
+     * @returns A MXC URL pointing to the uploaded data.
+     */
+    public async uploadContent(content: Buffer|string|ReadStream, opts: FileUploadOpts = {}): Promise<string> {
+        await this.ensureRegistered();
+        return this.client.uploadContent(content, {...opts, onlyContentUri: true});
+    }
+
+    /**
+     * Set the visibility of a room in the homeserver's room directory.
+     * @param roomId The room
+     * @param visibility Should the room be visible
+     */
+    public async setRoomDirectoryVisibility(roomId: string, visibility: "public"|"private") {
+        await this.ensureRegistered();
+        return this.client.setRoomDirectoryVisibility(roomId, visibility);
+    }
+
+    /**
+     * Set the visibility of a room in the appservice's room directory.
+     * This only works if you have defined the `protocol` in the registration file.
+     * @param roomId The room
+     * @param networkId The network (not protocol) that owns this room. E.g. "freenode" (for an IRC bridge)
+     * @param visibility Should the room be visible
+     */
+    public async setRoomDirectoryVisibilityAppService(roomId: string, networkId: string,
+        visibility: "public"|"private") {
+        await this.ensureRegistered();
+        return this.client.setRoomDirectoryVisibilityAppService(roomId, visibility, networkId);
+    }
+
+    /**
      * Inform this Intent class of an incoming event. Various optimisations will be
      * done if this is provided. For example, a /join request won't be sent out if
      * it knows you've already been joined to the room. This function does nothing
@@ -838,9 +874,10 @@ export class Intent {
      * Ensures that the client has the required power level to post the event type.
      * @param roomId Required as power levels exist inside a room.
      * @param eventTypes The event type to check the permissions for.
+     * @param isState Are we checking for state permissions or regular event permissions.
      * @return If found, the power level event
      */
-    private async _ensureHasPowerLevelFor(roomId: string, eventType: string) {
+    private async _ensureHasPowerLevelFor(roomId: string, eventType: string, isState: boolean) {
         if (this.opts.dontCheckPowerLevel && eventType !== "m.room.power_levels") {
             return undefined;
         }
@@ -859,7 +896,7 @@ export class Intent {
         }
         const powerLevelEvent = new MatrixEvent(event);
         // What level do we need for this event type?
-        const defaultLevel = STATE_EVENT_TYPES.includes(eventType)
+        const defaultLevel = isState
             ? event.content.state_default
             : event.content.events_default;
         const requiredLevel = returnFirstNumber(

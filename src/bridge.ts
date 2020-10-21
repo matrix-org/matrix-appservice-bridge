@@ -38,7 +38,7 @@ import { RoomLinkValidator, RoomLinkValidatorStatus, Rules } from "./components/
 import { RoomUpgradeHandler, RoomUpgradeHandlerOpts } from "./components/room-upgrade-handler";
 import { EventQueue } from "./components/event-queue";
 import * as logging from "./components/logging";
-import { defer as deferPromise } from "./utils/promiseutil";
+import { Defer, defer as deferPromise } from "./utils/promiseutil";
 import { unstable } from "./errors";
 import { BridgeStore } from "./components/bridge-store";
 import { RemoteUser } from "./models/users/remote";
@@ -57,6 +57,9 @@ const log = logging.get("bridge");
 const INTENT_CULL_CHECK_PERIOD_MS = 1000 * 60; // once per minute
 // How long a given Intent object can hang around unused for.
 const INTENT_CULL_EVICT_AFTER_MS = 1000 * 60 * 15; // 15 minutes
+
+export const BRIDGE_PING_EVENT_TYPE = "org.matrix.bridge.ping";
+export const BRIDGE_PING_TIMEOUT_MS = 60000;
 
 interface BridgeController {
     /**
@@ -404,6 +407,11 @@ export class Bridge {
     private registration?: AppServiceRegistration;
     private appservice?: AppService;
     private eeEventBroker?: EncryptedEventBroker;
+    private selfPingDeferred?: {
+        defer: Defer<unknown>;
+        roomId: string;
+        timeout: NodeJS.Timeout;
+    }
 
     public readonly opts: VettedBridgeOpts;
 
@@ -1151,6 +1159,11 @@ export class Bridge {
             // Called before we were ready, which is probably impossible.
             return null;
         }
+        if (this.selfPingDeferred?.roomId === event.room_id && event.sender === this.botUserId) {
+            this.selfPingDeferred.defer.resolve();
+            log.debug("Got self ping")
+            return null;
+        }
         const isCanonicalState = event.state_key === "";
         this.updateIntents(event);
         if (this.opts.suppressEcho &&
@@ -1434,6 +1447,36 @@ export class Bridge {
                 throw Error('To enable support for encryption, your homeserver must support MSC2666');
             }
         }
+    }
+
+    /**
+     * Check the homeserver -> appservice connection by
+     * sending a ping event.
+     * @param roomId The room to use as a ping check.
+     * @param timeoutMs How long to wait for the ping attempt. Defaults to 60s.
+     * @throws This will throw if another ping attempt is made, or if the request times out.
+     * @returns The delay in milliseconds
+     */
+    public async pingAppserviceRoute(roomId: string, timeoutMs = BRIDGE_PING_TIMEOUT_MS) {
+        if (!this.botIntent) {
+            throw Error("botClient isn't ready yet");
+        }
+        const sentTs = Date.now();
+        if (this.selfPingDeferred) {
+            this.selfPingDeferred.defer.reject(new Error("Another ping request is being made. Cancelling this one."))
+        }
+        this.selfPingDeferred = {
+            defer: deferPromise(),
+            roomId,
+            timeout: setTimeout(() => {
+                    this.selfPingDeferred?.defer.reject(new Error("Timeout waiting for ping event"))
+                }, timeoutMs),
+        }
+        await this.botIntent.sendEvent(roomId, BRIDGE_PING_EVENT_TYPE, {
+            sentTs,
+        });
+        await this.selfPingDeferred.defer.promise;
+        return Date.now() - sentTs;
     }
 
 }

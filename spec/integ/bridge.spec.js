@@ -6,6 +6,7 @@ const log = require("../log");
 const HS_URL = "http://example.com";
 const HS_DOMAIN = "example.com";
 const BOT_LOCALPART = "the_bridge";
+const BOT_USER_ID = `@${BOT_LOCALPART}:${HS_DOMAIN}`;
 
 const TEST_USER_DB_PATH = __dirname + "/test-users.db";
 const TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
@@ -16,7 +17,7 @@ const RemoteUser = require("../..").RemoteUser;
 const MatrixRoom = require("../..").MatrixRoom;
 const RemoteRoom = require("../..").RemoteRoom;
 const AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
-const Bridge = require("../..").Bridge;
+const {Bridge, BRIDGE_PING_EVENT_TYPE, BRIDGE_PING_TIMEOUT_MS} = require("../..");
 
 const deferPromise = require("../../lib/utils/promiseutil").defer;
 
@@ -238,6 +239,44 @@ describe("Bridge", function() {
             if (!rooms.length) { done(); return; }
             expect(rooms[0].getId()).toEqual("__abc__");
             done();
+        });
+    });
+
+    describe("pingAppserviceRoute", () => {
+        it("should return successfully when the bridge receives it's own self ping", async () => {
+            let sentEvent = false;
+            await bridge.run(101, {}, appService);
+            bridge.botIntent._ensureJoined = async () => true;
+            bridge.botIntent._ensureHasPowerLevelFor = async () => true;
+            bridge.botIntent.sendEvent = async () => {sentEvent = true};
+            const event = {
+                content: {
+                    sentTs: 1000,
+                },
+                sender: BOT_USER_ID,
+                room_id: "!abcdef:bar",
+                type: BRIDGE_PING_EVENT_TYPE,
+            };
+            const result = bridge.pingAppserviceRoute(event.room_id);
+            await appService.emit("event", event);
+            expect(await result).toBeLessThan(BRIDGE_PING_TIMEOUT_MS);
+            expect(sentEvent).toEqual(true);
+        });
+        it("should time out if the ping does not respond", async () => {
+            let sentEvent = false;
+            await bridge.run(101, {}, appService);
+            bridge.botIntent._ensureJoined = async () => true;
+            bridge.botIntent._ensureHasPowerLevelFor = async () => true;
+            bridge.botIntent.sendEvent = async () => {sentEvent = true};
+            const result = bridge.pingAppserviceRoute("!abcdef:bar", 100);
+            expect(sentEvent).toEqual(true);
+            try {
+                await result;
+                throw Error("Expected to throw");
+            }
+            catch (ex) {
+                expect(ex.message).toEqual("Timeout waiting for ping event");
+            }
         });
     });
 

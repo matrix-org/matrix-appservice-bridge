@@ -30,7 +30,7 @@ describe("Intent", function() {
 
         it("should /join/$ROOMID if it doesn't know it is already joined",
         function() {
-            client.joinRoom.and.callFake(() => Promise.resolve({room_id: roomId}));
+            client.joinRoom.and.callFake(() => Promise.resolve({roomId: roomId}));
             return intent.join(roomId).then(function(resultRoomId) {
                 expect(client.joinRoom).toHaveBeenCalledWith(
                     roomId, { syncRoom: false }
@@ -76,7 +76,7 @@ describe("Intent", function() {
                             error: "Join first"
                         });
                     }
-                    return Promise.resolve({room_id: roomId});
+                    return Promise.resolve({roomId: roomId});
                 });
                 botClient.invite.and.callFake(() => Promise.resolve({}));
 
@@ -110,7 +110,7 @@ describe("Intent", function() {
                         }
                         return Promise.resolve({});
                     });
-                    botClient.joinRoom.and.callFake(() => Promise.resolve({room_id: roomId}));
+                    botClient.joinRoom.and.callFake(() => Promise.resolve({roomId: roomId}));
 
                     return intent.join(roomId).then(function(resultRoomId) {
                         expect(client.joinRoom).toHaveBeenCalledWith(
@@ -326,7 +326,7 @@ describe("Intent", function() {
             client.joinRoom.and.callFake(function(joinRoomId) {
                 isJoined = true;
                 return Promise.resolve({
-                    room_id: joinRoomId,
+                    roomId: joinRoomId,
                 });
             });
             return intent.sendMessage(roomId, content).then(function(eventId) {
@@ -374,7 +374,7 @@ describe("Intent", function() {
             client.joinRoom.and.callFake(function(joinRoomId) {
                 isJoined = true;
                 return Promise.resolve({
-                    room_id: joinRoomId,
+                    roomId: joinRoomId,
                 });
             });
             return intent.sendMessage(roomId, content).catch(function() {

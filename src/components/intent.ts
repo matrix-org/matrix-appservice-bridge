@@ -836,8 +836,8 @@ export class Intent {
             }
             try {
                 // eslint-disable-next-line camelcase
-                const { room_id } = await this.client.joinRoom(roomIdOrAlias, opts);
-                mark(room_id, "join");
+                const { roomId } = await this.client.joinRoom(roomIdOrAlias, opts);
+                mark(roomId, "join");
             }
             catch (ex) {
                 if (ex.errcode !== "M_FORBIDDEN") {
@@ -850,16 +850,16 @@ export class Intent {
                     // Try bot inviting client
                     await this.botClient.invite(roomIdOrAlias, this.userId);
                     // eslint-disable-next-line camelcase
-                    const { room_id } = await this.client.joinRoom(roomIdOrAlias, opts);
-                    mark(room_id, "join");
+                    const { roomId } = await this.client.joinRoom(roomIdOrAlias, opts);
+                    mark(roomId, "join");
                 }
                 catch (_ex) {
                     // Try bot joining
                     // eslint-disable-next-line camelcase
-                    const { room_id } = await this.botClient.joinRoom(roomIdOrAlias, opts)
-                    await this.botClient.invite(room_id, this.userId);
-                    await this.client.joinRoom(room_id, opts);
-                    mark(room_id, "join");
+                    const { roomId } = await this.botClient.joinRoom(roomIdOrAlias, opts)
+                    await this.botClient.invite(roomId, this.userId);
+                    await this.client.joinRoom(roomId, opts);
+                    mark(roomId, "join");
                 }
             }
         }

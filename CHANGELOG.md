@@ -1,4 +1,13 @@
- 2.3.0-rc1 (2020-10-21)
+ 2.3.0-rc2 (2020-10-22)
+=======================
+
+Bugfixes
+--------
+
+- Fix a bug where a timeout would not be cleared after a sucessful homeserver ping test ([\#256](https://github.com/matrix-org/matrix-appservice-bridge/issues/256))
+
+
+2.3.0-rc1 (2020-10-21)
 =======================
 
 Features

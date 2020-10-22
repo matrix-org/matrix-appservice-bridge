@@ -1476,6 +1476,7 @@ export class Bridge {
             sentTs,
         });
         await this.selfPingDeferred.defer.promise;
+        clearTimeout(this.selfPingDeferred.timeout);
         return Date.now() - sentTs;
     }
 

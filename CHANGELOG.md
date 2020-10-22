@@ -1,4 +1,13 @@
- 2.3.0-rc2 (2020-10-22)
+ 2.3.0-rc3 (2020-10-22)
+=======================
+
+Bugfixes
+--------
+
+- Fix issue where Intent.join would return undefined rather than the roomId ([\#257](https://github.com/matrix-org/matrix-appservice-bridge/issues/257))
+
+
+2.3.0-rc2 (2020-10-22)
 =======================
 
 Bugfixes

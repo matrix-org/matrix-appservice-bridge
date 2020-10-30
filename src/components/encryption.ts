@@ -12,6 +12,7 @@ const { Filter } = require('matrix-js-sdk');
 const log = Logging.get("EncryptedEventBroker");
 
 export const APPSERVICE_LOGIN_TYPE = "uk.half-shot.msc2778.login.application_service";
+const PRESENCE_CACHE_FOR_MS = 30000;
 
 export interface ClientEncryptionSession {
     userId: string;
@@ -38,7 +39,7 @@ const SYNC_FILTER = {
         account_data: {
             limit: 0,
         }
-    }
+    },
 };
 
 interface DedupePresence {
@@ -86,16 +87,19 @@ export class EncryptedEventBroker {
         private onEphemeralEvent: ((event: EphemeralEvent) => void)|undefined,
         private getIntent: (userId: string) => Intent
         ) {
+        if (this.onEphemeralEvent) {
+            // Only cleanup presence if we're handling it.
+            this.presenceCleanupInterval = setInterval(() => {
+                const ts = Date.now() - PRESENCE_CACHE_FOR_MS;
+                this.receivedPresence = this.receivedPresence.filter(
+                    presence => presence.ts < ts
+                );
+            }, PRESENCE_CACHE_FOR_MS);
+        }
 
-        this.presenceCleanupInterval = setInterval(() => {
-            const ts = Date.now() - 30000;
-            this.receivedPresence = this.receivedPresence.filter(
-                presence => presence.ts < ts
-            );
-        }, 15000);
     }
     private receivedPresence: DedupePresence[] = [];
-    private presenceCleanupInterval: NodeJS.Timeout;
+    private presenceCleanupInterval: NodeJS.Timeout|undefined;
     private handledEvents = new Set<string>();
     private userForRoom = new Map<string, string>();
 
@@ -129,8 +133,8 @@ export class EncryptedEventBroker {
         this.eventsPendingSync.add(event.event_id);
         const syncedEvent = this.eventsPendingAS.find((syncEvent) => syncEvent.event_id === event.event_id);
         if (syncedEvent) {
-            log.info("Got sync event before AS event");
-            this.onEvent(syncedEvent);
+            log.debug("Got sync event before AS event");
+            this.handleEvent(syncedEvent);
             return false;
         }
 
@@ -180,13 +184,11 @@ export class EncryptedEventBroker {
 
     private onSyncEvent(event: any) {
         if (!event.event.decrypted) {
-            // We only care about encrypted events, and pan appends a decrypted key to each event
-            // log.debug(`Ignoring ${event.getId()} in sync, not a encrypted event`);DedupePresence
-            // Only interested in encrypted events.
+            // We only care about encrypted events, and pan appends a decrypted key to each event.
             return;
         }
         if (!this.eventsPendingSync.has(event.getId())) {
-            log.info("Got AS event before sync event");
+            log.debug("Got AS event before sync event");
             // We weren't waiting for this event, but we might have got here too quick.
             this.eventsPendingAS.push(event.event);
             return;
@@ -196,10 +198,19 @@ export class EncryptedEventBroker {
             // We're not interested in this event, as it's been handled.
             return;
         }
+        this.handleEvent(event.event);
+    }
+
+    private handleEvent(event: WeakEvent) {
         // First come, first serve handling.
-        this.handledEvents.add(key);
-        log.debug(`Handling ${event.getId()} through sync`);
-        this.onEvent(event.event);
+        this.handledEvents.add(`${event.room_id}:${event.event_id}`);
+
+        log.debug(`Handling ${event.event_id} through sync`);
+        this.onEvent(event);
+
+        // Delete the event from the pending list
+        this.eventsPendingSync.delete(event.event_id);
+        this.eventsPendingAS = this.eventsPendingAS.filter((e) => e.event_id !== event.event_id);
     }
 
     private onTyping(syncUserId: string, event: any) {
@@ -267,13 +278,25 @@ export class EncryptedEventBroker {
         matrixClient.on("error", (err: Error) => {
             log.error(`${userId} client error:`, err);
         });
+        const filter = new Filter(userId);
+        filter.setDefinition(SYNC_FILTER);
         if (this.onEphemeralEvent) {
             matrixClient.on("RoomMember.typing", (event: TypingEvent) => this.onTyping(userId, event));
             matrixClient.on("Room.receipt", (event: ReadReceiptEvent) => this.onReceipt(userId, event));
             matrixClient.on("User.presence", (event: PresenceEvent) => this.onPresence(event));
         }
-        const filter = new Filter(userId);
-        filter.setDefinition(SYNC_FILTER);
+        else {
+            filter.definition.presence = {
+                // No way to disable presence, so make it filter for an impossible type
+                types: ["not.a.real.type"],
+                limit: 0,
+            };
+            filter.definition.ephemeral = {
+                // No way to disable presence, so make it filter for an impossible type
+                types: ["not.a.real.type"],
+                limit: 0,
+            }
+        }
         await matrixClient.startClient({
             resolveInvitesToProfiles: false,
             filter,
@@ -292,7 +315,9 @@ export class EncryptedEventBroker {
         for (const client of this.syncingClients.values()) {
             client.stopClient();
         }
-        clearInterval(this.presenceCleanupInterval);
+        if (this.presenceCleanupInterval) {
+            clearInterval(this.presenceCleanupInterval);
+        }
     }
 
     public static supportsLoginFlow(loginFlows: {flows: {type: string}[]}) {

@@ -1,0 +1,1 @@
+Fixed a bug where encrypted events may be handled twice.

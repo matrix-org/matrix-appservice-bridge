@@ -71,6 +71,8 @@ export class ClientFactory {
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.sdk.wrapRequest((origRequest: OriginalRequest, opts: any, callback: LogWrapCallback) => {
+            // It's too spammy
+            const shouldLog = !opts.uri?.endsWith("/sync");
             const logPrefix = (
                 (opts._matrix_opts && opts._matrix_opts._reqId ?
                     "[" + opts._matrix_opts._reqId + "] " : ""
@@ -79,15 +81,21 @@ export class ClientFactory {
                 (opts.qs.user_id ? "(" + opts.qs.user_id + ")" : "(AS)")
             );
             // Request logging
-            func(
-                logPrefix + " Body: " +
-                (opts.body ? JSON.stringify(opts.body).substring(0, 80) : "")
-            );
+            if (shouldLog) {
+                func(
+                    logPrefix + " Body: " +
+                    (opts.body ? JSON.stringify(opts.body).substring(0, 80) : "")
+                );
+            }
             // Make the request
             origRequest(opts, function(err: Error, response: { statusCode: number }, body: Record<string, unknown>) {
                 // Response logging
                 const httpCode = response ? response.statusCode : null;
                 const responsePrefix = logPrefix + " HTTP " + httpCode;
+                if (!shouldLog) {
+                    callback(err, response, body);
+                    return;
+                }
                 if (err) {
                     func(
                         responsePrefix + " Error: " + JSON.stringify(err), true

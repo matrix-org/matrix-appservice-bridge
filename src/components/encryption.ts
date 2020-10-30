@@ -131,8 +131,8 @@ export class EncryptedEventBroker {
         this.eventsPendingSync.add(event.event_id);
         const syncedEvent = this.eventsPendingAS.find((syncEvent) => syncEvent.event_id === event.event_id);
         if (syncedEvent) {
-            log.info("Got sync event before AS event");
-            this.onEvent(syncedEvent);
+            log.debug("Got sync event before AS event");
+            this.handleEvent(syncedEvent);
             return false;
         }
 
@@ -182,13 +182,11 @@ export class EncryptedEventBroker {
 
     private onSyncEvent(event: any) {
         if (!event.event.decrypted) {
-            // We only care about encrypted events, and pan appends a decrypted key to each event
-            // log.debug(`Ignoring ${event.getId()} in sync, not a encrypted event`);DedupePresence
-            // Only interested in encrypted events.
+            // We only care about encrypted events, and pan appends a decrypted key to each event.
             return;
         }
         if (!this.eventsPendingSync.has(event.getId())) {
-            log.info("Got AS event before sync event");
+            log.debug("Got AS event before sync event");
             // We weren't waiting for this event, but we might have got here too quick.
             this.eventsPendingAS.push(event.event);
             return;
@@ -198,10 +196,23 @@ export class EncryptedEventBroker {
             // We're not interested in this event, as it's been handled.
             return;
         }
+        this.handleEvent(event.event);
+    }
+
+    private handleEvent(event: WeakEvent) {
         // First come, first serve handling.
-        this.handledEvents.add(key);
-        log.debug(`Handling ${event.getId()} through sync`);
-        this.onEvent(event.event);
+        this.handledEvents.add(`${event.room_id}:${event.event_id}`);
+
+        log.debug(`Handling ${event.event_id} through sync`);
+        this.onEvent(event);
+
+        // Delete the event from the pending list
+        this.eventsPendingSync.delete(event.event_id);
+        let index = this.eventsPendingAS.findIndex((e) => e.event_id === event.event_id);
+        do {
+            this.eventsPendingAS.splice(index, 1);
+            index = this.eventsPendingAS.findIndex((e) => e.event_id === event.event_id);
+        } while (index !== -1)
     }
 
     private onTyping(syncUserId: string, event: any) {

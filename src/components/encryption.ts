@@ -12,6 +12,7 @@ const { Filter } = require('matrix-js-sdk');
 const log = Logging.get("EncryptedEventBroker");
 
 export const APPSERVICE_LOGIN_TYPE = "uk.half-shot.msc2778.login.application_service";
+const PRESENCE_CACHE_FOR_MS = 30000;
 
 export interface ClientEncryptionSession {
     userId: string;
@@ -87,12 +88,13 @@ export class EncryptedEventBroker {
         private getIntent: (userId: string) => Intent
         ) {
         if (this.onEphemeralEvent) {
+            // Only cleanup presence if we're handling it.
             this.presenceCleanupInterval = setInterval(() => {
-                const ts = Date.now() - 30000;
+                const ts = Date.now() - PRESENCE_CACHE_FOR_MS;
                 this.receivedPresence = this.receivedPresence.filter(
                     presence => presence.ts < ts
                 );
-            }, 15000);
+            }, PRESENCE_CACHE_FOR_MS);
         }
 
     }
@@ -208,11 +210,7 @@ export class EncryptedEventBroker {
 
         // Delete the event from the pending list
         this.eventsPendingSync.delete(event.event_id);
-        let index = this.eventsPendingAS.findIndex((e) => e.event_id === event.event_id);
-        do {
-            this.eventsPendingAS.splice(index, 1);
-            index = this.eventsPendingAS.findIndex((e) => e.event_id === event.event_id);
-        } while (index !== -1)
+        this.eventsPendingAS = this.eventsPendingAS.filter((e) => e.event_id !== event.event_id);
     }
 
     private onTyping(syncUserId: string, event: any) {
@@ -289,10 +287,12 @@ export class EncryptedEventBroker {
         }
         else {
             filter.definition.presence = {
+                // No way to disable presence, so make it filter for an impossible type
                 types: ["not.a.real.type"],
                 limit: 0,
             };
             filter.definition.ephemeral = {
+                // No way to disable presence, so make it filter for an impossible type
                 types: ["not.a.real.type"],
                 limit: 0,
             }

@@ -38,7 +38,7 @@ const SYNC_FILTER = {
         account_data: {
             limit: 0,
         }
-    }
+    },
 };
 
 interface DedupePresence {

@@ -61,7 +61,7 @@ const INTENT_CULL_EVICT_AFTER_MS = 1000 * 60 * 15; // 15 minutes
 export const BRIDGE_PING_EVENT_TYPE = "org.matrix.bridge.ping";
 export const BRIDGE_PING_TIMEOUT_MS = 60000;
 
-interface BridgeController {
+export interface BridgeController {
     /**
      * The bridge will invoke when an event has been received from the HS.
      */
@@ -112,7 +112,7 @@ interface BridgeController {
 
 type PossiblePromise<T> = T|Promise<T>;
 
-interface BridgeOpts {
+export interface BridgeOpts {
     /**
      * Application service registration object or path to the registration file.
      */

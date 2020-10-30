@@ -86,16 +86,18 @@ export class EncryptedEventBroker {
         private onEphemeralEvent: ((event: EphemeralEvent) => void)|undefined,
         private getIntent: (userId: string) => Intent
         ) {
+        if (this.onEphemeralEvent) {
+            this.presenceCleanupInterval = setInterval(() => {
+                const ts = Date.now() - 30000;
+                this.receivedPresence = this.receivedPresence.filter(
+                    presence => presence.ts < ts
+                );
+            }, 15000);
+        }
 
-        this.presenceCleanupInterval = setInterval(() => {
-            const ts = Date.now() - 30000;
-            this.receivedPresence = this.receivedPresence.filter(
-                presence => presence.ts < ts
-            );
-        }, 15000);
     }
     private receivedPresence: DedupePresence[] = [];
-    private presenceCleanupInterval: NodeJS.Timeout;
+    private presenceCleanupInterval: NodeJS.Timeout|undefined;
     private handledEvents = new Set<string>();
     private userForRoom = new Map<string, string>();
 
@@ -292,7 +294,9 @@ export class EncryptedEventBroker {
         for (const client of this.syncingClients.values()) {
             client.stopClient();
         }
-        clearInterval(this.presenceCleanupInterval);
+        if (this.presenceCleanupInterval) {
+            clearInterval(this.presenceCleanupInterval);
+        }
     }
 
     public static supportsLoginFlow(loginFlows: {flows: {type: string}[]}) {

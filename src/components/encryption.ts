@@ -280,13 +280,23 @@ export class EncryptedEventBroker {
         matrixClient.on("error", (err: Error) => {
             log.error(`${userId} client error:`, err);
         });
+        const filter = new Filter(userId);
+        filter.setDefinition(SYNC_FILTER);
         if (this.onEphemeralEvent) {
             matrixClient.on("RoomMember.typing", (event: TypingEvent) => this.onTyping(userId, event));
             matrixClient.on("Room.receipt", (event: ReadReceiptEvent) => this.onReceipt(userId, event));
             matrixClient.on("User.presence", (event: PresenceEvent) => this.onPresence(event));
         }
-        const filter = new Filter(userId);
-        filter.setDefinition(SYNC_FILTER);
+        else {
+            filter.definition.presence = {
+                types: ["not.a.real.type"],
+                limit: 0,
+            };
+            filter.definition.ephemeral = {
+                types: ["not.a.real.type"],
+                limit: 0,
+            }
+        }
         await matrixClient.startClient({
             resolveInvitesToProfiles: false,
             filter,

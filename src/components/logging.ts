@@ -14,10 +14,8 @@ limitations under the License.
 */
 import * as util from "util";
 import winston, { Logger, format, Logform } from "winston";
-import "winston-daily-rotate-file";
 import chalk from "chalk";
 import * as Transport from 'winston-transport';
-import { DailyRotateFile } from "winston/lib/winston/transports";
 
 type LogLevel = "debug"|"info"|"warn"|"error";
 
@@ -155,6 +153,12 @@ class Logging {
         }
 
         if (config.files !== undefined) {
+            // `winston-daily-rotate-file` has side-effects so we don't want to mess anyone up
+            // unless they want to use logging
+            require("winston-daily-rotate-file");
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { DailyRotateFile } = require("winston/lib/winston/transports");
+
             for (const filename of Object.keys(config.files)) {
                 const level = config.files[filename];
                 this.transports.push(new DailyRotateFile({

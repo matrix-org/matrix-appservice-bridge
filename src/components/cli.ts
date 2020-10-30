@@ -24,7 +24,7 @@ import * as logging from "./logging";
 
 const log = logging.get("cli");
 
-interface CliOpts<ConfigType extends Record<string, unknown>> {
+export interface CliOpts<ConfigType extends Record<string, unknown>> {
     run: (port: number, config: ConfigType|null, registration: AppServiceRegistration|null) => void;
     onConfigChanged?: (config: ConfigType) => void,
     generateRegistration?: (reg: AppServiceRegistration, cb: (finalReg: AppServiceRegistration) => void) => void;

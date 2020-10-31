@@ -1300,7 +1300,7 @@ export class Bridge {
      */
     private getUserRegex(): string[] {
         // Return empty array if registration isn't available yet.
-        return this.registration?.getOutput().namespaces.users.map(o => o.regex) || [];
+        return this.registration?.getOutput()?.namespaces?.users?.map(o => o.regex) || [];
     }
 
     private updateIntents(event: WeakEvent) {

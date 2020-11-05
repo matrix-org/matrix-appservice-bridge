@@ -23,11 +23,8 @@ const registrationFileContent = {
             exclusive: true,
             regex: "@_the_bridge.*",
         }],
-        rooms: [],
     },
     rate_limited: false,
-    protocols: [],
-    "de.sorunome.msc2409.push_ephemeral": undefined,
 };
 async function writeRegistrationFile(content=registrationFileContent, filename="registration.yaml") {
     const filePath = path.join(tempDir, filename);

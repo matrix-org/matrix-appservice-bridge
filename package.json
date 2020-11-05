@@ -31,7 +31,7 @@
     "extend": "^3.0.2",
     "is-my-json-valid": "^2.20.5",
     "js-yaml": "^3.14.0",
-    "matrix-appservice": "^0.7.0",
+    "matrix-appservice": "^0.7.1",
     "matrix-js-sdk": "^8.4.1",
     "nedb": "^1.8.0",
     "nopt": "^4.0.3",

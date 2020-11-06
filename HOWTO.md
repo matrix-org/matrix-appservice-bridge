@@ -186,7 +186,7 @@ onEvent: function(request, context) {
         json: true,
         uri: $WEBHOOK_URL, // replace with your url!
         body: {
-            username: event.user_id,
+            username: event.sender,
             text: event.content.body
         }
     }, function(err, res) {
@@ -272,7 +272,7 @@ new Cli({
                         json: true,
                         uri: SLACK_WEBHOOK_URL,
                         body: {
-                            username: event.user_id,
+                            username: event.sender,
                             text: event.content.body
                         }
                     }, function(err, res) {

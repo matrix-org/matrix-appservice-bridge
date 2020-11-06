@@ -80,7 +80,7 @@ new Cli({
                         json: true,
                         uri: SLACK_WEBHOOK_URL,
                         body: {
-                            username: event.user_id,
+                            username: event.sender,
                             text: event.content.body
                         }
                     }, function (err, res) {

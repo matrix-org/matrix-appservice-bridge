@@ -1,0 +1,1 @@
+Replace usages of deprecated `event.user_id` field with `event.sender` in examples.

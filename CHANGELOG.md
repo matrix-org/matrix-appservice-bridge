@@ -1,3 +1,28 @@
+2.3.1 (2020-11-06)
+=======================
+
+Bugfixes
+--------
+
+- Remove `winston-daily-rotate-file` side-effects which can throw errors with some installed `winston` versions ([\#264](https://github.com/matrix-org/matrix-appservice-bridge/issues/264))
+- Fixed a bug where encrypted events may be handled twice. ([\#267](https://github.com/matrix-org/matrix-appservice-bridge/issues/267))
+- Update `matrix-appservice` dependency to 0.7.1 to fix a bug where `msc2409.push_ephemeral` would be required in the registration file. ([\#270](https://github.com/matrix-org/matrix-appservice-bridge/issues/270))
+
+
+Improved Documentation
+----------------------
+
+- Render various opts objects in the documentation that were missed last time ([\#268](https://github.com/matrix-org/matrix-appservice-bridge/issues/268))
+- Add contributing docs to make first time contributions easier ([\#269](https://github.com/matrix-org/matrix-appservice-bridge/issues/269))
+- Replace usages of deprecated `event.user_id` field with `event.sender` in examples. ([\#272](https://github.com/matrix-org/matrix-appservice-bridge/issues/272))
+
+
+Internal Changes
+----------------
+
+- Remove travis-ci build status badge on README.md. ([\#273](https://github.com/matrix-org/matrix-appservice-bridge/issues/273))
+
+
 2.3.0 (2020-10-26)
 ===================
 

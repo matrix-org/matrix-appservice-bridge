@@ -1,1 +1,0 @@
-Update `matrix-appservice` dependency to 0.7.1 to fix a bug where `msc2409.push_ephemeral` would be required in the registration file.

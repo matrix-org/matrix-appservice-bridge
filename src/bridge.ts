@@ -20,7 +20,7 @@ import { Application, Request as ExRequest, Response as ExResponse, NextFunction
 
 const MatrixScheduler = require("matrix-js-sdk").MatrixScheduler;
 
-import { AppServiceRegistration, AppService } from "matrix-appservice";
+import { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
 import { BridgeContext } from "./components/bridge-context"
 import { ClientFactory } from "./components/client-factory"
 import { AppServiceBot } from "./components/app-service-bot"
@@ -549,7 +549,10 @@ export class Bridge {
         // Load the registration file into an AppServiceRegistration object.
         if (typeof this.opts.registration === "string") {
             const regObj = yaml.safeLoad(fs.readFileSync(this.opts.registration, 'utf8'));
-            const registration = AppServiceRegistration.fromObject(regObj);
+            if (typeof regObj !== "object") {
+                throw Error("Failed to parse registration file: yaml file did not parse to object")
+            }
+            const registration = AppServiceRegistration.fromObject(regObj as AppServiceOutput);
             if (registration === null) {
                 throw Error("Failed to parse registration file");
             }
@@ -1300,7 +1303,7 @@ export class Bridge {
      */
     private getUserRegex(): string[] {
         // Return empty array if registration isn't available yet.
-        return this.registration?.getOutput().namespaces.users.map(o => o.regex) || [];
+        return this.registration?.getOutput()?.namespaces?.users?.map(o => o.regex) || [];
     }
 
     private updateIntents(event: WeakEvent) {

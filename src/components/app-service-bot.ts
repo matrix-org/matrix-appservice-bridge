@@ -33,7 +33,7 @@ export class AppServiceBot {
         // yank out the exclusive user ID regex strings
         this.exclusiveUserRegexes = [];
         const regOut = registration.getOutput();
-        if (regOut.namespaces.users) {
+        if (regOut?.namespaces?.users) {
             regOut.namespaces.users.forEach((userEntry) => {
                 if (!userEntry.exclusive) {
                     return;

@@ -42,6 +42,7 @@ export class MembershipQueue {
     private queues: Map<number, PQueue> = new Map();
     private pendingGauge?: Gauge<"type"|"instance_id">;
     private processedCounter?: Counter<"type"|"instance_id"|"outcome">;
+    private failureReasonCounter?: Counter<"errcode"|"http_status"|"type">;
 
     constructor(private bridge: Bridge, private opts: MembershipQueueOpts) {
         this.opts = { ...DEFAULT_OPTS, ...this.opts};
@@ -58,14 +59,20 @@ export class MembershipQueue {
 
         this.pendingGauge = metrics.addGauge({
             name: "membershipqueue_pending",
-            help: "Current count of configured rooms by matrix room ID",
+            help: "Count of membership actions in the queue by type",
             labels: ["type"]
         });
 
         this.processedCounter = metrics.addCounter({
             name: "membershipqueue_processed",
-            help: "Number of membership actions processed",
+            help: "Count of membership actions processed by type and outcome",
             labels: ["type", "outcome"],
+        });
+
+        this.failureReasonCounter = metrics.addCounter({
+            name: "membershipqueue_reason",
+            help: "Count of failures to process membership, by matrix errcode and http status",
+            labels: ["errcode", "http_status"],
         });
     }
 
@@ -156,6 +163,13 @@ export class MembershipQueue {
             });
         }
         catch (ex) {
+            if (ex.errcode && ex.httpStatus) {
+                this.failureReasonCounter?.inc({
+                    type: item.kickUser ? "kick" : item.type,
+                    errcode: ex.errcode,
+                    http_status: ex.httpStatus
+                });
+            }
             if (!this.shouldRetry(ex, attempts)) {
                 this.pendingGauge?.dec({
                     type: item.kickUser ? "kick" : item.type

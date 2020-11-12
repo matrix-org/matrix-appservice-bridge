@@ -1,6 +1,7 @@
 import { Bridge } from "../bridge";
 import { get as getLogger } from "./logging";
 import PQueue from "p-queue";
+import { Counter, Gauge } from "prom-client";
 
 const log = getLogger("MembershipQueue");
 
@@ -39,6 +40,8 @@ const DEFAULT_OPTS = {
  */
 export class MembershipQueue {
     private queues: Map<number, PQueue> = new Map();
+    private pendingGauge?: Gauge<"type"|"instance_id">;
+    private processedCounter?: Counter<"type"|"instance_id"|"outcome">;
 
     constructor(private bridge: Bridge, private opts: MembershipQueueOpts) {
         this.opts = { ...DEFAULT_OPTS, ...this.opts};
@@ -48,6 +51,22 @@ export class MembershipQueue {
                 concurrency: 1,
             }));
         }
+    }
+
+    public registerMetrics() {
+        const metrics = this.bridge.getPrometheusMetrics(false);
+
+        this.pendingGauge = metrics.addGauge({
+            name: "membershipqueue_pending",
+            help: "Current count of configured rooms by matrix room ID",
+            labels: ["type"]
+        });
+
+        this.processedCounter = metrics.addCounter({
+            name: "membershipqueue_processed",
+            help: "Number of membership actions processed",
+            labels: ["type", "outcome"],
+        });
     }
 
     /**
@@ -98,6 +117,9 @@ export class MembershipQueue {
                 throw Error("Could not find queue for hash");
             }
             queue.add(() => this.serviceQueue(item));
+            this.pendingGauge?.inc({
+                type: item.kickUser ? "kick" : item.type
+            });
         }
         catch (ex) {
             log.error(`Failed to handle membership: ${ex}`);
@@ -125,9 +147,23 @@ export class MembershipQueue {
             else {
                 await intent.leave(roomId, reason);
             }
+            this.pendingGauge?.dec({
+                type: item.kickUser ? "kick" : item.type
+            });
+            this.processedCounter?.inc({
+                type: item.kickUser ? "kick" : item.type,
+                outcome: "success",
+            });
         }
         catch (ex) {
             if (!this.shouldRetry(ex, attempts)) {
+                this.pendingGauge?.dec({
+                    type: item.kickUser ? "kick" : item.type
+                });
+                this.processedCounter?.inc({
+                    type: item.kickUser ? "kick" : item.type,
+                    outcome: "fail",
+                });
                 throw ex;
             }
             const delay = Math.min(

@@ -18,6 +18,7 @@ interface QueueUserItem {
     userId: string;
     retry: boolean;
     req: ThinRequest;
+    ts: number;
 }
 
 export interface MembershipQueueOpts {
@@ -43,6 +44,7 @@ export class MembershipQueue {
     private pendingGauge?: Gauge<"type"|"instance_id">;
     private processedCounter?: Counter<"type"|"instance_id"|"outcome">;
     private failureReasonCounter?: Counter<"errcode"|"http_status"|"type">;
+    private ageOfLastProcessedGauge?: Gauge<string>;
 
     constructor(private bridge: Bridge, private opts: MembershipQueueOpts) {
         this.opts = { ...DEFAULT_OPTS, ...this.opts};
@@ -54,6 +56,10 @@ export class MembershipQueue {
         }
     }
 
+    /**
+     * This should be called after starting the bridge in order
+     * to track metrics for the membership queue.
+     */
     public registerMetrics() {
         const metrics = this.bridge.getPrometheusMetrics(false);
 
@@ -74,6 +80,11 @@ export class MembershipQueue {
             help: "Count of failures to process membership, by matrix errcode and http status",
             labels: ["errcode", "http_status"],
         });
+
+        this.ageOfLastProcessedGauge = metrics.addCounter({
+            name: "membershipqueue_lastage",
+            help: "Gauge to measure the age of the last processed event",
+        });
     }
 
     /**
@@ -91,6 +102,7 @@ export class MembershipQueue {
             req,
             attempts: 0,
             type: "join",
+            ts: Date.now(),
         });
     }
 
@@ -114,6 +126,7 @@ export class MembershipQueue {
             reason,
             kickUser,
             type: "leave",
+            ts: Date.now(),
         })
     }
 
@@ -144,6 +157,7 @@ export class MembershipQueue {
         const reqIdStr = req.getId() ? `[${req.getId()}]`: "";
         log.debug(`${reqIdStr} ${userId}@${roomId} -> ${type} (reason: ${reason || "none"}, kicker: ${kickUser})`);
         const intent = this.bridge.getIntent(kickUser || userId);
+        this.ageOfLastProcessedGauge?.set(Date.now() - item.ts);
         try {
             if (type === "join") {
                 await intent.join(roomId);
@@ -154,6 +168,9 @@ export class MembershipQueue {
             else {
                 await intent.leave(roomId, reason);
             }
+            this.pendingGauge?.dec({
+                type: item.kickUser ? "kick" : item.type
+            });
             this.pendingGauge?.dec({
                 type: item.kickUser ? "kick" : item.type
             });

@@ -81,7 +81,7 @@ export class MembershipQueue {
             labels: ["errcode", "http_status"],
         });
 
-        this.ageOfLastProcessedGauge = metrics.addCounter({
+        this.ageOfLastProcessedGauge = metrics.addGauge({
             name: "membershipqueue_lastage",
             help: "Gauge to measure the age of the last processed event",
         });

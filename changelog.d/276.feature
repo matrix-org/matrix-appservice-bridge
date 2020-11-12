@@ -1,0 +1,1 @@
+Add function `registerMetrics` to `MembershipQueue` to track metrics.

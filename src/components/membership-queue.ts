@@ -171,9 +171,6 @@ export class MembershipQueue {
             this.pendingGauge?.dec({
                 type: item.kickUser ? "kick" : item.type
             });
-            this.pendingGauge?.dec({
-                type: item.kickUser ? "kick" : item.type
-            });
             this.processedCounter?.inc({
                 type: item.kickUser ? "kick" : item.type,
                 outcome: "success",

@@ -218,7 +218,7 @@ export class MembershipQueue {
             this.pendingGauge?.dec({
                 type: kickUser ? "kick" : type
             });
-            return;
+            throw Error('Request failed. TTL exceeded');
         }
         const reqIdStr = req.getId() ? `[${req.getId()}]`: "";
         log.debug(`${reqIdStr} ${userId}@${roomId} -> ${type} (reason: ${reason || "none"}, kicker: ${kickUser})`);

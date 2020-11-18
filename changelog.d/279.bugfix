@@ -1,0 +1,1 @@
+Fix a bug where `intent.uploadContent` would return the full JSON response of an upload rather than it's MXC url.

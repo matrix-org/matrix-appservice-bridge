@@ -49,10 +49,10 @@ export interface MembershipQueueOpts {
      */
     maxActionDelayMs?: number;
     /**
-     * How long a request can "live" for before it is discarded. This
-     * will override `maxAttempts`.
+     * How long a request can "live" for before it is discarded in
+     * milliseconds. This will override `maxAttempts`.
      */
-    defaultTtl?: number;
+    defaultTtlMs?: number;
 }
 
 export const DEFAULT_OPTS: MembershipQueueOptsWithDefaults = {
@@ -60,14 +60,14 @@ export const DEFAULT_OPTS: MembershipQueueOptsWithDefaults = {
     maxAttempts: 10,
     actionDelayMs: 500,
     maxActionDelayMs: 30 * 60 * 1000, // 30 mins
-    defaultTtl: 2 * 60 * 1000, // 2 mins
+    defaultTtlMs: 2 * 60 * 1000, // 2 mins
 };
 
 interface MembershipQueueOptsWithDefaults extends MembershipQueueOpts {
     maxActionDelayMs: number;
     actionDelayMs: number;
     concurrentRoomLimit: number;
-    defaultTtl: number;
+    defaultTtlMs: number;
     maxAttempts: number;
 }
 
@@ -143,7 +143,8 @@ export class MembershipQueue {
      * @param userId Leave empty to act as the bot user.
      * @param req The request entry for logging context
      * @param retry Should the request retry if it fails
-     * @param ttl How long should this request remain queued before it's discarded. Defaults to `opts.defaultTTL`
+     * @param ttl How long should this request remain queued in milliseconds
+     * before it's discarded. Defaults to `opts.defaultTtlMs`
      */
     public async join(roomId: string, userId: string|undefined, req: ThinRequest, retry = true, ttl?: number) {
         return this.queueMembership({
@@ -154,7 +155,7 @@ export class MembershipQueue {
             attempts: 0,
             type: "join",
             ts: Date.now(),
-            ttl: ttl || this.opts.defaultTtl,
+            ttl: ttl || this.opts.defaultTtlMs,
         });
     }
 
@@ -166,7 +167,8 @@ export class MembershipQueue {
      * @param retry Should the request retry if it fails
      * @param reason Reason for leaving/kicking
      * @param kickUser The user to be kicked. If left blank, this will be a leave.
-     * @param ttl How long should this request remain queued before it's discarded. Defaults to `opts.defaultTTL`
+     * @param ttl How long should this request remain queued in milliseconds
+     * before it's discarded. Defaults to `opts.defaultTtlMs`
      */
     public async leave(roomId: string, userId: string, req: ThinRequest,
                        retry = true, reason?: string, kickUser?: string,
@@ -181,7 +183,7 @@ export class MembershipQueue {
             kickUser,
             type: "leave",
             ts: Date.now(),
-            ttl: ttl || this.opts.defaultTtl,
+            ttl: ttl || this.opts.defaultTtlMs,
         })
     }
 

@@ -55,6 +55,9 @@ export interface MembershipQueueOpts {
     defaultTtlMs?: number;
 }
 
+/**
+ * Default values used by the queue if not specified.
+ */
 export const DEFAULT_OPTS: MembershipQueueOptsWithDefaults = {
     concurrentRoomLimit: 8,
     maxAttempts: 10,

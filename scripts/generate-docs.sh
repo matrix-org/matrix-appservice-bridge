@@ -16,6 +16,8 @@ fi
 yarn gendoc
 
 git checkout gh-pages
+git pull
+
 mv .typedoc/ $VERSION/
 sed "6i\    <li><a href=\"$VERSION/index.html\">$VERSION</a></li>" index.html > index.html.new
 rm index.html

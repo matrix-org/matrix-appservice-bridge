@@ -707,7 +707,7 @@ export class Intent {
      */
     public async uploadContent(content: Buffer|string|ReadStream, opts: FileUploadOpts = {}): Promise<string> {
         await this.ensureRegistered();
-        return this.client.uploadContent(content, {...opts, onlyContentUri: true});
+        return this.client.uploadContent(content, {...opts, rawResponse: false, onlyContentUri: true});
     }
 
     /**

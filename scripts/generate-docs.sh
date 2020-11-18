@@ -1,10 +1,17 @@
 #!/bin/bash
 # This script will generate documentation for the current version
 
-VERSION=`python3 -c "import json; f = open('./package.json', 'r'); v = json.loads(f.read())['version']; f.close(); print(v)"`
-
 # Ensure we fail if any of these commands fail
 set -e
+
+VERSION=`/usr/bin/env node -e "console.log(require('./package.json').version)"`
+
+if [[ "$VERSION" =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]; then
+    echo "Building documentation for version $VERSION"
+else
+    echo "Invalid version '$VERSION'"
+    exit 1
+fi
 
 yarn gendoc
 

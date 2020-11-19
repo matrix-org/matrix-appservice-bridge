@@ -123,11 +123,10 @@ export class ClientFactory {
         // matrix-js-sdk uses the `loglevel` logging library for it's logging
         // but the only way to get it to log to winston is to modify the
         // global methodFactory.
-        // To avoid potentially breaking other bridges, this is off by default.
         loglevel.methodFactory = (methodName, _logLevel, loggerName) => {
             return (...args) => {
                 const loggerInstance = logging.get(`js-sdk:${loggerName}`);
-                if (methodName === "info" || methodName === "debug" ||
+                if (methodName === "debug" ||
                     methodName == "warn" || methodName === "error") {
                     loggerInstance[methodName](...args);
                 }

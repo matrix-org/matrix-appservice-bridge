@@ -131,7 +131,7 @@ export class ClientFactory {
                     loggerInstance[methodName](...args);
                 }
                 else {
-                    loggerInstance.info(...args)
+                    loggerInstance.debug(...args)
                 }
             }
         }
@@ -145,7 +145,7 @@ export class ClientFactory {
         loggerInstance.debug = loglevel.methodFactory("debug", 1, "matrix");
         loggerInstance.error = loglevel.methodFactory("error", 1, "matrix");
         loggerInstance.trace = loglevel.methodFactory("trace", 1, "matrix");
-        loggerInstance.log = loglevel.methodFactory("info", 1, "matrix");
+        loggerInstance.log = loglevel.methodFactory("debug", 1, "matrix");
     }
 
     /**

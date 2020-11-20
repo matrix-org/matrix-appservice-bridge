@@ -1,3 +1,21 @@
+ 2.4.0-rc1 (2020-11-20)
+=======================
+
+Features
+--------
+
+- Add function `registerMetrics` to `MembershipQueue` to track metrics. ([\#276](https://github.com/matrix-org/matrix-appservice-bridge/issues/276))
+- Add `defaultTtl` option to `MembershipQueue` to expire membership that is too old. ([\#277](https://github.com/matrix-org/matrix-appservice-bridge/issues/277))
+- Logs from `matrix-js-sdk` will now be passed through the bridge `Logger` to keep logging in one place. ([\#280](https://github.com/matrix-org/matrix-appservice-bridge/issues/280))
+
+
+Bugfixes
+--------
+
+- Add a script to automatically generate documentation for a release. ([\#275](https://github.com/matrix-org/matrix-appservice-bridge/issues/275))
+- Fix a bug where `intent.uploadContent` would return the full JSON response of an upload rather than it's MXC url. ([\#279](https://github.com/matrix-org/matrix-appservice-bridge/issues/279))
+
+
 2.3.1 (2020-11-06)
 =======================
 

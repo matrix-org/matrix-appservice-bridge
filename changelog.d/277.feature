@@ -1,1 +1,0 @@
-Add `defaultTtl` option to `MembershipQueue` to expire membership that is too old.

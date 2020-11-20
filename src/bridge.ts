@@ -18,6 +18,7 @@ import * as util from "util";
 import yaml from "js-yaml";
 import { Application, Request as ExRequest, Response as ExResponse, NextFunction } from "express";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const MatrixScheduler = require("matrix-js-sdk").MatrixScheduler;
 
 import { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
@@ -1000,7 +1001,8 @@ export class Bridge {
                 throw Error('Cannot call getIntent before calling .run()');
             }
             return this.botIntent;
-        } else if (userId === this.botUserId) {
+        }
+        else if (userId === this.botUserId) {
             if (!this.botIntent) {
                 // This will be defined when .run is called.
                 throw Error('Cannot call getIntent before calling .run()');
@@ -1311,6 +1313,7 @@ export class Bridge {
             const content = event.content as {
                 membership: UserMembership;
                 displayname?: string;
+                // eslint-disable-next-line camelcase
                 avatar_url?: string;
             };
             const profile: UserProfile = {};

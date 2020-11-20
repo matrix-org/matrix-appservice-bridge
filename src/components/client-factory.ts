@@ -15,6 +15,9 @@ limitations under the License.
 */
 
 import { Request } from "./request";
+import logging from "./logging";
+// from the js-sdk
+import loglevel from "loglevel";
 
 type LogWrapCallback = (err: Error, response: { statusCode: number }, body: Record<string, unknown>) => void;
 type OriginalRequest = (opts: Record<string, unknown>, cb: LogWrapCallback) => void;
@@ -116,6 +119,33 @@ export class ClientFactory {
                 callback(err, response, body);
             });
         });
+
+        // matrix-js-sdk uses the `loglevel` logging library for it's logging
+        // but the only way to get it to log to winston is to modify the
+        // global methodFactory.
+        loglevel.methodFactory = (methodName, _logLevel, loggerName) => {
+            return (...args) => {
+                const loggerInstance = logging.get(`js-sdk:${loggerName}`);
+                if (methodName === "debug" ||
+                    methodName == "warn" || methodName === "error") {
+                    loggerInstance[methodName](...args);
+                }
+                else {
+                    loggerInstance.debug(...args)
+                }
+            }
+        }
+        // Set the factory on the default instance.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const loggerInstance = require("matrix-js-sdk/lib/logger").logger;
+        loggerInstance.methodFactory = loglevel.methodFactory;
+        // Ensure these functions use winston
+        loggerInstance.info = loglevel.methodFactory("info", 1, "matrix");
+        loggerInstance.warn = loglevel.methodFactory("warn", 1, "matrix");
+        loggerInstance.debug = loglevel.methodFactory("debug", 1, "matrix");
+        loggerInstance.error = loglevel.methodFactory("error", 1, "matrix");
+        loggerInstance.trace = loglevel.methodFactory("trace", 1, "matrix");
+        loggerInstance.log = loglevel.methodFactory("debug", 1, "matrix");
     }
 
     /**

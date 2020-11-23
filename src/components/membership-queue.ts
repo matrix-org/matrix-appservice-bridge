@@ -148,6 +148,7 @@ export class MembershipQueue {
      * @param retry Should the request retry if it fails
      * @param ttl How long should this request remain queued in milliseconds
      * before it's discarded. Defaults to `opts.defaultTtlMs`
+     * @returns A promise that resolves when the membership has completed
      */
     public async join(roomId: string, userId: string|undefined, req: ThinRequest, retry = true, ttl?: number) {
         return this.queueMembership({
@@ -172,6 +173,7 @@ export class MembershipQueue {
      * @param kickUser The user to be kicked. If left blank, this will be a leave.
      * @param ttl How long should this request remain queued in milliseconds
      * before it's discarded. Defaults to `opts.defaultTtlMs`
+     * @returns A promise that resolves when the membership has completed
      */
     public async leave(roomId: string, userId: string, req: ThinRequest,
                        retry = true, reason?: string, kickUser?: string,
@@ -196,10 +198,10 @@ export class MembershipQueue {
             if (!queue) {
                 throw Error("Could not find queue for hash");
             }
-            queue.add(() => this.serviceQueue(item));
             this.pendingGauge?.inc({
                 type: item.kickUser ? "kick" : item.type
             });
+            return queue.add(() => this.serviceQueue(item));
         }
         catch (ex) {
             log.error(`Failed to handle membership: ${ex}`);
@@ -239,26 +241,20 @@ export class MembershipQueue {
             else {
                 await intent.leave(roomId, reason);
             }
-            this.pendingGauge?.dec({
-                type: kickUser ? "kick" : type
-            });
             this.processedCounter?.inc({
                 type: kickUser ? "kick" : type,
                 outcome: "success",
             });
         }
         catch (ex) {
-            if (ex.errcode && ex.httpStatus) {
+            if (ex.errcode || ex.httpStatus) {
                 this.failureReasonCounter?.inc({
                     type: kickUser ? "kick" : type,
-                    errcode: ex.errcode,
-                    http_status: ex.httpStatus
+                    errcode: ex.errcode || "none",
+                    http_status: ex.httpStatus || "none"
                 });
             }
             if (!this.shouldRetry(ex, attempts)) {
-                this.pendingGauge?.dec({
-                    type: kickUser ? "kick" : type
-                });
                 this.processedCounter?.inc({
                     type: kickUser ? "kick" : type,
                     outcome: "fail",
@@ -272,7 +268,14 @@ export class MembershipQueue {
             log.warn(`${reqIdStr} Failed to ${type} ${roomId}, delaying for ${delay}ms`);
             log.debug(`${reqIdStr} Failed with: ${ex.errcode} ${ex.message}`);
             await new Promise((r) => setTimeout(r, delay));
-            this.queueMembership({...item, attempts: attempts + 1});
+            this.queueMembership({...item, attempts: attempts + 1}).catch((innerEx) => {
+                log.error(`Failed to handle membership change:`, innerEx);
+            });
+        }
+        finally {
+            this.pendingGauge?.dec({
+                type: kickUser ? "kick" : type
+            });
         }
     }
 

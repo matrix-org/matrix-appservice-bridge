@@ -1,0 +1,1 @@
+Fixed a issue the membership queue where a failed action would cause the `membershipqueue_pending` metric to increase.

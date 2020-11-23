@@ -239,9 +239,6 @@ export class MembershipQueue {
             else {
                 await intent.leave(roomId, reason);
             }
-            this.pendingGauge?.dec({
-                type: kickUser ? "kick" : type
-            });
             this.processedCounter?.inc({
                 type: kickUser ? "kick" : type,
                 outcome: "success",
@@ -255,9 +252,6 @@ export class MembershipQueue {
                     http_status: ex.httpStatus || "none"
                 });
             }
-            this.pendingGauge?.dec({
-                type: kickUser ? "kick" : type
-            });
             if (!this.shouldRetry(ex, attempts)) {
                 this.processedCounter?.inc({
                     type: kickUser ? "kick" : type,
@@ -273,6 +267,11 @@ export class MembershipQueue {
             log.debug(`${reqIdStr} Failed with: ${ex.errcode} ${ex.message}`);
             await new Promise((r) => setTimeout(r, delay));
             this.queueMembership({...item, attempts: attempts + 1});
+        }
+        finally {
+            this.pendingGauge?.dec({
+                type: kickUser ? "kick" : type
+            });
         }
     }
 

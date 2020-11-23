@@ -148,6 +148,7 @@ export class MembershipQueue {
      * @param retry Should the request retry if it fails
      * @param ttl How long should this request remain queued in milliseconds
      * before it's discarded. Defaults to `opts.defaultTtlMs`
+     * @returns A promise that resolves when the membership has completed
      */
     public async join(roomId: string, userId: string|undefined, req: ThinRequest, retry = true, ttl?: number) {
         return this.queueMembership({
@@ -172,6 +173,7 @@ export class MembershipQueue {
      * @param kickUser The user to be kicked. If left blank, this will be a leave.
      * @param ttl How long should this request remain queued in milliseconds
      * before it's discarded. Defaults to `opts.defaultTtlMs`
+     * @returns A promise that resolves when the membership has completed
      */
     public async leave(roomId: string, userId: string, req: ThinRequest,
                        retry = true, reason?: string, kickUser?: string,
@@ -196,10 +198,10 @@ export class MembershipQueue {
             if (!queue) {
                 throw Error("Could not find queue for hash");
             }
-            queue.add(() => this.serviceQueue(item));
             this.pendingGauge?.inc({
                 type: item.kickUser ? "kick" : item.type
             });
+            return queue.add(() => this.serviceQueue(item));
         }
         catch (ex) {
             log.error(`Failed to handle membership: ${ex}`);

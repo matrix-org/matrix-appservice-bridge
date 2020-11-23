@@ -248,17 +248,17 @@ export class MembershipQueue {
             });
         }
         catch (ex) {
-            if (ex.errcode && ex.httpStatus) {
+            if (ex.errcode || ex.httpStatus) {
                 this.failureReasonCounter?.inc({
                     type: kickUser ? "kick" : type,
-                    errcode: ex.errcode,
-                    http_status: ex.httpStatus
+                    errcode: ex.errcode || "none",
+                    http_status: ex.httpStatus || "none"
                 });
             }
+            this.pendingGauge?.dec({
+                type: kickUser ? "kick" : type
+            });
             if (!this.shouldRetry(ex, attempts)) {
-                this.pendingGauge?.dec({
-                    type: kickUser ? "kick" : type
-                });
                 this.processedCounter?.inc({
                     type: kickUser ? "kick" : type,
                     outcome: "fail",

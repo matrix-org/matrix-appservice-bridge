@@ -268,7 +268,9 @@ export class MembershipQueue {
             log.warn(`${reqIdStr} Failed to ${type} ${roomId}, delaying for ${delay}ms`);
             log.debug(`${reqIdStr} Failed with: ${ex.errcode} ${ex.message}`);
             await new Promise((r) => setTimeout(r, delay));
-            this.queueMembership({...item, attempts: attempts + 1});
+            this.queueMembership({...item, attempts: attempts + 1}).catch((innerEx) => {
+                log.error(`Failed to handle membership change:`, innerEx);
+            });
         }
         finally {
             this.pendingGauge?.dec({

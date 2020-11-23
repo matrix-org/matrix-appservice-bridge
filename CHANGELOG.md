@@ -1,4 +1,13 @@
- 2.4.0-rc1 (2020-11-20)
+ 2.4.0-rc2 (2020-11-23)
+=======================
+
+Bugfixes
+--------
+
+- Fixed a issue the membership queue where a failed action would cause the `membershipqueue_pending` metric to increase. ([\#283](https://github.com/matrix-org/matrix-appservice-bridge/issues/283))
+
+
+2.4.0-rc1 (2020-11-20)
 =======================
 
 Features

@@ -270,7 +270,8 @@ export class EncryptedEventBroker {
         const intent = this.getIntent(userId);
         const matrixClient = intent.getClient();
         const syncState = matrixClient.getSyncState;
-        if (syncState !== null && syncState === "STOPPED") {
+        log.debug("Client sync state: ", syncState);
+        if (syncState && ["SYNCING", "PREPARED"].includes(syncState)) {
             log.debug("Client is already syncing");
             return;
         }

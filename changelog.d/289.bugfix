@@ -1,0 +1,1 @@
+Fix onAliasQuery tests which would pass no matter if they failed

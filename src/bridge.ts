@@ -85,7 +85,7 @@ export interface BridgeController {
      * not supplied, no rooms will be provisioned on alias queries. Provisioned rooms
      * will automatically be stored in the associated `roomStore`. */
     onAliasQuery?: (alias: string, aliasLocalpart: string) =>
-        PossiblePromise<{creationOpts: Record<string, unknown>, remote?: RemoteRoom}|null|void>;
+        PossiblePromise<{roomId?: string, creationOpts?: Record<string, unknown>, remote?: RemoteRoom}|null|void>;
     /**
      * The bridge will invoke this function when a room has been created
      * via onAliasQuery.
@@ -1127,11 +1127,18 @@ export class Bridge {
             // Not provisioning room.
             throw Error("Not provisioning room for this alias");
         }
-        // eslint-disable-next-line camelcase
-        const createRoomResponse: {room_id: string} = await this.botClient.createRoom(
-            provisionedRoom.creationOpts
-        );
-        const roomId = createRoomResponse.room_id;
+
+        let roomId = provisionedRoom.roomId;
+        // If they didn't pass an existing `roomId` back,
+        // we expect some `creationOpts` to create a new room
+        if (!roomId) {
+            // eslint-disable-next-line camelcase
+            const createRoomResponse: {room_id: string} = await this.botClient.createRoom(
+                provisionedRoom.creationOpts
+            );
+            roomId = createRoomResponse.room_id;
+        }
+
         if (!this.opts.disableStores) {
             if (!this.roomStore) {
                 throw Error("roomStore is not ready yet");

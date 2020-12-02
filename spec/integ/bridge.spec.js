@@ -187,6 +187,20 @@ describe("Bridge", function() {
             });
         });
 
+        it("should not create a room if roomId is returned from the function but should still store it",
+        async function() {
+            bridgeCtrl.onAliasQuery.and.returnValue({ roomId: "!abc123:bar" });
+            await bridge.run(101, {}, appService);
+
+            await appService.onAliasQuery("#foo:bar");
+
+            expect(clients["bot"].createRoom).not.toHaveBeenCalled();
+
+            const room = await bridge.getRoomStore().getMatrixRoom("!abc123:bar");
+            expect(room).toBeDefined();
+            expect(room.getId()).toEqual("!abc123:bar");
+        });
+
     it("should provision the room from the returned object", async() => {
             const provisionedRoom = {
                 creationOpts: {

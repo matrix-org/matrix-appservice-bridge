@@ -125,7 +125,7 @@ export class ClientFactory {
         // global methodFactory.
         loglevel.methodFactory = (methodName, _logLevel, loggerName) => {
             return (...args) => {
-                const loggerInstance = logging.get(`js-sdk:${loggerName}`);
+                const loggerInstance = logging.get(`js-sdk:${String(loggerName)}`);
                 if (methodName === "debug" ||
                     methodName == "warn" || methodName === "error") {
                     loggerInstance[methodName](...args);

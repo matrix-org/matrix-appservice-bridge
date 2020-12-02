@@ -1,4 +1,13 @@
- 2.4.0 (2020-12-01)
+ 2.4.1 (2020-12-02)
+===================
+
+Features
+--------
+
+- Allow for returning `roomId` in `onAliasQuery` which facilitates handling room creation yourself. ([\#288](https://github.com/matrix-org/matrix-appservice-bridge/issues/288))
+
+
+2.4.0 (2020-12-01)
 ===================
 
 No significant changes.

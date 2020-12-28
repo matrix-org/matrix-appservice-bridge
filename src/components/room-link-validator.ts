@@ -59,7 +59,7 @@ export interface Rules {
 /**
  * The RoomLinkValidator checks if a room should be linked to a remote
  * channel, given a set of rules supplied in a config. The ruleset is maintained
- * in a seperate config from the bridge config. It can be reloaded by triggering
+ * in a separate config from the bridge config. It can be reloaded by triggering
  * an endpoint specified in the {@link Bridge} class.
  */
 export class RoomLinkValidator {
@@ -135,10 +135,10 @@ export class RoomLinkValidator {
         return newRules;
     }
 
-    public async validateRoom (roomId: string, cache=true) {
+    public async validateRoom (roomId: string, cache=true): Promise<RoomLinkValidatorStatus> {
         const status = cache ? this.checkConflictCache(roomId) : undefined;
         if (status !== undefined) {
-            return Promise.reject(status);
+            throw status;
         }
         // Get all users in the room.
         const joined = await this.asBot.getJoinedMembers(roomId);
@@ -160,7 +160,7 @@ export class RoomLinkValidator {
         throw RoomLinkValidatorStatus.ERROR_USER_CONFLICT;
     }
 
-    private checkConflictCache (roomId: string) {
+    private checkConflictCache (roomId: string): RoomLinkValidatorStatus.ERROR_CACHED | undefined {
         const cacheTime = this.conflictCache.get(roomId);
         if (!cacheTime) {
             return undefined;

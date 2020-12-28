@@ -39,7 +39,7 @@ export interface RoomUpgradeHandlerOpts {
     migrateStoreEntries: boolean;
 
     /**
-     * Invoked after a room has been upgraded and it's entries updated.
+     * Invoked after a room has been upgraded and its entries updated.
      *
      * @param oldRoomId The old roomId.
      * @param newRoomId The new roomId.

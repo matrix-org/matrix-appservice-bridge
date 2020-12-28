@@ -968,18 +968,18 @@ export class Bridge {
      * user provided rules and the room state. Will default to true
      * if no rules have been provided.
      * @param roomId The room to check.
-     * @param cache Should the validator check it's cache.
+     * @param cache Should the validator check its cache.
      * @returns resolves if can and rejects if it cannot.
      *          A status code is returned on both.
      */
-    public async canProvisionRoom(roomId: string, cache=true) {
+    public async canProvisionRoom(roomId: string, cache=true): Promise<RoomLinkValidatorStatus> {
         if (!this.roomLinkValidator) {
             return RoomLinkValidatorStatus.PASSED;
         }
         return this.roomLinkValidator.validateRoom(roomId, cache);
     }
 
-    public getRoomLinkValidator() {
+    public getRoomLinkValidator(): RoomLinkValidator | undefined {
         return this.roomLinkValidator;
     }
 

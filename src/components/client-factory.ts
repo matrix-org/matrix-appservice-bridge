@@ -120,7 +120,7 @@ export class ClientFactory {
             });
         });
 
-        // matrix-js-sdk uses the `loglevel` logging library for it's logging
+        // matrix-js-sdk uses the `loglevel` logging library for its logging
         // but the only way to get it to log to winston is to modify the
         // global methodFactory.
         loglevel.methodFactory = (methodName, _logLevel, loggerName) => {

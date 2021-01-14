@@ -292,7 +292,7 @@ export class EncryptedEventBroker {
                 types: ["not.a.real.type"],
                 limit: 0,
             };
-            filter.definition.ephemeral = {
+            filter.definition.room.ephemeral = {
                 // No way to disable presence, so make it filter for an impossible type
                 types: ["not.a.real.type"],
                 limit: 0,

@@ -43,7 +43,7 @@
   "devDependencies": {
     "@types/express": "^4.17.11",
     "@types/extend": "^3.0.1",
-    "@types/js-yaml": "^3.12.6",
+    "@types/js-yaml": "^4.0.0",
     "@types/nedb": "^1.8.11",
     "@types/node": "^10.17.50",
     "@types/nopt": "^3.0.29",

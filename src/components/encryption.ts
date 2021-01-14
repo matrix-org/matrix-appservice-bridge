@@ -107,7 +107,7 @@ export class EncryptedEventBroker {
     // We should probably make these LRUs eventually
     private eventsPendingAS: WeakEvent[] = [];
 
-    private syncingClients = new Set<any>();
+    private syncingClients = new Map<string,any>();
 
     /**
      * Called when the bridge gets an event through an appservice transaction.
@@ -301,11 +301,17 @@ export class EncryptedEventBroker {
             resolveInvitesToProfiles: false,
             filter,
         });
-        this.syncingClients.add(matrixClient);
+        this.syncingClients.set(userId, matrixClient);
     }
 
     public shouldAvoidCull(intent: Intent) {
-        return this.syncingClients.has(intent.client);
+        const shouldCull = !this.syncingClients.has(intent.client);
+        if (shouldCull) {
+            log.debug(`Stopping sync for ${intent.userId} due to cull`);
+            // If we ARE culling the client then ensure they stop syncing too.
+            this.syncingClients.get(intent.userId)?.stopClient();
+        }
+        return shouldCull;
     }
 
     /**

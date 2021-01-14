@@ -24,14 +24,14 @@ type Query = Record<string, unknown>;
  */
 export class BridgeStore {
     private dbInsert: (objects: any[]) => Promise<any[]>;
-    private dbUpdate: (query: Query, values: any, options: Datastore.UpdateOptions) => Promise<number>;
+    private dbUpdate: (query: any, values: any, options: Datastore.UpdateOptions) => Promise<void>;
     private dbRemove: (query: Query, options: Datastore.RemoveOptions) => Promise<number>;
     private dbFindOne: (query: Query, projection?: any) => Promise<any>;
     private dbFind: (query: Query, projection?: any) => Promise<any>;
     constructor (public readonly db: Datastore) {
-        this.dbInsert = promisify(this.db.insert).bind(this.db);
-        this.dbUpdate = promisify(this.db.update).bind(this.db);
-        this.dbRemove = promisify(this.db.remove).bind(this.db);
+        this.dbInsert = promisify<any[]>(this.db.insert).bind(this.db);
+        this.dbUpdate = promisify<void>(this.db.update).bind(this.db);
+        this.dbRemove = promisify<any>(this.db.remove).bind(this.db);
         this.dbFindOne = promisify(this.db.findOne).bind(this.db);
         this.dbFind = promisify(this.db.find).bind(this.db);
     }

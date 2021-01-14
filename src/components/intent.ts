@@ -831,7 +831,8 @@ export class Intent {
         try {
             await this.ensureRegistered();
             if (dontJoin) {
-                deferredPromise.resolve();
+                // XXX: Should we return the passed in parameter if we didn't join, or empty?
+                deferredPromise.resolve(roomIdOrAlias);
                 return deferredPromise.promise;
             }
             try {

@@ -409,7 +409,7 @@ export class Bridge {
     private appservice?: AppService;
     private eeEventBroker?: EncryptedEventBroker;
     private selfPingDeferred?: {
-        defer: Defer<unknown>;
+        defer: Defer<void>;
         roomId: string;
         timeout: NodeJS.Timeout;
     }

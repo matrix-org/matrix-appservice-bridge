@@ -1,0 +1,1 @@
+Fix a case where an encrypted bridge may stop syncing for some users of the bridge

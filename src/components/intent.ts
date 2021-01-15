@@ -790,6 +790,10 @@ export class Intent {
         if (!this._membershipStates || !this._powerLevels) {
             return;
         }
+        if (event.state_key === undefined) {
+            // We MUST operate on state events exclusively
+            return;
+        }
         if (event.type === "m.room.member" &&
                 event.state_key === this.userId &&
                 event.content.membership) {

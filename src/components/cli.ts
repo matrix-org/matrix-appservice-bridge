@@ -290,7 +290,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
     }
 
     private loadYaml(fpath: string) {
-        return yaml.safeLoad(fs.readFileSync(fpath, 'utf8'));
+        return yaml.load(fs.readFileSync(fpath, 'utf8'));
     }
 
     private printHelp() {

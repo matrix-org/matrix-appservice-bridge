@@ -409,7 +409,7 @@ export class Bridge {
     private appservice?: AppService;
     private eeEventBroker?: EncryptedEventBroker;
     private selfPingDeferred?: {
-        defer: Defer<unknown>;
+        defer: Defer<void>;
         roomId: string;
         timeout: NodeJS.Timeout;
     }
@@ -549,7 +549,7 @@ export class Bridge {
     public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname?: string, backlog = 10) {
         // Load the registration file into an AppServiceRegistration object.
         if (typeof this.opts.registration === "string") {
-            const regObj = yaml.safeLoad(fs.readFileSync(this.opts.registration, 'utf8'));
+            const regObj = yaml.load(fs.readFileSync(this.opts.registration, 'utf8'));
             if (typeof regObj !== "object") {
                 throw Error("Failed to parse registration file: yaml file did not parse to object")
             }

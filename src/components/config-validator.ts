@@ -63,7 +63,7 @@ export class ConfigValidator {
     }
 
     private static loadFromFile(filename: string): Schema {
-        const result = yaml.safeLoad(fs.readFileSync(filename, 'utf8'));
+        const result = yaml.load(fs.readFileSync(filename, 'utf8'));
         if (typeof(result) !== "object") {
             throw Error('Was expecting yaml as an object');
         }

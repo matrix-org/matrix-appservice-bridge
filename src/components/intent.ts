@@ -117,6 +117,7 @@ export class Intent {
     // These two are only used if no opts.backingStore is provided to the constructor.
     private readonly _membershipStates: Record<string, [UserMembership, UserProfile]> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
+    private readonly encryptedRooms = new Set<string>();
     private readonly encryption?: {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
@@ -375,9 +376,18 @@ export class Intent {
         // eslint-disable-next-line camelcase
         : Promise<{event_id: string}> {
         if (this.encryption) {
-            // We *need* to sync before we can send a message.
-            await this.ensureRegistered();
-            await this.encryption.ensureClientSyncingCallback();
+            let encrypted = false;
+            try {
+                encrypted = !!(await this.isRoomEncrypted(roomId));
+            }
+            catch (ex) {
+                log.debug(`Could not determine if room is decrypted. Assuming yes:`, ex);
+            }
+            if (encrypted) {
+                // We *need* to sync before we can send a message.
+                await this.ensureRegistered();
+                await this.encryption.ensureClientSyncingCallback();
+            }
         }
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type, false);
@@ -697,6 +707,31 @@ export class Intent {
     public async getStateEvent(roomId: string, eventType: string, stateKey = "") {
         await this._ensureJoined(roomId);
         return this.client.getStateEvent(roomId, eventType, stateKey);
+    }
+
+    /**
+     * Check if a room is encrypted. If it is, return the algorithm.
+     * @param roomId The room ID to be checked
+     */
+    public async isRoomEncrypted(roomId: string) {
+        if (this.encryptedRooms.has(roomId)) {
+            return true;
+        }
+        try {
+            const ev = await this.getStateEvent(roomId, "m.room.encryption");
+            const algo = ev.algorithm as string;
+            if (algo) {
+                this.encryptedRooms.add(roomId);
+            }
+            // Return false if missing.
+            return !!algo && algo;
+        }
+        catch (ex) {
+            if (ex.httpStatus == 404) {
+                return false;
+            }
+            throw ex;
+        }
     }
 
     /**

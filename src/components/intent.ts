@@ -381,10 +381,12 @@ export class Intent {
                 encrypted = !!(await this.isRoomEncrypted(roomId));
             }
             catch (ex) {
-                log.debug(`Could not determine if room is decrypted. Assuming yes:`, ex);
+                // This is unexpected. Fail safe.
+                log.debug(`Could not determine if room is encrypted. Assuming yes:`, ex);
+                encrypted = true;
             }
             if (encrypted) {
-                // We *need* to sync before we can send a message.
+                // We *need* to sync before we can send a message to an encrypted room.
                 await this.ensureRegistered();
                 await this.encryption.ensureClientSyncingCallback();
             }

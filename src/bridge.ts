@@ -593,6 +593,7 @@ export class Bridge {
                 // If the bridge supports pushEphemeral, don't use sync data.
                 !this.registration.pushEphemeral ? this.onEphemeralEvent.bind(this) : undefined,
                 this.getIntent.bind(this),
+                this.opts.bridgeEncryption.store,
             );
         }
 

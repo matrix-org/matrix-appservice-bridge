@@ -5,6 +5,7 @@ import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent } from "./
 import { Intent } from "./intent";
 import Logging from "./logging";
 import matrixcs from "matrix-js-sdk";
+import { stat } from "fs";
 
 // matrix-js-sdk lacks types
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -19,10 +20,12 @@ export interface ClientEncryptionSession {
     userId: string;
     deviceId: string;
     accessToken: string;
+    syncToken: string|null;
 }
 export interface ClientEncryptionStore {
     getStoredSession(userId: string): Promise<ClientEncryptionSession|null>;
     setStoredSession(session: ClientEncryptionSession): Promise<void>;
+    updateSyncToken(userId: string, token: string): Promise<void>;
 }
 
 const SYNC_FILTER = {
@@ -86,7 +89,8 @@ export class EncryptedEventBroker {
         private asBot: AppServiceBot,
         private onEvent: (weakEvent: WeakEvent) => void,
         private onEphemeralEvent: ((event: EphemeralEvent) => void)|undefined,
-        private getIntent: (userId: string) => Intent
+        private getIntent: (userId: string) => Intent,
+        private store: ClientEncryptionStore,
         ) {
         if (this.onEphemeralEvent) {
             // Only cleanup presence if we're handling it.
@@ -108,7 +112,7 @@ export class EncryptedEventBroker {
     // We should probably make these LRUs eventually
     private eventsPendingAS: WeakEvent[] = [];
 
-    private syncingClients = new Map<string,any>();
+    private syncingClients = new Map<string, any>();
 
     /**
      * Called when the bridge gets an event through an appservice transaction.
@@ -267,11 +271,18 @@ export class EncryptedEventBroker {
         this.onEphemeralEvent(presenceEv);
     }
 
+    private async onSync(userId: string, state: string, data: {nextSyncToken: string; catchingUp: boolean;}) {
+        log.debug(`${userId} sync is ${state}`);
+        if (state === "SYNCING" || state === "PREPARED" && data.nextSyncToken) {
+            await this.store.updateSyncToken(userId, data.nextSyncToken);
+        }
+    }
+
     /**
      * Start a sync loop for a given bridge user
      * @param userId The user whos matrix client should start syncing
      */
-    public startSyncingUser(userId: string) {
+    public async startSyncingUser(userId: string): Promise<void> {
         const intent = this.getIntent(userId);
         const matrixClient = intent.getClient();
         const syncState = matrixClient.getSyncState();
@@ -286,6 +297,10 @@ export class EncryptedEventBroker {
             matrixClient.stopClient();
         }
         matrixClient.on("event", this.onSyncEvent.bind(this));
+        matrixClient.on("sync",
+            (state: string, _old: unknown, syncData: {nextSyncToken: string; catchingUp: boolean;}) =>
+            this.onSync(userId, state, syncData)
+        );
         matrixClient.on("error", (err: Error) => {
             log.error(`${userId} client error:`, err);
         });
@@ -310,7 +325,7 @@ export class EncryptedEventBroker {
         }
         log.debug(`Starting a new sync for ${userId}`);
         this.syncingClients.set(userId, matrixClient);
-        return matrixClient.startClient({
+        await matrixClient.startClient({
             resolveInvitesToProfiles: false,
             filter,
         });
@@ -328,7 +343,8 @@ export class EncryptedEventBroker {
             try {
                 this.syncingClients.get(intent.userId)?.stopClient();
                 this.syncingClients.delete(intent.userId);
-            } catch (ex) {
+            }
+            catch (ex) {
                 log.debug(`Failed to cull ${intent.userId}`, ex);
             }
         }

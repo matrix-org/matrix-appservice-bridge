@@ -1013,6 +1013,9 @@ export class Intent {
             log.debug("ensureRegistered: Existing enc session, reusing");
             // We have existing credentials, set them on the client and run away.
             this.client._http.opts.accessToken = session.accessToken;
+            if (session.syncToken) {
+                this.client.store.setSyncToken(session.syncToken);
+            }
         }
         else {
             this.readyPromise = (async () => {
@@ -1022,6 +1025,7 @@ export class Intent {
                 session = {
                     userId,
                     ...result,
+                    syncToken: null,
                 };
                 if (this.encryption) {
                     this.encryption.sessionPromise = Promise.resolve(session);

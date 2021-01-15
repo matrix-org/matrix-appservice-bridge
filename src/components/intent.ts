@@ -117,7 +117,7 @@ export class Intent {
     // These two are only used if no opts.backingStore is provided to the constructor.
     private readonly _membershipStates: Record<string, [UserMembership, UserProfile]> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
-    private readonly encryptedRooms = new Set<string>();
+    private readonly encryptedRooms = new Map<string, boolean>();
     private readonly encryption?: {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
@@ -715,19 +715,20 @@ export class Intent {
      */
     public async isRoomEncrypted(roomId: string) {
         if (this.encryptedRooms.has(roomId)) {
-            return true;
+            return this.encryptedRooms.get(roomId);
         }
         try {
             const ev = await this.getStateEvent(roomId, "m.room.encryption");
             const algo = ev.algorithm as string;
             if (algo) {
-                this.encryptedRooms.add(roomId);
+                this.encryptedRooms.set(roomId, true);
             }
             // Return false if missing.
             return !!algo && algo;
         }
         catch (ex) {
             if (ex.httpStatus == 404) {
+                this.encryptedRooms.set(roomId, false);
                 return false;
             }
             throw ex;
@@ -801,6 +802,9 @@ export class Intent {
         }
         else if (event.type === "m.room.power_levels") {
             this._powerLevels[event.room_id] = event.content as unknown as PowerLevelContent;
+        }
+        else if (event.type === "m.room.encryption") {
+            this.encryptedRooms.set(event.room_id, true);
         }
     }
 

@@ -4,8 +4,6 @@ import { WeakEvent } from "./event-types";
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent } from "./event-types";
 import { Intent } from "./intent";
 import Logging from "./logging";
-import matrixcs from "matrix-js-sdk";
-import { stat } from "fs";
 
 // matrix-js-sdk lacks types
 // eslint-disable-next-line @typescript-eslint/no-var-requires

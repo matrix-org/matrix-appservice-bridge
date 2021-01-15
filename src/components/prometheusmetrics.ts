@@ -380,11 +380,11 @@ export class PrometheusMetrics {
             // TODO: Ideally these metrics would be on a different port.
             // For now, leave this unauthenticated.
             checkToken: false,
-            handler: (_req: Request, res: Response) => {
+            handler: async (_req: Request, res: Response) => {
                 this.refresh();
 
                 try {
-                    const exposition = this.register.metrics();
+                    const exposition = await this.register.metrics();
 
                     res.set("Content-Type", "text/plain");
                     res.send(exposition);

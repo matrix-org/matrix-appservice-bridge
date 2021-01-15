@@ -147,7 +147,6 @@ export class EncryptedEventBroker {
             log.debug(`${existingUserForRoom} is listening for ${event.event_id}`);
             // XXX: Sometimes the sync stops working, calling this will wake it up.
             await this.startSyncingUser(existingUserForRoom);
-            // Someone is listening, no need.
             return false;
         }
 
@@ -284,16 +283,19 @@ export class EncryptedEventBroker {
         const intent = this.getIntent(userId);
         const matrixClient = intent.getClient();
         const syncState = matrixClient.getSyncState();
+        // If the sync is ongoing, and isn't stopped or error then we should exit.
         if (syncState && !["STOPPED", "ERROR"].includes(syncState)) {
             log.debug(`Client is already syncing: ${syncState}`);
             return;
         }
+
         log.info(`Starting to sync ${userId} (curr: ${syncState})`);
         if (syncState) {
             log.debug(`Cancel existing sync`);
             // Ensure we cancel any existing stuff
             matrixClient.stopClient();
         }
+
         matrixClient.on("event", this.onSyncEvent.bind(this));
         matrixClient.on("sync",
             (state: string, _old: unknown, syncData: {nextSyncToken: string; catchingUp: boolean;}) =>
@@ -302,9 +304,12 @@ export class EncryptedEventBroker {
         matrixClient.on("error", (err: Error) => {
             log.error(`${userId} client error:`, err);
         });
+
         const filter = new Filter(userId);
         filter.setDefinition(SYNC_FILTER);
         if (this.onEphemeralEvent) {
+            // This means that ephemeral event support ISN'T enabled for this bridge, so 
+            // we rely on sync to handle events
             matrixClient.on("RoomMember.typing", (event: TypingEvent) => this.onTyping(userId, event));
             matrixClient.on("Room.receipt", (event: ReadReceiptEvent) => this.onReceipt(userId, event));
             matrixClient.on("User.presence", (event: PresenceEvent) => this.onPresence(event));

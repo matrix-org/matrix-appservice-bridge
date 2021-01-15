@@ -308,7 +308,7 @@ export class EncryptedEventBroker {
         const filter = new Filter(userId);
         filter.setDefinition(SYNC_FILTER);
         if (this.onEphemeralEvent) {
-            // This means that ephemeral event support ISN'T enabled for this bridge, so 
+            // This means that ephemeral event support ISN'T enabled for this bridge, so
             // we rely on sync to handle events
             matrixClient.on("RoomMember.typing", (event: TypingEvent) => this.onTyping(userId, event));
             matrixClient.on("Room.receipt", (event: ReadReceiptEvent) => this.onReceipt(userId, event));

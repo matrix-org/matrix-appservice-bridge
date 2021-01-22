@@ -117,7 +117,7 @@ export class Intent {
     // These two are only used if no opts.backingStore is provided to the constructor.
     private readonly _membershipStates: Record<string, [UserMembership, UserProfile]> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
-    private readonly encryptedRooms = new Map<string, boolean>();
+    private readonly encryptedRooms = new Map<string, string|false>();
     private readonly encryption?: {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
@@ -716,15 +716,16 @@ export class Intent {
      * @param roomId The room ID to be checked
      * @returns The encryption algorithm or false
      */
-    public async isRoomEncrypted(roomId: string): string|false {
-        if (this.encryptedRooms.has(roomId)) {
-            return this.encryptedRooms.get(roomId);
+    public async isRoomEncrypted(roomId: string): Promise<string|false> {
+        const existing = this.encryptedRooms.get(roomId);
+        if (existing !== undefined) {
+            return existing;
         }
         try {
             const ev = await this.getStateEvent(roomId, "m.room.encryption");
             const algo = ev.algorithm as unknown;
             if (typeof algo === 'string' && algo) {
-                this.encryptedRooms.set(roomId, true);
+                this.encryptedRooms.set(roomId, algo);
                 return algo;
             }
             // Return false if missing, not a string or empty.
@@ -783,7 +784,7 @@ export class Intent {
     public onEvent(event: {
         type: string,
         // eslint-disable-next-line camelcase
-        content: {membership: UserMembership, displayname?: string, avatar_url?: string},
+        content: {membership: UserMembership, displayname?: string, avatar_url?: string, algorithm?: string},
         // eslint-disable-next-line camelcase
         state_key: unknown,
         // eslint-disable-next-line camelcase
@@ -811,8 +812,8 @@ export class Intent {
         else if (event.type === "m.room.power_levels") {
             this._powerLevels[event.room_id] = event.content as unknown as PowerLevelContent;
         }
-        else if (event.type === "m.room.encryption") {
-            this.encryptedRooms.set(event.room_id, true);
+        else if (event.type === "m.room.encryption" && typeof event.content.algorithm === "string") {
+            this.encryptedRooms.set(event.room_id, (event.content.algorithm);
         }
     }
 

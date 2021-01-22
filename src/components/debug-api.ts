@@ -26,7 +26,7 @@ export class DebugAPI {
     }
 
     public async start(): Promise<unknown> {
-        return new Promise((res, rej) => {
+        return new Promise<void>((res, rej) => {
             this.app.once("error", rej);
             this.app.listen(this.opts.port, this.opts.host, res);
         });

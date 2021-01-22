@@ -714,19 +714,21 @@ export class Intent {
     /**
      * Check if a room is encrypted. If it is, return the algorithm.
      * @param roomId The room ID to be checked
+     * @returns The encryption algorithm or false
      */
-    public async isRoomEncrypted(roomId: string) {
+    public async isRoomEncrypted(roomId: string): string|false {
         if (this.encryptedRooms.has(roomId)) {
             return this.encryptedRooms.get(roomId);
         }
         try {
             const ev = await this.getStateEvent(roomId, "m.room.encryption");
-            const algo = ev.algorithm as string;
-            if (algo) {
+            const algo = ev.algorithm as unknown;
+            if (typeof algo === 'string' && algo) {
                 this.encryptedRooms.set(roomId, true);
+                return algo;
             }
-            // Return false if missing.
-            return !!algo && algo;
+            // Return false if missing, not a string or empty.
+            return false;
         }
         catch (ex) {
             if (ex.httpStatus == 404) {

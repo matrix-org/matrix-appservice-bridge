@@ -813,7 +813,7 @@ export class Intent {
             this._powerLevels[event.room_id] = event.content as unknown as PowerLevelContent;
         }
         else if (event.type === "m.room.encryption" && typeof event.content.algorithm === "string") {
-            this.encryptedRooms.set(event.room_id, (event.content.algorithm);
+            this.encryptedRooms.set(event.room_id, event.content.algorithm);
         }
     }
 

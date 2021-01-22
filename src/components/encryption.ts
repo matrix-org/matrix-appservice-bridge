@@ -18,10 +18,12 @@ export interface ClientEncryptionSession {
     userId: string;
     deviceId: string;
     accessToken: string;
+    syncToken: string|null;
 }
 export interface ClientEncryptionStore {
     getStoredSession(userId: string): Promise<ClientEncryptionSession|null>;
     setStoredSession(session: ClientEncryptionSession): Promise<void>;
+    updateSyncToken(userId: string, token: string): Promise<void>;
 }
 
 const SYNC_FILTER = {
@@ -85,7 +87,8 @@ export class EncryptedEventBroker {
         private asBot: AppServiceBot,
         private onEvent: (weakEvent: WeakEvent) => void,
         private onEphemeralEvent: ((event: EphemeralEvent) => void)|undefined,
-        private getIntent: (userId: string) => Intent
+        private getIntent: (userId: string) => Intent,
+        private store: ClientEncryptionStore,
         ) {
         if (this.onEphemeralEvent) {
             // Only cleanup presence if we're handling it.
@@ -107,7 +110,7 @@ export class EncryptedEventBroker {
     // We should probably make these LRUs eventually
     private eventsPendingAS: WeakEvent[] = [];
 
-    private syncingClients = new Set<any>();
+    private syncingClients = new Map<string, any>();
 
     /**
      * Called when the bridge gets an event through an appservice transaction.
@@ -142,7 +145,8 @@ export class EncryptedEventBroker {
         const existingUserForRoom = this.userForRoom.get(event.room_id);
         if (existingUserForRoom) {
             log.debug(`${existingUserForRoom} is listening for ${event.event_id}`);
-            // Someone is listening, no need.
+            // XXX: Sometimes the sync stops working, calling this will wake it up.
+            await this.startSyncingUser(existingUserForRoom);
             return false;
         }
 
@@ -170,15 +174,18 @@ export class EncryptedEventBroker {
 
         const existingUser = membersForRoom.find((u) => [...this.userForRoom.values()].includes(u));
         if (existingUser) {
-            log.error(`${event.room_id} will be synced by ${existingUser}`);
+            log.debug(`${event.room_id} will be synced by ${existingUser}`);
             // Bind them to the room
             this.userForRoom.set(event.room_id, existingUser);
         }
 
         // We have no syncing clients for this room. Take the first one.
-        const intent = this.getIntent(membersForRoom[0]);
-        await intent.ensureRegistered();
-        await this.startSyncingUser(membersForRoom[0]);
+        const newSyncer = membersForRoom[0];
+        log.debug(`No syncing clients for ${event.room_id}, will use ${newSyncer}`);
+        // Wait so that we block before new events arrive.
+        await this.getIntent(newSyncer).ensureRegistered();
+        await this.startSyncingUser(newSyncer);
+        this.userForRoom.set(event.room_id, newSyncer);
         return false;
     }
 
@@ -261,26 +268,48 @@ export class EncryptedEventBroker {
         this.onEphemeralEvent(presenceEv);
     }
 
+    private async onSync(userId: string, state: string, data: {nextSyncToken: string; catchingUp: boolean;}) {
+        log.debug(`${userId} sync is ${state}`);
+        if ((state === "SYNCING" || state === "PREPARED") && data.nextSyncToken) {
+            await this.store.updateSyncToken(userId, data.nextSyncToken);
+        }
+    }
+
     /**
      * Start a sync loop for a given bridge user
      * @param userId The user whos matrix client should start syncing
      */
-    public async startSyncingUser(userId: string) {
-        log.info(`Starting to sync ${userId}`);
+    public async startSyncingUser(userId: string): Promise<void> {
         const intent = this.getIntent(userId);
         const matrixClient = intent.getClient();
-        const syncState = matrixClient.getSyncState;
-        if (syncState !== null && syncState === "STOPPED") {
-            log.debug("Client is already syncing");
+        const syncState = matrixClient.getSyncState();
+        // If the sync is ongoing, and isn't stopped or error then we should exit.
+        if (syncState && !["STOPPED", "ERROR"].includes(syncState)) {
+            log.debug(`Client is already syncing: ${syncState}`);
             return;
         }
+
+        log.info(`Starting to sync ${userId} (curr: ${syncState})`);
+        if (syncState) {
+            log.debug(`Cancel existing sync`);
+            // Ensure we cancel any existing stuff
+            matrixClient.stopClient();
+        }
+
         matrixClient.on("event", this.onSyncEvent.bind(this));
+        matrixClient.on("sync",
+            (state: string, _old: unknown, syncData: {nextSyncToken: string; catchingUp: boolean;}) =>
+            this.onSync(userId, state, syncData)
+        );
         matrixClient.on("error", (err: Error) => {
             log.error(`${userId} client error:`, err);
         });
+
         const filter = new Filter(userId);
         filter.setDefinition(SYNC_FILTER);
         if (this.onEphemeralEvent) {
+            // This means that ephemeral event support ISN'T enabled for this bridge, so
+            // we rely on sync to handle events
             matrixClient.on("RoomMember.typing", (event: TypingEvent) => this.onTyping(userId, event));
             matrixClient.on("Room.receipt", (event: ReadReceiptEvent) => this.onReceipt(userId, event));
             matrixClient.on("User.presence", (event: PresenceEvent) => this.onPresence(event));
@@ -291,21 +320,38 @@ export class EncryptedEventBroker {
                 types: ["not.a.real.type"],
                 limit: 0,
             };
-            filter.definition.ephemeral = {
+            filter.definition.room.ephemeral = {
                 // No way to disable presence, so make it filter for an impossible type
                 types: ["not.a.real.type"],
                 limit: 0,
             }
         }
+        log.debug(`Starting a new sync for ${userId}`);
+        this.syncingClients.set(userId, matrixClient);
         await matrixClient.startClient({
             resolveInvitesToProfiles: false,
             filter,
         });
-        this.syncingClients.add(matrixClient);
     }
 
     public shouldAvoidCull(intent: Intent) {
-        return this.syncingClients.has(intent.client);
+        // Is user in use for syncing a room?
+        if ([...this.userForRoom.values()].includes(intent.userId)) {
+            return true;
+        }
+        // Otherwise, we should cull it. Also stop it from syncing.
+        if (this.syncingClients.has(intent.userId)) {
+            log.debug(`Stopping sync for ${intent.userId} due to cull`);
+            // If we ARE culling the client then ensure they stop syncing too.
+            try {
+                this.syncingClients.get(intent.userId)?.stopClient();
+                this.syncingClients.delete(intent.userId);
+            }
+            catch (ex) {
+                log.debug(`Failed to cull ${intent.userId}`, ex);
+            }
+        }
+        return false;
     }
 
     /**

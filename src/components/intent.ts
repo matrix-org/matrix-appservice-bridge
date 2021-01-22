@@ -117,6 +117,7 @@ export class Intent {
     // These two are only used if no opts.backingStore is provided to the constructor.
     private readonly _membershipStates: Record<string, [UserMembership, UserProfile]> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
+    private readonly encryptedRooms = new Map<string, string|false>();
     private readonly encryption?: {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
@@ -375,9 +376,20 @@ export class Intent {
         // eslint-disable-next-line camelcase
         : Promise<{event_id: string}> {
         if (this.encryption) {
-            // We *need* to sync before we can send a message.
-            await this.ensureRegistered();
-            await this.encryption.ensureClientSyncingCallback();
+            let encrypted = false;
+            try {
+                encrypted = !!(await this.isRoomEncrypted(roomId));
+            }
+            catch (ex) {
+                // This is unexpected. Fail safe.
+                log.debug(`Could not determine if room is encrypted. Assuming yes:`, ex);
+                encrypted = true;
+            }
+            if (encrypted) {
+                // We *need* to sync before we can send a message to an encrypted room.
+                await this.ensureRegistered();
+                await this.encryption.ensureClientSyncingCallback();
+            }
         }
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type, false);
@@ -700,6 +712,35 @@ export class Intent {
     }
 
     /**
+     * Check if a room is encrypted. If it is, return the algorithm.
+     * @param roomId The room ID to be checked
+     * @returns The encryption algorithm or false
+     */
+    public async isRoomEncrypted(roomId: string): Promise<string|false> {
+        const existing = this.encryptedRooms.get(roomId);
+        if (existing !== undefined) {
+            return existing;
+        }
+        try {
+            const ev = await this.getStateEvent(roomId, "m.room.encryption");
+            const algo = ev.algorithm as unknown;
+            if (typeof algo === 'string' && algo) {
+                this.encryptedRooms.set(roomId, algo);
+                return algo;
+            }
+            // Return false if missing, not a string or empty.
+            return false;
+        }
+        catch (ex) {
+            if (ex.httpStatus == 404) {
+                this.encryptedRooms.set(roomId, false);
+                return false;
+            }
+            throw ex;
+        }
+    }
+
+    /**
      * Upload a file to the homeserver.
      * @param content The file contents
      * @param opts Additional options for the upload.
@@ -743,13 +784,17 @@ export class Intent {
     public onEvent(event: {
         type: string,
         // eslint-disable-next-line camelcase
-        content: {membership: UserMembership, displayname?: string, avatar_url?: string},
+        content: {membership: UserMembership, displayname?: string, avatar_url?: string, algorithm?: string},
         // eslint-disable-next-line camelcase
         state_key: unknown,
         // eslint-disable-next-line camelcase
         room_id: string
     }) {
         if (!this._membershipStates || !this._powerLevels) {
+            return;
+        }
+        if (event.state_key === undefined) {
+            // We MUST operate on state events exclusively
             return;
         }
         if (event.type === "m.room.member" &&
@@ -766,6 +811,9 @@ export class Intent {
         }
         else if (event.type === "m.room.power_levels") {
             this._powerLevels[event.room_id] = event.content as unknown as PowerLevelContent;
+        }
+        else if (event.type === "m.room.encryption" && typeof event.content.algorithm === "string") {
+            this.encryptedRooms.set(event.room_id, event.content.algorithm);
         }
     }
 
@@ -1013,6 +1061,9 @@ export class Intent {
             log.debug("ensureRegistered: Existing enc session, reusing");
             // We have existing credentials, set them on the client and run away.
             this.client._http.opts.accessToken = session.accessToken;
+            if (session.syncToken) {
+                this.client.store.setSyncToken(session.syncToken);
+            }
         }
         else {
             this.readyPromise = (async () => {
@@ -1022,6 +1073,7 @@ export class Intent {
                 session = {
                     userId,
                     ...result,
+                    syncToken: null,
                 };
                 if (this.encryption) {
                     this.encryption.sessionPromise = Promise.resolve(session);

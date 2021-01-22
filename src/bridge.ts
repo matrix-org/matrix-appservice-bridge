@@ -593,6 +593,7 @@ export class Bridge {
                 // If the bridge supports pushEphemeral, don't use sync data.
                 !this.registration.pushEphemeral ? this.onEphemeralEvent.bind(this) : undefined,
                 this.getIntent.bind(this),
+                this.opts.bridgeEncryption.store,
             );
         }
 
@@ -705,12 +706,16 @@ export class Bridge {
             const now = Date.now();
             for (const [key, entry] of this.intents.entries()) {
                 // Do not delete intents that sync.
+                const lastAccess = now - entry.lastAccessed;
+                if (lastAccess < INTENT_CULL_EVICT_AFTER_MS) {
+                    // Intent is still in use.
+                    continue;
+                }
                 if (this.eeEventBroker?.shouldAvoidCull(entry.intent)) {
-                    return;
+                    // Intent is syncing events for encrypted rooms
+                    continue;
                 }
-                if (entry.lastAccessed + INTENT_CULL_EVICT_AFTER_MS < now) {
-                    this.intents.delete(key);
-                }
+                this.intents.delete(key);
             }
             this.intentLastAccessedTimeout = null;
             // repeat forever. We have no cancellation mechanism but we don't expect

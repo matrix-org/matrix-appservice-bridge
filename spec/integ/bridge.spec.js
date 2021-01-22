@@ -266,7 +266,7 @@ describe("Bridge", function() {
     });
 
     describe("pingAppserviceRoute", () => {
-        it("should return successfully when the bridge receives it's own self ping", async () => {
+        it("should return successfully when the bridge receives its own self ping", async () => {
             let sentEvent = false;
             await bridge.run(101, {}, appService);
             bridge.botIntent._ensureJoined = async () => true;

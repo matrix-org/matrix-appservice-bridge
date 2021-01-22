@@ -1,5 +1,4 @@
 # Matrix Application Service Bridging Infrastructure
-[![Build Status](https://travis-ci.org/matrix-org/matrix-appservice-bridge.svg?branch=master)](https://travis-ci.org/matrix-org/matrix-appservice-bridge)
 
 This library sits on top of the
 [core application service library](https://github.com/matrix-org/matrix-appservice-node)

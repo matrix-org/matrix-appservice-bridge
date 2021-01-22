@@ -15,8 +15,8 @@ limitations under the License.
 import logging from "./logging";
 import { MatrixRoom } from "../models/rooms/matrix";
 import { MatrixUser } from "../models/users/matrix";
-import { Intent } from "./intent";
-import { RoomBridgeStore, RoomBridgeStoreEntry } from "./room-bridge-store";
+import { RoomBridgeStoreEntry } from "./room-bridge-store";
+import { Bridge } from "..";
 
 const log = logging.get("RoomUpgradeHandler");
 
@@ -39,7 +39,7 @@ export interface RoomUpgradeHandlerOpts {
     migrateStoreEntries: boolean;
 
     /**
-     * Invoked after a room has been upgraded and it's entries updated.
+     * Invoked after a room has been upgraded and its entries updated.
      *
      * @param oldRoomId The old roomId.
      * @param newRoomId The new roomId.
@@ -67,7 +67,7 @@ export class RoomUpgradeHandler {
      * @param {RoomUpgradeHandler~Options} opts
      * @param {Bridge} bridge The parent bridge.
      */
-    constructor(private readonly opts: RoomUpgradeHandlerOpts, private readonly bridge: any) {
+    constructor(private readonly opts: RoomUpgradeHandlerOpts, private readonly bridge: Bridge) {
         if (opts.migrateGhosts !== false) {
             opts.migrateGhosts = true;
         }
@@ -101,7 +101,7 @@ export class RoomUpgradeHandler {
     }
 
     private async joinNewRoom(newRoomId: string, joinVia: string[] = []) {
-        const intent = this.bridge.getIntent() as Intent;
+        const intent = this.bridge.getIntent();
         try {
             await intent.join(newRoomId, joinVia);
             return true;
@@ -168,7 +168,7 @@ export class RoomUpgradeHandler {
             const userIds = Object.keys(members).filter((u) => asBot.isRemoteUser(u));
             log.debug(`Migrating ${userIds.length} ghosts`);
             for (const userId of userIds) {
-                const i = this.bridge.getIntent(userId) as Intent;
+                const i = this.bridge.getIntent(userId);
                 await i.leave(oldRoomId);
                 await i.join(newRoomId);
             }
@@ -182,7 +182,11 @@ export class RoomUpgradeHandler {
     }
 
     private async migrateStoreEntries(oldRoomId: string, newRoomId: string) {
-        const roomStore = this.bridge.getRoomStore() as RoomBridgeStore;
+        const roomStore = this.bridge.getRoomStore();
+        if (!roomStore) {
+            // Do not migrate if we don't have a room store.
+            return true;
+        }
         const entries = await roomStore.getEntriesByMatrixId(oldRoomId);
         let success = false;
         // Upgrades are critical to get right, or a room will be stuck

@@ -18,13 +18,13 @@ import * as fs from "fs";
 import path from "path";
 import * as yaml from "js-yaml";
 import nopt from "nopt";
-import { AppServiceRegistration } from "matrix-appservice";
+import { AppServiceOutput, AppServiceRegistration } from "matrix-appservice";
 import { ConfigValidator } from "./config-validator";
 import * as logging from "./logging";
 
 const log = logging.get("cli");
 
-interface CliOpts<ConfigType extends Record<string, unknown>> {
+export interface CliOpts<ConfigType extends Record<string, unknown>> {
     run: (port: number, config: ConfigType|null, registration: AppServiceRegistration|null) => void;
     onConfigChanged?: (config: ConfigType) => void,
     generateRegistration?: (reg: AppServiceRegistration, cb: (finalReg: AppServiceRegistration) => void) => void;
@@ -278,14 +278,19 @@ export class Cli<ConfigType extends Record<string, unknown>> {
                 }
             });
         }
+        const yamlObj = this.loadYaml(this.opts.registrationPath);
+        if (typeof yamlObj !== "object") {
+            throw Error('Registration file did not parse to an object');
+        }
+
         this.opts.run(
             this.opts.port, config,
-            AppServiceRegistration.fromObject(this.loadYaml(this.opts.registrationPath))
+            AppServiceRegistration.fromObject(yamlObj as AppServiceOutput)
         );
     }
 
     private loadYaml(fpath: string) {
-        return yaml.safeLoad(fs.readFileSync(fpath, 'utf8'));
+        return yaml.load(fs.readFileSync(fpath, 'utf8'));
     }
 
     private printHelp() {

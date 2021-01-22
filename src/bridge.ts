@@ -18,9 +18,10 @@ import * as util from "util";
 import yaml from "js-yaml";
 import { Application, Request as ExRequest, Response as ExResponse, NextFunction } from "express";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const MatrixScheduler = require("matrix-js-sdk").MatrixScheduler;
 
-import { AppServiceRegistration, AppService } from "matrix-appservice";
+import { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
 import { BridgeContext } from "./components/bridge-context"
 import { ClientFactory } from "./components/client-factory"
 import { AppServiceBot } from "./components/app-service-bot"
@@ -33,12 +34,12 @@ import { EventBridgeStore } from "./components/event-bridge-store";
 import { MatrixUser } from "./models/users/matrix"
 import { MatrixRoom } from "./models/rooms/matrix"
 import { PrometheusMetrics, BridgeGaugesCounts } from "./components/prometheusmetrics"
-import { MembershipCache, UserMembership } from "./components/membership-cache"
+import { MembershipCache, UserMembership, UserProfile } from "./components/membership-cache"
 import { RoomLinkValidator, RoomLinkValidatorStatus, Rules } from "./components/room-link-validator"
 import { RoomUpgradeHandler, RoomUpgradeHandlerOpts } from "./components/room-upgrade-handler";
 import { EventQueue } from "./components/event-queue";
 import * as logging from "./components/logging";
-import { defer as deferPromise } from "./utils/promiseutil";
+import { Defer, defer as deferPromise } from "./utils/promiseutil";
 import { unstable } from "./errors";
 import { BridgeStore } from "./components/bridge-store";
 import { RemoteUser } from "./models/users/remote";
@@ -59,7 +60,10 @@ const INTENT_CULL_CHECK_PERIOD_MS = 1000 * 60; // once per minute
 // How long a given Intent object can hang around unused for.
 const INTENT_CULL_EVICT_AFTER_MS = 1000 * 60 * 15; // 15 minutes
 
-interface BridgeController {
+export const BRIDGE_PING_EVENT_TYPE = "org.matrix.bridge.ping";
+export const BRIDGE_PING_TIMEOUT_MS = 60000;
+
+export interface BridgeController {
     /**
      * The bridge will invoke when an event has been received from the HS.
      */
@@ -82,7 +86,7 @@ interface BridgeController {
      * not supplied, no rooms will be provisioned on alias queries. Provisioned rooms
      * will automatically be stored in the associated `roomStore`. */
     onAliasQuery?: (alias: string, aliasLocalpart: string) =>
-        PossiblePromise<{creationOpts: Record<string, unknown>, remote?: RemoteRoom}|null|void>;
+        PossiblePromise<{roomId?: string, creationOpts?: Record<string, unknown>, remote?: RemoteRoom}|null|void>;
     /**
      * The bridge will invoke this function when a room has been created
      * via onAliasQuery.
@@ -110,7 +114,7 @@ interface BridgeController {
 
 type PossiblePromise<T> = T|Promise<T>;
 
-interface BridgeOpts {
+export interface BridgeOpts {
     /**
      * Application service registration object or path to the registration file.
      */
@@ -413,6 +417,11 @@ export class Bridge {
     private appservice?: AppService;
     private eeEventBroker?: EncryptedEventBroker;
     public readonly debugApi?: DebugAPI;
+    private selfPingDeferred?: {
+        defer: Defer<void>;
+        roomId: string;
+        timeout: NodeJS.Timeout;
+    }
 
     public readonly opts: VettedBridgeOpts;
 
@@ -487,6 +496,7 @@ export class Bridge {
             setMembership: this.membershipCache.setMemberEntry.bind(this.membershipCache),
             setPowerLevelContent: this.setPowerLevelEntry.bind(this),
             getMembership: this.membershipCache.getMemberEntry.bind(this.membershipCache),
+            getMemberProfile: this.membershipCache.getMemberProfile.bind(this.membershipCache),
             getPowerLevelContent: this.getPowerLevelEntry.bind(this)
         };
 
@@ -551,8 +561,11 @@ export class Bridge {
     public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname?: string, backlog = 10) {
         // Load the registration file into an AppServiceRegistration object.
         if (typeof this.opts.registration === "string") {
-            const regObj = yaml.safeLoad(fs.readFileSync(this.opts.registration, 'utf8'));
-            const registration = AppServiceRegistration.fromObject(regObj);
+            const regObj = yaml.load(fs.readFileSync(this.opts.registration, 'utf8'));
+            if (typeof regObj !== "object") {
+                throw Error("Failed to parse registration file: yaml file did not parse to object")
+            }
+            const registration = AppServiceRegistration.fromObject(regObj as AppServiceOutput);
             if (registration === null) {
                 throw Error("Failed to parse registration file");
             }
@@ -593,8 +606,10 @@ export class Bridge {
                 this.membershipCache,
                 this.appServiceBot,
                 this.onEvent.bind(this),
-                this.onEphemeralEvent.bind(this),
+                // If the bridge supports pushEphemeral, don't use sync data.
+                !this.registration.pushEphemeral ? this.onEphemeralEvent.bind(this) : undefined,
                 this.getIntent.bind(this),
+                this.opts.bridgeEncryption.store,
             );
         }
 
@@ -650,6 +665,9 @@ export class Bridge {
             }
             return undefined;
         });
+        this.appservice.on("ephemeral", async (event) =>
+            this.onEphemeralEvent(event as unknown as EphemeralEvent)
+        );
         this.appservice.on("http-log", (line) => {
             this.onLog(line, false);
         });
@@ -704,12 +722,16 @@ export class Bridge {
             const now = Date.now();
             for (const [key, entry] of this.intents.entries()) {
                 // Do not delete intents that sync.
+                const lastAccess = now - entry.lastAccessed;
+                if (lastAccess < INTENT_CULL_EVICT_AFTER_MS) {
+                    // Intent is still in use.
+                    continue;
+                }
                 if (this.eeEventBroker?.shouldAvoidCull(entry.intent)) {
-                    return;
+                    // Intent is syncing events for encrypted rooms
+                    continue;
                 }
-                if (entry.lastAccessed + INTENT_CULL_EVICT_AFTER_MS < now) {
-                    this.intents.delete(key);
-                }
+                this.intents.delete(key);
             }
             this.intentLastAccessedTimeout = null;
             // repeat forever. We have no cancellation mechanism but we don't expect
@@ -967,18 +989,18 @@ export class Bridge {
      * user provided rules and the room state. Will default to true
      * if no rules have been provided.
      * @param roomId The room to check.
-     * @param cache Should the validator check it's cache.
+     * @param cache Should the validator check its cache.
      * @returns resolves if can and rejects if it cannot.
      *          A status code is returned on both.
      */
-    public async canProvisionRoom(roomId: string, cache=true) {
+    public async canProvisionRoom(roomId: string, cache=true): Promise<RoomLinkValidatorStatus> {
         if (!this.roomLinkValidator) {
             return RoomLinkValidatorStatus.PASSED;
         }
         return this.roomLinkValidator.validateRoom(roomId, cache);
     }
 
-    public getRoomLinkValidator() {
+    public getRoomLinkValidator(): RoomLinkValidator | undefined {
         return this.roomLinkValidator;
     }
 
@@ -1000,7 +1022,8 @@ export class Bridge {
                 throw Error('Cannot call getIntent before calling .run()');
             }
             return this.botIntent;
-        } else if (userId === this.botUserId) {
+        }
+        else if (userId === this.botUserId) {
             if (!this.botIntent) {
                 // This will be defined when .run is called.
                 throw Error('Cannot call getIntent before calling .run()');
@@ -1116,9 +1139,6 @@ export class Bridge {
         if (!this.opts.controller.onAliasQuery) {
             return;
         }
-        if (!this.opts.controller.onUserQuery) {
-            return;
-        }
         if (!this.botIntent) {
             throw Error('botIntent is not ready yet');
         }
@@ -1128,11 +1148,18 @@ export class Bridge {
             // Not provisioning room.
             throw Error("Not provisioning room for this alias");
         }
-        // eslint-disable-next-line camelcase
-        const createRoomResponse: {room_id: string} = await this.botClient.createRoom(
-            provisionedRoom.creationOpts
-        );
-        const roomId = createRoomResponse.room_id;
+
+        let roomId = provisionedRoom.roomId;
+        // If they didn't pass an existing `roomId` back,
+        // we expect some `creationOpts` to create a new room
+        if (!roomId) {
+            // eslint-disable-next-line camelcase
+            const createRoomResponse: {room_id: string} = await this.botClient.createRoom(
+                provisionedRoom.creationOpts
+            );
+            roomId = createRoomResponse.room_id;
+        }
+
         if (!this.opts.disableStores) {
             if (!this.roomStore) {
                 throw Error("roomStore is not ready yet");
@@ -1165,10 +1192,16 @@ export class Bridge {
             // Called before we were ready, which is probably impossible.
             return null;
         }
+        if (this.selfPingDeferred?.roomId === event.room_id && event.sender === this.botUserId) {
+            this.selfPingDeferred.defer.resolve();
+            log.debug("Got self ping")
+            return null;
+        }
         const isCanonicalState = event.state_key === "";
         this.updateIntents(event);
         if (this.opts.suppressEcho &&
-                this.registration.isUserMatch(event.sender, true)) {
+                (this.registration.isUserMatch(event.sender, true) ||
+                event.sender === this.botUserId)) {
             return null;
         }
 
@@ -1300,16 +1333,29 @@ export class Bridge {
      */
     private getUserRegex(): string[] {
         // Return empty array if registration isn't available yet.
-        return this.registration?.getOutput().namespaces.users.map(o => o.regex) || [];
+        return this.registration?.getOutput()?.namespaces?.users?.map(o => o.regex) || [];
     }
 
     private updateIntents(event: WeakEvent) {
         if (event.type === "m.room.member" && event.state_key) {
-            const content = event.content as { membership: UserMembership };
+            const content = event.content as {
+                membership: UserMembership;
+                displayname?: string;
+                // eslint-disable-next-line camelcase
+                avatar_url?: string;
+            };
+            const profile: UserProfile = {};
+            if (content && content.displayname) {
+                profile.displayname = content.displayname;
+            }
+            if (content && content.avatar_url) {
+                profile.avatar_url = content.avatar_url;
+            }
             this.membershipCache.setMemberEntry(
                 event.room_id,
                 event.state_key,
-                content ? content.membership : null
+                content ? content.membership : null,
+                profile,
             );
         }
         else if (event.type === "m.room.power_levels") {
@@ -1434,6 +1480,37 @@ export class Bridge {
                 throw Error('To enable support for encryption, your homeserver must support MSC2666');
             }
         }
+    }
+
+    /**
+     * Check the homeserver -> appservice connection by
+     * sending a ping event.
+     * @param roomId The room to use as a ping check.
+     * @param timeoutMs How long to wait for the ping attempt. Defaults to 60s.
+     * @throws This will throw if another ping attempt is made, or if the request times out.
+     * @returns The delay in milliseconds
+     */
+    public async pingAppserviceRoute(roomId: string, timeoutMs = BRIDGE_PING_TIMEOUT_MS) {
+        if (!this.botIntent) {
+            throw Error("botClient isn't ready yet");
+        }
+        const sentTs = Date.now();
+        if (this.selfPingDeferred) {
+            this.selfPingDeferred.defer.reject(new Error("Another ping request is being made. Cancelling this one."))
+        }
+        this.selfPingDeferred = {
+            defer: deferPromise(),
+            roomId,
+            timeout: setTimeout(() => {
+                    this.selfPingDeferred?.defer.reject(new Error("Timeout waiting for ping event"))
+                }, timeoutMs),
+        }
+        await this.botIntent.sendEvent(roomId, BRIDGE_PING_EVENT_TYPE, {
+            sentTs,
+        });
+        await this.selfPingDeferred.defer.promise;
+        clearTimeout(this.selfPingDeferred.timeout);
+        return Date.now() - sentTs;
     }
 
 }

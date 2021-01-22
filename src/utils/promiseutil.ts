@@ -15,13 +15,13 @@ limitations under the License.
 */
 
 export interface Defer<T> {
-    resolve: (value?: T) => void;
+    resolve: (value: T|PromiseLike<T>) => void;
     reject: (err?: unknown) => void;
     promise: Promise<T>;
 }
 
 export function defer<T>(): Defer<T> {
-    let resolve!: (value?: T) => void;
+    let resolve!: (value: T|PromiseLike<T>) => void;
     let reject!: (err?: unknown) => void;
     const promise = new Promise<T>((res, rej) => {
         resolve = res;

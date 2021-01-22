@@ -17,6 +17,7 @@ import PromClient, { Registry } from "prom-client";
 import { AgeCounters } from "./agecounters";
 import JsSdk from "matrix-js-sdk";
 import { Request, Response } from "express";
+import { Bridge } from "..";
 type CollectorFunction = () => void;
 
 export interface BridgeGaugesCounts {
@@ -372,19 +373,18 @@ export class PrometheusMetrics {
      * containing Express app.
      * @param {Bridge} bridge The containing Bridge instance.
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public addAppServicePath(bridge: any) {
+    public addAppServicePath(bridge: Bridge) {
         bridge.addAppServicePath({
             method: "GET",
             path: "/metrics",
             // TODO: Ideally these metrics would be on a different port.
             // For now, leave this unauthenticated.
             checkToken: false,
-            handler: (_req: Request, res: Response) => {
+            handler: async (_req: Request, res: Response) => {
                 this.refresh();
 
                 try {
-                    const exposition = this.register.metrics();
+                    const exposition = await this.register.metrics();
 
                     res.set("Content-Type", "text/plain");
                     res.send(exposition);

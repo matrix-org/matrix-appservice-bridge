@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import { AppServiceRegistration } from "matrix-appservice";
-import { MembershipCache } from "./membership-cache";
+import { MembershipCache, UserProfile } from "./membership-cache";
 import { StateLookupEvent } from "..";
 
 /**
@@ -33,7 +33,7 @@ export class AppServiceBot {
         // yank out the exclusive user ID regex strings
         this.exclusiveUserRegexes = [];
         const regOut = registration.getOutput();
-        if (regOut.namespaces.users) {
+        if (regOut?.namespaces?.users) {
             regOut.namespaces.users.forEach((userEntry) => {
                 if (!userEntry.exclusive) {
                     return;
@@ -67,14 +67,21 @@ export class AppServiceBot {
      */
     public async getJoinedMembers(roomId: string) {
         // eslint-disable-next-line camelcase
-        const res: {joined: Record<string, {display_name: string, avatar: string}>}
+        const res: {joined: Record<string, {display_name: string, avatar_url: string}>}
             = await this.client.getJoinedRoomMembers(roomId);
         if (!res.joined) {
             return {};
         }
-        for (const member in res.joined) {
+        for (const [member, p] of Object.entries(res.joined)) {
             if (this.isRemoteUser(member)) {
-                this.memberCache.setMemberEntry(roomId, member, "join");
+                const profile: UserProfile = {};
+                if (p.display_name) {
+                    profile.displayname = p.display_name;
+                }
+                if (p.avatar_url) {
+                    profile.avatar_url = p.avatar_url;
+                }
+                this.memberCache.setMemberEntry(roomId, member, "join", profile);
             }
         }
         return res.joined;

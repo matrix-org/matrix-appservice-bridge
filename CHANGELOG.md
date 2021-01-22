@@ -1,4 +1,149 @@
- 2.1.0 (2020-09-28)
+ 2.4.0 (2020-12-01)
+===================
+
+No significant changes.
+
+
+2.4.0-rc2 (2020-11-23)
+=======================
+
+Bugfixes
+--------
+
+- Fixed a issue the membership queue where a failed action would cause the `membershipqueue_pending` metric to increase. ([\#283](https://github.com/matrix-org/matrix-appservice-bridge/issues/283))
+
+
+2.4.0-rc1 (2020-11-20)
+=======================
+
+Features
+--------
+
+- Add function `registerMetrics` to `MembershipQueue` to track metrics. ([\#276](https://github.com/matrix-org/matrix-appservice-bridge/issues/276))
+- Add `defaultTtl` option to `MembershipQueue` to expire membership that is too old. ([\#277](https://github.com/matrix-org/matrix-appservice-bridge/issues/277))
+- Logs from `matrix-js-sdk` will now be passed through the bridge `Logger` to keep logging in one place. ([\#280](https://github.com/matrix-org/matrix-appservice-bridge/issues/280))
+
+
+Bugfixes
+--------
+
+- Add a script to automatically generate documentation for a release. ([\#275](https://github.com/matrix-org/matrix-appservice-bridge/issues/275))
+- Fix a bug where `intent.uploadContent` would return the full JSON response of an upload rather than it's MXC url. ([\#279](https://github.com/matrix-org/matrix-appservice-bridge/issues/279))
+
+
+2.3.1 (2020-11-06)
+=======================
+
+Bugfixes
+--------
+
+- Remove `winston-daily-rotate-file` side-effects which can throw errors with some installed `winston` versions ([\#264](https://github.com/matrix-org/matrix-appservice-bridge/issues/264))
+- Fixed a bug where encrypted events may be handled twice. ([\#267](https://github.com/matrix-org/matrix-appservice-bridge/issues/267))
+- Update `matrix-appservice` dependency to 0.7.1 to fix a bug where `msc2409.push_ephemeral` would be required in the registration file. ([\#270](https://github.com/matrix-org/matrix-appservice-bridge/issues/270))
+
+
+Improved Documentation
+----------------------
+
+- Render various opts objects in the documentation that were missed last time ([\#268](https://github.com/matrix-org/matrix-appservice-bridge/issues/268))
+- Add contributing docs to make first time contributions easier ([\#269](https://github.com/matrix-org/matrix-appservice-bridge/issues/269))
+- Replace usages of deprecated `event.user_id` field with `event.sender` in examples. ([\#272](https://github.com/matrix-org/matrix-appservice-bridge/issues/272))
+
+
+Internal Changes
+----------------
+
+- Remove travis-ci build status badge on README.md. ([\#273](https://github.com/matrix-org/matrix-appservice-bridge/issues/273))
+
+
+2.3.0 (2020-10-26)
+===================
+
+No significant changes.
+
+
+2.3.0-rc3 (2020-10-22)
+=======================
+
+Bugfixes
+--------
+
+- Fix issue where Intent.join would return undefined rather than the roomId ([\#257](https://github.com/matrix-org/matrix-appservice-bridge/issues/257))
+
+
+2.3.0-rc2 (2020-10-22)
+=======================
+
+Bugfixes
+--------
+
+- Fix a bug where a timeout would not be cleared after a sucessful homeserver ping test ([\#256](https://github.com/matrix-org/matrix-appservice-bridge/issues/256))
+
+
+2.3.0-rc1 (2020-10-21)
+=======================
+
+Features
+--------
+
+- Add `MembershipQueue` component ([\#251](https://github.com/matrix-org/matrix-appservice-bridge/issues/251))
+- Add function to ping the homeserver to check that the AS can be reached ([\#253](https://github.com/matrix-org/matrix-appservice-bridge/issues/253))
+- Add `uploadContent()`, and `setRoomDirectoryVisibility()` intent functions ([\#254](https://github.com/matrix-org/matrix-appservice-bridge/issues/254))
+
+
+Bugfixes
+--------
+
+- Fix a bug where the default configuration would be overwritten on validation ([\#252](https://github.com/matrix-org/matrix-appservice-bridge/issues/252))
+- Fix a bug where messages would be echoed to the bridge from the bot user, even if `suppressEcho` was on. ([\#255](https://github.com/matrix-org/matrix-appservice-bridge/issues/255))
+
+
+2.2.0 (2020-10-15)
+===================
+
+No significant changes.
+
+
+2.2.0-rc2 (2020-10-13)
+=======================
+
+Features
+--------
+
+- Add a function to intent to set the user's profile in a room. ([\#248](https://github.com/matrix-org/matrix-appservice-bridge/issues/248))
+
+
+Bugfixes
+--------
+
+- Don't join the room when doing a self-kick ([\#250](https://github.com/matrix-org/matrix-appservice-bridge/issues/250))
+
+
+2.2.0-rc1 (2020-10-12)
+===================
+
+Features
+--------
+
+- Update matrix-js-sdk to v8.4.1 ([\#237](https://github.com/matrix-org/matrix-appservice-bridge/issues/237))
+- Add support for ephemeral events from the AS api (MSC2409) ([\#238](https://github.com/matrix-org/matrix-appservice-bridge/issues/238))
+- Return the roomId when calling intent.join ([\#241](https://github.com/matrix-org/matrix-appservice-bridge/issues/241))
+
+
+Bugfixes
+--------
+
+- Fix bug where OnAliasQuery would fail to fire if OnUserQuery was not defined ([\#247](https://github.com/matrix-org/matrix-appservice-bridge/issues/247))
+- Fix issue where ghost users would not be registered if they've never used the bridge ([\#249](https://github.com/matrix-org/matrix-appservice-bridge/issues/249))
+
+
+Internal Changes
+----------------
+
+- Return `event_id` when sending a event or state event ([\#242](https://github.com/matrix-org/matrix-appservice-bridge/issues/242))
+
+
+2.1.0 (2020-09-28)
 ===================
 
 Bugfixes

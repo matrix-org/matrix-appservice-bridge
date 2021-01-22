@@ -14,6 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { Request } from "./request";
+import logging from "./logging";
+// from the js-sdk
+import loglevel from "loglevel";
+
 type LogWrapCallback = (err: Error, response: { statusCode: number }, body: Record<string, unknown>) => void;
 type OriginalRequest = (opts: Record<string, unknown>, cb: LogWrapCallback) => void;
 
@@ -69,6 +74,8 @@ export class ClientFactory {
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.sdk.wrapRequest((origRequest: OriginalRequest, opts: any, callback: LogWrapCallback) => {
+            // It's too spammy
+            const shouldLog = !opts.uri?.endsWith("/sync");
             const logPrefix = (
                 (opts._matrix_opts && opts._matrix_opts._reqId ?
                     "[" + opts._matrix_opts._reqId + "] " : ""
@@ -77,15 +84,21 @@ export class ClientFactory {
                 (opts.qs.user_id ? "(" + opts.qs.user_id + ")" : "(AS)")
             );
             // Request logging
-            func(
-                logPrefix + " Body: " +
-                (opts.body ? JSON.stringify(opts.body).substring(0, 80) : "")
-            );
+            if (shouldLog) {
+                func(
+                    logPrefix + " Body: " +
+                    (opts.body ? JSON.stringify(opts.body).substring(0, 80) : "")
+                );
+            }
             // Make the request
             origRequest(opts, function(err: Error, response: { statusCode: number }, body: Record<string, unknown>) {
                 // Response logging
                 const httpCode = response ? response.statusCode : null;
                 const responsePrefix = logPrefix + " HTTP " + httpCode;
+                if (!shouldLog) {
+                    callback(err, response, body);
+                    return;
+                }
                 if (err) {
                     func(
                         responsePrefix + " Error: " + JSON.stringify(err), true
@@ -106,6 +119,33 @@ export class ClientFactory {
                 callback(err, response, body);
             });
         });
+
+        // matrix-js-sdk uses the `loglevel` logging library for its logging
+        // but the only way to get it to log to winston is to modify the
+        // global methodFactory.
+        loglevel.methodFactory = (methodName, _logLevel, loggerName) => {
+            return (...args) => {
+                const loggerInstance = logging.get(`js-sdk:${String(loggerName)}`);
+                if (methodName === "debug" ||
+                    methodName == "warn" || methodName === "error") {
+                    loggerInstance[methodName](...args);
+                }
+                else {
+                    loggerInstance.debug(...args)
+                }
+            }
+        }
+        // Set the factory on the default instance.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const loggerInstance = require("matrix-js-sdk/lib/logger").logger;
+        loggerInstance.methodFactory = loglevel.methodFactory;
+        // Ensure these functions use winston
+        loggerInstance.info = loglevel.methodFactory("info", 1, "matrix");
+        loggerInstance.warn = loglevel.methodFactory("warn", 1, "matrix");
+        loggerInstance.debug = loglevel.methodFactory("debug", 1, "matrix");
+        loggerInstance.error = loglevel.methodFactory("error", 1, "matrix");
+        loggerInstance.trace = loglevel.methodFactory("trace", 1, "matrix");
+        loggerInstance.log = loglevel.methodFactory("debug", 1, "matrix");
     }
 
     /**
@@ -119,8 +159,7 @@ export class ClientFactory {
      * This factory will dispose the created client instance when the request is
      * resolved.
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public getClientAs(userId?: string, request?: any, urlOverride?: string, usingE2E = false) {
+    public getClientAs(userId?: string, request?: Request<unknown>, urlOverride?: string, usingE2E = false) {
         const reqId = request ? request.getId() : "-";
         const userIdKey = userId || "bot";
 

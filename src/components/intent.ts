@@ -20,18 +20,20 @@ import JsSdk from "matrix-js-sdk";
 const { MatrixEvent, RoomMember } = JsSdk as any;
 import { ClientRequestCache } from "./client-request-cache";
 import { defer } from "../utils/promiseutil";
-import { UserMembership } from "./membership-cache";
+import { UserMembership, UserProfile } from "./membership-cache";
 import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
+import { ReadStream } from "fs";
 
 const log = Logging.get("Intent");
 
 export type IntentBackingStore = {
     getMembership: (roomId: string, userId: string) => UserMembership,
+    getMemberProfile: (roomId: string, userid: string) => UserProfile,
     getPowerLevelContent: (roomId: string) => Record<string, unknown> | undefined,
-    setMembership: (roomId: string, userId: string, membership: UserMembership) => void,
+    setMembership: (roomId: string, userId: string, membership: UserMembership, profile: UserProfile) => void,
     setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => void,
 };
 
@@ -57,6 +59,12 @@ export interface RoomCreationOpts {
     options: Record<string, unknown>;
 }
 
+export interface FileUploadOpts {
+    name?: string;
+    includeFilename?: boolean;
+    type?: string;
+}
+
 /**
  * Returns the first parameter that is a number or 0.
  */
@@ -69,10 +77,6 @@ const returnFirstNumber = (...args: unknown[]) => {
     return 0;
 }
 
-const STATE_EVENT_TYPES = [
-    "m.room.name", "m.room.topic", "m.room.power_levels", "m.room.member",
-    "m.room.join_rules", "m.room.history_visibility"
-];
 const DEFAULT_CACHE_TTL = 90000;
 const DEFAULT_CACHE_SIZE = 1024;
 
@@ -111,8 +115,9 @@ export class Intent {
         registered?: boolean;
     }
     // These two are only used if no opts.backingStore is provided to the constructor.
-    private readonly _membershipStates: Record<string, UserMembership> = {};
+    private readonly _membershipStates: Record<string, [UserMembership, UserProfile]> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
+    private readonly encryptedRooms = new Map<string, string|false>();
     private readonly encryption?: {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
@@ -179,19 +184,25 @@ export class Intent {
             ...opts,
             backingStore: opts.backingStore ? { ...opts.backingStore } : {
                 getMembership: (roomId: string, userId: string) => {
-                    if (userId !== this.client.credentials.userId) {
+                    if (userId !== this.userId) {
                         return null;
                     }
-                    return this._membershipStates[roomId];
+                    return this._membershipStates[roomId] && this._membershipStates[roomId][0];
+                },
+                getMemberProfile: (roomId: string, userId: string) => {
+                    if (userId !== this.client.credentials.userId) {
+                        return {};
+                    }
+                    return this._membershipStates[roomId] && this._membershipStates[roomId][1];
                 },
                 getPowerLevelContent: (roomId: string) => {
                     return this._powerLevels[roomId];
                 },
-                setMembership: (roomId: string, userId: string, membership: UserMembership) => {
-                    if (userId !== this.client.credentials.userId) {
+                setMembership: (roomId: string, userId: string, membership: UserMembership, profile: UserProfile) => {
+                    if (userId !== this.userId) {
                         return;
                     }
-                    this._membershipStates[roomId] = membership;
+                    this._membershipStates[roomId] = [membership, profile];
                 },
                 setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => {
                     this._powerLevels[roomId] = content;
@@ -234,6 +245,10 @@ export class Intent {
      */
     public getClient() {
         return this.client;
+    }
+
+    public get userId(): string {
+        return this.client.credentials.userId;
     }
 
     /**
@@ -305,7 +320,6 @@ export class Intent {
      */
     public async sendTyping(roomId: string, isTyping: boolean) {
         await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, "m.typing");
         return this.client.sendTyping(roomId, isTyping);
     }
 
@@ -333,7 +347,7 @@ export class Intent {
      */
     public async setPowerLevel(roomId: string, target: string, level: number|undefined) {
         await this._ensureJoined(roomId);
-        const event = await this._ensureHasPowerLevelFor(roomId, "m.room.power_levels");
+        const event = await this._ensureHasPowerLevelFor(roomId, "m.room.power_levels", true);
         return this.client.setPowerLevel(roomId, target, level, event);
     }
 
@@ -358,17 +372,31 @@ export class Intent {
      * @param type The event type
      * @param content The event content
      */
-    public async sendEvent(roomId: string, type: string, content: Record<string, unknown>) {
+    public async sendEvent(roomId: string, type: string, content: Record<string, unknown>)
+        // eslint-disable-next-line camelcase
+        : Promise<{event_id: string}> {
         if (this.encryption) {
-            // We *need* to sync before we can send a message.
-            await this.ensureRegistered();
-            await this.encryption.ensureClientSyncingCallback();
+            let encrypted = false;
+            try {
+                encrypted = !!(await this.isRoomEncrypted(roomId));
+            }
+            catch (ex) {
+                // This is unexpected. Fail safe.
+                log.debug(`Could not determine if room is encrypted. Assuming yes:`, ex);
+                encrypted = true;
+            }
+            if (encrypted) {
+                // We *need* to sync before we can send a message to an encrypted room.
+                await this.ensureRegistered();
+                await this.encryption.ensureClientSyncingCallback();
+            }
         }
         await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, type);
-        return this._joinGuard(roomId, async() => (
-            this.client.sendEvent(roomId, type, content)
-        ));
+        await this._ensureHasPowerLevelFor(roomId, type, false);
+        return this._joinGuard(roomId, async() =>
+            // eslint-disable-next-line camelcase
+            this.client.sendEvent(roomId, type, content) as Promise<{event_id: string}>
+        );
     }
 
     /**
@@ -381,12 +409,15 @@ export class Intent {
      * @param skey The state key
      * @param content The event content
      */
-    public async sendStateEvent(roomId: string, type: string, skey: string, content: Record<string, unknown>) {
+    public async sendStateEvent(roomId: string, type: string, skey: string, content: Record<string, unknown>
+        // eslint-disable-next-line camelcase
+        ): Promise<{event_id: string}> {
         await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, type);
-        return this._joinGuard(roomId, async() => (
-            this.client.sendStateEvent(roomId, type, content, skey)
-        ));
+        await this._ensureHasPowerLevelFor(roomId, type, true);
+        return this._joinGuard(roomId, async() =>
+            // eslint-disable-next-line camelcase
+            this.client.sendStateEvent(roomId, type, content, skey) as Promise<{event_id: string}>
+        );
     }
 
     /**
@@ -416,18 +447,19 @@ export class Intent {
     // eslint-disable-next-line camelcase
     public async createRoom(opts: RoomCreationOpts): Promise<{room_id: string}> {
         const cli = opts.createAsClient ? this.client : this.botClient;
+        const { userId } = cli.credentials;
         const options = opts.options || {};
         if (!opts.createAsClient) {
             // invite the client if they aren't already
             options.invite = options.invite || [];
-            if (Array.isArray(options.invite) && !options.invite.includes(this.client.credentials.userId)) {
-                options.invite.push(this.client.credentials.userId);
+            if (Array.isArray(options.invite) && !options.invite.includes(userId)) {
+                options.invite.push(userId);
             }
         }
         // make sure that the thing doing the room creation isn't inviting itself
         // else Synapse hard fails the operation with M_FORBIDDEN
-        if (Array.isArray(options.invite) && options.invite.includes(cli.credentials.userId)) {
-            options.invite.splice(options.invite.indexOf(cli.credentials.userId), 1);
+        if (Array.isArray(options.invite) && options.invite.includes(userId)) {
+            options.invite.splice(options.invite.indexOf(userId), 1);
         }
 
         await this.ensureRegistered();
@@ -447,7 +479,7 @@ export class Intent {
             return res;
         }
         const users: Record<string, number> = {};
-        users[cli.credentials.userId] = 100;
+        users[userId] = 100;
         this.opts.backingStore.setPowerLevelContent(roomId, {
             users_default: 0,
             events_default: 0,
@@ -481,7 +513,10 @@ export class Intent {
      * @return Resolved when kickked, else rejected with an error.
      */
     public async kick(roomId: string, target: string, reason?: string) {
-        await this._ensureJoined(roomId);
+        if (target !== this.userId) {
+            // Only ensure joined if we are not also the kicker
+            await this._ensureJoined(roomId);
+        }
         return this.client.kick(roomId, target, reason);
     }
 
@@ -516,20 +551,24 @@ export class Intent {
      * <p>Join a room</p>
      * This will automatically send an invite from the bot if it is an invite-only
      * room, which may make the bot attempt to join the room if it isn't already.
-     * @param roomId The room to join.
+     * @param roomIdOrAlias The room ID or room alias to join.
      * @param viaServers The server names to try and join through in
      * addition to those that are automatically chosen.
      */
-    public async join(roomId: string, viaServers?: string[]) {
-        await this._ensureJoined(roomId, false, viaServers);
+    public async join(roomIdOrAlias: string, viaServers?: string[]): Promise<string> {
+        return this._ensureJoined(roomIdOrAlias, false, viaServers);
     }
 
     /**
      * <p>Leave a room</p>
      * This will no-op if the user isn't in the room.
      * @param roomId The room to leave.
+     * @param reason An optional string to explain why the user left the room.
      */
-    public async leave(roomId: string) {
+    public async leave(roomId: string, reason?: string) {
+        if (reason) {
+            return this.kick(roomId, this.userId, reason)
+        }
         return this.client.leave(roomId);
     }
 
@@ -567,6 +606,19 @@ export class Intent {
     public async setAvatarUrl(url: string) {
         await this.ensureRegistered();
         return this.client.setAvatarUrl(url);
+    }
+
+    public async setRoomUserProfile(roomId: string, profile: UserProfile) {
+        const userId = this.client.getUserId();
+        const currProfile = this.opts.backingStore.getMemberProfile(roomId, userId);
+        // Compare the user's current profile (from cache) with the profile
+        // that is requested.  Only send the state event if something that was
+        // requested to change is different from the current value.
+        if (("displayname" in profile && currProfile.displayname != profile.displayname) ||
+            ("avatar_url" in profile && currProfile.avatar_url != profile.avatar_url)) {
+            const content = Object.assign({membership: "join"}, currProfile, profile);
+            await this.client.sendStateEvent(roomId, 'm.room.member', content, userId);
+        }
     }
 
     /**
@@ -660,29 +712,114 @@ export class Intent {
     }
 
     /**
+     * Check if a room is encrypted. If it is, return the algorithm.
+     * @param roomId The room ID to be checked
+     * @returns The encryption algorithm or false
+     */
+    public async isRoomEncrypted(roomId: string): Promise<string|false> {
+        const existing = this.encryptedRooms.get(roomId);
+        if (existing !== undefined) {
+            return existing;
+        }
+        try {
+            const ev = await this.getStateEvent(roomId, "m.room.encryption");
+            const algo = ev.algorithm as unknown;
+            if (typeof algo === 'string' && algo) {
+                this.encryptedRooms.set(roomId, algo);
+                return algo;
+            }
+            // Return false if missing, not a string or empty.
+            return false;
+        }
+        catch (ex) {
+            if (ex.httpStatus == 404) {
+                this.encryptedRooms.set(roomId, false);
+                return false;
+            }
+            throw ex;
+        }
+    }
+
+    /**
+     * Upload a file to the homeserver.
+     * @param content The file contents
+     * @param opts Additional options for the upload.
+     * @returns A MXC URL pointing to the uploaded data.
+     */
+    public async uploadContent(content: Buffer|string|ReadStream, opts: FileUploadOpts = {}): Promise<string> {
+        await this.ensureRegistered();
+        return this.client.uploadContent(content, {...opts, rawResponse: false, onlyContentUri: true});
+    }
+
+    /**
+     * Set the visibility of a room in the homeserver's room directory.
+     * @param roomId The room
+     * @param visibility Should the room be visible
+     */
+    public async setRoomDirectoryVisibility(roomId: string, visibility: "public"|"private") {
+        await this.ensureRegistered();
+        return this.client.setRoomDirectoryVisibility(roomId, visibility);
+    }
+
+    /**
+     * Set the visibility of a room in the appservice's room directory.
+     * This only works if you have defined the `protocol` in the registration file.
+     * @param roomId The room
+     * @param networkId The network (not protocol) that owns this room. E.g. "freenode" (for an IRC bridge)
+     * @param visibility Should the room be visible
+     */
+    public async setRoomDirectoryVisibilityAppService(roomId: string, networkId: string,
+        visibility: "public"|"private") {
+        await this.ensureRegistered();
+        return this.client.setRoomDirectoryVisibilityAppService(roomId, visibility, networkId);
+    }
+
+    /**
      * Inform this Intent class of an incoming event. Various optimisations will be
      * done if this is provided. For example, a /join request won't be sent out if
      * it knows you've already been joined to the room. This function does nothing
      * if a backing store was provided to the Intent.
      * @param event The incoming event JSON
      */
-    // eslint-disable-next-line camelcase
-    public onEvent(event: {type: string, content: {membership: UserMembership}, state_key: unknown, room_id: string}) {
+    public onEvent(event: {
+        type: string,
+        // eslint-disable-next-line camelcase
+        content: {membership: UserMembership, displayname?: string, avatar_url?: string, algorithm?: string},
+        // eslint-disable-next-line camelcase
+        state_key: unknown,
+        // eslint-disable-next-line camelcase
+        room_id: string
+    }) {
         if (!this._membershipStates || !this._powerLevels) {
             return;
         }
+        if (event.state_key === undefined) {
+            // We MUST operate on state events exclusively
+            return;
+        }
         if (event.type === "m.room.member" &&
-                event.state_key === this.client.credentials.userId) {
-            this._membershipStates[event.room_id] = event.content.membership;
+                event.state_key === this.userId &&
+                event.content.membership) {
+            const profile: UserProfile = {};
+            if (event.content.displayname) {
+                profile.displayname = event.content.displayname;
+            }
+            if (event.content.avatar_url) {
+                profile.avatar_url = event.content.avatar_url;
+            }
+            this._membershipStates[event.room_id] = [event.content.membership, profile];
         }
         else if (event.type === "m.room.power_levels") {
             this._powerLevels[event.room_id] = event.content as unknown as PowerLevelContent;
+        }
+        else if (event.type === "m.room.encryption" && typeof event.content.algorithm === "string") {
+            this.encryptedRooms.set(event.room_id, event.content.algorithm);
         }
     }
 
     // Guard a function which returns a promise which may reject if the user is not
     // in the room. If the promise rejects, join the room and retry the function.
-    private async _joinGuard(roomId: string, promiseFn: () => Promise<unknown>) {
+    private async _joinGuard<T>(roomId: string, promiseFn: () => Promise<T>): Promise<T> {
         try {
             // await so we can handle the error
             return await promiseFn();
@@ -698,17 +835,17 @@ export class Intent {
     }
 
     private async _ensureJoined(
-        roomId: string, ignoreCache = false, viaServers?: string[], passthroughError = false
-    ) {
-        const { userId } = this.client.credentials;
+        roomIdOrAlias: string, ignoreCache = false, viaServers?: string[], passthroughError = false
+    ): Promise<string> {
+        const isRoomId = roomIdOrAlias.startsWith("!");
         const opts: { syncRoom: boolean, viaServers?: string[] } = {
             syncRoom: false,
         };
         if (viaServers) {
             opts.viaServers = viaServers;
         }
-        if (this.opts.backingStore.getMembership(roomId, userId) === "join" && !ignoreCache) {
-            return Promise.resolve();
+        if (isRoomId && this.opts.backingStore.getMembership(roomIdOrAlias, this.userId) === "join" && !ignoreCache) {
+            return roomIdOrAlias;
         }
 
         /* Logic:
@@ -728,12 +865,12 @@ export class Intent {
         FAIL (bot can't get into the room)
         */
 
-        const deferredPromise = defer();
+        const deferredPromise = defer<string>();
 
         const mark = (room: string, state: UserMembership) => {
-            this.opts.backingStore.setMembership(room, userId, state);
+            this.opts.backingStore.setMembership(room, this.userId, state, {});
             if (state === "join") {
-                deferredPromise.resolve();
+                deferredPromise.resolve(room);
             }
         }
 
@@ -742,11 +879,13 @@ export class Intent {
         try {
             await this.ensureRegistered();
             if (dontJoin) {
-                deferredPromise.resolve();
+                // XXX: Should we return the passed in parameter if we didn't join, or empty?
+                deferredPromise.resolve(roomIdOrAlias);
                 return deferredPromise.promise;
             }
             try {
-                await this.client.joinRoom(roomId, opts);
+                // eslint-disable-next-line camelcase
+                const { roomId } = await this.client.joinRoom(roomIdOrAlias, opts);
                 mark(roomId, "join");
             }
             catch (ex) {
@@ -754,15 +893,20 @@ export class Intent {
                     throw ex;
                 }
                 try {
+                    if (!isRoomId) {
+                        throw Error("Can't invite via an alias");
+                    }
                     // Try bot inviting client
-                    await this.botClient.invite(roomId, userId);
-                    await this.client.joinRoom(roomId, opts);
+                    await this.botClient.invite(roomIdOrAlias, this.userId);
+                    // eslint-disable-next-line camelcase
+                    const { roomId } = await this.client.joinRoom(roomIdOrAlias, opts);
                     mark(roomId, "join");
                 }
                 catch (_ex) {
                     // Try bot joining
-                    await this.botClient.joinRoom(roomId, opts)
-                    await this.botClient.invite(roomId, userId);
+                    // eslint-disable-next-line camelcase
+                    const { roomId } = await this.botClient.joinRoom(roomIdOrAlias, opts)
+                    await this.botClient.invite(roomId, this.userId);
                     await this.client.joinRoom(roomId, opts);
                     mark(roomId, "join");
                 }
@@ -779,13 +923,14 @@ export class Intent {
      * Ensures that the client has the required power level to post the event type.
      * @param roomId Required as power levels exist inside a room.
      * @param eventTypes The event type to check the permissions for.
+     * @param isState Are we checking for state permissions or regular event permissions.
      * @return If found, the power level event
      */
-    private async _ensureHasPowerLevelFor(roomId: string, eventType: string) {
+    private async _ensureHasPowerLevelFor(roomId: string, eventType: string, isState: boolean) {
         if (this.opts.dontCheckPowerLevel && eventType !== "m.room.power_levels") {
             return undefined;
         }
-        const userId = this.client.credentials.userId;
+        const userId = this.userId;
         const plContent = this.opts.backingStore.getPowerLevelContent(roomId)
             || await this.client.getStateEvent(roomId, "m.room.power_levels", "");
         const eventContent: PowerLevelContent = plContent && typeof plContent === "object" ? plContent : {};
@@ -800,7 +945,7 @@ export class Intent {
         }
         const powerLevelEvent = new MatrixEvent(event);
         // What level do we need for this event type?
-        const defaultLevel = STATE_EVENT_TYPES.includes(eventType)
+        const defaultLevel = isState
             ? event.content.state_default
             : event.content.events_default;
         const requiredLevel = returnFirstNumber(
@@ -849,7 +994,7 @@ export class Intent {
     }
 
     private async loginForEncryptedClient() {
-        const userId: string = this.client.credentials.userId;
+        const userId: string = this.userId;
         const res = await this.client.login(APPSERVICE_LOGIN_TYPE, {
             identifier: {
                 type: "m.id.user",
@@ -865,13 +1010,14 @@ export class Intent {
     public async ensureRegistered(forceRegister = false) {
         const userId: string = this.client.credentials.userId;
         log.debug(`Checking if user ${this.client.credentials.userId} is registered`);
-        forceRegister = forceRegister || !this.opts.registered;
-        if (!forceRegister && !this.encryption) {
+        // We want to skip if and only if all of these conditions are met.
+        // Calling /register twice isn't disasterous, but not calling it *at all* IS.
+        if (!forceRegister && this.opts.registered && !this.encryption) {
             log.debug("ensureRegistered: Registered, and not encrypted");
             return "registered=true";
         }
         let registerRes;
-        if (forceRegister) {
+        if (forceRegister || !this.opts.registered) {
             const localpart = (new MatrixUser(userId)).localpart;
             try {
                 registerRes = await this.botClient.register(localpart);
@@ -915,6 +1061,9 @@ export class Intent {
             log.debug("ensureRegistered: Existing enc session, reusing");
             // We have existing credentials, set them on the client and run away.
             this.client._http.opts.accessToken = session.accessToken;
+            if (session.syncToken) {
+                this.client.store.setSyncToken(session.syncToken);
+            }
         }
         else {
             this.readyPromise = (async () => {
@@ -924,6 +1073,7 @@ export class Intent {
                 session = {
                     userId,
                     ...result,
+                    syncToken: null,
                 };
                 if (this.encryption) {
                     this.encryption.sessionPromise = Promise.resolve(session);

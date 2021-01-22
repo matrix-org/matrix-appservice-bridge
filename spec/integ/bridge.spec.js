@@ -6,6 +6,7 @@ const log = require("../log");
 const HS_URL = "http://example.com";
 const HS_DOMAIN = "example.com";
 const BOT_LOCALPART = "the_bridge";
+const BOT_USER_ID = `@${BOT_LOCALPART}:${HS_DOMAIN}`;
 
 const TEST_USER_DB_PATH = __dirname + "/test-users.db";
 const TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
@@ -16,7 +17,7 @@ const RemoteUser = require("../..").RemoteUser;
 const MatrixRoom = require("../..").MatrixRoom;
 const RemoteRoom = require("../..").RemoteRoom;
 const AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
-const Bridge = require("../..").Bridge;
+const {Bridge, BRIDGE_PING_EVENT_TYPE, BRIDGE_PING_TIMEOUT_MS} = require("../..");
 
 const deferPromise = require("../../lib/utils/promiseutil").defer;
 
@@ -168,22 +169,45 @@ describe("Bridge", function() {
 
     describe("onAliasQuery", function() {
         it("should invoke the user-supplied onAliasQuery function with the right args",
-        async function(done) {
+        async function() {
             await bridge.run(101, {}, appService);
-            appService.onAliasQuery("#foo:bar").catch(function() {}).finally(function() {
-                expect(bridgeCtrl.onAliasQuery).toHaveBeenCalledWith("#foo:bar", "foo");
-                done();
-            });
+
+            try {
+                await appService.onAliasQuery("#foo:bar")
+            }
+            catch (err) {
+                // no-op
+            }
+
+            expect(bridgeCtrl.onAliasQuery).toHaveBeenCalledWith("#foo:bar", "foo");
         });
 
         it("should not provision a room if null is returned from the function",
-        async function(done) {
+        async function() {
             bridgeCtrl.onAliasQuery.and.returnValue(null);
             await bridge.run(101, {}, appService);
-            appService.onAliasQuery("#foo:bar").catch(function() {
+
+            try {
+                await appService.onAliasQuery("#foo:bar");
+                fail(new Error('We expect `onAliasQuery` to fail and throw an error'))
+            }
+            catch (err) {
                 expect(clients["bot"].createRoom).not.toHaveBeenCalled();
-                done();
-            });
+            }
+        });
+
+        it("should not create a room if roomId is returned from the function but should still store it",
+        async function() {
+            bridgeCtrl.onAliasQuery.and.returnValue({ roomId: "!abc123:bar" });
+            await bridge.run(101, {}, appService);
+
+            await appService.onAliasQuery("#foo:bar");
+
+            expect(clients["bot"].createRoom).not.toHaveBeenCalled();
+
+            const room = await bridge.getRoomStore().getMatrixRoom("!abc123:bar");
+            expect(room).toBeDefined();
+            expect(room.getId()).toEqual("!abc123:bar");
         });
 
     it("should provision the room from the returned object", async() => {
@@ -203,7 +227,7 @@ describe("Bridge", function() {
             );
         });
 
-        it("should store the new matrix room", async(done) => {
+        it("should store the new matrix room", async() => {
             clients["bot"].createRoom.and.returnValue({
                 room_id: "!abc123:bar",
             });
@@ -212,16 +236,16 @@ describe("Bridge", function() {
                     room_alias_name: "foo",
                 },
             });
-            bridge.run(101, {}, appService);
+            await bridge.run(101, {}, appService);
+
             await appService.onAliasQuery("#foo:bar");
+
             const room = await bridge.getRoomStore().getMatrixRoom("!abc123:bar");
             expect(room).toBeDefined();
-            if (!room) { done(); return; }
             expect(room.getId()).toEqual("!abc123:bar");
-            done();
         });
 
-        it("should store and link the new matrix room if a remote room was supplied", async(done) => {
+        it("should store and link the new matrix room if a remote room was supplied", async() => {
             clients["bot"].createRoom.and.returnValue({
                 room_id: "!abc123:bar"
             });
@@ -232,12 +256,50 @@ describe("Bridge", function() {
                 remote: new RemoteRoom("__abc__")
             });
             await bridge.run(101, {}, appService);
+
             await appService.onAliasQuery("#foo:bar");
+
             const rooms = await bridge.getRoomStore().getLinkedRemoteRooms("!abc123:bar");
             expect(rooms.length).toEqual(1);
-            if (!rooms.length) { done(); return; }
             expect(rooms[0].getId()).toEqual("__abc__");
-            done();
+        });
+    });
+
+    describe("pingAppserviceRoute", () => {
+        it("should return successfully when the bridge receives it's own self ping", async () => {
+            let sentEvent = false;
+            await bridge.run(101, {}, appService);
+            bridge.botIntent._ensureJoined = async () => true;
+            bridge.botIntent._ensureHasPowerLevelFor = async () => true;
+            bridge.botIntent.sendEvent = async () => {sentEvent = true};
+            const event = {
+                content: {
+                    sentTs: 1000,
+                },
+                sender: BOT_USER_ID,
+                room_id: "!abcdef:bar",
+                type: BRIDGE_PING_EVENT_TYPE,
+            };
+            const result = bridge.pingAppserviceRoute(event.room_id);
+            await appService.emit("event", event);
+            expect(await result).toBeLessThan(BRIDGE_PING_TIMEOUT_MS);
+            expect(sentEvent).toEqual(true);
+        });
+        it("should time out if the ping does not respond", async () => {
+            let sentEvent = false;
+            await bridge.run(101, {}, appService);
+            bridge.botIntent._ensureJoined = async () => true;
+            bridge.botIntent._ensureHasPowerLevelFor = async () => true;
+            bridge.botIntent.sendEvent = async () => {sentEvent = true};
+            const result = bridge.pingAppserviceRoute("!abcdef:bar", 100);
+            expect(sentEvent).toEqual(true);
+            try {
+                await result;
+                throw Error("Expected to throw");
+            }
+            catch (ex) {
+                expect(ex.message).toEqual("Timeout waiting for ping event");
+            }
         });
     });
 

@@ -49,6 +49,7 @@ export * from "matrix-appservice";
 export * from "./components/prometheusmetrics";
 export * from "./components/agecounters";
 export * from "./components/membership-cache";
+export * from "./components/membership-queue";
 export * as Logging from "./components/logging";
 export { unstable } from "./errors";
 export * from "./components/event-types";

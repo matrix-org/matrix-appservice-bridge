@@ -270,7 +270,7 @@ export class EncryptedEventBroker {
 
     private async onSync(userId: string, state: string, data: {nextSyncToken: string; catchingUp: boolean;}) {
         log.debug(`${userId} sync is ${state}`);
-        if (state === "SYNCING" || state === "PREPARED" && data.nextSyncToken) {
+        if ((state === "SYNCING" || state === "PREPARED") && data.nextSyncToken) {
             await this.store.updateSyncToken(userId, data.nextSyncToken);
         }
     }

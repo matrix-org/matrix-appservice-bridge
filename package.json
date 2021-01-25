@@ -32,7 +32,7 @@
     "is-my-json-valid": "^2.20.5",
     "js-yaml": "^4.0.0",
     "matrix-appservice": "^0.7.1",
-    "matrix-js-sdk": "^9.4.1",
+    "matrix-js-sdk": "^9.5.0",
     "nedb": "^1.8.0",
     "nopt": "^5.0.0",
     "p-queue": "^6.6.2",

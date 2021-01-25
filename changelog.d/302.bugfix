@@ -1,0 +1,1 @@
+Fix Winston logging errors if the bridge hadn't called Logger.configure yet

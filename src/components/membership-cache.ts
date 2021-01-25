@@ -103,7 +103,7 @@ export class MembershipCache {
             return Object.keys(this.membershipMap[roomId]);
         }
         const members = [];
-        for (const [userId, [membership, profile]] of Object.entries(this.membershipMap[roomId])) {
+        for (const [userId, [membership]] of Object.entries(this.membershipMap[roomId])) {
             if (membership === filterFor) {
                 members.push(userId);
             }

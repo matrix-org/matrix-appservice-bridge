@@ -130,7 +130,7 @@ export class MembershipQueue {
 
         this.failureReasonCounter = metrics.addCounter({
             name: "membershipqueue_reason",
-            help: "Count of failures to process membership, by matrix errcode and http status",
+            help: "Count of failures to process membership by type, matrix errcode and http statuscode",
             labels: ["type", "errcode", "http_status"],
         });
 

@@ -178,6 +178,18 @@ export class PrometheusMetrics {
     }
 
     /**
+     * Fetch metrics from all configured collectors
+     */
+    public async refresh () {
+        try {
+            await Promise.all(this.collectors.map((f) => f()));
+        }
+        catch (ex) {
+            log.warn(`Failed to refresh metrics:`, ex);
+        }
+    }
+
+    /**
      * Registers some exported metrics that expose counts of various kinds of
      * objects within the bridge.
      * @param {BridgeGaugesCallback} counterFunc A function that when invoked
@@ -395,14 +407,5 @@ export class PrometheusMetrics {
                 }
             },
         });
-    }
-
-    private async refresh () {
-        try {
-            await Promise.all(this.collectors.map((f) => f()));
-        }
-        catch (ex) {
-            log.warn(`Failed to refresh metrics:`, ex);
-        }
     }
 }

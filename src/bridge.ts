@@ -673,6 +673,12 @@ export class Bridge {
         if (this.metrics) {
             this.metrics.addAppServicePath(this);
         }
+        this.addAppServicePath({
+            method: "GET",
+            checkToken: false,
+            path: "/healthz",
+            handler: this.onHealthz.bind(this)
+        });
         await this.appservice.listen(port, hostname, backlog);
     }
 
@@ -1521,6 +1527,10 @@ export class Bridge {
         await this.selfPingDeferred.defer.promise;
         clearTimeout(this.selfPingDeferred.timeout);
         return Date.now() - sentTs;
+    }
+
+    private onHealthz(_req: ExRequest, res: ExResponse) {
+        res.sendStatus(200);
     }
 
 }

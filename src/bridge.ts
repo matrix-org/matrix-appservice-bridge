@@ -1404,9 +1404,9 @@ export class Bridge {
      *     }
      * })
      */
-    public registerBridgeGauges(counterFunc: () => BridgeGaugesCounts) {
-        this.getPrometheusMetrics().registerBridgeGauges(() => {
-            const counts = counterFunc();
+    public registerBridgeGauges(counterFunc: () => Promise<BridgeGaugesCounts>|BridgeGaugesCounts) {
+        this.getPrometheusMetrics().registerBridgeGauges(async () => {
+            const counts = await counterFunc();
             if (counts.matrixGhosts !== undefined) {
                 counts.matrixGhosts = Object.keys(this.intents.size).length;
             }

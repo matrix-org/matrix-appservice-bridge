@@ -28,11 +28,11 @@ const CHALK_LEVELS: Record<LogLevel, string> = {
 
 type MessagePart = unknown;
 interface LoggerConfig {
-    console?: "error"|"warn"|"info"|"debug"|"off",
+    console?: LogLevel|"off",
     fileDatePattern?: string,
     timestampFormat?: string,
     files?: {
-        [filename: string]: "error"|"warn"|"info"|"debug"|"off",
+        [filename: string]: LogLevel|"off",
     }
     maxFiles?: number,
 }
@@ -142,9 +142,10 @@ class Logging {
         }
 
         this.transports = [];
-        if (config.console !== undefined && config.console !== "off") {
+        if (config.console !== undefined) {
             this.transports.push(new (winston.transports.Console)({
                 level: config.console,
+                silent: config.console === 'off',
                 format: format.combine(
                     this.colorFn(),
                     this.formatterFn
@@ -207,6 +208,7 @@ class Logging {
 }
 
 const instance: Logging = new Logging();
+instance.configure({console: "off"});
 let isConfigured = false;
 
 export function get(name: string) {

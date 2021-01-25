@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import Datastore from "nedb";
-import * as fs from "fs";
+import {promises as fs} from "fs";
 import * as util from "util";
 import yaml from "js-yaml";
 import { Application, Request as ExRequest, Response as ExResponse, NextFunction } from "express";
@@ -538,18 +538,13 @@ export class Bridge {
     }
 
     /**
-     * Run the bridge (start listening)
-     * @param port The port to listen on.
-     * @param config Configuration options
-     * @param appServiceInstance The AppService instance to attach to.
-     * If not provided, one will be created.
-     * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
-     * @return A promise resolving when the bridge is ready
+     * Load registration, databases and initalise bridge components.
+     *
+     * **This must be called before `listen()`**
      */
-    public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname?: string, backlog = 10) {
-        // Load the registration file into an AppServiceRegistration object.
+    public async initalise() {
         if (typeof this.opts.registration === "string") {
-            const regObj = yaml.load(fs.readFileSync(this.opts.registration, 'utf8'));
+            const regObj = yaml.load(await fs.readFile(this.opts.registration, 'utf8'));
             if (typeof regObj !== "object") {
                 throw Error("Failed to parse registration file: yaml file did not parse to object")
             }
@@ -628,6 +623,24 @@ export class Bridge {
 
         this.botIntent = new Intent(this.botClient, this.botClient, botIntentOpts);
 
+        this.setupIntentCulling();
+
+        await this.loadDatabases();
+    }
+
+    /**
+     * Setup a HTTP listener to handle appservice traffic.
+     * **This must be called after .initalise()**
+     * @param port The port to listen on.
+     * @param appServiceInstance The AppService instance to attach to.
+     * If not provided, one will be created.
+     * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
+     */
+    public async listen(port: number, hostname = "0.0.0.0", backlog = 10, appServiceInstance?: AppService) {
+        if (!this.registration) {
+            throw Error('initalise() not called, cannot listen');
+        }
+
         const homeserverToken = this.registration.getHomeserverToken();
         if (!homeserverToken) {
             throw Error('No HS token provided, cannot create AppService');
@@ -655,15 +668,27 @@ export class Bridge {
         this.appservice.on("http-log", (line) => {
             this.onLog(line, false);
         });
-        this.customiseAppservice();
-        this.setupIntentCulling();
 
+        this.customiseAppservice();
         if (this.metrics) {
             this.metrics.addAppServicePath(this);
         }
+        await this.appservice.listen(port, hostname, backlog);
+    }
 
-        await this.loadDatabases();
-        await this.appservice.listen(port, hostname || "0.0.0.0", backlog);
+    /**
+     * Run the bridge (start listening). This calls `initalise()` and `listen()`.
+     * @deprecated Prefer calling initalise and listen seperately.
+     * @param port The port to listen on.
+     * @param config Configuration options. NOT USED
+     * @param appServiceInstance The AppService instance to attach to.
+     * If not provided, one will be created.
+     * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
+     * @return A promise resolving when the bridge is ready
+     */
+    public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname = "0.0.0.0", backlog = 10) {
+        await this.initalise();
+        await this.listen(port, hostname, backlog, appServiceInstance);
     }
 
     /**

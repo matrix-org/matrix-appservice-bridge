@@ -1,0 +1,1 @@
+Fix a bug that would cause membership queue request failures to not be reported under the `membershipqueue_reason` metric

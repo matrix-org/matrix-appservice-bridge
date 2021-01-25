@@ -537,17 +537,7 @@ export class Bridge {
         this.eventStore = eventStore as EventBridgeStore;
     }
 
-    /**
-     * Run the bridge (start listening)
-     * @param port The port to listen on.
-     * @param config Configuration options
-     * @param appServiceInstance The AppService instance to attach to.
-     * If not provided, one will be created.
-     * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
-     * @return A promise resolving when the bridge is ready
-     */
-    public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname?: string, backlog = 10) {
-        // Load the registration file into an AppServiceRegistration object.
+    public async initalise(appServiceInstance?: AppService) {
         if (typeof this.opts.registration === "string") {
             const regObj = yaml.load(fs.readFileSync(this.opts.registration, 'utf8'));
             if (typeof regObj !== "object") {
@@ -663,7 +653,28 @@ export class Bridge {
         }
 
         await this.loadDatabases();
-        await this.appservice.listen(port, hostname || "0.0.0.0", backlog);
+
+    }
+
+    /**
+     * Run the bridge (start listening)
+     * @param port The port to listen on.
+     * @param config Configuration options. NOT USED
+     * @param appServiceInstance The AppService instance to attach to.
+     * If not provided, one will be created.
+     * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
+     * @return A promise resolving when the bridge is ready
+     */
+    public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname = "0.0.0.0", backlog = 10) {
+        await this.initalise(appServiceInstance);
+        await this.listen(port, hostname, backlog);
+    }
+
+    public async listen(port: number, hostname = "0.0.0.0", backlog = 10): Promise<unknown> {
+        if (!this.appservice) {
+            throw Error('initalise() not called, cannot listen');
+        }
+        return this.appservice.listen(port, hostname, backlog);
     }
 
     /**

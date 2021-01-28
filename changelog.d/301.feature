@@ -1,0 +1,1 @@
+Add `Intent.resolveRoom` function

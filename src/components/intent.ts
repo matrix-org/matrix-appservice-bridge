@@ -252,6 +252,22 @@ export class Intent {
     }
 
     /**
+     * Resolve a roomId or alias into a roomId. If a roomId is given, it is immediately returned.
+     * @param roomAliasOrId A roomId or alias to resolve.
+     * @throws If the provided string was incorrectly formatted or alias does not exist.
+     */
+    public async resolveRoom(roomAliasOrId: string): Promise<string> {
+        if (roomAliasOrId.startsWith("!")) {
+            return roomAliasOrId;
+        }
+        else if (roomAliasOrId.startsWith("#")) {
+            const r = await this.client.resolveRoomAlias(roomAliasOrId);
+            return r.room_id;
+        }
+        throw Error('Invalid roomId/roomAlias provided');
+    }
+
+    /**
      * <p>Send a plaintext message to a room.</p>
      * This will automatically make the client join the room so they can send the
      * message if they are not already joined. It will also make sure that the client

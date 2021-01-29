@@ -1,1 +1,0 @@
-Update dependencies. We now use Typescript 4.1 which means that promiseutil.Defer now strictly checks resolve types.

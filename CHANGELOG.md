@@ -1,4 +1,35 @@
- 2.4.0 (2020-12-01)
+ 2.5.0-rc1 (2021-01-29)
+=======================
+
+Features
+--------
+
+- Allow for returning `roomId` in `onAliasQuery` which facilitates handling room creation yourself. ([\#288](https://github.com/matrix-org/matrix-appservice-bridge/issues/288))
+- Allow the `Bridge` to be initalised without starting the HTTP listener. ([\#299](https://github.com/matrix-org/matrix-appservice-bridge/issues/299))
+- Add `Intent.resolveRoom` function ([\#301](https://github.com/matrix-org/matrix-appservice-bridge/issues/301))
+
+
+Bugfixes
+--------
+
+- Fix a case where an encrypted bridge may stop syncing for some users of the bridge ([\#285](https://github.com/matrix-org/matrix-appservice-bridge/issues/285))
+- Fix onAliasQuery tests which would pass no matter if they failed ([\#289](https://github.com/matrix-org/matrix-appservice-bridge/issues/289))
+- Fix regex complexity vulnerability in highlight.js (GHSA-7wwv-vh3v-89cq) ([\#290](https://github.com/matrix-org/matrix-appservice-bridge/issues/290))
+- Fix a bug where /metrics would report empty values. ([\#296](https://github.com/matrix-org/matrix-appservice-bridge/issues/296))
+- Fix a bug that would cause membership queue request failures to not be reported under the `membershipqueue_reason` metric ([\#300](https://github.com/matrix-org/matrix-appservice-bridge/issues/300))
+- Fix Winston logging errors if the bridge hadn't called Logger.configure yet ([\#302](https://github.com/matrix-org/matrix-appservice-bridge/issues/302))
+
+
+Internal Changes
+----------------
+
+- Improve some TypeScript return types ([\#292](https://github.com/matrix-org/matrix-appservice-bridge/issues/292))
+- Update dependencies. We now use Typescript 4.1 which means that promiseutil.Defer now strictly checks resolve types. ([\#295](https://github.com/matrix-org/matrix-appservice-bridge/issues/295))
+- Update `matrix-js-sdk` to `9.5.0` ([\#303](https://github.com/matrix-org/matrix-appservice-bridge/issues/303))
+- Fetch metrics asynchronously ([\#304](https://github.com/matrix-org/matrix-appservice-bridge/issues/304))
+
+
+2.4.0 (2020-12-01)
 ===================
 
 No significant changes.

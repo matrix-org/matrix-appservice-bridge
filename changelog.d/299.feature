@@ -1,1 +1,0 @@
-Allow the `Bridge` to be initalised without starting the HTTP listener.

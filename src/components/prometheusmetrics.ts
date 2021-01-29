@@ -18,7 +18,8 @@ import { AgeCounters } from "./agecounters";
 import JsSdk from "matrix-js-sdk";
 import { Request, Response } from "express";
 import { Bridge } from "..";
-type CollectorFunction = () => void;
+import Logger from "./logging";
+type CollectorFunction = () => Promise<void>|void;
 
 export interface BridgeGaugesCounts {
     matrixRoomConfigs?: number;
@@ -100,6 +101,9 @@ interface GagueOpts {
  *
  * @constructor
  */
+
+const log = Logger.get('PrometheusMetrics');
+
 export class PrometheusMetrics {
     public static AgeCounters = AgeCounters;
     private timers: {[name: string]: PromClient.Histogram<string>} = {};
@@ -174,12 +178,24 @@ export class PrometheusMetrics {
     }
 
     /**
+     * Fetch metrics from all configured collectors
+     */
+    public async refresh () {
+        try {
+            await Promise.all(this.collectors.map((f) => f()));
+        }
+        catch (ex) {
+            log.warn(`Failed to refresh metrics:`, ex);
+        }
+    }
+
+    /**
      * Registers some exported metrics that expose counts of various kinds of
      * objects within the bridge.
      * @param {BridgeGaugesCallback} counterFunc A function that when invoked
      * returns the current counts of various items in the bridge.
      */
-    public registerBridgeGauges (counterFunc: () => BridgeGaugesCounts) {
+    public async registerBridgeGauges (counterFunc: () => Promise<BridgeGaugesCounts>|BridgeGaugesCounts) {
         const matrixRoomsGauge = this.addGauge({
             name: "matrix_configured_rooms",
             help: "Current count of configured rooms by matrix room ID",
@@ -220,8 +236,8 @@ export class PrometheusMetrics {
             labels: ["age"],
         });
 
-        this.addCollector(function () {
-            const counts = counterFunc();
+        this.addCollector(async () => {
+            const counts = await counterFunc();
 
             if (counts.matrixRoomConfigs) {matrixRoomsGauge.set(counts.matrixRoomConfigs);}
 
@@ -237,10 +253,6 @@ export class PrometheusMetrics {
             counts.matrixUsersByAge?.setGauge(matrixUsersByAgeGauge);
             counts.remoteUsersByAge?.setGauge(remoteUsersByAgeGauge);
         });
-    }
-
-    public refresh () {
-        this.collectors.forEach((f) => f());
     }
 
     /**
@@ -381,9 +393,8 @@ export class PrometheusMetrics {
             // For now, leave this unauthenticated.
             checkToken: false,
             handler: async (_req: Request, res: Response) => {
-                this.refresh();
-
                 try {
+                    await this.refresh();
                     const exposition = await this.register.metrics();
 
                     res.set("Content-Type", "text/plain");
@@ -391,7 +402,6 @@ export class PrometheusMetrics {
                 }
                 catch (e) {
                     res.status(500);
-
                     res.set("Content-Type", "text/plain");
                     res.send(e.toString());
                 }

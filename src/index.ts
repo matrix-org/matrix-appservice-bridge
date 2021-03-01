@@ -51,6 +51,7 @@ export * from "./components/membership-queue";
 export * as Logging from "./components/logging";
 export { unstable } from "./errors";
 export * from "./components/event-types";
+export * from "./components/bridge-info-state";
 
 
 /* eslint-disable @typescript-eslint/no-var-requires */

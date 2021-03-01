@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /*
 Copyright 2020 The Matrix.org Foundation C.I.C.
 
@@ -26,15 +27,16 @@ import BridgeErrorReason = unstable.BridgeErrorReason;
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
 import { ReadStream } from "fs";
+import BotSdk from "matrix-bot-sdk";
 
 const log = Logging.get("Intent");
 
 export type IntentBackingStore = {
     getMembership: (roomId: string, userId: string) => UserMembership,
     getMemberProfile: (roomId: string, userid: string) => UserProfile,
-    getPowerLevelContent: (roomId: string) => Record<string, unknown> | undefined,
+    getPowerLevelContent: (roomId: string) => PowerLevelContent | undefined,
     setMembership: (roomId: string, userId: string, membership: UserMembership, profile: UserProfile) => void,
-    setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => void,
+    setPowerLevelContent: (roomId: string, content: PowerLevelContent) => void,
 };
 
 export interface IntentOpts {
@@ -47,6 +49,8 @@ export interface IntentOpts {
     dontJoin?: boolean;
     enablePresence?: boolean;
     registered?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getJsSdkClient?: () => any,
     encryption?: {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
@@ -109,6 +113,8 @@ export class Intent {
             ttl: number,
             size: number,
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getJsSdkClient?: () => any,
         dontCheckPowerLevel?: boolean;
         dontJoin?: boolean;
         enablePresence: boolean;
@@ -124,11 +130,15 @@ export class Intent {
         ensureClientSyncingCallback: () => Promise<void>;
     };
     private readyPromise?: Promise<unknown>;
+    // The legacyClient is created on demand when bridges need to use
+    // it, but is not created by default anymore.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private legacyClient?: any;
 
     /**
     * Create an entity which can fulfil the intent of a given user.
     * @constructor
-    * @param client The matrix client instance whose intent is being
+    * @param client The bot sdk intent which this intent wraps
     * fulfilled e.g. the entity joining the room when you call intent.join(roomId).
     * @param botClient The client instance for the AS bot itself.
     * This will be used to perform more priveleged actions such as creating new
@@ -170,7 +180,7 @@ export class Intent {
     * @param opts.caching.ttl How long requests can stay in the cache, in milliseconds.
     * @param opts.caching.size How many entries should be kept in the cache, before the oldest is dropped.
     */
-    constructor(public readonly client: any, private readonly botClient: any, opts: IntentOpts = {}) {
+    constructor(public readonly botSdkIntent: BotSdk.Intent, private readonly botClient: any, opts: IntentOpts = {}) {
         if (opts.backingStore) {
             if (!opts.backingStore.setPowerLevelContent ||
                     !opts.backingStore.getPowerLevelContent ||
@@ -190,7 +200,7 @@ export class Intent {
                     return this._membershipStates[roomId] && this._membershipStates[roomId][0];
                 },
                 getMemberProfile: (roomId: string, userId: string) => {
-                    if (userId !== this.client.credentials.userId) {
+                    if (userId !== this.userId) {
                         return {};
                     }
                     return this._membershipStates[roomId] && this._membershipStates[roomId][1];
@@ -204,7 +214,7 @@ export class Intent {
                     }
                     this._membershipStates[roomId] = [membership, profile];
                 },
-                setPowerLevelContent: (roomId: string, content: Record<string, unknown>) => {
+                setPowerLevelContent: (roomId: string, content: PowerLevelContent) => {
                     this._powerLevels[roomId] = content;
                 },
             },
@@ -240,15 +250,38 @@ export class Intent {
     }
 
     /**
-     * Return the client this Intent is acting on behalf of.
+     * Legacy property to access the matrix-js-sdk.
+     * @deprecated Support for the matrix-js-sdk client will be going away in
+     * a future release. Where possible, the intent object functions should be
+     * used. The `botSdkIntent` also provides access to the new client.
+     * @see getClient
+     */
+    public get client() {
+        return this.getClient();
+    }
+
+    /**
+     * Return a matrix-js-sdk client, which is created on demand.
+     * @deprecated Support for the matrix-js-sdk client will be going away in
+     * a future release. Where possible, the intent object functions should be
+     * used. The `botSdkIntent` also provides access to the new client.
      * @return The client
      */
     public getClient() {
-        return this.client;
+        if (this.legacyClient) {
+            return this.legacyClient;
+        }
+        if (!this.opts.getJsSdkClient) {
+            throw Error('Legacy client not available');
+        }
+        log.warn("Support for the matrix-js-sdk will be going away in a future release." +
+        "Please update occurances of Intent.getClient() and Intent.client");
+        this.legacyClient = this.opts.getJsSdkClient();
+        return this.legacyClient;
     }
 
     public get userId(): string {
-        return this.client.credentials.userId;
+        return this.botSdkIntent.userId;
     }
 
     /**
@@ -257,25 +290,20 @@ export class Intent {
      * @throws If the provided string was incorrectly formatted or alias does not exist.
      */
     public async resolveRoom(roomAliasOrId: string): Promise<string> {
-        if (roomAliasOrId.startsWith("!")) {
-            return roomAliasOrId;
-        }
-        else if (roomAliasOrId.startsWith("#")) {
-            const r = await this.client.resolveRoomAlias(roomAliasOrId);
-            return r.room_id;
-        }
-        throw Error('Invalid roomId/roomAlias provided');
+        return this.botSdkIntent.underlyingClient.resolveRoom(roomAliasOrId);
     }
 
     /**
-     * <p>Send a plaintext message to a room.</p>
+     * Send a plaintext message to a room.
+     *
      * This will automatically make the client join the room so they can send the
      * message if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
      * @param roomId The room to send to.
      * @param text The text string to send.
+     * @returns The Matrix event ID.
      */
-    public sendText(roomId: string, text: string) {
+    public sendText(roomId: string, text: string): Promise<{event_id: string}> {
         return this.sendMessage(roomId, {
             body: text,
             msgtype: "m.text"
@@ -283,35 +311,41 @@ export class Intent {
     }
 
     /**
-     * <p>Set the name of a room.</p>
+     * Set the name of a room.
+     *
      * This will automatically make the client join the room so they can set the
      * name if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
      * @param roomId The room to send to.
      * @param name The room name.
+     * @returns The Matrix event ID.
      */
-    public setRoomName(roomId: string, name: string) {
-        return this.sendStateEvent(roomId, "m.room.name", "", {
+    public async setRoomName(roomId: string, name: string): Promise<{event_id: string}> {
+        const eventId = await this.botSdkIntent.underlyingClient.sendStateEvent(roomId, "m.room.name", "", {
             name: name
         });
+        return {event_id: eventId};
     }
 
     /**
-     * <p>Set the topic of a room.</p>
+     * Set the topic of a room.
+     *
      * This will automatically make the client join the room so they can set the
      * topic if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
      * @param roomId The room to send to.
      * @param topic The room topic.
      */
-    public setRoomTopic(roomId: string, topic: string) {
-        return this.sendStateEvent(roomId, "m.room.topic", "", {
+    public async setRoomTopic(roomId: string, topic: string): Promise<{event_id: string}> {
+        const eventId = await this.botSdkIntent.underlyingClient.sendStateEvent(roomId, "m.room.topic", "", {
             topic: topic
         });
+        return {event_id: eventId};
     }
 
     /**
-     * <p>Set the avatar of a room.</p>
+     * Set the avatar of a room.
+     *
      * This will automatically make the client join the room so they can set the
      * topic if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
@@ -319,7 +353,7 @@ export class Intent {
      * @param avatar The url of the avatar.
      * @param info Extra information about the image. See m.room.avatar for details.
      */
-    public setRoomAvatar(roomId: string, avatar: string, info?: string) {
+    public setRoomAvatar(roomId: string, avatar: string, info?: string): Promise<{event_id: string}> {
         const content = {
             info,
             url: avatar,
@@ -328,7 +362,8 @@ export class Intent {
     }
 
     /**
-     * <p>Send a typing event to a room.</p>
+     * Send a typing event to a room.
+     *
      * This will automatically make the client join the room so they can send the
      * typing event if they are not already joined.
      * @param roomId The room to send to.
@@ -336,23 +371,20 @@ export class Intent {
      */
     public async sendTyping(roomId: string, isTyping: boolean) {
         await this._ensureJoined(roomId);
-        return this.client.sendTyping(roomId, isTyping);
+        return this.botSdkIntent.underlyingClient.setTyping(roomId, isTyping);
     }
 
     /**
-     * <p>Send a read receipt to a room.</p>
+     * Send a read receipt to a room.
+     *
      * This will automatically make the client join the room so they can send the
      * receipt event if they are not already joined.
      * @param roomId The room to send to.
      * @param eventId The event ID to set the receipt mark to.
      */
     public async sendReadReceipt(roomId: string, eventId: string) {
-        const event = new MatrixEvent({
-            room_id: roomId,
-            event_id: eventId,
-        });
         await this._ensureJoined(roomId);
-        return this.client.sendReadReceipt(event);
+        return this.botSdkIntent.underlyingClient.sendReadReceipt(roomId, eventId);
     }
 
     /**
@@ -363,12 +395,19 @@ export class Intent {
      */
     public async setPowerLevel(roomId: string, target: string, level: number|undefined) {
         await this._ensureJoined(roomId);
-        const event = await this._ensureHasPowerLevelFor(roomId, "m.room.power_levels", true);
-        return this.client.setPowerLevel(roomId, target, level, event);
+        const plContent = this.opts.backingStore.getPowerLevelContent(roomId);
+        if (plContent && plContent?.users) {
+            plContent.users[target] = level;
+        }
+        else if (level !== undefined) {
+            plContent.users = { [target]: level};
+        }
+        await this.botSdkIntent.underlyingClient.setUserPowerLevel(roomId, target, level);
     }
 
     /**
-     * <p>Send an <code>m.room.message</code> event to a room.</p>
+     * Send an `m.room.message` event to a room.
+     *
      * This will automatically make the client join the room so they can send the
      * message if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
@@ -380,7 +419,8 @@ export class Intent {
     }
 
     /**
-     * <p>Send a message event to a room.</p>
+     * Send a message event to a room.
+     *
      * This will automatically make the client join the room so they can send the
      * message if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
@@ -409,14 +449,17 @@ export class Intent {
         }
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type, false);
-        return this._joinGuard(roomId, async() =>
-            // eslint-disable-next-line camelcase
-            this.client.sendEvent(roomId, type, content) as Promise<{event_id: string}>
-        );
+        return this._joinGuard(roomId, async() => {
+            return {
+                // eslint-disable-next-line camelcase
+                event_id: await this.botSdkIntent.underlyingClient.sendEvent(roomId, type, content),
+            }
+        });
     }
 
     /**
-     * <p>Send a state event to a room.</p>
+     * Send a state event to a room.
+     *
      * This will automatically make the client join the room so they can send the
      * state if they are not already joined. It will also make sure that the client
      * has sufficient power level to do this.
@@ -430,14 +473,17 @@ export class Intent {
         ): Promise<{event_id: string}> {
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type, true);
-        return this._joinGuard(roomId, async() =>
-            // eslint-disable-next-line camelcase
-            this.client.sendStateEvent(roomId, type, content, skey) as Promise<{event_id: string}>
-        );
+        return this._joinGuard(roomId, async() => {
+            return {
+                // eslint-disable-next-line camelcase
+                event_id: await this.botSdkIntent.underlyingClient.sendStateEvent(roomId, type, skey, content)
+            }
+        });
     }
 
     /**
-     * <p>Get the current room state for a room.</p>
+     * Get the current room state for a room.
+     *
      * This will automatically make the client join the room so they can get the
      * state if they are not already joined.
      * @param roomId The room to get the state from.
@@ -449,7 +495,7 @@ export class Intent {
         if (useCache) {
             return this._requestCaches.roomstate.get(roomId);
         }
-        return this.client.roomState(roomId);
+        return this.botSdkIntent.underlyingClient.getRoomState(roomId);
     }
 
     /**
@@ -507,7 +553,8 @@ export class Intent {
     }
 
     /**
-     * <p>Invite a user to a room.</p>
+     * Invite a user to a room.
+     *
      * This will automatically make the client join the room so they can send the
      * invite if they are not already joined.
      * @param roomId The room to invite the user to.
@@ -520,7 +567,8 @@ export class Intent {
     }
 
     /**
-     * <p>Kick a user from a room.</p>
+     * Kick a user from a room.
+     *
      * This will automatically make the client join the room so they can send the
      * kick if they are not already joined.
      * @param roomId The room to kick the user from.
@@ -537,7 +585,8 @@ export class Intent {
     }
 
     /**
-     * <p>Ban a user from a room.</p>
+     * Ban a user from a room.
+     *
      * This will automatically make the client join the room so they can send the
      * ban if they are not already joined.
      * @param roomId The room to ban the user from.
@@ -551,7 +600,8 @@ export class Intent {
     }
 
     /**
-     * <p>Unban a user from a room.</p>
+     * Unban a user from a room.
+     *
      * This will automatically make the client join the room so they can send the
      * unban if they are not already joined.
      * @param roomId The room to unban the user from.
@@ -564,7 +614,8 @@ export class Intent {
     }
 
     /**
-     * <p>Join a room</p>
+     * Join a room
+     *
      * This will automatically send an invite from the bot if it is an invite-only
      * room, which may make the bot attempt to join the room if it isn't already.
      * @param roomIdOrAlias The room ID or room alias to join.
@@ -576,7 +627,8 @@ export class Intent {
     }
 
     /**
-     * <p>Leave a room</p>
+     * Leave a room
+     *
      * This will no-op if the user isn't in the room.
      * @param roomId The room to leave.
      * @param reason An optional string to explain why the user left the room.
@@ -589,7 +641,8 @@ export class Intent {
     }
 
     /**
-     * <p>Get a user's profile information</p>
+     * Get a user's profile information
+     *
      * @param userId The ID of the user whose profile to return
      * @param info The profile field name to retrieve (e.g. 'displayname'
      * or 'avatar_url'), or null to fetch the entire profile information.
@@ -607,7 +660,8 @@ export class Intent {
     }
 
     /**
-     * <p>Set the user's display name</p>
+     * Set the user's display name
+     *
      * @param name The new display name
      */
     public async setDisplayName(name: string) {
@@ -616,7 +670,8 @@ export class Intent {
     }
 
     /**
-     * <p>Set the user's avatar URL</p>
+     * Set the user's avatar URL
+     *
      * @param url The new avatar URL
      */
     public async setAvatarUrl(url: string) {
@@ -764,7 +819,7 @@ export class Intent {
      */
     public async uploadContent(content: Buffer|string|ReadStream, opts: FileUploadOpts = {}): Promise<string> {
         await this.ensureRegistered();
-        return this.client.uploadContent(content, {...opts, rawResponse: false, onlyContentUri: true});
+        return this.botSdkIntent.underlyingClient.uploadContent(content, {...opts, rawResponse: false, onlyContentUri: true});
     }
 
     /**
@@ -774,7 +829,7 @@ export class Intent {
      */
     public async setRoomDirectoryVisibility(roomId: string, visibility: "public"|"private") {
         await this.ensureRegistered();
-        return this.client.setRoomDirectoryVisibility(roomId, visibility);
+        return this.botSdkIntent.underlyingClient.setDirectoryVisibility(roomId, visibility);
     }
 
     /**
@@ -787,6 +842,7 @@ export class Intent {
     public async setRoomDirectoryVisibilityAppService(roomId: string, networkId: string,
         visibility: "public"|"private") {
         await this.ensureRegistered();
+        // No function for this yet.
         return this.client.setRoomDirectoryVisibilityAppService(roomId, visibility, networkId);
     }
 
@@ -826,7 +882,7 @@ export class Intent {
             this._membershipStates[event.room_id] = [event.content.membership, profile];
         }
         else if (event.type === "m.room.power_levels") {
-            this._powerLevels[event.room_id] = event.content as unknown as PowerLevelContent;
+            this.opts.backingStore.setPowerLevelContent(event.room_id, event.content as unknown as PowerLevelContent);
         }
         else if (event.type === "m.room.encryption" && typeof event.content.algorithm === "string") {
             this.encryptedRooms.set(event.room_id, event.content.algorithm);
@@ -854,9 +910,7 @@ export class Intent {
         roomIdOrAlias: string, ignoreCache = false, viaServers?: string[], passthroughError = false
     ): Promise<string> {
         const isRoomId = roomIdOrAlias.startsWith("!");
-        const opts: { syncRoom: boolean, viaServers?: string[] } = {
-            syncRoom: false,
-        };
+        const opts: { viaServers?: string[] } = { };
         if (viaServers) {
             opts.viaServers = viaServers;
         }
@@ -901,7 +955,7 @@ export class Intent {
             }
             try {
                 // eslint-disable-next-line camelcase
-                const { roomId } = await this.client.joinRoom(roomIdOrAlias, opts);
+                const roomId = await this.botSdkIntent.underlyingClient.joinRoom(roomIdOrAlias, opts.viaServers);
                 mark(roomId, "join");
             }
             catch (ex) {
@@ -923,7 +977,7 @@ export class Intent {
                     // eslint-disable-next-line camelcase
                     const { roomId } = await this.botClient.joinRoom(roomIdOrAlias, opts)
                     await this.botClient.invite(roomId, this.userId);
-                    await this.client.joinRoom(roomId, opts);
+                    await this.botSdkIntent.underlyingClient.joinRoom(roomIdOrAlias, opts.viaServers);
                     mark(roomId, "join");
                 }
             }
@@ -948,7 +1002,7 @@ export class Intent {
         }
         const userId = this.userId;
         const plContent = this.opts.backingStore.getPowerLevelContent(roomId)
-            || await this.client.getStateEvent(roomId, "m.room.power_levels", "");
+            || await this.botSdkIntent.underlyingClient.getRoomStateEvent(roomId, "m.room.power_levels", "");
         const eventContent: PowerLevelContent = plContent && typeof plContent === "object" ? plContent : {};
         this.opts.backingStore.setPowerLevelContent(roomId, eventContent);
         const event = {
@@ -1024,7 +1078,7 @@ export class Intent {
     }
 
     public async ensureRegistered(forceRegister = false) {
-        const userId: string = this.client.credentials.userId;
+        const userId: string = this.userId;
         log.debug(`Checking if user ${this.client.credentials.userId} is registered`);
         // We want to skip if and only if all of these conditions are met.
         // Calling /register twice isn't disasterous, but not calling it *at all* IS.
@@ -1034,9 +1088,8 @@ export class Intent {
         }
         let registerRes;
         if (forceRegister || !this.opts.registered) {
-            const localpart = (new MatrixUser(userId)).localpart;
             try {
-                registerRes = await this.botClient.register(localpart);
+                registerRes = await this.botSdkIntent.ensureRegistered();
                 this.opts.registered = true;
             }
             catch (err) {
@@ -1044,10 +1097,10 @@ export class Intent {
                     // Registering the bot will leave it
                     this.opts.registered = true;
                 }
- else if (err.errcode === "M_USER_IN_USE") {
+                else if (err.errcode === "M_USER_IN_USE") {
                     this.opts.registered = true;
                 }
- else {
+                else {
                     throw err;
                 }
             }

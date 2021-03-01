@@ -17,6 +17,7 @@ limitations under the License.
 import { AppServiceRegistration } from "matrix-appservice";
 import { MembershipCache, UserProfile } from "./membership-cache";
 import { StateLookupEvent } from "..";
+import { MatrixClient } from "matrix-bot-sdk";
 
 /**
  * Construct an AS bot user which has various helper methods.
@@ -29,7 +30,8 @@ import { StateLookupEvent } from "..";
  */
 export class AppServiceBot {
     private exclusiveUserRegexes: RegExp[];
-    constructor (private client: any, registration: AppServiceRegistration, private memberCache: MembershipCache) {
+    constructor (private client: MatrixClient, private userId: string, registration: AppServiceRegistration,
+        private memberCache: MembershipCache) {
         // yank out the exclusive user ID regex strings
         this.exclusiveUserRegexes = [];
         const regOut = registration.getOutput();
@@ -48,7 +50,7 @@ export class AppServiceBot {
     }
 
     public getUserId(): string {
-        return this.client.credentials.userId;
+        return this.userId;
     }
 
     /**

@@ -3,10 +3,7 @@ import logger from "./logging";
 import PQueue from "p-queue";
 
 const log = logger.get("BridgeStateSyncer");
-
-const DEFAULT_SYNC_CONCURRENCY = 3;
-
-interface Mapping {
+export interface MappingInfo {
     creator?: string;
     protocol: {
         id: string;
@@ -34,45 +31,57 @@ interface Mapping {
     };
 }
 
-interface MSC2364Content extends Mapping {
+export interface MSC2364Content extends MappingInfo {
     bridgebot: string;
 }
 
-interface BridgeStateSyncerOpts<BridgeMappingInfo> {
-    concurrency: number;
+interface Opts<BridgeMappingInfo> {
+    /**
+     * The name of the bridge implementation, ideally in Java package naming format:
+     * @example org.matrix.matrix-appservice-irc
+     */
     bridgeName: string;
-    getMapping: (info: BridgeMappingInfo) => Promise<Mapping>;
+    /**
+     * This should return some standard information about a given
+     * mapping.
+     */
+    getMapping: (roomId: string, info: BridgeMappingInfo) => Promise<MappingInfo>;
 }
 
 /**
- * This class will set bridge room state according to [MSC2346](https://github.com/matrix-org/matrix-doc/pull/2346)
+ * This class ensures that rooms contain a valid bridge info
+ * event ([MSC2346](https://github.com/matrix-org/matrix-doc/pull/2346))
+ * which displays the connected protocol, network and room.
  */
-export class BridgeStateSyncer<BridgeMappingInfo> {
+export class BridgeInfoStateSyncer<BridgeMappingInfo> {
     public static readonly EventType = "uk.half-shot.bridge";
-    private syncQueue: PQueue;
-    constructor(private bridge: Bridge, private opts: BridgeStateSyncerOpts<BridgeMappingInfo>) {
-        this.syncQueue = new PQueue({
-            concurrency: opts.concurrency || DEFAULT_SYNC_CONCURRENCY,
-        });
+    constructor(private bridge: Bridge, private opts: Opts<BridgeMappingInfo>) {
     }
 
-    public async initialSync(allMappings: Record<string, BridgeMappingInfo[]>) {
+    /**
+     * Check all rooms and ensure they have correct state.
+     * @param allMappings All bridged room mappings
+     * @param concurrency How many rooms to handle at a time, defaults to 3.
+     */
+    public async initialSync(allMappings: Record<string, BridgeMappingInfo[]>, concurrency = 3) {
         log.info("Beginning sync of bridge state events");
+        const syncQueue = new PQueue({ concurrency });
         Object.entries(allMappings).forEach(([roomId, mappings]) => {
-            this.syncQueue.add(() => this.syncRoom(roomId, mappings));
+            syncQueue.add(() => this.syncRoom(roomId, mappings));
         });
+        return syncQueue.onIdle();
     }
 
     private async syncRoom(roomId: string, mappings: BridgeMappingInfo[]) {
         log.info(`Syncing ${roomId}`);
         const intent = this.bridge.getIntent();
-        for (const bridgeInfoMapping of mappings) {
-            const realMapping = await this.opts.getMapping(bridgeInfoMapping);
+        for (const mappingInfo of mappings) {
+            const realMapping = await this.opts.getMapping(roomId, mappingInfo);
             const key = this.createStateKey(realMapping);
             const content = this.createBridgeInfoContent(realMapping);
             try {
                 const eventData: MSC2364Content|null = await intent.getStateEvent(
-                    roomId, BridgeStateSyncer.EventType, key, true
+                    roomId, BridgeInfoStateSyncer.EventType, key, true
                 );
                 if (eventData !== null) { // If found, validate.
                     if (JSON.stringify(eventData) === JSON.stringify(content)) {
@@ -90,7 +99,7 @@ export class BridgeStateSyncer<BridgeMappingInfo> {
             const eventContent = this.createBridgeInfoContent(realMapping);
             try {
                 await intent.sendStateEvent(
-                    roomId, BridgeStateSyncer.EventType, key, eventContent as unknown as Record<string, unknown>
+                    roomId, BridgeInfoStateSyncer.EventType, key, eventContent as unknown as Record<string, unknown>
                 );
             }
             catch (ex) {
@@ -99,22 +108,22 @@ export class BridgeStateSyncer<BridgeMappingInfo> {
         }
     }
 
-    public async createInitialState(bridgeMappingInfo: BridgeMappingInfo) {
-        const mapping = await this.opts.getMapping(bridgeMappingInfo);
+    public async createInitialState(roomId: string, bridgeMappingInfo: BridgeMappingInfo) {
+        const mapping = await this.opts.getMapping(roomId, bridgeMappingInfo);
         return {
-            type: BridgeStateSyncer.EventType,
+            type: BridgeInfoStateSyncer.EventType,
             content: this.createBridgeInfoContent(mapping),
             state_key: this.createStateKey(mapping),
         };
     }
 
-    public createStateKey(mapping: Mapping) {
+    public createStateKey(mapping: MappingInfo) {
         const networkId = mapping.network ? mapping.network?.id.replace(/\//g, "%2F") + "/" : "";
         const channel = mapping.channel.id.replace(/\//g, "%2F");
         return `${this.opts.bridgeName}:/${networkId}${channel}`;
     }
 
-    public createBridgeInfoContent(mapping: Mapping)
+    public createBridgeInfoContent(mapping: MappingInfo)
     : MSC2364Content {
         const content: MSC2364Content = {
             bridgebot: this.bridge.botUserId,

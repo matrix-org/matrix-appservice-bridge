@@ -720,11 +720,20 @@ export class Intent {
      * state if they are not already joined.
      * @param roomId The room to get the state from.
      * @param eventType The event type to fetch.
-     * @param [stateKey=""] The state key of the event to fetch.
+     * @param stateKey The state key of the event to fetch.
+     * @param returnNull Return null on not found, rather than throwing
      */
-    public async getStateEvent(roomId: string, eventType: string, stateKey = "") {
+    public async getStateEvent(roomId: string, eventType: string, stateKey = "", returnNull = false) {
         await this._ensureJoined(roomId);
-        return this.client.getStateEvent(roomId, eventType, stateKey);
+        try {
+            return await this.client.getStateEvent(roomId, eventType, stateKey);
+        }
+        catch (ex) {
+            if (ex.errcode !== "M_NOT_FOUND" || !returnNull) {
+                throw ex;
+            }
+        }
+        return null;
     }
 
     /**

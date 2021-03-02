@@ -815,13 +815,16 @@ export class Intent {
         // eslint-disable-next-line camelcase
         room_id: string
     }) {
-        if (!this._membershipStates || !this._powerLevels) {
-            return;
-        }
         if (event.state_key === undefined) {
             // We MUST operate on state events exclusively
             return;
         }
+        // Invalidate the state cache if anything changes in the state.
+        this._requestCaches.roomstate.invalidate(event.room_id);
+        if (!this._membershipStates || !this._powerLevels) {
+            return;
+        }
+
         if (event.type === "m.room.member" &&
                 event.state_key === this.userId &&
                 event.content.membership) {

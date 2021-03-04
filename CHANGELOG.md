@@ -1,4 +1,26 @@
- 2.5.0 (2021-02-10)
+2.6.0-rc1 (2021-03-04)
+===================
+
+Features
+--------
+
+- Add the `BridgeInfoStateSyncer` helper component to sync MSC2346 format state events to rooms. ([\#312](https://github.com/matrix-org/matrix-appservice-bridge/issues/312))
+
+
+Bugfixes
+--------
+
+- Ensure that the Intent room state cache is invalidate when the room state changes. ([\#310](https://github.com/matrix-org/matrix-appservice-bridge/issues/310))
+- Use `type=m.login.application` when registering appservice users, to comply with the spec. ([\#315](https://github.com/matrix-org/matrix-appservice-bridge/issues/315))
+
+
+Internal Changes
+----------------
+
+- Upgrade matrix-appservice-node to 0.8.0 ([\#311](https://github.com/matrix-org/matrix-appservice-bridge/issues/311))
+
+
+2.5.0 (2021-02-10)
 ===================
 
 No significant changes.

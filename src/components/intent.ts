@@ -79,6 +79,7 @@ const returnFirstNumber = (...args: unknown[]) => {
 
 const DEFAULT_CACHE_TTL = 90000;
 const DEFAULT_CACHE_SIZE = 1024;
+export const APPSERVICE_REGISTER_TYPE = "m.login.application_service";
 
 export type PowerLevelContent = {
     // eslint-disable-next-line camelcase
@@ -1046,9 +1047,12 @@ export class Intent {
         }
         let registerRes;
         if (forceRegister || !this.opts.registered) {
-            const localpart = (new MatrixUser(userId)).localpart;
+            const username = (new MatrixUser(userId)).localpart;
             try {
-                registerRes = await this.botClient.register(localpart);
+                registerRes = await this.botClient.registerRequest({
+                    type: APPSERVICE_REGISTER_TYPE,
+                    username,
+                });
                 this.opts.registered = true;
             }
             catch (err) {

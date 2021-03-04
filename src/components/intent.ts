@@ -1050,7 +1050,7 @@ export class Intent {
             const username = (new MatrixUser(userId)).localpart;
             try {
                 registerRes = await this.botClient.registerRequest({
-                    type: "APPSERVICE_REGISTER_TYPE",
+                    type: APPSERVICE_REGISTER_TYPE,
                     username,
                 });
                 this.opts.registered = true;

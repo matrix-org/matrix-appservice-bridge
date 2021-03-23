@@ -20,6 +20,9 @@
   "keywords": [
     "matrix-org"
   ],
+  "engines": {
+    "node": ">=12"
+  },
   "author": "Matrix.org",
   "license": "Apache-2.0",
   "bugs": {

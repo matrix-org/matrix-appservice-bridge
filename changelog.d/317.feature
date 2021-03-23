@@ -1,0 +1,1 @@
+Export `matrix-appservice` classes and interfaces

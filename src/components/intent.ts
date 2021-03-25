@@ -625,6 +625,25 @@ export class Intent {
         return this.client.setAvatarUrl(url);
     }
 
+    /**
+     * Ensure that the user has the given profile information set. If it does not,
+     * set it.
+     * @param displayname The displayname to set. Leave undefined to ignore.
+     * @param avatarUrl The avatar to set. Leave undefined to ignore.
+     */
+    public async ensureProfile(displayname?: string, avatarUrl?: string) {
+        if (!displayname && !avatarUrl) {
+            throw Error('At least one of displayname,avatarUrl must be defined');
+        }
+        const profile = await this.getProfileInfo(this.userId, null, false);
+        if (displayname && profile.displayname !== displayname) {
+            await this.setDisplayName(displayname);
+        }
+        if (avatarUrl && profile.avatar_url !== avatarUrl) {
+            await this.setAvatarUrl(avatarUrl);
+        }
+    }
+
     public async setRoomUserProfile(roomId: string, profile: UserProfile) {
         const userId = this.client.getUserId();
         const currProfile = this.opts.backingStore.getMemberProfile(roomId, userId);

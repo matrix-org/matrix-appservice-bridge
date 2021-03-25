@@ -10,8 +10,10 @@ const BOT_USER_ID = `@${BOT_LOCALPART}:${HS_DOMAIN}`;
 
 const TEST_USER_DB_PATH = __dirname + "/test-users.db";
 const TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
+const TEST_EVENT_DB_PATH = __dirname + "/test-events.db";
 const UserBridgeStore = require("../..").UserBridgeStore;
 const RoomBridgeStore = require("../..").RoomBridgeStore;
+const EventBridgeStore = require("../..").EventBridgeStore;
 const MatrixUser = require("../..").MatrixUser;
 const RemoteUser = require("../..").RemoteUser;
 const MatrixRoom = require("../..").MatrixRoom;
@@ -23,7 +25,7 @@ const deferPromise = require("../../lib/utils/promiseutil").defer;
 
 describe("Bridge", function() {
     var bridge, bridgeCtrl, appService, clientFactory, appServiceRegistration;
-    var roomStore, userStore, clients;
+    var roomStore, userStore, eventStore, clients;
 
     beforeEach(
     /** @this */
@@ -97,16 +99,19 @@ describe("Bridge", function() {
 
         Promise.all([
             loadDatabase(TEST_USER_DB_PATH, UserBridgeStore),
-            loadDatabase(TEST_ROOM_DB_PATH, RoomBridgeStore)
-        ]).then(([userDb, roomDb]) => {
+            loadDatabase(TEST_ROOM_DB_PATH, RoomBridgeStore),
+            loadDatabase(TEST_EVENT_DB_PATH, EventBridgeStore)
+        ]).then(([userDb, roomDb, eventDb]) => {
             userStore = userDb;
             roomStore = roomDb;
+            eventStore = eventDb;
             bridge = new Bridge({
                 homeserverUrl: HS_URL,
                 domain: HS_DOMAIN,
                 registration: appServiceRegistration,
                 userStore: userDb,
                 roomStore: roomDb,
+                eventStore: eventDb,
                 controller: bridgeCtrl,
                 clientFactory: clientFactory
             });
@@ -125,6 +130,12 @@ describe("Bridge", function() {
         }
         try {
             fs.unlinkSync(TEST_ROOM_DB_PATH);
+        }
+        catch (e) {
+            // do nothing
+        }
+        try {
+            fs.unlinkSync(TEST_EVENT_DB_PATH);
         }
         catch (e) {
             // do nothing
@@ -319,6 +330,66 @@ describe("Bridge", function() {
             expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
         });
 
+        it("should suppress the event if the edit is coming from a different person than the original message", async() => {
+            var event = {
+                content: {
+                    body: ' * my message edit',
+                    'm.new_content': { body: 'my message edit', msgtype: 'm.text' },
+                    'm.relates_to': { 
+                        event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
+                        rel_type: 'm.replace' 
+                    },
+                   msgtype: 'm.text'
+                },
+                event_id: '$tagvjsXZqBOBWtHijq2qg0Un-uqVunrFLxiJyOIVGQ8',
+                room_id: '!dtJaPyDtsoOLTgJVmy:my.matrix.host',
+                sender: '@root:my.matrix.host',
+                type: 'm.room.message',
+            };
+            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
+            
+            await bridge.run(101, {}, appService);
+
+            var botClient = clients["bot"];
+            botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
+                event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
+                sender: '@some-other-user:different.host',
+            }));
+
+            await appService.emit("event", event);
+            expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
+        });
+
+        it("should emit event when the edit sender matches the original message sender", async() => {
+            var event = {
+                content: {
+                    body: ' * my message edit',
+                    'm.new_content': { body: 'my message edit', msgtype: 'm.text' },
+                    'm.relates_to': { 
+                        event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
+                        rel_type: 'm.replace' 
+                    },
+                   msgtype: 'm.text'
+                },
+                event_id: '$tagvjsXZqBOBWtHijq2qg0Un-uqVunrFLxiJyOIVGQ8',
+                room_id: '!dtJaPyDtsoOLTgJVmy:my.matrix.host',
+                sender: '@root:my.matrix.host',
+                type: 'm.room.message',
+            };
+            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
+
+            await bridge.run(101, {}, appService);
+
+            var botClient = clients["bot"];
+            botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
+                event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
+                sender: '@root:my.matrix.host',
+            }));
+
+            await appService.emit("event", event);
+            expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+        });
+
         it("should invoke the user-supplied onEvent function with the right args",
         function(done) {
             var event = {
@@ -486,6 +557,11 @@ describe("Bridge", function() {
         it("should be able to getUserStore", async() => {
             await bridge.run(101, {}, appService);
             expect(bridge.getUserStore()).toEqual(userStore);
+        });
+
+        it("should be able to getEventStore", async() => {
+            await bridge.run(101, {}, appService);
+            expect(bridge.getEventStore()).toEqual(eventStore);
         });
 
         it("should be able to getRequestFactory", async() => {
@@ -791,7 +867,7 @@ describe("Bridge", function() {
 function mkMockMatrixClient(uid) {
     var client = jasmine.createSpyObj(
         "MatrixClient", [
-            "register", "joinRoom", "credentials", "createRoom", "setDisplayName",
+            "register", "joinRoom", "credentials", "createRoom", "setDisplayName", "fetchRoomEvent",
             "setAvatarUrl", "_http"
         ]
     );

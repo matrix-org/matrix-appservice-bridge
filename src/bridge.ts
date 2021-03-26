@@ -260,7 +260,7 @@ export interface BridgeOpts {
              * If the parent edit event could not be found,
              * should the event be rejected.
              */
-            allowOnLookupFail: boolean;
+            allowEventOnLookupFail: boolean;
         };
     };
 }
@@ -397,7 +397,7 @@ interface VettedBridgeOpts {
     };
     eventValidation?: {
         validateEditSender?: {
-            allowOnLookupFail: boolean;
+            allowEventOnLookupFail: boolean;
         };
     };
 }
@@ -1237,7 +1237,7 @@ export class Bridge {
         return members.find((u) => reg.isUserMatch(u, false)) || null;
     }
 
-    private async validateEditEvent(event: WeakEvent, parentEventId: string, allowLookupFailure: boolean) {
+    private async validateEditEvent(event: WeakEvent, parentEventId: string, allowEventOnLookupFail: boolean) {
         try {
             const roomMember = await this.getAnyASMemberInRoom(event.room_id);
             if (!roomMember) {
@@ -1251,18 +1251,17 @@ export class Bridge {
             // Only allow edits from the same sender
             if (relatedEvent.sender !== event.sender) {
                 log.warn(
-                    `Rejecting ${event.event_id}: Message edit sender did NOT match the original message`
+                    `Rejecting ${event.event_id}: Message edit sender did NOT match the original message (${parentEventId})`
                 );
                 return false;
             }
         }
         catch (ex) {
-            log.debug(`Could not fetch parent event for edit`, ex);
-            if (!allowLookupFailure) {
-                log.warn(`Rejecting ${event.event_id}: Parent event ${parentEventId} could not be found`);
+            if (!allowEventOnLookupFail) {
+                log.warn(`Rejecting ${event.event_id}: Unable to fetch parent event ${parentEventId}`, ex);
                 return false;
             }
-            log.warn(`Allowing event: Parent event ${parentEventId} could not be found`);
+            log.warn(`Allowing event ${event.event_id}: Unable to fetch parent event ${parentEventId}`, ex);
         }
         return true;
     }
@@ -1287,7 +1286,7 @@ export class Bridge {
         }
 
         // eslint-disable-next-line camelcase
-        const relatesTo = event.content['m.relates_to'] as { event_id?: string; rel_type: "m.replace";}|undefined;
+        const relatesTo = event.content?.['m.relates_to'] as { event_id?: string; rel_type: "m.replace";}|undefined;
         const editOptions = this.opts.eventValidation?.validateEditSender;
 
         if (
@@ -1297,7 +1296,7 @@ export class Bridge {
             editOptions
         ) {
             // Event rejected.
-            if (!await this.validateEditEvent(event, relatesTo.event_id, editOptions.allowOnLookupFail)) {
+            if (!await this.validateEditEvent(event, relatesTo.event_id, editOptions.allowEventOnLookupFail)) {
                 return null;
             }
         }

@@ -331,7 +331,7 @@ describe("Bridge", function() {
         });
 
         it("should suppress the event if the edit is coming from a different person than the original message", async() => {
-            var event = {
+            const event = {
                 content: {
                     body: ' * my message edit',
                     'm.new_content': { body: 'my message edit', msgtype: 'm.text' },
@@ -347,10 +347,32 @@ describe("Bridge", function() {
                 type: 'm.room.message',
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
-            
+
+            bridge = new Bridge({
+                homeserverUrl: HS_URL,
+                domain: HS_DOMAIN,
+                registration: appServiceRegistration,
+                userStore: userStore,
+                roomStore: roomStore,
+                controller: bridgeCtrl,
+                clientFactory: clientFactory,
+                disableContext: true,
+                eventValidation: {
+                    validateEditSender: {
+                        allowEventOnLookupFail: false,
+                    }
+                }
+            });
             await bridge.run(101, {}, appService);
 
-            var botClient = clients["bot"];
+            const botClient = clients["bot"];
+            botClient.getJoinedRoomMembers.and.returnValue(Promise.resolve({
+                joined: {
+                    [botClient.credentials.userId]: {
+                        display_name: "bot"
+                    }
+                }
+            }));
             botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
                 event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
                 sender: '@some-other-user:different.host',
@@ -377,10 +399,32 @@ describe("Bridge", function() {
                 type: 'm.room.message',
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
-
+            
+            bridge = new Bridge({
+                homeserverUrl: HS_URL,
+                domain: HS_DOMAIN,
+                registration: appServiceRegistration,
+                userStore: userStore,
+                roomStore: roomStore,
+                controller: bridgeCtrl,
+                clientFactory: clientFactory,
+                disableContext: true,
+                eventValidation: {
+                    validateEditSender: {
+                        allowEventOnLookupFail: false,
+                    }
+                }
+            });
             await bridge.run(101, {}, appService);
 
             var botClient = clients["bot"];
+            botClient.getJoinedRoomMembers.and.returnValue(Promise.resolve({
+                joined: {
+                    [botClient.credentials.userId]: {
+                        display_name: "bot"
+                    }
+                }
+            }));
             botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
                 event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
                 sender: '@root:my.matrix.host',
@@ -867,8 +911,8 @@ describe("Bridge", function() {
 function mkMockMatrixClient(uid) {
     var client = jasmine.createSpyObj(
         "MatrixClient", [
-            "register", "joinRoom", "credentials", "createRoom", "setDisplayName", "fetchRoomEvent",
-            "setAvatarUrl", "_http"
+            "register", "joinRoom", "credentials", "createRoom", "setDisplayName",
+            "setAvatarUrl", "fetchRoomEvent", "getJoinedRoomMembers", "_http"
         ]
     );
     // Shim requests to authedRequestWithPrefix to register() if it is

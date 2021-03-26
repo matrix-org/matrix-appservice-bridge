@@ -1,6 +1,4 @@
 {
-  "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
   "parserOptions": {
     "ecmaVersion": 9,
     "ecmaFeatures": {
@@ -11,7 +9,6 @@
     "node": true,
     "jasmine": true
   },
-  "extends": ["plugin:@typescript-eslint/recommended"],
   "rules": {
     "consistent-return": "error",
     "curly": "error",
@@ -81,5 +78,13 @@
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-shadow": ["error"]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["*.ts"],
+      "parser": "@typescript-eslint/parser",
+      "plugins": ["@typescript-eslint"],
+      "extends": ["plugin:@typescript-eslint/recommended"]
+    }
+  ]
 }

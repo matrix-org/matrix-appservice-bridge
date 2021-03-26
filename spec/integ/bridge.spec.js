@@ -330,108 +330,135 @@ describe("Bridge", function() {
             expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
         });
 
-        it("should suppress the event if the edit is coming from a different person than the original message", async() => {
-            const event = {
-                content: {
-                    body: ' * my message edit',
-                    'm.new_content': { body: 'my message edit', msgtype: 'm.text' },
-                    'm.relates_to': { 
-                        event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
-                        rel_type: 'm.replace' 
+        describe('opts.eventValidation.validateEditSender', () => {
+            async function setupBridge(eventValidation) {
+                const bridge = new Bridge({
+                    homeserverUrl: HS_URL,
+                    domain: HS_DOMAIN,
+                    registration: appServiceRegistration,
+                    userStore: userStore,
+                    roomStore: roomStore,
+                    controller: bridgeCtrl,
+                    clientFactory: clientFactory,
+                    disableContext: true,
+                    eventValidation
+                });
+                await bridge.run(101, {}, appService);
+
+                return bridge;
+            }
+
+            function createMessageEditEvent(sender) {
+                const event = {
+                    content: {
+                        body: ' * my message edit',
+                        'm.new_content': { body: 'my message edit', msgtype: 'm.text' },
+                        'm.relates_to': { 
+                            event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
+                            rel_type: 'm.replace' 
+                        },
+                    msgtype: 'm.text'
                     },
-                   msgtype: 'm.text'
-                },
-                event_id: '$tagvjsXZqBOBWtHijq2qg0Un-uqVunrFLxiJyOIVGQ8',
-                room_id: '!dtJaPyDtsoOLTgJVmy:my.matrix.host',
-                sender: '@root:my.matrix.host',
-                type: 'm.room.message',
-            };
-            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
+                    event_id: '$tagvjsXZqBOBWtHijq2qg0Un-uqVunrFLxiJyOIVGQ8',
+                    room_id: '!dtJaPyDtsoOLTgJVmy:my.matrix.host',
+                    sender,
+                    type: 'm.room.message',
+                };
 
-            bridge = new Bridge({
-                homeserverUrl: HS_URL,
-                domain: HS_DOMAIN,
-                registration: appServiceRegistration,
-                userStore: userStore,
-                roomStore: roomStore,
-                controller: bridgeCtrl,
-                clientFactory: clientFactory,
-                disableContext: true,
-                eventValidation: {
-                    validateEditSender: {
-                        allowEventOnLookupFail: false,
+                return event;
+            }
+
+            let botClient;
+            beforeEach(async () => {
+                botClient = clients["bot"];
+                botClient.getJoinedRoomMembers.and.returnValue(Promise.resolve({
+                    joined: {
+                        [botClient.credentials.userId]: {
+                            display_name: "bot"
+                        }
                     }
-                }
+                }));
+
+                // Mock onEvent callback
+                bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
             });
-            await bridge.run(101, {}, appService);
 
-            const botClient = clients["bot"];
-            botClient.getJoinedRoomMembers.and.returnValue(Promise.resolve({
-                joined: {
-                    [botClient.credentials.userId]: {
-                        display_name: "bot"
-                    }
-                }
-            }));
-            botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
-                event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
-                sender: '@some-other-user:different.host',
-            }));
+            describe('when enabled', () => {
+                beforeEach(async () => {
+                    bridge = await setupBridge({
+                        validateEditSender: {
+                            allowEventOnLookupFail: false,
+                        }
+                    })
+                });
 
-            await appService.emit("event", event);
-            expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
-        });
+                it("should suppress the event if the edit is coming from a different person than the original message", async() => {
+                    const event = createMessageEditEvent('@root:my.matrix.host');
 
-        it("should emit event when the edit sender matches the original message sender", async() => {
-            var event = {
-                content: {
-                    body: ' * my message edit',
-                    'm.new_content': { body: 'my message edit', msgtype: 'm.text' },
-                    'm.relates_to': { 
+                    botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
                         event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
-                        rel_type: 'm.replace' 
-                    },
-                   msgtype: 'm.text'
-                },
-                event_id: '$tagvjsXZqBOBWtHijq2qg0Un-uqVunrFLxiJyOIVGQ8',
-                room_id: '!dtJaPyDtsoOLTgJVmy:my.matrix.host',
-                sender: '@root:my.matrix.host',
-                type: 'm.room.message',
-            };
-            bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
-            
-            bridge = new Bridge({
-                homeserverUrl: HS_URL,
-                domain: HS_DOMAIN,
-                registration: appServiceRegistration,
-                userStore: userStore,
-                roomStore: roomStore,
-                controller: bridgeCtrl,
-                clientFactory: clientFactory,
-                disableContext: true,
-                eventValidation: {
-                    validateEditSender: {
-                        allowEventOnLookupFail: false,
-                    }
-                }
+                        // The original message has different sender than the edit event
+                        sender: '@some-other-user:different.host',
+                    }));
+
+                    await appService.emit("event", event);
+                    expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
+                });
+
+                it("should emit event when the edit sender matches the original message sender", async() => {
+                    const event = createMessageEditEvent('@root:my.matrix.host');
+                    
+                    botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
+                        event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
+                        // The original message sender is the same as the edit event
+                        sender: '@root:my.matrix.host',
+                    }));
+
+                    await appService.emit("event", event);
+                    expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+                });
             });
-            await bridge.run(101, {}, appService);
 
-            var botClient = clients["bot"];
-            botClient.getJoinedRoomMembers.and.returnValue(Promise.resolve({
-                joined: {
-                    [botClient.credentials.userId]: {
-                        display_name: "bot"
+            it('allowEventOnLookupFail=true should still emit event when failed to fetch original event', async() => {
+                const event = createMessageEditEvent('@root:my.matrix.host');
+
+                bridge = await setupBridge({
+                    validateEditSender: {
+                        // Option of interest for this test is here!
+                        allowEventOnLookupFail: true,
                     }
-                }
-            }));
-            botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
-                event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
-                sender: '@root:my.matrix.host',
-            }));
+                })
 
-            await appService.emit("event", event);
-            expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+                const botClient = clients["bot"];
+                botClient.getJoinedRoomMembers.and.returnValue(Promise.resolve({
+                    joined: {
+                        [botClient.credentials.userId]: {
+                            display_name: "bot"
+                        }
+                    }
+                }));
+                botClient.fetchRoomEvent.and.returnValue(Promise.reject(new Error('Some problem fetching original event')));
+
+                await appService.emit("event", event);
+                expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+            })
+
+            describe('when disabled', () => {
+                it("should emit event even when the edit sender does NOT match the original message sender", async() => {
+                    const event = createMessageEditEvent('@root:my.matrix.host');
+                    
+                    bridge = await setupBridge(undefined)
+
+                    botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
+                        event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
+                        // The original message has different sender than the edit event
+                        sender: '@some-other-user:different.host',
+                    }));
+
+                    await appService.emit("event", event);
+                    expect(bridgeCtrl.onEvent).toHaveBeenCalled();
+                });
+            })
         });
 
         it("should invoke the user-supplied onEvent function with the right args",

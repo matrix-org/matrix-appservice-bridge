@@ -480,6 +480,11 @@ export class Bridge {
             },
             logRequestOutcome: opts.logRequestOutcome ?? true,
             suppressEcho: opts.suppressEcho ?? true,
+            eventValidation: opts.hasOwnProperty("eventValidation") ? opts.eventValidation : {
+                validateEditSender: {
+                    allowEventOnLookupFail: false
+                }
+            }
         };
 
         this.queue = EventQueue.create(this.opts.queue, this.onConsume.bind(this));

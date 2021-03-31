@@ -5,6 +5,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
+    "postinstall": "npm run prepare",
     "build": "tsc --project tsconfig.json",
     "prepare": "npm run build",
     "gendoc": "typedoc",

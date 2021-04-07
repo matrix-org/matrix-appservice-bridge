@@ -1,0 +1,2 @@
+The `master` branch for `https://github.com/matrix-org/matrix-appservice-bridge` is being removed. Users should use the latest release/tag when depending on this library. The latest bleeding edge changes will continue to
+exist on `develop`.

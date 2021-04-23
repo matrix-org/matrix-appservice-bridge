@@ -20,21 +20,21 @@ import JsSdk from "matrix-js-sdk";
 const { MatrixEvent, RoomMember } = JsSdk as any;
 import { ClientRequestCache } from "./client-request-cache";
 import { defer } from "../utils/promiseutil";
-import { UserMembership, UserProfile } from "./membership-cache";
+import { UserMembership } from "./membership-cache";
 import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
 import { ReadStream } from "fs";
-import BotSdk from "matrix-bot-sdk";
+import BotSdk, { MatrixClient, MatrixProfileInfo, MemoryStorageProvider, PresenceState } from "matrix-bot-sdk";
 
 const log = Logging.get("Intent");
 
 export type IntentBackingStore = {
     getMembership: (roomId: string, userId: string) => UserMembership,
-    getMemberProfile: (roomId: string, userid: string) => UserProfile,
+    getMemberProfile: (roomId: string, userid: string) => MatrixProfileInfo,
     getPowerLevelContent: (roomId: string) => PowerLevelContent | undefined,
-    setMembership: (roomId: string, userId: string, membership: UserMembership, profile: UserProfile) => void,
+    setMembership: (roomId: string, userId: string, membership: UserMembership, profile: MatrixProfileInfo) => void,
     setPowerLevelContent: (roomId: string, content: PowerLevelContent) => void,
 };
 
@@ -64,7 +64,6 @@ export interface RoomCreationOpts {
 
 export interface FileUploadOpts {
     name?: string;
-    includeFilename?: boolean;
     type?: string;
 }
 
@@ -82,7 +81,6 @@ const returnFirstNumber = (...args: unknown[]) => {
 
 const DEFAULT_CACHE_TTL = 90000;
 const DEFAULT_CACHE_SIZE = 1024;
-export const APPSERVICE_REGISTER_TYPE = "m.login.application_service";
 
 export type PowerLevelContent = {
     // eslint-disable-next-line camelcase
@@ -103,7 +101,7 @@ type UserProfileKeys = "avatar_url"|"displayname"|null;
 
 export class Intent {
     private _requestCaches: {
-        profile: ClientRequestCache<unknown, [string, UserProfileKeys]>,
+        profile: ClientRequestCache<MatrixProfileInfo, [string, UserProfileKeys]>,
         roomstate: ClientRequestCache<unknown, []>,
         event: ClientRequestCache<unknown, [string, string]>
     }
@@ -121,7 +119,7 @@ export class Intent {
         registered?: boolean;
     }
     // These two are only used if no opts.backingStore is provided to the constructor.
-    private readonly _membershipStates: Record<string, [UserMembership, UserProfile]> = {};
+    private readonly _membershipStates: Record<string, [UserMembership, MatrixProfileInfo]> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
     private readonly encryptedRooms = new Map<string, string|false>();
     private readonly encryption?: {
@@ -134,6 +132,9 @@ export class Intent {
     // it, but is not created by default anymore.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private legacyClient?: any;
+
+    // This client is used exclusively for E2E requests.
+    private e2eClient?: MatrixClient;
 
     /**
     * Create an entity which can fulfil the intent of a given user.
@@ -182,7 +183,7 @@ export class Intent {
     */
     constructor(
         public readonly botSdkIntent: BotSdk.Intent,
-        private readonly botClient: MatrixClient,
+        private readonly botClient: BotSdk.MatrixClient,
         opts: IntentOpts = {}) {
         if (opts.backingStore) {
             if (!opts.backingStore.setPowerLevelContent ||
@@ -211,7 +212,8 @@ export class Intent {
                 getPowerLevelContent: (roomId: string) => {
                     return this._powerLevels[roomId];
                 },
-                setMembership: (roomId: string, userId: string, membership: UserMembership, profile: UserProfile) => {
+                setMembership: (
+                    roomId: string, userId: string, membership: UserMembership, profile: MatrixProfileInfo) => {
                     if (userId !== this.userId) {
                         return;
                     }
@@ -398,7 +400,21 @@ export class Intent {
      */
     public async setPowerLevel(roomId: string, target: string, level: number|undefined) {
         await this._ensureJoined(roomId);
-        await this.botSdkIntent.underlyingClient.setUserPowerLevel(roomId, target, level);
+        const powerLevel: PowerLevelContent = await this.getStateEvent(roomId, "m.room.power_levels", "", true);
+        if (powerLevel && level && (powerLevel?.users || {})[target] !== level) {
+            powerLevel.users = powerLevel.users || {};
+            powerLevel.users[target] = level;
+            await this.sendStateEvent(roomId, "m.room.power_levels", "", powerLevel);
+        }
+        else if (powerLevel?.users && !level) {
+            delete powerLevel.users[target];
+            await this.sendStateEvent(roomId, "m.room.power_levels", "", powerLevel);
+        }
+        else if (!powerLevel && level) {
+            await this.botSdkIntent.underlyingClient.setUserPowerLevel(target, roomId, level);
+        }
+        // Otherwise this is a no-op
+        log.debug(`Setting PL of ${target} in ${roomId} to ${level} was a no-op`)
     }
 
     /**
@@ -504,40 +520,30 @@ export class Intent {
      */
     // eslint-disable-next-line camelcase
     public async createRoom(opts: RoomCreationOpts): Promise<{room_id: string}> {
-        const cli = opts.createAsClient ? this.client : this.botClient;
-        const { userId } = cli.credentials;
+        const cli = opts.createAsClient ? this.botSdkIntent.underlyingClient : this.botClient;
         const options = opts.options || {};
         if (!opts.createAsClient) {
             // invite the client if they aren't already
             options.invite = options.invite || [];
-            if (Array.isArray(options.invite) && !options.invite.includes(userId)) {
-                options.invite.push(userId);
+            if (Array.isArray(options.invite) && !options.invite.includes(this.userId)) {
+                options.invite.push(this.userId);
             }
         }
         // make sure that the thing doing the room creation isn't inviting itself
         // else Synapse hard fails the operation with M_FORBIDDEN
-        if (Array.isArray(options.invite) && options.invite.includes(userId)) {
-            options.invite.splice(options.invite.indexOf(userId), 1);
+        if (Array.isArray(options.invite) && options.invite.includes(this.userId)) {
+            options.invite.splice(options.invite.indexOf(this.userId), 1);
         }
 
         await this.ensureRegistered();
-        const res = await cli.createRoom(options);
-        if (typeof res !== "object" || !res) {
-            const type = res === null ? "null" : typeof res;
-            throw Error(`Expected Matrix Server to answer createRoom with an object, got ${type}.`);
-        }
-        const roomId = (res as Record<string, unknown>).room_id;
-        if (typeof roomId !== "string") {
-            const type = typeof roomId;
-            throw Error(`Expected Matrix Server to answer createRoom with a room_id that is a string, got ${type}.`);
-        }
+        const roomId = await cli.createRoom(options);
         // create a fake power level event to give the room creator ops if we
         // don't yet have a power level event.
         if (this.opts.backingStore.getPowerLevelContent(roomId)) {
-            return res;
+            return {room_id: roomId};
         }
         const users: Record<string, number> = {};
-        users[userId] = 100;
+        users[this.userId] = 100;
         this.opts.backingStore.setPowerLevelContent(roomId, {
             users_default: 0,
             events_default: 0,
@@ -545,7 +551,7 @@ export class Intent {
             users: users,
             events: {}
         });
-        return res;
+        return {room_id: roomId};
     }
 
     /**
@@ -559,7 +565,7 @@ export class Intent {
      */
     public async invite(roomId: string, target: string) {
         await this._ensureJoined(roomId);
-        return this.client.invite(roomId, target);
+        return this.botSdkIntent.underlyingClient.inviteUser(target, roomId);
     }
 
     /**
@@ -577,7 +583,7 @@ export class Intent {
             // Only ensure joined if we are not also the kicker
             await this._ensureJoined(roomId);
         }
-        return this.client.kick(roomId, target, reason);
+        return this.botSdkIntent.underlyingClient.kickUser(target, roomId, reason);
     }
 
     /**
@@ -592,7 +598,7 @@ export class Intent {
      */
     public async ban(roomId: string, target: string, reason?: string) {
         await this._ensureJoined(roomId);
-        return this.client.ban(roomId, target, reason);
+        return this.botSdkIntent.underlyingClient.banUser(target, roomId, reason);
     }
 
     /**
@@ -606,7 +612,7 @@ export class Intent {
      */
     public async unban(roomId: string, target: string) {
         await this._ensureJoined(roomId);
-        return this.client.unban(roomId, target);
+        return this.botSdkIntent.underlyingClient.unbanUser(target, roomId);
     }
 
     /**
@@ -631,9 +637,10 @@ export class Intent {
      */
     public async leave(roomId: string, reason?: string) {
         if (reason) {
-            return this.kick(roomId, this.userId, reason)
+            await this.botSdkIntent.ensureRegistered();
+            return this.botSdkIntent.underlyingClient.kickUser(this.userId, roomId, reason);
         }
-        return this.client.leave(roomId);
+        return this.botSdkIntent.leaveRoom(roomId);
     }
 
     /**
@@ -647,12 +654,20 @@ export class Intent {
      * @return A Promise that resolves with the requested user's profile
      * information
      */
-    public async getProfileInfo(userId: string, info: UserProfileKeys = null, useCache = true) {
+    public async getProfileInfo(
+        userId: string, info: UserProfileKeys = null, useCache = true): Promise<MatrixProfileInfo> {
         await this.ensureRegistered();
         if (useCache) {
-            return this._requestCaches.profile.get(`${userId}:${info}`, userId, info);
+            return this._requestCaches.profile.get(`${userId}`, userId, null);
         }
-        return this.client.getProfileInfo(userId, info);
+        const profile: MatrixProfileInfo = await this.botSdkIntent.underlyingClient.getUserProfile(userId);
+        if (info === 'avatar_url') {
+            return { avatar_url: profile.avatar_url };
+        }
+        if (info === 'displayname') {
+            return { displayname: profile.displayname };
+        }
+        return profile;
     }
 
     /**
@@ -662,7 +677,7 @@ export class Intent {
      */
     public async setDisplayName(name: string) {
         await this.ensureRegistered();
-        return this.client.setDisplayName(name);
+        return this.botSdkIntent.underlyingClient.setDisplayName(name);
     }
 
     /**
@@ -672,7 +687,7 @@ export class Intent {
      */
     public async setAvatarUrl(url: string) {
         await this.ensureRegistered();
-        return this.client.setAvatarUrl(url);
+        return this.botSdkIntent.underlyingClient.setAvatarUrl(url);
     }
 
     /**
@@ -694,16 +709,19 @@ export class Intent {
         }
     }
 
-    public async setRoomUserProfile(roomId: string, profile: UserProfile) {
-        const userId = this.client.getUserId();
-        const currProfile = this.opts.backingStore.getMemberProfile(roomId, userId);
+    public async setRoomUserProfile(roomId: string, profile: MatrixProfileInfo) {
+        const currProfile = this.opts.backingStore.getMemberProfile(roomId, this.userId);
         // Compare the user's current profile (from cache) with the profile
         // that is requested.  Only send the state event if something that was
         // requested to change is different from the current value.
         if (("displayname" in profile && currProfile.displayname != profile.displayname) ||
             ("avatar_url" in profile && currProfile.avatar_url != profile.avatar_url)) {
-            const content = Object.assign({membership: "join"}, currProfile, profile);
-            await this.client.sendStateEvent(roomId, 'm.room.member', content, userId);
+            const content = {
+                membership: "join",
+                ...currProfile,
+                ...profile,
+            };
+            await this.sendStateEvent(roomId, 'm.room.member', this.userId, content);
         }
     }
 
@@ -714,7 +732,7 @@ export class Intent {
      */
     public async createAlias(alias: string, roomId: string) {
         await this.ensureRegistered();
-        return this.client.createAlias(alias, roomId);
+        return this.botSdkIntent.underlyingClient.createRoomAlias(alias, roomId);
     }
 
     /**
@@ -723,14 +741,13 @@ export class Intent {
      * @param status_msg The status message to attach.
      * @return Resolves if the presence was set or no-oped, rejects otherwise.
      */
-    // eslint-disable-next-line camelcase
-    public async setPresence(presence: string, status_msg?: string) {
+    public async setPresence(presence: PresenceState, statusMsg?: string) {
         if (!this.opts.enablePresence) {
             return undefined;
         }
 
         await this.ensureRegistered();
-        return this.client.setPresence({presence, status_msg});
+        return this.botSdkIntent.underlyingClient.setPresenceStatus(presence, statusMsg);
     }
 
     /**
@@ -781,7 +798,7 @@ export class Intent {
         if (useCache) {
             return this._requestCaches.event.get(`${roomId}:${eventId}`, roomId, eventId);
         }
-        return this.client.fetchRoomEvent(roomId, eventId);
+        return this.botSdkIntent.underlyingClient.getEvent(roomId, eventId);
     }
 
     /**
@@ -796,7 +813,7 @@ export class Intent {
     public async getStateEvent(roomId: string, eventType: string, stateKey = "", returnNull = false) {
         await this._ensureJoined(roomId);
         try {
-            return await this.client.getStateEvent(roomId, eventType, stateKey);
+            return await this.botSdkIntent.underlyingClient.getRoomStateEvent(roomId, eventType, stateKey);
         }
         catch (ex) {
             if (ex.errcode !== "M_NOT_FOUND" || !returnNull) {
@@ -843,7 +860,21 @@ export class Intent {
      */
     public async uploadContent(content: Buffer|string|ReadStream, opts: FileUploadOpts = {}): Promise<string> {
         await this.ensureRegistered();
-        return this.botSdkIntent.underlyingClient.uploadContent(content, {...opts, rawResponse: false, onlyContentUri: true});
+        let buffer: Buffer;
+        if (typeof content === "string") {
+            buffer = Buffer.from(content, "utf8");
+        }
+        else if (content instanceof ReadStream) {
+            buffer = Buffer.from(content);
+        }
+        else {
+            buffer = content;
+        }
+        return this.botSdkIntent.underlyingClient.uploadContent(
+            buffer,
+            opts.type,
+            opts.name,
+        );
     }
 
     /**
@@ -866,7 +897,7 @@ export class Intent {
     public async setRoomDirectoryVisibilityAppService(roomId: string, networkId: string,
         visibility: "public"|"private") {
         await this.ensureRegistered();
-        // No function for this yet.
+        // XXX: No function for this yet.
         return this.client.setRoomDirectoryVisibilityAppService(roomId, visibility, networkId);
     }
 
@@ -899,7 +930,7 @@ export class Intent {
         if (event.type === "m.room.member" &&
                 event.state_key === this.userId &&
                 event.content.membership) {
-            const profile: UserProfile = {};
+            const profile: MatrixProfileInfo = {};
             if (event.content.displayname) {
                 profile.displayname = event.content.displayname;
             }
@@ -994,16 +1025,14 @@ export class Intent {
                         throw Error("Can't invite via an alias");
                     }
                     // Try bot inviting client
-                    await this.botClient.invite(roomIdOrAlias, this.userId);
-                    // eslint-disable-next-line camelcase
-                    const { roomId } = await this.client.joinRoom(roomIdOrAlias, opts);
+                    await this.botClient.inviteUser(this.userId, roomIdOrAlias);
+                    const roomId = await this.botClient.joinRoom(roomIdOrAlias, opts.viaServers);
                     mark(roomId, "join");
                 }
                 catch (_ex) {
                     // Try bot joining
-                    // eslint-disable-next-line camelcase
-                    const { roomId } = await this.botClient.joinRoom(roomIdOrAlias, opts)
-                    await this.botClient.invite(roomId, this.userId);
+                    const roomId = await this.botClient.joinRoom(roomIdOrAlias, opts.viaServers);
+                    await this.botClient.inviteUser(this.userId, roomId);
                     await this.botSdkIntent.underlyingClient.joinRoom(roomIdOrAlias, opts.viaServers);
                     mark(roomId, "join");
                 }
@@ -1060,7 +1089,7 @@ export class Intent {
 
         if (requiredLevel > roomMember.powerLevel) {
             // can the bot update our power level?
-            const bot = new RoomMember(roomId, this.botClient.credentials.userId);
+            const bot = new RoomMember(roomId, this.userId);
             bot.setPowerLevelEvent(powerLevelEvent);
             const levelRequiredToModifyPowerLevels = returnFirstNumber(
                 // If these are invalid or not provided, default to 0 according to the Spec.
@@ -1092,21 +1121,27 @@ export class Intent {
 
     private async loginForEncryptedClient() {
         const userId: string = this.userId;
-        const res = await this.client.login(APPSERVICE_LOGIN_TYPE, {
-            identifier: {
-                type: "m.id.user",
-                user: userId,
-            }
-        });
+        const res = await this.botSdkIntent.underlyingClient.doRequest(
+            "POST",
+            "/_matrix/client/r0/login",
+            undefined,
+            {
+                type: APPSERVICE_LOGIN_TYPE,
+                identifier: {
+                    type: "m.id.user",
+                    user: userId,
+                }
+            },
+        );
         return {
-            accessToken: res.access_token,
-            deviceId: res.device_id,
+            accessToken: res.access_token as string,
+            deviceId: res.device_id as string,
         };
     }
 
     public async ensureRegistered(forceRegister = false) {
         const userId: string = this.userId;
-        log.debug(`Checking if user ${this.client.credentials.userId} is registered`);
+        log.debug(`Checking if user ${this.userId} is registered`);
         // We want to skip if and only if all of these conditions are met.
         // Calling /register twice isn't disasterous, but not calling it *at all* IS.
         if (!forceRegister && this.opts.registered && !this.encryption) {
@@ -1120,7 +1155,7 @@ export class Intent {
                 this.opts.registered = true;
             }
             catch (err) {
-                if (err.errcode === "M_EXCLUSIVE" && this.botClient === this.client) {
+                if (err.errcode === "M_EXCLUSIVE" && this.botClient === this.botSdkIntent.underlyingClient) {
                     // Registering the bot will leave it
                     this.opts.registered = true;
                 }
@@ -1155,11 +1190,12 @@ export class Intent {
         let session = await this.encryption.sessionPromise;
         if (session) {
             log.debug("ensureRegistered: Existing enc session, reusing");
+            const memoryProvider = new MemoryStorageProvider();
             // We have existing credentials, set them on the client and run away.
-            this.client._http.opts.accessToken = session.accessToken;
-            if (session.syncToken) {
-                this.client.store.setSyncToken(session.syncToken);
-            }
+            memoryProvider.setSyncToken(session.syncToken);
+            this.e2eClient = new MatrixClient(
+                this.botClient.homeserverUrl, session.accessToken, memoryProvider
+            );
         }
         else {
             this.readyPromise = (async () => {
@@ -1178,9 +1214,6 @@ export class Intent {
             })();
             await this.readyPromise;
         }
-        // We are using a real user access token.
-        // We delete the whole extraParams object due to a bug with GET requests
-        delete this.client._http.opts.extraParams;
         return undefined;
     }
 }

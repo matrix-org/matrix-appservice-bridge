@@ -597,7 +597,7 @@ export class Bridge {
         this.botClient = this.clientFactory.getClientAs();
         await this.checkHomeserverSupport();
         this.appServiceBot = new AppServiceBot(
-            this.botClient, this.registration, this.membershipCache,
+            this.botClient, this.botUserId, this.registration, this.membershipCache,
         );
 
         if (this.opts.bridgeEncryption) {
@@ -1042,7 +1042,7 @@ export class Bridge {
      * @return The intent instance
      */
     public getIntent(userId?: string, request?: Request<unknown>) {
-        if (!this.appServiceBot) {
+        if (!this.appServiceBot || !this.botSdkAS) {
             throw Error('Cannot call getIntent before calling .initalise()');
         }
         if (!userId) {
@@ -1073,14 +1073,17 @@ export class Bridge {
 
         const clientIntentOpts: IntentOpts = {
             backingStore: this.intentBackingStore,
-            getJsSdkClient: () => 
-                this.clientFactory.getClientAs(
+            getJsSdkClient: () => {
+                if (!this.clientFactory) {
+                    throw Error('clientFactory not ready yet');
+                }
+                return this.clientFactory.getClientAs(
                     userId,
                     request,
                     this.opts.bridgeEncryption?.homeserverUrl,
                     !!this.opts.bridgeEncryption,
-                ),
-            
+                )
+            },
             ...this.opts.intentOptions?.clients,
         };
         clientIntentOpts.registered = this.membershipCache.isUserRegistered(userId);
@@ -1090,11 +1093,15 @@ export class Bridge {
                 sessionPromise: encryptionOpts.store.getStoredSession(userId),
                 sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(encryptionOpts.store),
                 ensureClientSyncingCallback: async () => {
-                    return this.eeEventBroker?.startSyncingUser(userId!);
+                    return this.eeEventBroker?.startSyncingUser(userId || this.botUserId);
                 },
             };
         }
-        const intent = new Intent(client, this.botClient, clientIntentOpts);
+        const intent = new Intent(
+            this.botSdkAS.getIntentForUserId(userId),
+            this.botSdkAS.botClient,
+            clientIntentOpts,
+        );
         this.intents.set(key, { intent, lastAccessed: Date.now() });
 
         return intent;
@@ -1125,10 +1132,11 @@ export class Bridge {
         matrixUser: MatrixUser,
         provisionedUser?: {name?: string, url?: string, remote?: RemoteUser}
     ) {
-        if (!this.clientFactory) {
+        if (!this.botSdkAS) {
             throw Error('Cannot call getIntent before calling .run()');
         }
-        await this.botClient.register(matrixUser.localpart);
+        const intent = this.botSdkAS.getIntent(matrixUser.localpart);
+        await intent.ensureRegistered();
 
         if (!this.opts.disableStores) {
             if (!this.userStore) {
@@ -1139,12 +1147,11 @@ export class Bridge {
                 await this.userStore.linkUsers(matrixUser, provisionedUser.remote);
             }
         }
-        const userClient = await this.clientFactory.getClientAs(matrixUser.getId());
         if (provisionedUser?.name) {
-            await userClient.setDisplayName(provisionedUser.name);
+            await intent.underlyingClient.setDisplayName(provisionedUser.name);
         }
         if (provisionedUser?.url) {
-            await userClient.setAvatarUrl(provisionedUser.url);
+            await intent.underlyingClient.setAvatarUrl(provisionedUser.url);
         }
     }
 
@@ -1185,7 +1192,7 @@ export class Bridge {
         // we expect some `creationOpts` to create a new room
         if (!roomId) {
             // eslint-disable-next-line camelcase
-            const createRoomResponse: {room_id: string} = await this.botClient.createRoom(
+            const createRoomResponse: {room_id: string} = await this.botSdkAS?.botClient.createRoom(
                 provisionedRoom.creationOpts
             );
             roomId = createRoomResponse.room_id;

@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { MatrixUser } from "../models/users/matrix";
 import JsSdk from "matrix-js-sdk";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,6 +82,7 @@ const returnFirstNumber = (...args: unknown[]) => {
 
 const DEFAULT_CACHE_TTL = 90000;
 const DEFAULT_CACHE_SIZE = 1024;
+export const APPSERVICE_REGISTER_TYPE = "m.login.application_service";
 
 export type PowerLevelContent = {
     // eslint-disable-next-line camelcase
@@ -180,7 +180,10 @@ export class Intent {
     * @param opts.caching.ttl How long requests can stay in the cache, in milliseconds.
     * @param opts.caching.size How many entries should be kept in the cache, before the oldest is dropped.
     */
-    constructor(public readonly botSdkIntent: BotSdk.Intent, private readonly botClient: any, opts: IntentOpts = {}) {
+    constructor(
+        public readonly botSdkIntent: BotSdk.Intent,
+        private readonly botClient: MatrixClient,
+        opts: IntentOpts = {}) {
         if (opts.backingStore) {
             if (!opts.backingStore.setPowerLevelContent ||
                     !opts.backingStore.getPowerLevelContent ||
@@ -395,13 +398,6 @@ export class Intent {
      */
     public async setPowerLevel(roomId: string, target: string, level: number|undefined) {
         await this._ensureJoined(roomId);
-        const plContent = this.opts.backingStore.getPowerLevelContent(roomId);
-        if (plContent && plContent?.users) {
-            plContent.users[target] = level;
-        }
-        else if (level !== undefined) {
-            plContent.users = { [target]: level};
-        }
         await this.botSdkIntent.underlyingClient.setUserPowerLevel(roomId, target, level);
     }
 
@@ -679,6 +675,25 @@ export class Intent {
         return this.client.setAvatarUrl(url);
     }
 
+    /**
+     * Ensure that the user has the given profile information set. If it does not,
+     * set it.
+     * @param displayname The displayname to set. Leave undefined to ignore.
+     * @param avatarUrl The avatar to set. Leave undefined to ignore.
+     */
+    public async ensureProfile(displayname?: string, avatarUrl?: string) {
+        if (!displayname && !avatarUrl) {
+            throw Error('At least one of displayname,avatarUrl must be defined');
+        }
+        const profile = await this.getProfileInfo(this.userId, null, false);
+        if (displayname && profile.displayname !== displayname) {
+            await this.setDisplayName(displayname);
+        }
+        if (avatarUrl && profile.avatar_url !== avatarUrl) {
+            await this.setAvatarUrl(avatarUrl);
+        }
+    }
+
     public async setRoomUserProfile(roomId: string, profile: UserProfile) {
         const userId = this.client.getUserId();
         const currProfile = this.opts.backingStore.getMemberProfile(roomId, userId);
@@ -775,11 +790,20 @@ export class Intent {
      * state if they are not already joined.
      * @param roomId The room to get the state from.
      * @param eventType The event type to fetch.
-     * @param [stateKey=""] The state key of the event to fetch.
+     * @param stateKey The state key of the event to fetch.
+     * @param returnNull Return null on not found, rather than throwing
      */
-    public async getStateEvent(roomId: string, eventType: string, stateKey = "") {
+    public async getStateEvent(roomId: string, eventType: string, stateKey = "", returnNull = false) {
         await this._ensureJoined(roomId);
-        return this.client.getStateEvent(roomId, eventType, stateKey);
+        try {
+            return await this.client.getStateEvent(roomId, eventType, stateKey);
+        }
+        catch (ex) {
+            if (ex.errcode !== "M_NOT_FOUND" || !returnNull) {
+                throw ex;
+            }
+        }
+        return null;
     }
 
     /**
@@ -862,13 +886,16 @@ export class Intent {
         // eslint-disable-next-line camelcase
         room_id: string
     }) {
-        if (!this._membershipStates || !this._powerLevels) {
-            return;
-        }
         if (event.state_key === undefined) {
             // We MUST operate on state events exclusively
             return;
         }
+        // Invalidate the state cache if anything changes in the state.
+        this._requestCaches.roomstate.invalidate(event.room_id);
+        if (!this._membershipStates || !this._powerLevels) {
+            return;
+        }
+
         if (event.type === "m.room.member" &&
                 event.state_key === this.userId &&
                 event.content.membership) {

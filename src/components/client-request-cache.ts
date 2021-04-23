@@ -38,6 +38,10 @@ export class ClientRequestCache<T, P extends Array<unknown>> {
         }
     }
 
+    invalidate(key: string) {
+        this.requestContent.delete(key);
+    }
+
     /**
      * Gets a result of a request from the cache, or otherwise
      * tries to fetch the the result with this.requestFunc

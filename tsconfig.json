@@ -23,11 +23,9 @@
     "app.js"
   ],
   "typedocOptions": {
-    "mode": "library",
     "out": ".typedoc",
-    "entryPoint": "index",
+    "entryPoints": ["src/index.ts"],
     "excludePrivate": true,
-    "excludeNotExported": true,
     "exclude": ["**/index.ts"]
   }
 }

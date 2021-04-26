@@ -51,6 +51,7 @@ import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
 import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
+import { DebugAPI, DebugApiOpts } from "./components/debug-api";
 
 const log = logging.get("bridge");
 
@@ -250,6 +251,8 @@ export interface BridgeOpts {
         homeserverUrl: string;
         store: ClientEncryptionStore;
     };
+
+    debugApi?: DebugApiOpts;
 }
 
 interface VettedBridgeOpts {
@@ -382,6 +385,11 @@ interface VettedBridgeOpts {
         homeserverUrl: string;
         store: ClientEncryptionStore;
     };
+
+    /**
+     * A optional debug API for bridges.
+     */
+    debugApi?: DebugApiOpts;
 }
 
 export class Bridge {
@@ -408,6 +416,7 @@ export class Bridge {
     private registration?: AppServiceRegistration;
     private appservice?: AppService;
     private eeEventBroker?: EncryptedEventBroker;
+    public readonly debugApi?: DebugAPI;
     private selfPingDeferred?: {
         defer: Defer<void>;
         roomId: string;
@@ -447,6 +456,9 @@ export class Bridge {
         if (typeof opts.controller.onEvent !== "function") {
             throw new Error("controller.onEvent is a required function");
         }
+
+
+        this.debugApi = opts.debugApi ? new DebugAPI(opts.debugApi) : undefined;
 
         this.opts = {
             ...opts,
@@ -556,6 +568,10 @@ export class Bridge {
         }
         else {
             this.registration = this.opts.registration;
+        }
+
+        if (this.debugApi) {
+            await this.debugApi.start();
         }
 
         const asToken = this.registration.getAppServiceToken();
@@ -1476,7 +1492,6 @@ export class Bridge {
             this.eeEventBroker.close();
         }
     }
-
 
     public async checkHomeserverSupport() {
         if (!this.botClient) {

@@ -1,0 +1,1 @@
+Add `DebugAPI` HTTP component

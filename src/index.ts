@@ -24,6 +24,8 @@ export * from "./components/intent";
 export * from "./components/app-service-bot";
 export * from "./components/state-lookup";
 
+export * from "./components/debug-api";
+
 // Config and CLI
 export * from "./components/cli";
 export * from "./components/config-validator";

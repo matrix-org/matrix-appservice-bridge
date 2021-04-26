@@ -1,0 +1,1 @@
+The `master` branch for `https://github.com/matrix-org/matrix-appservice-bridge` has been deleted. Projects should use the latest release/tag if currently depending on `master`. `develop` will continue to serve as the bleeding edge.

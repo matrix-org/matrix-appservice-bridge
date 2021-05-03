@@ -1,1 +1,0 @@
-Use `type=m.login.application` when registering appservice users, to comply with the spec.

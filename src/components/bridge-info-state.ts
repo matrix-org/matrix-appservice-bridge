@@ -31,7 +31,7 @@ export interface MappingInfo {
     };
 }
 
-export interface MSC2364Content extends MappingInfo {
+export interface MSC2346Content extends MappingInfo {
     bridgebot: string;
 }
 
@@ -80,7 +80,7 @@ export class BridgeInfoStateSyncer<BridgeMappingInfo> {
             const key = this.createStateKey(realMapping);
             const content = this.createBridgeInfoContent(realMapping);
             try {
-                const eventData: MSC2364Content|null = await intent.getStateEvent(
+                const eventData: MSC2346Content|null = await intent.getStateEvent(
                     roomId, BridgeInfoStateSyncer.EventType, key, true
                 );
                 if (eventData !== null) { // If found, validate.
@@ -124,8 +124,8 @@ export class BridgeInfoStateSyncer<BridgeMappingInfo> {
     }
 
     public createBridgeInfoContent(mapping: MappingInfo)
-    : MSC2364Content {
-        const content: MSC2364Content = {
+    : MSC2346Content {
+        const content: MSC2346Content = {
             bridgebot: this.bridge.botUserId,
             protocol: mapping.protocol,
             channel: mapping.channel,

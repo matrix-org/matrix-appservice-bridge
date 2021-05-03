@@ -1,1 +1,0 @@
-Add the `BridgeInfoStateSyncer` helper component to sync MSC2346 format state events to rooms.

@@ -399,7 +399,6 @@ export class Bridge {
     private botIntent?: Intent;
     private appServiceBot?: AppServiceBot;
     private clientFactory?: ClientFactory;
-    private botClient?: any;
     private metrics?: PrometheusMetrics;
     private roomLinkValidator?: RoomLinkValidator;
     private roomUpgradeHandler?: RoomUpgradeHandler;

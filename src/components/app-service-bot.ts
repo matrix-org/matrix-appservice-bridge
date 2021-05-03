@@ -58,7 +58,7 @@ export class AppServiceBot {
      * @return Resolves to a list of room IDs.
      */
     public async getJoinedRooms(): Promise<string[]> {
-        return (await this.client.getJoinedRooms()).joined_rooms || [];
+        return await this.client.getJoinedRooms();
     }
 
     /**
@@ -67,13 +67,9 @@ export class AppServiceBot {
      * @param roomId The room to get a list of joined user IDs in.
      * @return Resolves to a map of user ID => display_name avatar_url
      */
-    public async getJoinedMembers(roomId: string) {
+    public async getJoinedMembers(roomId: string, includeProfile = true) {
         // eslint-disable-next-line camelcase
-        const res: {joined: Record<string, {display_name: string, avatar_url: string}>}
-            = await this.client.getJoinedRoomMembers(roomId);
-        if (!res.joined) {
-            return {};
-        }
+        const res = await this.client.getJoinedRoomMembers(roomId);
         for (const [member, p] of Object.entries(res.joined)) {
             if (this.isRemoteUser(member)) {
                 const profile: UserProfile = {};

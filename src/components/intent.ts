@@ -26,7 +26,7 @@ import BridgeErrorReason = unstable.BridgeErrorReason;
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
 import { ReadStream } from "fs";
-import BotSdk, { MatrixClient, MatrixProfileInfo, MemoryStorageProvider, PresenceState } from "matrix-bot-sdk";
+import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
 
 const log = Logging.get("Intent");
 
@@ -133,13 +133,10 @@ export class Intent {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private legacyClient?: any;
 
-    // This client is used exclusively for E2E requests.
-    private e2eClient?: MatrixClient;
-
     /**
     * Create an entity which can fulfil the intent of a given user.
     * @constructor
-    * @param client The bot sdk intent which this intent wraps
+    * @param botSdkIntent The bot sdk intent which this intent wraps
     * fulfilled e.g. the entity joining the room when you call intent.join(roomId).
     * @param botClient The client instance for the AS bot itself.
     * This will be used to perform more priveleged actions such as creating new
@@ -180,6 +177,7 @@ export class Intent {
     *
     * @param opts.caching.ttl How long requests can stay in the cache, in milliseconds.
     * @param opts.caching.size How many entries should be kept in the cache, before the oldest is dropped.
+    * @param opts.getJsSdkClient Create a Matrix JS SDK client on demand for legacy code.
     */
     constructor(
         public readonly botSdkIntent: BotSdk.Intent,
@@ -1107,9 +1105,10 @@ export class Intent {
                     "edit the client's power level."
                 );
             }
+            // TODO: This might be inefficent.
             // update the client's power level first
-            await this.botClient.setPowerLevel(
-                roomId, userId, requiredLevel, powerLevelEvent
+            await this.botSdkIntent.underlyingClient.setUserPowerLevel(
+                userId, roomId, requiredLevel,
             );
             // tweak the level for the client to reflect the new reality
             const userLevels = powerLevelEvent.getContent().users || {};
@@ -1190,12 +1189,11 @@ export class Intent {
         let session = await this.encryption.sessionPromise;
         if (session) {
             log.debug("ensureRegistered: Existing enc session, reusing");
-            const memoryProvider = new MemoryStorageProvider();
             // We have existing credentials, set them on the client and run away.
-            memoryProvider.setSyncToken(session.syncToken);
-            this.e2eClient = new MatrixClient(
-                this.botClient.homeserverUrl, session.accessToken, memoryProvider
-            );
+            // We need to overwrite the access token here.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (this.botSdkIntent.underlyingClient as any).accessToken = session.accessToken;
+            this.botSdkIntent.underlyingClient.storageProvider.setSyncToken(session.syncToken);
         }
         else {
             this.readyPromise = (async () => {

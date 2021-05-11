@@ -51,7 +51,7 @@ import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
 import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
-import BotSDK from "matrix-bot-sdk";
+import * as BotSDK from "matrix-bot-sdk";
 
 const log = logging.get("bridge");
 
@@ -564,6 +564,7 @@ export class Bridge {
             throw Error('No AS token provided, cannot create ClientFactory');
         }
         const rawReg = this.registration.getOutput();
+        console.log("WOOOOFSH:", JSON.stringify(rawReg));
         this.botSdkAS = new BotSDK.Appservice({
             registration: {
                 ...rawReg,
@@ -593,10 +594,9 @@ export class Bridge {
         this.clientFactory.setLogFunction((text, isErr) => {
             this.onLog(text, isErr || false);
         });
-        this.botClient = this.clientFactory.getClientAs();
         await this.checkHomeserverSupport();
         this.appServiceBot = new AppServiceBot(
-            this.botClient, this.botUserId, this.registration, this.membershipCache,
+            this.botSdkAS.botClient, this.botUserId, this.registration, this.membershipCache,
         );
 
         if (this.opts.bridgeEncryption) {
@@ -634,13 +634,17 @@ export class Bridge {
                 )
             );
         }
-        const botIntentOpts: IntentOpts = {
-            registered: true,
-            backingStore: this.intentBackingStore,
-            ...this.opts.intentOptions?.bot, // copy across opts, if defined
-        };
 
-        this.botIntent = new Intent(this.botClient, this.botClient, botIntentOpts);
+        this.botIntent = new Intent(
+            this.botSdkAS.botIntent,
+            this.botSdkAS.botClient,
+            {
+                registered: true,
+                backingStore: this.intentBackingStore,
+                getJsSdkClient: () => this.clientFactory?.getClientAs(),
+                ...this.opts.intentOptions?.bot, // copy across opts, if defined
+            }
+        );
 
         this.setupIntentCulling();
 
@@ -1189,12 +1193,15 @@ export class Bridge {
         let roomId = provisionedRoom.roomId;
         // If they didn't pass an existing `roomId` back,
         // we expect some `creationOpts` to create a new room
-        if (!roomId) {
-            // eslint-disable-next-line camelcase
-            const createRoomResponse: {room_id: string} = await this.botSdkAS?.botClient.createRoom(
+        if (roomId === undefined) {
+            roomId = await this.botSdkAS?.botClient.createRoom(
                 provisionedRoom.creationOpts
             );
-            roomId = createRoomResponse.room_id;
+        }
+
+        if (!roomId) {
+            // In theory this should never be called, but typescript isn't happy.
+            throw Error('Expected roomId to be defined');
         }
 
         if (!this.opts.disableStores) {
@@ -1507,13 +1514,14 @@ export class Bridge {
 
 
     public async checkHomeserverSupport() {
-        if (!this.botClient) {
-            throw Error("botClient isn't ready yet");
+        if (!this.botSdkAS) {
+            throw Error("botSdkAS isn't ready yet");
         }
         // Min required version
         if (this.opts.bridgeEncryption) {
             // Ensure that we have support for /login
-            const loginFlows: {flows: {type: string}[]} = await this.botClient.loginFlows();
+            const loginFlows: {flows: {type: string}[]} =
+                await this.botSdkAS.botClient.doRequest("GET", "/_matrix/client/r0/login");
             if (!EncryptedEventBroker.supportsLoginFlow(loginFlows)) {
                 throw Error('To enable support for encryption, your homeserver must support MSC2666');
             }
@@ -1530,7 +1538,7 @@ export class Bridge {
      */
     public async pingAppserviceRoute(roomId: string, timeoutMs = BRIDGE_PING_TIMEOUT_MS) {
         if (!this.botIntent) {
-            throw Error("botClient isn't ready yet");
+            throw Error("botIntent isn't ready yet");
         }
         const sentTs = Date.now();
         if (this.selfPingDeferred) {

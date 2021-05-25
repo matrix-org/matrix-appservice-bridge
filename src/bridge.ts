@@ -564,7 +564,6 @@ export class Bridge {
             throw Error('No AS token provided, cannot create ClientFactory');
         }
         const rawReg = this.registration.getOutput();
-        console.log("WOOOOFSH:", JSON.stringify(rawReg));
         this.botSdkAS = new BotSDK.Appservice({
             registration: {
                 ...rawReg,
@@ -1138,7 +1137,7 @@ export class Bridge {
         if (!this.botSdkAS) {
             throw Error('Cannot call getIntent before calling .run()');
         }
-        const intent = this.botSdkAS.getIntent(matrixUser.localpart);
+        const intent = this.getIntentFromLocalpart(matrixUser.localpart);
         await intent.ensureRegistered();
 
         if (!this.opts.disableStores) {
@@ -1151,10 +1150,10 @@ export class Bridge {
             }
         }
         if (provisionedUser?.name) {
-            await intent.underlyingClient.setDisplayName(provisionedUser.name);
+            await intent.setDisplayName(provisionedUser.name);
         }
         if (provisionedUser?.url) {
-            await intent.underlyingClient.setAvatarUrl(provisionedUser.url);
+            await intent.setAvatarUrl(provisionedUser.url);
         }
     }
 

@@ -14,10 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import JsSdk from "matrix-js-sdk";
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const { MatrixEvent, RoomMember } = JsSdk as any;
 import { ClientRequestCache } from "./client-request-cache";
 import { defer } from "../utils/promiseutil";
 import { UserMembership } from "./membership-cache";
@@ -26,7 +23,7 @@ import BridgeErrorReason = unstable.BridgeErrorReason;
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
 import { ReadStream } from "fs";
-import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
+import BotSdk, { MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
 
 const log = Logging.get("Intent");
 
@@ -324,10 +321,9 @@ export class Intent {
      * @returns The Matrix event ID.
      */
     public async setRoomName(roomId: string, name: string): Promise<{event_id: string}> {
-        const eventId = await this.botSdkIntent.underlyingClient.sendStateEvent(roomId, "m.room.name", "", {
+        return this.sendStateEvent(roomId, "m.room.name", "", {
             name: name
         });
-        return {event_id: eventId};
     }
 
     /**
@@ -340,10 +336,9 @@ export class Intent {
      * @param topic The room topic.
      */
     public async setRoomTopic(roomId: string, topic: string): Promise<{event_id: string}> {
-        const eventId = await this.botSdkIntent.underlyingClient.sendStateEvent(roomId, "m.room.topic", "", {
+        return this.sendStateEvent(roomId, "m.room.topic", "", {
             topic: topic
         });
-        return {event_id: eventId};
     }
 
     /**
@@ -357,11 +352,10 @@ export class Intent {
      * @param info Extra information about the image. See m.room.avatar for details.
      */
     public setRoomAvatar(roomId: string, avatar: string, info?: string): Promise<{event_id: string}> {
-        const content = {
+        return this.sendStateEvent(roomId, "m.room.avatar", "", {
             info,
             url: avatar,
-        };
-        return this.sendStateEvent(roomId, "m.room.avatar", "", content);
+        });
     }
 
     /**
@@ -481,9 +475,19 @@ export class Intent {
     public async sendStateEvent(roomId: string, type: string, skey: string, content: Record<string, unknown>
         // eslint-disable-next-line camelcase
         ): Promise<{event_id: string}> {
-        await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, type, true);
         return this._joinGuard(roomId, async() => {
+            try {
+                return {
+                    // eslint-disable-next-line camelcase
+                    event_id:  await this.botSdkIntent.underlyingClient.sendStateEvent(roomId, type, skey, content),
+                }
+            }
+            catch (ex) {
+                if (ex.errcode !== "M_FORBIDDEN") {
+                    throw ex;
+                }
+            }
+            await this._ensureHasPowerLevelFor(roomId, type, true);
             return {
                 // eslint-disable-next-line camelcase
                 event_id: await this.botSdkIntent.underlyingClient.sendStateEvent(roomId, type, skey, content)
@@ -965,30 +969,32 @@ export class Intent {
     private async _ensureJoined(
         roomIdOrAlias: string, ignoreCache = false, viaServers?: string[], passthroughError = false
     ): Promise<string> {
-        const isRoomId = roomIdOrAlias.startsWith("!");
         const opts: { viaServers?: string[] } = { };
         if (viaServers) {
             opts.viaServers = viaServers;
         }
-        if (isRoomId && this.opts.backingStore.getMembership(roomIdOrAlias, this.userId) === "join" && !ignoreCache) {
-            return roomIdOrAlias;
+        // Resolve the alias
+        const roomId = await this.botClient.resolveRoom(roomIdOrAlias);
+
+        if (!ignoreCache && this.opts.backingStore.getMembership(roomId, this.userId) === "join") {
+            return roomId;
         }
 
         /* Logic:
-        if client /join:
-        SUCCESS
-        else if bot /invite client:
-        if client /join:
-            SUCCESS
-        else:
-            FAIL (client couldn't join)
-        else if bot /join:
-        if bot /invite client and client /join:
-            SUCCESS
-        else:
-            FAIL (bot couldn't invite)
-        else:
-        FAIL (bot can't get into the room)
+            if client /join:
+                SUCCESS
+            else if bot /invite client:
+                if client /join:
+                    SUCCESS
+                else:
+                    FAIL (client couldn't join)
+            else if bot /join:
+                if bot /invite client and client /join:
+                    SUCCESS
+                else:
+                    FAIL (bot couldn't invite)
+            else:
+                FAIL (bot can't get into the room)
         */
 
         const deferredPromise = defer<string>();
@@ -1005,13 +1011,11 @@ export class Intent {
         try {
             await this.ensureRegistered();
             if (dontJoin) {
-                // XXX: Should we return the passed in parameter if we didn't join, or empty?
-                deferredPromise.resolve(roomIdOrAlias);
+                deferredPromise.resolve(roomId);
                 return deferredPromise.promise;
             }
             try {
-                // eslint-disable-next-line camelcase
-                const roomId = await this.botSdkIntent.underlyingClient.joinRoom(roomIdOrAlias, opts.viaServers);
+                await this.botSdkIntent.underlyingClient.joinRoom(roomId, opts.viaServers);
                 mark(roomId, "join");
             }
             catch (ex) {
@@ -1019,19 +1023,16 @@ export class Intent {
                     throw ex;
                 }
                 try {
-                    if (!isRoomId) {
-                        throw Error("Can't invite via an alias");
-                    }
                     // Try bot inviting client
                     await this.botClient.inviteUser(this.userId, roomIdOrAlias);
-                    const roomId = await this.botClient.joinRoom(roomIdOrAlias, opts.viaServers);
+                    await this.botClient.joinRoom(roomId, opts.viaServers);
                     mark(roomId, "join");
                 }
                 catch (_ex) {
                     // Try bot joining
-                    const roomId = await this.botClient.joinRoom(roomIdOrAlias, opts.viaServers);
+                    await this.botClient.joinRoom(roomId, opts.viaServers);
                     await this.botClient.inviteUser(this.userId, roomId);
-                    await this.botSdkIntent.underlyingClient.joinRoom(roomIdOrAlias, opts.viaServers);
+                    await this.botSdkIntent.underlyingClient.joinRoom(roomId, opts.viaServers);
                     mark(roomId, "join");
                 }
             }
@@ -1059,63 +1060,67 @@ export class Intent {
             || await this.botSdkIntent.underlyingClient.getRoomStateEvent(roomId, "m.room.power_levels", "");
         const eventContent: PowerLevelContent = plContent && typeof plContent === "object" ? plContent : {};
         this.opts.backingStore.setPowerLevelContent(roomId, eventContent);
-        const event = {
-            content: typeof eventContent === "object" ? eventContent : {},
-            room_id: roomId,
-            sender: "",
-            event_id: "_",
-            state_key: "",
-            type: "m.room.power_levels"
+
+        // Borrowed from https://github.com/turt2live/matrix-bot-sdk/blob/master/src/MatrixClient.ts#L1147
+        // We're using our own version for caching.
+        let requiredPower: number = isState ? 50 : 0;
+        if (isState && typeof eventContent.state_default === "number") {
+            requiredPower = eventContent.state_default
         }
-        const powerLevelEvent = new MatrixEvent(event);
-        // What level do we need for this event type?
-        const defaultLevel = isState
-            ? event.content.state_default
-            : event.content.events_default;
-        const requiredLevel = returnFirstNumber(
-            // If these are invalid or not provided, default to 0 according to the Spec.
-            // https://matrix.org/docs/spec/client_server/r0.6.0#m-room-power-levels
-            (event.content.events && event.content.events[eventType]),
-            defaultLevel,
-            0
-        );
+        if (!isState && typeof eventContent.users_default === "number") {
+            requiredPower = eventContent.users_default;
+        }
+        if (typeof eventContent.events?.[eventType] === "number") {
+            requiredPower = eventContent.events[eventType] as number;
+        }
 
+        let userPower = 0;
+        if (typeof eventContent.users?.[userId] === "number") {
+            userPower = eventContent.users[userId] as number;
+        }
+        console.log("A", requiredPower, userPower);
+        if (requiredPower > userPower) {
+            console.log("EEG");
+            console.log("FOO", this.botClient.getUserId);
+            const botUserId = await this.botClient.getUserId();
+            console.log("B", botUserId);
+            let botPower = 0;
+            if (typeof eventContent.users?.[botUserId] === "number") {
+                botPower = eventContent.users[botUserId] as number;
+            }
 
-        // Parse out what level the client has by abusing the JS SDK
-        const roomMember = new RoomMember(roomId, userId);
-        roomMember.setPowerLevelEvent(powerLevelEvent);
+            let requiredPowerPowerLevels = 50;
+            if (typeof eventContent.state_default === "number") {
+                requiredPowerPowerLevels = eventContent.state_default
+            }
+            if (typeof eventContent.events?.[eventType] === "number") {
+                requiredPower = eventContent.events[eventType] as number;
+            }
+            console.log("C");
 
-        if (requiredLevel > roomMember.powerLevel) {
-            // can the bot update our power level?
-            const bot = new RoomMember(roomId, this.userId);
-            bot.setPowerLevelEvent(powerLevelEvent);
-            const levelRequiredToModifyPowerLevels = returnFirstNumber(
-                // If these are invalid or not provided, default to 0 according to the Spec.
-                // https://matrix.org/docs/spec/client_server/r0.6.0#m-room-power-levels
-                event.content.events && event.content.events["m.room.power_levels"],
-                event.content.state_default,
-                0
-            );
-            if (levelRequiredToModifyPowerLevels > bot.powerLevel) {
+            if (requiredPowerPowerLevels > botPower) {
+                console.log("D", eventType, requiredPowerPowerLevels > botPower);
                 // even the bot has no power here.. give up.
                 throw new Error(
-                    "Cannot ensure client has power level for event " + eventType +
-                    " : client has " + roomMember.powerLevel + " and we require " +
-                    requiredLevel + " and the bot doesn't have permission to " +
-                    "edit the client's power level."
+                    `Cannot ensure client has power level for event ${eventType} ` +
+                    `: client has ${userPower} and we require ` +
+                    `${requiredPower} and the bot doesn't have permission to ` +
+                    `edit the client's power level.`
                 );
             }
             // TODO: This might be inefficent.
             // update the client's power level first
-            await this.botSdkIntent.underlyingClient.setUserPowerLevel(
-                userId, roomId, requiredLevel,
+            await this.botClient.setUserPowerLevel(
+                userId, roomId, requiredPower
             );
             // tweak the level for the client to reflect the new reality
-            const userLevels = powerLevelEvent.getContent().users || {};
-            userLevels[userId] = requiredLevel;
-            powerLevelEvent.getContent().users = userLevels;
+            eventContent.users = {
+                ...eventContent.users,
+                [userId]: requiredPower,
+            };
         }
-        return powerLevelEvent;
+        console.log("OK");
+        return eventContent;
     }
 
     private async loginForEncryptedClient() {

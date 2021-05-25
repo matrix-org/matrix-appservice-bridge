@@ -1,7 +1,6 @@
 "use strict";
 const Datastore = require("nedb");
 const fs = require("fs");
-const log = require("../log");
 
 const HS_URL = "http://example.com";
 const HS_DOMAIN = "example.com";
@@ -22,26 +21,21 @@ const {Bridge, BRIDGE_PING_EVENT_TYPE, BRIDGE_PING_TIMEOUT_MS} = require("../.."
 const deferPromise = require("../../lib/utils/promiseutil").defer;
 
 describe("Bridge", function() {
-    var bridge, bridgeCtrl, appService, clientFactory, appServiceRegistration;
-    var roomStore, userStore, clients;
+    let bridge, bridgeCtrl, appService, clientFactory, appServiceRegistration, intents;
+    let roomStore, userStore, clients;
 
-    beforeEach(
-    /** @this */
-    function(done) {
-        log.beforeEach(this);
+    beforeEach(async function() {
         // Setup mock client factory to avoid making real outbound HTTP conns
-        clients = {};
         clientFactory = jasmine.createSpyObj("ClientFactory", [
             "setLogFunction", "getClientAs", "configure"
         ]);
-        clientFactory.getClientAs.and.callFake(function(uid, req) {
-            return clients[
-                (uid ? uid : "bot") + (req ? req.getId() : "")] || {uid};
+        botSdk = jasmine.createSpyObj("ClientFactory", [
+            "setLogFunction", "getClientAs", "configure"
+        ]);
+        clientFactory.getClientAs.and.callFake(function() {
+            // We shouldn't need this for any of these
+            throw Error('Not able to fetch legacy client');
         });
-        clients["bot"] = mkMockMatrixClient(
-            "@" + BOT_LOCALPART + ":" + HS_DOMAIN
-        );
-
         // Setup mock AppService to avoid listening on a real port
         appService = jasmine.createSpyObj("AppService", [
             "onAliasQuery", "onUserQuery", "listen", "on"
@@ -81,7 +75,7 @@ describe("Bridge", function() {
 
         function loadDatabase(path, Cls) {
             const defer = deferPromise();
-            var db = new Datastore({
+            const db = new Datastore({
                 filename: path,
                 autoload: true,
                 onload: function(err) {
@@ -95,25 +89,22 @@ describe("Bridge", function() {
             return defer.promise;
         }
 
-        Promise.all([
-            loadDatabase(TEST_USER_DB_PATH, UserBridgeStore),
-            loadDatabase(TEST_ROOM_DB_PATH, RoomBridgeStore)
-        ]).then(([userDb, roomDb]) => {
-            userStore = userDb;
-            roomStore = roomDb;
-            bridge = new Bridge({
-                homeserverUrl: HS_URL,
-                domain: HS_DOMAIN,
-                registration: appServiceRegistration,
-                userStore: userDb,
-                roomStore: roomDb,
-                controller: bridgeCtrl,
-                clientFactory: clientFactory
-            });
-            return bridge.loadDatabases();
-        }).then(() => {
-            done();
+        userStore = await loadDatabase(TEST_USER_DB_PATH, UserBridgeStore);
+        roomStore = await loadDatabase(TEST_ROOM_DB_PATH, RoomBridgeStore);
+        bridge = new Bridge({
+            homeserverUrl: HS_URL,
+            domain: HS_DOMAIN,
+            registration: appServiceRegistration,
+            userStore,
+            roomStore,
+            controller: bridgeCtrl,
+            clientFactory: clientFactory
         });
+        await bridge.loadDatabases();
+        await bridge.initalise();
+        // Mock the BotSdk Intents
+        // ---
+        intents = bridge.intents;
     });
 
     afterEach(function() {
@@ -133,7 +124,7 @@ describe("Bridge", function() {
 
     describe("onUserQuery", function() {
         it("should invoke the user-supplied onUserQuery function with the right args", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.listen(101, "127.0.0.1", 10, appService);
             try {
                 await appService.onUserQuery("@alice:bar");
             }
@@ -142,28 +133,30 @@ describe("Bridge", function() {
             }
             finally {
                 expect(bridgeCtrl.onUserQuery).toHaveBeenCalled();
-                var call = bridgeCtrl.onUserQuery.calls.argsFor(0);
-                var mxUser = call[0];
+                const [mxUser] = bridgeCtrl.onUserQuery.calls.argsFor(0);
                 expect(mxUser.getId()).toEqual("@alice:bar");
             }
         });
 
         it("should not provision a user if null is returned from the function",
-        async function(done) {
+        async function() {
+            await bridge.listen(101, "127.0.0.1", 10, appService);
             bridgeCtrl.onUserQuery.and.returnValue(null);
             await bridge.run(101, {}, appService);
-            appService.onUserQuery("@alice:bar").catch(function() {}).finally(function() {
-                expect(clients["bot"].register).not.toHaveBeenCalled();
-                done();
-            });
+            try {
+                await appService.onUserQuery("@alice:bar");
+            }
+            catch (ex) {
+                //...
+            }
+            expect(intents.keys()).not.toContain("@alice:bar");
         });
 
         it("should provision the user from the return object", async() => {
             bridgeCtrl.onUserQuery.and.returnValue({});
-            clients["bot"].register.and.returnValue(Promise.resolve({}));
-            await bridge.run(101, {}, appService);
+            await bridge.listen(101, "127.0.0.1", 10, appService);
             await appService.onUserQuery("@alice:bar");
-            expect(clients["bot"].register).toHaveBeenCalledWith("alice");
+            expect(intents.keys()).toContain("@alice:bar");
         });
     });
 
@@ -789,7 +782,7 @@ describe("Bridge", function() {
 });
 
 function mkMockMatrixClient(uid) {
-    var client = jasmine.createSpyObj(
+    const client = jasmine.createSpyObj(
         "MatrixClient", [
             "register", "joinRoom", "credentials", "createRoom", "setDisplayName",
             "setAvatarUrl", "_http"
@@ -797,6 +790,9 @@ function mkMockMatrixClient(uid) {
     );
     // Shim requests to authedRequestWithPrefix to register() if it is
     // directed at /register
+    // client._http.authedRequest.and.callFake(((method, endpoint, qs, body, timeout, raw, contentType, noEncoding) => {
+    //     console.log(method, endpoint, qs, body, timeout, raw, contentType, noEncoding);
+    // });
     client._http.authedRequest = jasmine.createSpy("authedRequest");
     client._http.authedRequest.and.callFake(function(a, method, path, d, data) {
         if (method === "POST" && path === "/register") {

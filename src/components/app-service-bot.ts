@@ -17,6 +17,7 @@ limitations under the License.
 import { AppServiceRegistration } from "matrix-appservice";
 import { MembershipCache, UserProfile } from "./membership-cache";
 import { StateLookupEvent } from "..";
+import { MatrixClient } from "matrix-bot-sdk";
 
 /**
  * Construct an AS bot user which has various helper methods.
@@ -29,7 +30,8 @@ import { StateLookupEvent } from "..";
  */
 export class AppServiceBot {
     private exclusiveUserRegexes: RegExp[];
-    constructor (private client: any, registration: AppServiceRegistration, private memberCache: MembershipCache) {
+    constructor (private client: MatrixClient, private userId: string, registration: AppServiceRegistration,
+        private memberCache: MembershipCache) {
         // yank out the exclusive user ID regex strings
         this.exclusiveUserRegexes = [];
         const regOut = registration.getOutput();
@@ -48,7 +50,7 @@ export class AppServiceBot {
     }
 
     public getUserId(): string {
-        return this.client.credentials.userId;
+        return this.userId;
     }
 
     /**
@@ -56,7 +58,7 @@ export class AppServiceBot {
      * @return Resolves to a list of room IDs.
      */
     public async getJoinedRooms(): Promise<string[]> {
-        return (await this.client.getJoinedRooms()).joined_rooms || [];
+        return await this.client.getJoinedRooms();
     }
 
     /**
@@ -67,11 +69,7 @@ export class AppServiceBot {
      */
     public async getJoinedMembers(roomId: string) {
         // eslint-disable-next-line camelcase
-        const res: {joined: Record<string, {display_name: string, avatar_url: string}>}
-            = await this.client.getJoinedRoomMembers(roomId);
-        if (!res.joined) {
-            return {};
-        }
+        const res = await this.client.getJoinedRoomMembersWithProfiles(roomId);
         for (const [member, p] of Object.entries(res.joined)) {
             if (this.isRemoteUser(member)) {
                 const profile: UserProfile = {};

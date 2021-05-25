@@ -51,6 +51,7 @@ import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
 import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
+import * as BotSDK from "matrix-bot-sdk";
 
 const log = logging.get("bridge");
 
@@ -398,7 +399,6 @@ export class Bridge {
     private botIntent?: Intent;
     private appServiceBot?: AppServiceBot;
     private clientFactory?: ClientFactory;
-    private botClient?: any;
     private metrics?: PrometheusMetrics;
     private roomLinkValidator?: RoomLinkValidator;
     private roomUpgradeHandler?: RoomUpgradeHandler;
@@ -407,6 +407,7 @@ export class Bridge {
     private eventStore?: EventBridgeStore;
     private registration?: AppServiceRegistration;
     private appservice?: AppService;
+    private botSdkAS?: BotSDK.Appservice;
     private eeEventBroker?: EncryptedEventBroker;
     private selfPingDeferred?: {
         defer: Defer<void>;
@@ -562,6 +563,24 @@ export class Bridge {
         if (!asToken) {
             throw Error('No AS token provided, cannot create ClientFactory');
         }
+        const rawReg = this.registration.getOutput();
+        this.botSdkAS = new BotSDK.Appservice({
+            registration: {
+                ...rawReg,
+                url: rawReg.url || undefined,
+                protocols: rawReg.protocols || undefined,
+                namespaces: {
+                    users: rawReg.namespaces?.users || [],
+                    rooms: rawReg.namespaces?.rooms || [],
+                    aliases: rawReg.namespaces?.aliases || [],
+                }
+            },
+            homeserverUrl: this.opts.homeserverUrl,
+            homeserverName: this.opts.domain,
+            // Unused atm.
+            port: 0,
+            bindAddress: "127.0.0.1",
+        });
 
         this.clientFactory = this.opts.clientFactory || new ClientFactory({
             url: this.opts.homeserverUrl,
@@ -574,10 +593,9 @@ export class Bridge {
         this.clientFactory.setLogFunction((text, isErr) => {
             this.onLog(text, isErr || false);
         });
-        this.botClient = this.clientFactory.getClientAs();
         await this.checkHomeserverSupport();
         this.appServiceBot = new AppServiceBot(
-            this.botClient, this.registration, this.membershipCache,
+            this.botSdkAS.botClient, this.botUserId, this.registration, this.membershipCache,
         );
 
         if (this.opts.bridgeEncryption) {
@@ -615,13 +633,17 @@ export class Bridge {
                 )
             );
         }
-        const botIntentOpts: IntentOpts = {
-            registered: true,
-            backingStore: this.intentBackingStore,
-            ...this.opts.intentOptions?.bot, // copy across opts, if defined
-        };
 
-        this.botIntent = new Intent(this.botClient, this.botClient, botIntentOpts);
+        this.botIntent = new Intent(
+            this.botSdkAS.botIntent,
+            this.botSdkAS.botClient,
+            {
+                registered: true,
+                backingStore: this.intentBackingStore,
+                getJsSdkClient: () => this.clientFactory?.getClientAs(),
+                ...this.opts.intentOptions?.bot, // copy across opts, if defined
+            }
+        );
 
         this.setupIntentCulling();
 
@@ -1022,20 +1044,20 @@ export class Bridge {
      * @return The intent instance
      */
     public getIntent(userId?: string, request?: Request<unknown>) {
-        if (!this.clientFactory) {
-            throw Error('Cannot call getIntent before calling .run()');
+        if (!this.appServiceBot || !this.botSdkAS) {
+            throw Error('Cannot call getIntent before calling .initalise()');
         }
         if (!userId) {
             if (!this.botIntent) {
                 // This will be defined when .run is called.
-                throw Error('Cannot call getIntent before calling .run()');
+                throw Error('Cannot call getIntent before calling .initalise()');
             }
             return this.botIntent;
         }
         else if (userId === this.botUserId) {
             if (!this.botIntent) {
                 // This will be defined when .run is called.
-                throw Error('Cannot call getIntent before calling .run()');
+                throw Error('Cannot call getIntent before calling .initalise()');
             }
             return this.botIntent;
         }
@@ -1051,14 +1073,19 @@ export class Bridge {
             return existingIntent.intent;
         }
 
-        const client = this.clientFactory.getClientAs(
-            userId,
-            request,
-            this.opts.bridgeEncryption?.homeserverUrl,
-            !!this.opts.bridgeEncryption,
-        );
         const clientIntentOpts: IntentOpts = {
             backingStore: this.intentBackingStore,
+            getJsSdkClient: () => {
+                if (!this.clientFactory) {
+                    throw Error('clientFactory not ready yet');
+                }
+                return this.clientFactory.getClientAs(
+                    userId,
+                    request,
+                    this.opts.bridgeEncryption?.homeserverUrl,
+                    !!this.opts.bridgeEncryption,
+                )
+            },
             ...this.opts.intentOptions?.clients,
         };
         clientIntentOpts.registered = this.membershipCache.isUserRegistered(userId);
@@ -1068,11 +1095,15 @@ export class Bridge {
                 sessionPromise: encryptionOpts.store.getStoredSession(userId),
                 sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(encryptionOpts.store),
                 ensureClientSyncingCallback: async () => {
-                    return this.eeEventBroker?.startSyncingUser(userId!);
+                    return this.eeEventBroker?.startSyncingUser(userId || this.botUserId);
                 },
             };
         }
-        const intent = new Intent(client, this.botClient, clientIntentOpts);
+        const intent = new Intent(
+            this.botSdkAS.getIntentForUserId(userId),
+            this.botSdkAS.botClient,
+            clientIntentOpts,
+        );
         this.intents.set(key, { intent, lastAccessed: Date.now() });
 
         return intent;
@@ -1103,10 +1134,11 @@ export class Bridge {
         matrixUser: MatrixUser,
         provisionedUser?: {name?: string, url?: string, remote?: RemoteUser}
     ) {
-        if (!this.clientFactory) {
+        if (!this.botSdkAS) {
             throw Error('Cannot call getIntent before calling .run()');
         }
-        await this.botClient.register(matrixUser.localpart);
+        const intent = this.getIntentFromLocalpart(matrixUser.localpart);
+        await intent.ensureRegistered();
 
         if (!this.opts.disableStores) {
             if (!this.userStore) {
@@ -1117,12 +1149,11 @@ export class Bridge {
                 await this.userStore.linkUsers(matrixUser, provisionedUser.remote);
             }
         }
-        const userClient = await this.clientFactory.getClientAs(matrixUser.getId());
         if (provisionedUser?.name) {
-            await userClient.setDisplayName(provisionedUser.name);
+            await intent.setDisplayName(provisionedUser.name);
         }
         if (provisionedUser?.url) {
-            await userClient.setAvatarUrl(provisionedUser.url);
+            await intent.setAvatarUrl(provisionedUser.url);
         }
     }
 
@@ -1161,12 +1192,15 @@ export class Bridge {
         let roomId = provisionedRoom.roomId;
         // If they didn't pass an existing `roomId` back,
         // we expect some `creationOpts` to create a new room
-        if (!roomId) {
-            // eslint-disable-next-line camelcase
-            const createRoomResponse: {room_id: string} = await this.botClient.createRoom(
+        if (roomId === undefined) {
+            roomId = await this.botSdkAS?.botClient.createRoom(
                 provisionedRoom.creationOpts
             );
-            roomId = createRoomResponse.room_id;
+        }
+
+        if (!roomId) {
+            // In theory this should never be called, but typescript isn't happy.
+            throw Error('Expected roomId to be defined');
         }
 
         if (!this.opts.disableStores) {
@@ -1479,13 +1513,14 @@ export class Bridge {
 
 
     public async checkHomeserverSupport() {
-        if (!this.botClient) {
-            throw Error("botClient isn't ready yet");
+        if (!this.botSdkAS) {
+            throw Error("botSdkAS isn't ready yet");
         }
         // Min required version
         if (this.opts.bridgeEncryption) {
             // Ensure that we have support for /login
-            const loginFlows: {flows: {type: string}[]} = await this.botClient.loginFlows();
+            const loginFlows: {flows: {type: string}[]} =
+                await this.botSdkAS.botClient.doRequest("GET", "/_matrix/client/r0/login");
             if (!EncryptedEventBroker.supportsLoginFlow(loginFlows)) {
                 throw Error('To enable support for encryption, your homeserver must support MSC2666');
             }
@@ -1502,7 +1537,7 @@ export class Bridge {
      */
     public async pingAppserviceRoute(roomId: string, timeoutMs = BRIDGE_PING_TIMEOUT_MS) {
         if (!this.botIntent) {
-            throw Error("botClient isn't ready yet");
+            throw Error("botIntent isn't ready yet");
         }
         const sentTs = Date.now();
         if (this.selfPingDeferred) {

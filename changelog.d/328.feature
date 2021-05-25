@@ -1,0 +1,1 @@
+Add support for [MSC3217](https://github.com/matrix-org/matrix-doc/pull/3217) to allow bridges to soft kick users.

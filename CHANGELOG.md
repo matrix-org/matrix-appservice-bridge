@@ -1,3 +1,15 @@
+2.6.1 (2021-06-02)
+==================
+
+This is a important hotfix release to fix an issue where the room upgrade handling would not verify that the new room
+was a precessor of the old room. All bridges making use of the room upgrade handling feature should update.
+
+Bugfixes
+--------
+
+- Fix an issue where the room upgrade handler would not check the `m.room.create` event when traversing an upgrade. ([\#330](https://github.com/matrix-org/matrix-appservice-bridge/issues/330))
+
+
 2.6.0 (2021-03-16)
 ===================
 

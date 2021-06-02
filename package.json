@@ -1,6 +1,6 @@
 {
   "name": "matrix-appservice-bridge",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "Bridging infrastructure for Matrix Application Services",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -52,7 +52,7 @@
     "eslint": "^7.17.0",
     "jasmine": "^3.6.3",
     "nyc": "^15.1.0",
-    "typedoc": "^0.20.4",
+    "typedoc": "^0.20.36",
     "typescript": "^4.1.3",
     "winston-transport": "^4.4.0"
   }

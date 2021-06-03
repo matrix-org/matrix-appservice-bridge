@@ -250,6 +250,19 @@ export interface BridgeOpts {
         homeserverUrl: string;
         store: ClientEncryptionStore;
     };
+
+    eventValidation?: {
+        /**
+         * Should we validate that the sender of an edit matches the parent event.
+         */
+        validateEditSender?: {
+            /**
+             * If the parent edit event could not be found,
+             * should the event be rejected.
+             */
+            allowEventOnLookupFail: boolean;
+        };
+    };
 }
 
 interface VettedBridgeOpts {
@@ -382,6 +395,11 @@ interface VettedBridgeOpts {
         homeserverUrl: string;
         store: ClientEncryptionStore;
     };
+    eventValidation?: {
+        validateEditSender?: {
+            allowEventOnLookupFail: boolean;
+        };
+    };
 }
 
 export class Bridge {
@@ -462,6 +480,11 @@ export class Bridge {
             },
             logRequestOutcome: opts.logRequestOutcome ?? true,
             suppressEcho: opts.suppressEcho ?? true,
+            eventValidation: opts.hasOwnProperty("eventValidation") ? opts.eventValidation : {
+                validateEditSender: {
+                    allowEventOnLookupFail: false
+                }
+            }
         };
 
         this.queue = EventQueue.create(this.opts.queue, this.onConsume.bind(this));
@@ -1195,6 +1218,59 @@ export class Bridge {
         }
     }
 
+    /**
+     * Find a member for a given room. This method will fetch the joined members
+     * from the homeserver if the cache doesn't have it stored.
+     * @param preferBot Should we prefer the bot user over a ghost user
+     * @returns {Promise<string>} The userID of the member.
+     */
+    public async getAnyASMemberInRoom(roomId: string, preferBot = true) {
+        if (!this.registration) {
+            throw Error('Registration must be defined before you can call this');
+        }
+        let members = this.membershipCache.getMembersForRoom(roomId, "join");
+        if (!members) {
+            if (!this.appServiceBot) {
+                throw Error('AS Bot not defined yet');
+            }
+            members = Object.keys(await this.appServiceBot.getJoinedMembers(roomId));
+        }
+        if (preferBot && members?.includes(this.botUserId)) {
+            return this.botUserId;
+        }
+        const reg = this.registration;
+        return members.find((u) => reg.isUserMatch(u, false)) || null;
+    }
+
+    private async validateEditEvent(event: WeakEvent, parentEventId: string, allowEventOnLookupFail: boolean) {
+        try {
+            const roomMember = await this.getAnyASMemberInRoom(event.room_id);
+            if (!roomMember) {
+                throw Error('No member in room, cannot handle edit');
+            }
+            const relatedEvent = await this.getIntent(roomMember).getEvent(
+                event.room_id,
+                parentEventId,
+                true
+            );
+            // Only allow edits from the same sender
+            if (relatedEvent.sender !== event.sender) {
+                log.warn(
+                    `Rejecting ${event.event_id}: Message edit sender did NOT match the original message (${parentEventId})`
+                );
+                return false;
+            }
+        }
+        catch (ex) {
+            if (!allowEventOnLookupFail) {
+                log.warn(`Rejecting ${event.event_id}: Unable to fetch parent event ${parentEventId}`, ex);
+                return false;
+            }
+            log.warn(`Allowing event ${event.event_id}: Unable to fetch parent event ${parentEventId}`, ex);
+        }
+        return true;
+    }
+
     // returns a Promise for the request linked to this event for testing.
     private async onEvent(event: WeakEvent) {
         if (!this.registration) {
@@ -1212,6 +1288,22 @@ export class Bridge {
                 (this.registration.isUserMatch(event.sender, true) ||
                 event.sender === this.botUserId)) {
             return null;
+        }
+
+        // eslint-disable-next-line camelcase
+        const relatesTo = event.content?.['m.relates_to'] as { event_id?: string; rel_type: "m.replace";}|undefined;
+        const editOptions = this.opts.eventValidation?.validateEditSender;
+
+        if (
+            event.type === 'm.room.message' &&
+            relatesTo?.rel_type === 'm.replace' &&
+            relatesTo.event_id &&
+            editOptions
+        ) {
+            // Event rejected.
+            if (!await this.validateEditEvent(event, relatesTo.event_id, editOptions.allowEventOnLookupFail)) {
+                return null;
+            }
         }
 
         if (this.roomUpgradeHandler && this.opts.roomUpgradeOpts && this.appServiceBot) {

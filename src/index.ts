@@ -53,6 +53,8 @@ export { unstable } from "./errors";
 export * from "./components/event-types";
 export * from "./components/bridge-info-state";
 
+export { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
+
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const jsSdk = require("matrix-js-sdk");

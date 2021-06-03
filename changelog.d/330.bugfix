@@ -1,0 +1,1 @@
+Fix an issue where the room upgrade handler would not check the `m.room.create` event when traversing an upgrade.

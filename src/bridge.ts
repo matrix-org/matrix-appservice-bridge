@@ -51,7 +51,7 @@ import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
 import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
-import BotSDK from "matrix-bot-sdk";
+import * as BotSDK from "matrix-bot-sdk";
 
 const log = logging.get("bridge");
 
@@ -1148,7 +1148,7 @@ export class Bridge {
         if (!this.botSdkAS) {
             throw Error('Cannot call getIntent before calling .run()');
         }
-        const intent = this.botSdkAS.getIntent(matrixUser.localpart);
+        const intent = this.getIntentFromLocalpart(matrixUser.localpart);
         await intent.ensureRegistered();
 
         if (!this.opts.disableStores) {
@@ -1161,10 +1161,10 @@ export class Bridge {
             }
         }
         if (provisionedUser?.name) {
-            await intent.underlyingClient.setDisplayName(provisionedUser.name);
+            await intent.setDisplayName(provisionedUser.name);
         }
         if (provisionedUser?.url) {
-            await intent.underlyingClient.setAvatarUrl(provisionedUser.url);
+            await intent.setAvatarUrl(provisionedUser.url);
         }
     }
 
@@ -1203,11 +1203,15 @@ export class Bridge {
         let roomId = provisionedRoom.roomId;
         // If they didn't pass an existing `roomId` back,
         // we expect some `creationOpts` to create a new room
-        if (!roomId) {
-            const createRoomResponse = await this.botIntent.createRoom(
-                {options: provisionedRoom.creationOpts}
+        if (roomId === undefined) {
+            roomId = await this.botSdkAS?.botClient.createRoom(
+                provisionedRoom.creationOpts
             );
-            roomId = createRoomResponse.room_id;
+        }
+
+        if (!roomId) {
+            // In theory this should never be called, but typescript isn't happy.
+            throw Error('Expected roomId to be defined');
         }
 
         if (!this.opts.disableStores) {
@@ -1520,13 +1524,14 @@ export class Bridge {
 
 
     public async checkHomeserverSupport() {
-        if (!this.botIntent) {
-            throw Error("botClient isn't ready yet");
+        if (!this.botSdkAS) {
+            throw Error("botSdkAS isn't ready yet");
         }
         // Min required version
         if (this.opts.bridgeEncryption) {
             // Ensure that we have support for /login
-            const loginFlows: {flows: {type: string}[]} = await this.botIntent.loginFlows();
+            const loginFlows: {flows: {type: string}[]} =
+                await this.botSdkAS.botClient.doRequest("GET", "/_matrix/client/r0/login");
             if (!EncryptedEventBroker.supportsLoginFlow(loginFlows)) {
                 throw Error('To enable support for encryption, your homeserver must support MSC2666');
             }
@@ -1543,7 +1548,7 @@ export class Bridge {
      */
     public async pingAppserviceRoute(roomId: string, timeoutMs = BRIDGE_PING_TIMEOUT_MS) {
         if (!this.botIntent) {
-            throw Error("botClient isn't ready yet");
+            throw Error("botIntent isn't ready yet");
         }
         const sentTs = Date.now();
         if (this.selfPingDeferred) {

@@ -593,10 +593,9 @@ export class Bridge {
         this.clientFactory.setLogFunction((text, isErr) => {
             this.onLog(text, isErr || false);
         });
-        this.botClient = this.clientFactory.getClientAs();
         await this.checkHomeserverSupport();
         this.appServiceBot = new AppServiceBot(
-            this.botClient, this.botUserId, this.registration, this.membershipCache,
+            this.botSdkAS.botClient, this.botUserId, this.registration, this.membershipCache,
         );
 
         if (this.opts.bridgeEncryption) {
@@ -637,10 +636,21 @@ export class Bridge {
         const botIntentOpts: IntentOpts = {
             registered: true,
             backingStore: this.intentBackingStore,
+            getJsSdkClient: () => {
+                if (!this.clientFactory) {
+                    throw Error('clientFactory not ready yet');
+                }
+                return this.clientFactory.getClientAs(
+                    undefined,
+                    undefined,
+                    this.opts.bridgeEncryption?.homeserverUrl,
+                    !!this.opts.bridgeEncryption,
+                )
+            },
             ...this.opts.intentOptions?.bot, // copy across opts, if defined
         };
 
-        this.botIntent = new Intent(this.botClient, this.botClient, botIntentOpts);
+        this.botIntent = new Intent(this.botSdkAS.botIntent, this.botSdkAS.botClient, botIntentOpts);
 
         this.setupIntentCulling();
 
@@ -1072,6 +1082,10 @@ export class Bridge {
 
         const clientIntentOpts: IntentOpts = {
             backingStore: this.intentBackingStore,
+            /**
+             * We still support creating a JS SDK client if the bridge really needs it,
+             * but for memory/performance reasons we only create them on demand.
+             */
             getJsSdkClient: () => {
                 if (!this.clientFactory) {
                     throw Error('clientFactory not ready yet');
@@ -1190,9 +1204,8 @@ export class Bridge {
         // If they didn't pass an existing `roomId` back,
         // we expect some `creationOpts` to create a new room
         if (!roomId) {
-            // eslint-disable-next-line camelcase
-            const createRoomResponse: {room_id: string} = await this.botSdkAS?.botClient.createRoom(
-                provisionedRoom.creationOpts
+            const createRoomResponse = await this.botIntent.createRoom(
+                {options: provisionedRoom.creationOpts}
             );
             roomId = createRoomResponse.room_id;
         }
@@ -1507,13 +1520,13 @@ export class Bridge {
 
 
     public async checkHomeserverSupport() {
-        if (!this.botClient) {
+        if (!this.botIntent) {
             throw Error("botClient isn't ready yet");
         }
         // Min required version
         if (this.opts.bridgeEncryption) {
             // Ensure that we have support for /login
-            const loginFlows: {flows: {type: string}[]} = await this.botClient.loginFlows();
+            const loginFlows: {flows: {type: string}[]} = await this.botIntent.loginFlows();
             if (!EncryptedEventBroker.supportsLoginFlow(loginFlows)) {
                 throw Error('To enable support for encryption, your homeserver must support MSC2666');
             }

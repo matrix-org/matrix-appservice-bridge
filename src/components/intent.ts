@@ -59,7 +59,7 @@ export interface IntentOpts {
 
 export interface RoomCreationOpts {
     createAsClient?: boolean;
-    options: Record<string, unknown>;
+    options?: Record<string, unknown>;
 }
 
 export interface FileUploadOpts {

@@ -1,0 +1,510 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>matrix-appservice-bridge</title>
+	<meta name="description" content="Documentation for matrix-appservice-bridge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="assets/css/main.css">
+	<script async src="assets/js/search.js" id="search-script"></script>
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="assets/js/search.json" data-base=".">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="index.html" class="title">matrix-appservice-bridge</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+							<input type="checkbox" id="tsd-filter-externals" checked />
+							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<h1>matrix-appservice-bridge</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<div class="tsd-panel tsd-typography">
+				<a href="#matrix-application-service-bridging-infrastructure" id="matrix-application-service-bridging-infrastructure" style="color: inherit; text-decoration: none;">
+					<h1>Matrix Application Service Bridging Infrastructure</h1>
+				</a>
+				<p>This library sits on top of the
+					<a href="https://github.com/matrix-org/matrix-appservice-node">core application service library</a>
+					and provides an API for setting up bridges quickly. Check out the
+				<a href="HOWTO.md">HOW-TO</a> for a step-by-step tutorial on setting up a new bridge.</p>
+				<a href="#api" id="api" style="color: inherit; text-decoration: none;">
+					<h1>API</h1>
+				</a>
+				<p>A hosted reference can be found on
+					<a href="http://matrix-org.github.io/matrix-appservice-bridge">GitHub Pages</a>.
+					Alternatively, build the docs using <code>yarn gendoc</code>. Each component&#39;s class
+					constructor is exposed on <code>require(&quot;matrix-appservice-bridge&quot;)</code> so check each
+				class for more information on how to use each component.</p>
+				<a href="#architecture" id="architecture" style="color: inherit; text-decoration: none;">
+					<h1>Architecture</h1>
+				</a>
+				<pre><code><span style="color: #000000"> </span><span style="color: #001080">__________________________</span>
+<span style="color: #000000">|                          |</span>
+<span style="color: #000000">|   </span><span style="color: #001080">Your</span><span style="color: #000000"> </span><span style="color: #001080">bridge</span><span style="color: #000000"> </span><span style="color: #001080">e</span><span style="color: #000000">.</span><span style="color: #001080">g</span><span style="color: #000000">. </span><span style="color: #0070C1">IRC</span><span style="color: #000000">   |</span>
+<span style="color: #000000">|</span><span style="color: #001080">__________________________</span><span style="color: #000000">|</span>
+<span style="color: #000000"> </span><span style="color: #001080">__</span><span style="color: #000000">|</span><span style="color: #001080">___________________</span><span style="color: #000000">|</span><span style="color: #001080">___</span>
+<span style="color: #000000">|                          |</span>
+<span style="color: #000000">| </span><span style="color: #001080">matrix</span><span style="color: #000000">-</span><span style="color: #001080">appservice</span><span style="color: #000000">-</span><span style="color: #001080">bridge</span><span style="color: #000000"> |</span>
+<span style="color: #000000">|</span><span style="color: #001080">__________________________</span><span style="color: #000000">|</span>
+<span style="color: #000000"> </span><span style="color: #001080">__</span><span style="color: #000000">|</span><span style="color: #001080">___________________</span><span style="color: #000000">|</span><span style="color: #001080">___</span>
+<span style="color: #000000">|                          |</span>
+<span style="color: #000000">|    </span><span style="color: #001080">matrix</span><span style="color: #000000">-</span><span style="color: #001080">appservice</span><span style="color: #000000">     |</span>
+<span style="color: #000000">|</span><span style="color: #001080">__________________________</span><span style="color: #000000">|</span>
+
+</code></pre>
+				<p>The bridge relies on <code>matrix-appservice</code> and <code>matrix-js-sdk</code> for their
+					AS API and CS API implementations respectively. The bridge manages state for
+				virtual users and provides many useful helper functions bridges may desire.</p>
+				<a href="#components" id="components" style="color: inherit; text-decoration: none;">
+					<h2>Components</h2>
+				</a>
+				<p>The bridge is formed around &quot;components&quot;. You can pick and choose which
+					components you use, though some components depend upon other components.
+					All components operate on data models defined in the bridge. You can directly
+				construct components: the bridge exposes the class constructor.</p>
+				<a href="#bridgestore" id="bridgestore" style="color: inherit; text-decoration: none;">
+					<h3><code>BridgeStore</code></h3>
+				</a>
+				<p>Provides basic document store (key-value) CRUD operations.</p>
+				<a href="#userbridgestore" id="userbridgestore" style="color: inherit; text-decoration: none;">
+					<h3><code>UserBridgeStore</code></h3>
+				</a>
+				<p>Provides storage for matrix and remote users. Provides CRUD operations and
+				mapping between different types of users.</p>
+				<a href="#roombridgestore" id="roombridgestore" style="color: inherit; text-decoration: none;">
+					<h3><code>RoomBridgeStore</code></h3>
+				</a>
+				<p>Provides storage for matrix and remote rooms. Provides CRUD operations and
+				mapping between different types of rooms.</p>
+				<a href="#eventbridgestore" id="eventbridgestore" style="color: inherit; text-decoration: none;">
+					<h3><code>EventBridgeStore</code></h3>
+				</a>
+				<p>Provides storage for matrix and remote event ids.</p>
+				<a href="#clientfactory" id="clientfactory" style="color: inherit; text-decoration: none;">
+					<h3><code>ClientFactory</code></h3>
+				</a>
+				<p>Provides a method to obtain a JS SDK <code>MatrixClient</code> in the context of a
+					particular <code>user_id</code> and/or <code>Request</code>. This is used to send messages as other
+				users.</p>
+				<a href="#request--requestfactory" id="request--requestfactory" style="color: inherit; text-decoration: none;">
+					<h3><code>Request</code> / <code>RequestFactory</code></h3>
+				</a>
+				<p>An abstraction provided to identify a single request through the bridge.
+					Can be used for request-context logging (each request has a unique ID)
+					and metrics (each request can succeed or fail and has timers for how long
+				they take to go through the bridge).</p>
+				<a href="#intent" id="intent" style="color: inherit; text-decoration: none;">
+					<h3><code>Intent</code></h3>
+				</a>
+				<p>Provides a way to perform Matrix actions by <em>intent</em> rather than by raw
+					API calls. This can be thought of as an extension to the client-server JS SDK.
+					For example, <code>intent.invite(roomId, invitee)</code> would make sure that you are
+					actually joined to the room <code>roomId</code> first (and will automatically join it if
+				you aren&#39;t) before trying to send the invite.</p>
+				<p>Performing actions by <em>intent</em> makes creating bridges a lot easier. For example,
+					if your bridge has no concept of inviting or joining rooms, then you don&#39;t need
+					to care about it either in the bridge. Simply calling
+					<code>intent.sendMessage(roomId, text)</code> would make sure that you are joined to the
+				room first before sending the message.</p>
+				<a href="#configvalidator" id="configvalidator" style="color: inherit; text-decoration: none;">
+					<h3><code>ConfigValidator</code></h3>
+				</a>
+				<p>Provides a way to validate a YAML file when provided with a schema file.
+				Useful for setting your bridge-specific configuration information.</p>
+				<a href="#cli" id="cli" style="color: inherit; text-decoration: none;">
+					<h3><code>Cli</code></h3>
+				</a>
+				<p>Processes command line arguments and runs the <code>Bridge</code>.</p>
+				<a href="#appservicebot" id="appservicebot" style="color: inherit; text-decoration: none;">
+					<h3><code>AppServiceBot</code></h3>
+				</a>
+				<p>A wrapper around the JS SDK <code>MatrixClient</code> designed for use by the application
+					service <em>itself</em>. Contains helper methods to get all rooms the AS is in, how
+				many virtual / real users are in each, etc.</p>
+				<a href="#bridge" id="bridge" style="color: inherit; text-decoration: none;">
+					<h3><code>Bridge</code></h3>
+				</a>
+				<p>The component which orchestrates other components: a &quot;glue&quot; component. Provides
+					a way to start the bridge. This is the component most examples use. Has
+				dependencies on most of the components listed above.</p>
+				<a href="#logging" id="logging" style="color: inherit; text-decoration: none;">
+					<h2><code>Logging</code></h2>
+				</a>
+				<p>This component exposes access to the bridges log reporter. To use, you should
+					install the optional packages <code>winston@3</code>, <code>winston-daily-rotate-file@2</code> and
+					<code>chalk@2</code> to get nice formatted log lines, otherwise it will default to the JS
+					console. To use the component, use <code>Logging.configure(configObject)</code> to setup
+				the logger, which takes the following options:</p>
+				<pre><code class="language-javascript"><span style="color: #000000">{</span>
+<span style="color: #000000">    </span><span style="color: #008000">// A level to set the console reporter to.</span>
+<span style="color: #000000">    console: </span><span style="color: #A31515">&quot;error|warn|info|debug|off&quot;</span><span style="color: #000000">,</span>
+
+<span style="color: #000000">    </span><span style="color: #008000">// Format to append to log files.</span>
+<span style="color: #000000">    fileDatePattern: </span><span style="color: #A31515">&quot;YYYY-MM-DD&quot;</span><span style="color: #000000">,</span>
+
+<span style="color: #000000">    </span><span style="color: #008000">// Format of the timestamp in log files.</span>
+<span style="color: #000000">    timestampFormat: </span><span style="color: #A31515">&quot;MMM-D HH:mm:ss.SSS&quot;</span><span style="color: #000000">,</span>
+
+<span style="color: #000000">    </span><span style="color: #008000">// Log files to emit to, keyed of the minimum level they report.</span>
+<span style="color: #000000">    </span><span style="color: #008000">// You can leave this out, or set it to false to disable files.</span>
+<span style="color: #000000">    files: {</span>
+<span style="color: #000000">        </span><span style="color: #008000">// File paths can be relative or absolute, the date is appended onto the end.</span>
+<span style="color: #000000">        </span><span style="color: #A31515">&quot;abc.log&quot;</span><span style="color: #000000"> </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> </span><span style="color: #A31515">&quot;error|warn|info|debug|off&quot;</span><span style="color: #000000">,</span>
+<span style="color: #000000">    },</span>
+
+<span style="color: #000000">    </span><span style="color: #008000">// The maximum number of files per level before old files get cleaned</span>
+<span style="color: #000000">    </span><span style="color: #008000">// up. Use 0 to disable.</span>
+<span style="color: #000000">    maxFiles: </span><span style="color: #098658">5</span><span style="color: #000000">,</span>
+<span style="color: #000000">}</span>
+</code></pre>
+				<p>You <strong>MUST</strong> configure the logger before anything will be emitted to the console.</p>
+				<p>You can then use <code>const log = Logging.Get(ModuleName)</code> to start logging to the reporter,
+					using the <code>log.error</code>, <code>log.warn</code>, <code>log.info</code> or <code>log.debug</code> functions. Arguments to these functions will
+				automatically be seralized if they aren&#39;t strings.</p>
+				<p>NOTE: <code>opts.controller.onLog</code> will override this, but if not set then the logging
+				transport is used.</p>
+				<a href="#roomlinkvalidator" id="roomlinkvalidator" style="color: inherit; text-decoration: none;">
+					<h2><code>RoomLinkValidator</code></h2>
+				</a>
+				<p>This component validates if a room can be linked to a remote channel based on
+					whether it conflicts with any rules given in a rule file. The filename is given
+					in <code>opts.roomLinkValidation.ruleFile</code> for <code>Bridge</code>, though you may also set the
+					rules as an object instead by setting <code>opts.roomLinkValidation.rules</code>.
+				The format for the file (in YAML) or the object is as follows:</p>
+				<pre><code class="language-javascript"><span style="color: #000000">{</span>
+<span style="color: #000000">    </span><span style="color: #008000">// This rule checks the memberlist of a room to determine if it will let</span>
+<span style="color: #000000">    </span><span style="color: #008000">// the bridge create a link to the room. This is useful for avoiding conflicts</span>
+<span style="color: #000000">    </span><span style="color: #008000">// with other bridges.</span>
+<span style="color: #000000">    </span><span style="color: #A31515">&quot;userIds&quot;</span><span style="color: #000000">: {</span>
+<span style="color: #000000">        </span><span style="color: #008000">// Anyone in this set will be ALWAYS exempt from the conflicts rule.</span>
+<span style="color: #000000">        </span><span style="color: #008000">// Here anyone who&#039;s localpart starts with nice is exempt.</span>
+<span style="color: #000000">        </span><span style="color: #A31515">&quot;exempt&quot;</span><span style="color: #001080">:</span><span style="color: #000000"> [</span><span style="color: #A31515">&quot;@nice+.:example.com&quot;</span><span style="color: #000000">]</span>
+<span style="color: #000000">        </span><span style="color: #008000">// This is a regex that will exclude anyone who has &quot;guy&quot; at the end of their localpart.</span>
+<span style="color: #000000">        </span><span style="color: #008000">// evilbloke is also exempt.</span>
+<span style="color: #000000">        </span><span style="color: #A31515">&quot;conflict&quot;</span><span style="color: #000000">: [</span><span style="color: #A31515">&quot;@+.guy:example.com&quot;</span><span style="color: #000000">, </span><span style="color: #A31515">&quot;@evilbloke:example.com&quot;</span><span style="color: #000000">]</span>
+<span style="color: #000000">    }</span>
+<span style="color: #000000">}</span>
+</code></pre>
+				<p>If you set <code>opts.roomLinkValidation.triggerEndpoint</code> to <code>true</code>, then you may use
+					<code>/_bridge/roomLinkValidator/reload</code> to reload the config from file. This endpoint
+					optionally takes the <code>filename</code> parameter if you want to reload the config from
+				another location.</p>
+				<a href="#roomupgradehandler" id="roomupgradehandler" style="color: inherit; text-decoration: none;">
+					<h2><code>RoomUpgradeHandler</code></h2>
+				</a>
+				<p>This component automatically handles <a href="https://matrix.org/docs/spec/client_server/unstable.html#post-matrix-client-r0-rooms-roomid-upgrade">Room Upgrades</a>
+					by changing all associated room entries to use the new room id as well as leaving
+					and joining ghosts. It can also be hooked into so you can manually adjust entries,
+				or do an action once the upgrade is over.</p>
+				<p>This component is disabled by default but can enabled by simply defining <code>roomUpgradeOpts</code>
+					in the options given to the bridge (simply <code>{}</code> (empty object)). By default, users
+					will be copied on upgrade. Upgrade events will also be consumed by the bridge, and
+				will not be emitted by <code>onEvent</code>. For more information, see the docs.</p>
+				<a href="#data-models" id="data-models" style="color: inherit; text-decoration: none;">
+					<h2>Data Models</h2>
+				</a>
+				<ul>
+					<li><code>MatrixRoom</code> - A representation of a matrix room.</li>
+					<li><code>RemoteRoom</code> - A representation of a third-party room.</li>
+					<li><code>MatrixUser</code> - A representation of a matrix user.</li>
+					<li><code>RemoteUser</code> - A representation of a third-party user.</li>
+				</ul>
+				<a href="#signaling-bridge-errors" id="signaling-bridge-errors" style="color: inherit; text-decoration: none;">
+					<h2>Signaling Bridge Errors</h2>
+				</a>
+				<p><strong>Warning</strong>: This feature is experimental and not part of the matrix specification
+					yet. <a href="https://github.com/matrix-org/matrix-doc/pull/2162">MSC2162</a> is currently ongoing
+					which means that changes will likely happen to the format of the errors. Do not use
+				this in production bridges.</p>
+				<p>This section applies when you are using <code>Bridge</code> and want to notify your users
+				about problems while processing their events.</p>
+				<p>One thing the bridge requires you to do is fulfilling or rejecting the
+					<code>request</code> promise which is handed to you as argument of the
+					<code>controller.onEvent</code> callback. When rejecting the promise, the <code>Error</code> you
+				reject with will indicate to the bridge library how to behave:</p>
+				<ul>
+					<li>On an <code>EventNotHandledError</code> (and all its subtypes) the bridge will declare
+						the event as permanently failed. It will mark it as such by sending a
+						<code>de.nasnotfound.bridge_error</code> room event, which will make clients show an
+					error message to their users.</li>
+					<li>On all other <code>Error</code> types no message is sent to the clients. The bridge
+					still uses the information that the event was handled for queuing purposes.</li>
+				</ul>
+			</div>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class=" ">
+						<a href="modules.html">Exports</a>
+					</li>
+					<li class=" tsd-kind-namespace">
+						<a href="modules/logging.html">Logging</a>
+					</li>
+					<li class=" tsd-kind-namespace">
+						<a href="modules/unstable.html">unstable</a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+					<li class=" tsd-kind-class">
+						<a href="classes/agecounters.html" class="tsd-kind-icon">Age<wbr>Counters</a>
+					</li>
+					<li class=" tsd-kind-class tsd-is-external">
+						<a href="classes/appservice.html" class="tsd-kind-icon">App<wbr>Service</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/appservicebot.html" class="tsd-kind-icon">App<wbr>Service<wbr>Bot</a>
+					</li>
+					<li class=" tsd-kind-class tsd-is-external">
+						<a href="classes/appserviceregistration.html" class="tsd-kind-icon">App<wbr>Service<wbr>Registration</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/bridge.html" class="tsd-kind-icon">Bridge</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/bridgecontext.html" class="tsd-kind-icon">Bridge<wbr>Context</a>
+					</li>
+					<li class=" tsd-kind-class tsd-has-type-parameter">
+						<a href="classes/bridgeinfostatesyncer.html" class="tsd-kind-icon">Bridge<wbr>Info<wbr>State<wbr>Syncer</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/bridgestore.html" class="tsd-kind-icon">Bridge<wbr>Store</a>
+					</li>
+					<li class=" tsd-kind-class tsd-has-type-parameter">
+						<a href="classes/cli.html" class="tsd-kind-icon">Cli</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/clientfactory.html" class="tsd-kind-icon">Client<wbr>Factory</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/configvalidator.html" class="tsd-kind-icon">Config<wbr>Validator</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/encryptedeventbroker.html" class="tsd-kind-icon">Encrypted<wbr>Event<wbr>Broker</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/eventbridgestore.html" class="tsd-kind-icon">Event<wbr>Bridge<wbr>Store</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/intent.html" class="tsd-kind-icon">Intent</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/matrixroom.html" class="tsd-kind-icon">Matrix<wbr>Room</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/matrixuser.html" class="tsd-kind-icon">Matrix<wbr>User</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/membershipcache.html" class="tsd-kind-icon">Membership<wbr>Cache</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/membershipqueue.html" class="tsd-kind-icon">Membership<wbr>Queue</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/prometheusmetrics.html" class="tsd-kind-icon">Prometheus<wbr>Metrics</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/remoteroom.html" class="tsd-kind-icon">Remote<wbr>Room</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/remoteuser.html" class="tsd-kind-icon">Remote<wbr>User</a>
+					</li>
+					<li class=" tsd-kind-class tsd-has-type-parameter">
+						<a href="classes/request.html" class="tsd-kind-icon">Request</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/requestfactory.html" class="tsd-kind-icon">Request<wbr>Factory</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/roombridgestore.html" class="tsd-kind-icon">Room<wbr>Bridge<wbr>Store</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/roombridgestoreentry.html" class="tsd-kind-icon">Room<wbr>Bridge<wbr>Store<wbr>Entry</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/statelookup.html" class="tsd-kind-icon">State<wbr>Lookup</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/storedevent.html" class="tsd-kind-icon">Stored<wbr>Event</a>
+					</li>
+					<li class=" tsd-kind-class">
+						<a href="classes/userbridgestore.html" class="tsd-kind-icon">User<wbr>Bridge<wbr>Store</a>
+					</li>
+					<li class=" tsd-kind-interface tsd-is-external">
+						<a href="interfaces/appserviceoutput.html" class="tsd-kind-icon">App<wbr>Service<wbr>Output</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/bridgecontroller.html" class="tsd-kind-icon">Bridge<wbr>Controller</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/bridgegaugescounts.html" class="tsd-kind-icon">Bridge<wbr>Gauges<wbr>Counts</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/bridgeopts.html" class="tsd-kind-icon">Bridge<wbr>Opts</a>
+					</li>
+					<li class=" tsd-kind-interface tsd-has-type-parameter">
+						<a href="interfaces/cliopts.html" class="tsd-kind-icon">Cli<wbr>Opts</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/clientencryptionsession.html" class="tsd-kind-icon">Client<wbr>Encryption<wbr>Session</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/clientencryptionstore.html" class="tsd-kind-icon">Client<wbr>Encryption<wbr>Store</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/fileuploadopts.html" class="tsd-kind-icon">File<wbr>Upload<wbr>Opts</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/intentopts.html" class="tsd-kind-icon">Intent<wbr>Opts</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/msc2346content.html" class="tsd-kind-icon">MSC2346<wbr>Content</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/mappinginfo.html" class="tsd-kind-icon">Mapping<wbr>Info</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/matrixroomdata.html" class="tsd-kind-icon">Matrix<wbr>Room<wbr>Data</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/membershipqueueopts.html" class="tsd-kind-icon">Membership<wbr>Queue<wbr>Opts</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/presenceevent.html" class="tsd-kind-icon">Presence<wbr>Event</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/readreceiptevent.html" class="tsd-kind-icon">Read<wbr>Receipt<wbr>Event</a>
+					</li>
+					<li class=" tsd-kind-interface tsd-is-external">
+						<a href="interfaces/regexobj.html" class="tsd-kind-icon">Regex<wbr>Obj</a>
+					</li>
+					<li class=" tsd-kind-interface tsd-has-type-parameter">
+						<a href="interfaces/requestopts.html" class="tsd-kind-icon">Request<wbr>Opts</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/roomcreationopts.html" class="tsd-kind-icon">Room<wbr>Creation<wbr>Opts</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/statelookupevent.html" class="tsd-kind-icon">State<wbr>Lookup<wbr>Event</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/storedeventdoc.html" class="tsd-kind-icon">Stored<wbr>Event<wbr>Doc</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/thinrequest.html" class="tsd-kind-icon">Thin<wbr>Request</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/typingevent.html" class="tsd-kind-icon">Typing<wbr>Event</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/weakevent.html" class="tsd-kind-icon">Weak<wbr>Event</a>
+					</li>
+					<li class=" tsd-kind-type-alias">
+						<a href="modules.html#ephemeralevent" class="tsd-kind-icon">Ephemeral<wbr>Event</a>
+					</li>
+					<li class=" tsd-kind-type-alias">
+						<a href="modules.html#intentbackingstore" class="tsd-kind-icon">Intent<wbr>Backing<wbr>Store</a>
+					</li>
+					<li class=" tsd-kind-type-alias">
+						<a href="modules.html#powerlevelcontent" class="tsd-kind-icon">Power<wbr>Level<wbr>Content</a>
+					</li>
+					<li class=" tsd-kind-type-alias">
+						<a href="modules.html#usermembership" class="tsd-kind-icon">User<wbr>Membership</a>
+					</li>
+					<li class=" tsd-kind-type-alias">
+						<a href="modules.html#userprofile" class="tsd-kind-icon">User<wbr>Profile</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="modules.html#appservice_login_type" class="tsd-kind-icon">APPSERVICE_<wbr>LOGIN_<wbr>TYPE</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="modules.html#appservice_register_type" class="tsd-kind-icon">APPSERVICE_<wbr>REGISTER_<wbr>TYPE</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="modules.html#bridge_ping_event_type" class="tsd-kind-icon">BRIDGE_<wbr>PING_<wbr>EVENT_<wbr>TYPE</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="modules.html#bridge_ping_timeout_ms" class="tsd-kind-icon">BRIDGE_<wbr>PING_<wbr>TIMEOUT_<wbr>MS</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="modules.html#contentrepo" class="tsd-kind-icon">Content<wbr>Repo</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="modules.html#default_opts" class="tsd-kind-icon">DEFAULT_<wbr>OPTS</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+			<ul class="tsd-legend">
+				<li class="tsd-kind-constructor tsd-parent-kind-class"><span class="tsd-kind-icon">Constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-class"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class"><span class="tsd-kind-icon">Method</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-interface"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-interface"><span class="tsd-kind-icon">Method</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited method</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static method</span></li>
+			</ul>
+		</div>
+	</div>
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

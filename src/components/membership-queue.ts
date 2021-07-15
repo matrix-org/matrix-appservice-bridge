@@ -20,6 +20,7 @@ interface QueueUserItem {
     req: ThinRequest;
     ts: number;
     ttl: number;
+    unstableMSC3217SoftKick?: boolean;
 }
 
 export interface MembershipQueueOpts {
@@ -160,6 +161,7 @@ export class MembershipQueue {
             type: "join",
             ts: Date.now(),
             ttl: ttl || this.opts.defaultTtlMs,
+            unstableMSC3217SoftKick: false,
         });
     }
 
@@ -189,6 +191,7 @@ export class MembershipQueue {
             type: "leave",
             ts: Date.now(),
             ttl: ttl || this.opts.defaultTtlMs,
+            unstableMSC3217SoftKick: false,
         })
     }
 
@@ -236,7 +239,7 @@ export class MembershipQueue {
                 await intent.join(roomId);
             }
             else if (kickUser) {
-                await intent.kick(roomId, userId, reason);
+                await intent.kick(roomId, userId, reason, item.unstableMSC3217SoftKick);
             }
             else {
                 await intent.leave(roomId, reason);

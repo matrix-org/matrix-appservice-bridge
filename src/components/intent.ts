@@ -521,20 +521,41 @@ export class Intent {
     }
 
     /**
-     * <p>Kick a user from a room.</p>
+     * Kick a user from a room.
+     *
      * This will automatically make the client join the room so they can send the
      * kick if they are not already joined.
+     *
      * @param roomId The room to kick the user from.
      * @param target The target of the kick operation.
      * @param reason Optional. The reason for the kick.
+     * @param unstableMSC3217SoftKick Optional. "Soft" kick the user so that the client
+     * allows them to rejoin gracefully. See https://github.com/matrix-org/matrix-doc/pull/3217 for
+     * details.
      * @return Resolved when kickked, else rejected with an error.
      */
-    public async kick(roomId: string, target: string, reason?: string) {
+    public async kick(roomId: string, target: string, reason?: string, unstableMSC3217SoftKick = false) {
         if (target !== this.userId) {
             // Only ensure joined if we are not also the kicker
             await this._ensureJoined(roomId);
         }
-        return this.client.kick(roomId, target, reason);
+        if (!unstableMSC3217SoftKick) {
+            return this.client.kick(roomId, target, reason);
+        }
+        const content: Record<string, string|boolean> = {
+            membership: "leave",
+            "org.matrix.msc3217.softkick": true,
+        };
+        try {
+            // Try to set the profile info on the event, but do not fail the kick if we can't.
+            const profile = await this.getProfileInfo(target);
+            content.displayname = profile?.displayname;
+            content.avatar_url = profile?.avatar_url;
+        }
+        catch {
+            // Oh well, we tried.
+        }
+        return this.client.sendStateEvent(roomId, "m.room.member", content, target);
     }
 
     /**

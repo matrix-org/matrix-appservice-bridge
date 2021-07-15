@@ -125,6 +125,7 @@ export class Intent {
         ensureClientSyncingCallback: () => Promise<void>;
     };
     private readyPromise?: Promise<unknown>;
+    private readonly debouncedRequests = new Map<string, Promise<unknown>>();
 
     /**
     * Create an entity which can fulfil the intent of a given user.
@@ -863,6 +864,31 @@ export class Intent {
         else if (event.type === "m.room.encryption" && typeof event.content.algorithm === "string") {
             this.encryptedRooms.set(event.room_id, event.content.algorithm);
         }
+    }
+
+    /**
+     * Debounce a request to the intent
+     * @param requestKey A unique key name for the request. E.g. "bridge-channel-id"
+     * @param fnName A function on this object. E.g. "joinRoom"
+     * @param args Args to pass to the function.
+     * @returns A object containing the promise and a function to clear the value.
+     */
+    public debounceRequest<T>(requestKey: string, fnName: keyof Intent, ...args: unknown[])
+        : { promise: Promise<T>, clear?: () => void } {
+        if (fnName === "debounceRequest") {
+            throw Error('Cannot debounce this function');
+        }
+        const key = `${fnName}:${requestKey}`;
+        const existing = this.debouncedRequests.get(key);
+        if (existing) {
+            return { promise: existing as Promise<T> };
+        }
+        const promise = this[fnName](...args);
+        this.debouncedRequests.set(key, promise);
+        return {
+            promise,
+            clear: () => { this.debouncedRequests.delete(key) }
+        };
     }
 
     // Guard a function which returns a promise which may reject if the user is not

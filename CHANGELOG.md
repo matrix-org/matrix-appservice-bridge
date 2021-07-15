@@ -1,3 +1,33 @@
+2.7.0 (2021-07-15)
+==================
+
+Features
+--------
+
+- Export `matrix-appservice` classes and interfaces ([\#317](https://github.com/matrix-org/matrix-appservice-bridge/issues/317))
+- Add `intent.ensureProfile` function. ([\#318](https://github.com/matrix-org/matrix-appservice-bridge/issues/318))
+- Validate that the sender of a message edit matches the original sender. ([\#329](https://github.com/matrix-org/matrix-appservice-bridge/issues/329))
+
+
+Bugfixes
+--------
+
+- Renamed `MSC2364Content` interface to `MSC2346` as the original name was a typo. ([\#322](https://github.com/matrix-org/matrix-appservice-bridge/issues/322))
+
+
+Deprecations and Removals
+-------------------------
+
+- The `master` branch for `https://github.com/matrix-org/matrix-appservice-bridge` has been deleted. Projects should use the latest release/tag if currently depending on `master`. `develop` will continue to serve as the bleeding edge. ([\#320](https://github.com/matrix-org/matrix-appservice-bridge/issues/320))
+
+
+Internal Changes
+----------------
+
+- Use `yarn` for dependency management. ([\#316](https://github.com/matrix-org/matrix-appservice-bridge/issues/316))
+- Update typedoc to `0.20.x` ([\#322](https://github.com/matrix-org/matrix-appservice-bridge/issues/322))
+
+
 2.6.1 (2021-06-02)
 ==================
 

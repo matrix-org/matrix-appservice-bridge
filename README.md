@@ -9,7 +9,7 @@ and provides an API for setting up bridges quickly. Check out the
 
 A hosted reference can be found on
 [GitHub Pages](http://matrix-org.github.io/matrix-appservice-bridge).
-Alternatively, build the docs using `npm run gendoc`. Each component's class
+Alternatively, build the docs using `yarn gendoc`. Each component's class
 constructor is exposed on `require("matrix-appservice-bridge")` so check each
 class for more information on how to use each component.
 

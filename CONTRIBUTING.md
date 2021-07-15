@@ -16,7 +16,7 @@ This project follows "git flow" semantics. In practice, this means:
  - The `develop` branch is where all the new code ends up.
  - When forking the project, fork from `develop` and then write your code.
  - Make sure your new code passes all the code checks (tests and linting). Do this by running
-   `npm run test && npm run lint`.
+   `yarn test && yarn lint`.
  - Create a pull request. If this PR fixes an issue, link to it by referring to its number.
  - PRs from community members must be signed off as per Synapse's [Sign off section](https://github.com/matrix-org/synapse/blob/master/CONTRIBUTING.md#sign-off)
  - Create a changelog entry in `changelog.d`. A changelog filename should be `${GithubPRNumber}.{bugfix|misc|feature|doc|removal}`

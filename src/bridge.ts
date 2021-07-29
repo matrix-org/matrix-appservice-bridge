@@ -434,11 +434,11 @@ export class Bridge {
 
     public readonly opts: VettedBridgeOpts;
 
-    public get appService(): AppService|undefined {
+    public get appService() {
         return this.appservice;
     }
 
-    public get botUserId(): string {
+    public get botUserId() {
         if (!this.registration) {
             throw Error('Registration not defined yet');
         }
@@ -703,12 +703,13 @@ export class Bridge {
      * Run the bridge (start listening). This calls `initalise()` and `listen()`.
      * @deprecated Prefer calling initalise and listen seperately.
      * @param port The port to listen on.
+     * @param config Configuration options. NOT USED
      * @param appServiceInstance The AppService instance to attach to.
      * If not provided, one will be created.
      * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
      * @return A promise resolving when the bridge is ready
      */
-    public async run(port: number, appServiceInstance?: AppService, hostname = "0.0.0.0", backlog = 10) {
+    public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname = "0.0.0.0", backlog = 10) {
         await this.initalise();
         await this.listen(port, hostname, backlog, appServiceInstance);
     }

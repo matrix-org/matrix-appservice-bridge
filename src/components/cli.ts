@@ -25,7 +25,7 @@ import * as logging from "./logging";
 const log = logging.get("cli");
 
 export interface CliOpts<ConfigType extends Record<string, unknown>> {
-    run: (port: number|undefined, registration: AppServiceRegistration|null) => void;
+    run: (port: number|undefined, config: ConfigType|null, registration: AppServiceRegistration|null) => void;
     onConfigChanged?: (config: ConfigType) => void,
     generateRegistration?: (reg: AppServiceRegistration, cb: (finalReg: AppServiceRegistration) => void) => void;
     bridgeConfig?: {
@@ -263,6 +263,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
 
         this.opts.run(
             this.opts.port,
+            this.bridgeConfig,
             AppServiceRegistration.fromObject(yamlObj as AppServiceOutput)
         );
     }

@@ -115,7 +115,7 @@ Then restart your homeserver. Your application service is now registered.
 We need to have a `bridge` to send messages from, so in the `run: function(port, config)` method,
 type the following:
 ```javascript
-run: function(port, config) {
+run: function(port) {
     bridge = new Bridge({
         homeserverUrl: "http://localhost:8008",
         domain: "localhost",
@@ -131,7 +131,7 @@ run: function(port, config) {
         }
     });
     console.log("Matrix-side listening on port %s", port);
-    bridge.run(port, config);
+    bridge.run(port);
 })
 ```
 
@@ -251,7 +251,7 @@ new Cli({
         reg.addRegexPattern("users", "@slack_.*", true);
         callback(reg);
     },
-    run: function(port, config) {
+    run: function(port) {
         bridge = new Bridge({
             homeserverUrl: "http://localhost:8008",
             domain: "localhost",
@@ -287,7 +287,7 @@ new Cli({
             }
         });
         console.log("Matrix-side listening on port %s", port);
-        bridge.run(port, config);
+        bridge.run(port);
     }
 }).run();
 ```

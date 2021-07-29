@@ -38,6 +38,7 @@ export interface CliOpts<ConfigType extends Record<string, unknown>> {
     enableLocalpart?: boolean;
     port?: number;
     noUrl?: boolean;
+    defaultPort?: number;
 }
 
 interface VettedCliOpts<ConfigType extends Record<string, unknown>> {
@@ -52,8 +53,9 @@ interface VettedCliOpts<ConfigType extends Record<string, unknown>> {
     registrationPath: string;
     enableRegistration: boolean;
     enableLocalpart: boolean;
-    port: number;
+    port?: number;
     noUrl?: boolean;
+    defaultPort?: number;
 }
 
 interface CliArgs {
@@ -90,12 +92,18 @@ export class Cli<ConfigType extends Record<string, unknown>> {
             );
         }
 
+        let defaultPort = opts.defaultPort;
+        if (!opts.hasOwnProperty("defaultPort")) {
+            // If this explicity hasn't been set, it's 8090
+            defaultPort = Cli.DEFAULT_PORT
+        }
+
         this.opts = {
             ...opts,
             enableRegistration: typeof opts.enableRegistration === 'boolean' ? opts.enableRegistration : true,
             enableLocalpart: Boolean(opts.enableLocalpart),
             registrationPath: opts.registrationPath || Cli.DEFAULT_FILENAME,
-            port: opts.port || Cli.DEFAULT_PORT,
+            port: opts.port || defaultPort,
         };
     }
     /**

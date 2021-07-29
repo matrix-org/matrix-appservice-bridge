@@ -1,0 +1,1 @@
+The room link validator no longer has a seperate rule file. Bridge developers should maintain their own rules in the config file and call `updateRoomLinkValidatorRules` to update the ruleset on config reload.

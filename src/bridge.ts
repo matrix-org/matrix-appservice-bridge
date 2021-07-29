@@ -239,9 +239,7 @@ export interface BridgeOpts {
      */
     disableContext?: boolean;
     roomLinkValidation?: {
-        ruleFile?: string;
-        rules?: Rules;
-        triggerEndpoint?: boolean;
+        rules: Rules;
     };
     authenticateThirdpartyEndpoints?: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
@@ -385,9 +383,7 @@ interface VettedBridgeOpts {
      */
     disableContext: boolean;
     roomLinkValidation?: {
-        ruleFile?: string;
-        rules?: Rules;
-        triggerEndpoint?: boolean;
+        rules: Rules;
     };
     authenticateThirdpartyEndpoints: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
@@ -719,28 +715,6 @@ export class Bridge {
      */
     private customiseAppservice() {
         this.customiseAppserviceThirdPartyLookup();
-        if (this.opts.roomLinkValidation && this.opts.roomLinkValidation.triggerEndpoint) {
-            this.addAppServicePath({
-                method: "POST",
-                path: "/_bridge/roomLinkValidator/reload",
-                handler: (req, res) => {
-                    try {
-                        // Will use filename if provided, or the config
-                        // one otherwised.
-                        if (this.roomLinkValidator) {
-                            this.roomLinkValidator?.readRuleFile(req.query.filename as string|undefined);
-                            res.status(200).send("Success");
-                        }
-                        else {
-                            res.status(404).send("RoomLinkValidator not in use");
-                        }
-                    }
-                    catch (e) {
-                        res.status(500).send("Failed: " + e);
-                    }
-                },
-            });
-        }
     }
 
     // Set a timer going which will periodically remove Intent objects to prevent
@@ -1256,7 +1230,7 @@ export class Bridge {
             // Only allow edits from the same sender
             if (relatedEvent.sender !== event.sender) {
                 log.warn(
-                    `Rejecting ${event.event_id}: Message edit sender did NOT match the original message (${parentEventId})`
+                `Rejecting ${event.event_id}: Message edit sender did NOT match the original message (${parentEventId})`
                 );
                 return false;
             }
@@ -1613,6 +1587,10 @@ export class Bridge {
         await this.selfPingDeferred.defer.promise;
         clearTimeout(this.selfPingDeferred.timeout);
         return Date.now() - sentTs;
+    }
+
+    public updateRoomLinkValidatorRules(rules: Rules): void {
+        this.roomLinkValidator?.updateRules(rules);
     }
 
 }

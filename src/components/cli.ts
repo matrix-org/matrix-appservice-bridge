@@ -25,7 +25,7 @@ import * as logging from "./logging";
 const log = logging.get("cli");
 
 export interface CliOpts<ConfigType extends Record<string, unknown>> {
-    run: (port: number, config: ConfigType|null, registration: AppServiceRegistration|null) => void;
+    run: (port: number|undefined, registration: AppServiceRegistration|null) => void;
     onConfigChanged?: (config: ConfigType) => void,
     generateRegistration?: (reg: AppServiceRegistration, cb: (finalReg: AppServiceRegistration) => void) => void;
     bridgeConfig?: {
@@ -41,21 +41,10 @@ export interface CliOpts<ConfigType extends Record<string, unknown>> {
     defaultPort?: number;
 }
 
-interface VettedCliOpts<ConfigType extends Record<string, unknown>> {
-    run: (port: number, config: ConfigType | null, registration: AppServiceRegistration | null) => void;
-    onConfigChanged?: (config: ConfigType) => void,
-    generateRegistration?: (reg: AppServiceRegistration, cb: (finalReg: AppServiceRegistration) => void) => void;
-    bridgeConfig?: {
-        affectsRegistration?: boolean;
-        schema: string | Record<string, unknown>;
-        defaults: Record<string, unknown>;
-    };
+interface VettedCliOpts<ConfigType extends Record<string, unknown>> extends CliOpts<ConfigType> {
     registrationPath: string;
     enableRegistration: boolean;
     enableLocalpart: boolean;
-    port?: number;
-    noUrl?: boolean;
-    defaultPort?: number;
 }
 
 interface CliArgs {
@@ -95,7 +84,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         let defaultPort = opts.defaultPort;
         if (!opts.hasOwnProperty("defaultPort")) {
             // If this explicity hasn't been set, it's 8090
-            defaultPort = Cli.DEFAULT_PORT
+            defaultPort = Cli.DEFAULT_PORT;
         }
 
         this.opts = {
@@ -110,14 +99,14 @@ export class Cli<ConfigType extends Record<string, unknown>> {
      * Get the parsed arguments. Only set after run is called and arguments parsed.
      * @return The parsed arguments
      */
-    public getArgs() {
+    public getArgs(): CliArgs | null {
         return this.args;
     }
     /**
      * Get the loaded and parsed bridge config. Only set after run() has been called.
      * @return The config
      */
-    public getConfig() {
+    public getConfig(): ConfigType|null {
         return this.bridgeConfig;
     }
 
@@ -126,14 +115,14 @@ export class Cli<ConfigType extends Record<string, unknown>> {
      * in the constructor if the user passed a -f flag.
      * @return The path to the registration file.
      */
-    public getRegistrationFilePath() {
+    public getRegistrationFilePath(): string {
         return this.opts.registrationPath;
     }
 
     /**
      * Run the app from the command line. Will parse sys args.
      */
-    public run(args?: CliArgs) {
+    public run(args?: CliArgs): void {
         this.args = args || nopt({
             "generate-registration": Boolean,
             "config": path,
@@ -273,7 +262,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         }
 
         this.opts.run(
-            this.opts.port, config,
+            this.opts.port,
             AppServiceRegistration.fromObject(yamlObj as AppServiceOutput)
         );
     }

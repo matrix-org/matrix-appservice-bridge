@@ -74,7 +74,7 @@ describe("RoomLinkValidator", function() {
             expect(() => {
                 new RoomLinkValidator({
                 }, AsBotMock, () => {});
-            }).toThrowError("Either config.ruleFile or config.rules must be set");
+            }).toThrowError("config.rules must be set");
         });
         /* eslint-enable no-new */
     });

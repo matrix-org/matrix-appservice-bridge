@@ -150,6 +150,7 @@ export class RoomUpgradeHandler {
             log.error(
     `Room doesn't have a matching predecessor (expected: ${oldRoomId}, got: ${predecessor.room_id}), not bridging.`
             );
+            await intent.leave(newRoomId);
             return false;
         }
         const asBot = this.bridge.getBot();
@@ -157,6 +158,7 @@ export class RoomUpgradeHandler {
             const success = await this.migrateStoreEntries(oldRoomId, newRoomId);
             if (!success) {
                 log.error("Failed to migrate room entries. Not continuing with migration.");
+                await intent.leave(newRoomId);
                 return false;
             }
         }

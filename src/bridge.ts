@@ -653,13 +653,14 @@ export class Bridge {
 
     /**
      * Setup a HTTP listener to handle appservice traffic.
-     * **This must be called after .initalise()**
+     * ** This must be called after .initalise() **
      * @param port The port to listen on.
      * @param appServiceInstance The AppService instance to attach to.
      * If not provided, one will be created.
-     * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
+     * @param hostname Optional hostname to bind to.
      */
-    public async listen(port: number, hostname = "0.0.0.0", backlog = 10, appServiceInstance?: AppService) {
+    public async listen(
+        port: number, hostname = "0.0.0.0", backlog = 10, appServiceInstance?: AppService): Promise<void> {
         if (!this.registration) {
             throw Error('initalise() not called, cannot listen');
         }
@@ -701,15 +702,13 @@ export class Bridge {
 
     /**
      * Run the bridge (start listening). This calls `initalise()` and `listen()`.
-     * @deprecated Prefer calling initalise and listen seperately.
      * @param port The port to listen on.
-     * @param config Configuration options. NOT USED
      * @param appServiceInstance The AppService instance to attach to.
      * If not provided, one will be created.
-     * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
-     * @return A promise resolving when the bridge is ready
+     * @param hostname Optional hostname to bind to.
+     * @return A promise resolving when the bridge is ready.
      */
-    public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname = "0.0.0.0", backlog = 10) {
+    public async run(port: number, appServiceInstance?: AppService, hostname = "0.0.0.0", backlog = 10): Promise<void> {
         await this.initalise();
         await this.listen(port, hostname, backlog, appServiceInstance);
     }

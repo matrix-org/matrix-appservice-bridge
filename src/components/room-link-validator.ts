@@ -37,8 +37,9 @@ export interface Rules {
  */
 export class RoomLinkValidator {
     private conflictCache: Map<string, number> = new Map();
-    private internalRules: Rules; // Public to allow unit tests to inspect it.
+    private internalRules: Rules;
 
+     // Public to allow unit tests to inspect it.
     public get rules(): Rules {
         return this.internalRules;
     }

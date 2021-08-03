@@ -73,10 +73,6 @@ export interface CliOpts<ConfigType extends Record<string, unknown>> {
      */
     enableLocalpart?: boolean;
     /**
-     * The default port to use. If you do not want to set a default port, you can set null here.
-     */
-    port?: number|null;
-    /**
      * Don't ask user for appservice url when generating registration.
      * @default false
      */
@@ -87,7 +83,6 @@ interface VettedCliOpts<ConfigType extends Record<string, unknown>> extends CliO
     registrationPath: string;
     enableRegistration: boolean;
     enableLocalpart: boolean;
-    port: number|null;
 }
 
 interface CliArgs {
@@ -101,7 +96,6 @@ interface CliArgs {
 }
 
 export class Cli<ConfigType extends Record<string, unknown>> {
-    public static DEFAULT_PORT = 8090;
     public static DEFAULT_WATCH_INTERVAL = 2500;
     public static DEFAULT_FILENAME = "registration.yaml";
     private bridgeConfig: ConfigType|null = null;
@@ -124,22 +118,11 @@ export class Cli<ConfigType extends Record<string, unknown>> {
             );
         }
 
-        let port: number|null;
-        if (opts.port === undefined) {
-            // If this explicity hasn't been set, it's 8090.
-            port = Cli.DEFAULT_PORT;
-        }
-        else {
-            // Else, use the provided port or null.
-            port = opts.port;
-        }
-
         this.opts = {
             ...opts,
             enableRegistration: typeof opts.enableRegistration === 'boolean' ? opts.enableRegistration : true,
             enableLocalpart: Boolean(opts.enableLocalpart),
             registrationPath: opts.registrationPath || Cli.DEFAULT_FILENAME,
-            port,
         };
     }
     /**
@@ -235,11 +218,8 @@ export class Cli<ConfigType extends Record<string, unknown>> {
             return;
         }
 
-        if (this.args.port) {
-            this.opts.port = this.args.port;
-        }
         this.assignConfigFile(this.args.config);
-        this.startWithConfig(this.bridgeConfig, this.args.config);
+        this.startWithConfig(this.args.config, this.args.port || null);
     }
 
     private assignConfigFile(configFilePath: string) {
@@ -286,7 +266,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         });
     }
 
-    private startWithConfig(config: ConfigType|null, configFilename: string) {
+    private startWithConfig(configFilename: string|undefined, port: number|null) {
         if (this.opts.onConfigChanged && this.opts.bridgeConfig) {
             log.info("Will listen for SIGHUP");
             process.on("SIGHUP",
@@ -309,7 +289,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         }
 
         this.opts.run(
-            this.opts.port,
+            port,
             this.bridgeConfig,
             AppServiceRegistration.fromObject(yamlObj as AppServiceOutput)
         );

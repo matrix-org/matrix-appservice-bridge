@@ -145,11 +145,20 @@ export class RoomUpgradeHandler {
     private async onJoinedNewRoom(oldRoomId: string, newRoomId: string) {
         log.debug(`Joined ${newRoomId}`);
         const intent = this.bridge.getIntent();
+        const { predecessor } = await intent.getStateEvent(newRoomId, 'm.room.create');
+        if (predecessor.room_id !== oldRoomId) {
+            log.error(
+    `Room doesn't have a matching predecessor (expected: ${oldRoomId}, got: ${predecessor.room_id}), not bridging.`
+            );
+            await intent.leave(newRoomId);
+            return false;
+        }
         const asBot = this.bridge.getBot();
         if (this.opts.migrateStoreEntries) {
             const success = await this.migrateStoreEntries(oldRoomId, newRoomId);
             if (!success) {
                 log.error("Failed to migrate room entries. Not continuing with migration.");
+                await intent.leave(newRoomId);
                 return false;
             }
         }

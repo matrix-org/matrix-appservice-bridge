@@ -54,7 +54,7 @@ describe("Cli", () => {
             run: (...args) => { runCalledWith = args; }
         });
         cli.run();
-        expect(runCalledWith[0]).toEqual(Cli.DEFAULT_PORT);
+        expect(runCalledWith[0]).toEqual(null);
     });
 
     it("should be able to start the bridge with a custom port", async () => {
@@ -80,7 +80,7 @@ describe("Cli", () => {
             run: (...args) => { runCalledWith = args; }
         });
         cli.run({config: configFile});
-        expect(runCalledWith[0]).toEqual(Cli.DEFAULT_PORT);
+        expect(runCalledWith[0]).toEqual(null);
         expect(runCalledWith[1]).toEqual(configData);
         expect(runCalledWith[2].getOutput()).toEqual(registrationFileContent);
     });

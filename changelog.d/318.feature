@@ -1,1 +1,0 @@
-Add `intent.ensureProfile` function.

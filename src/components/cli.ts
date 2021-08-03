@@ -25,49 +25,77 @@ import * as logging from "./logging";
 const log = logging.get("cli");
 
 export interface CliOpts<ConfigType extends Record<string, unknown>> {
-    run: (port: number, config: ConfigType|null, registration: AppServiceRegistration|null) => void;
+    /**
+     * This function called when you should run the bridge.
+     */
+    run: (port: number|null, config: ConfigType|null, registration: AppServiceRegistration|null) => void;
+    /**
+     * This function is when the config is hot-reloaded. If not defined, hot-reloading is disabled.
+     *
+     * You can hot-reload the bridge by sending a SIGHUP signal to the bridge.
+     */
     onConfigChanged?: (config: ConfigType) => void,
+    /**
+     * The function called when you should generate a registration.
+     * Must be defined unless `enableRegistration` is `false`.
+     */
     generateRegistration?: (reg: AppServiceRegistration, cb: (finalReg: AppServiceRegistration) => void) => void;
+    /**
+     * Bridge-specific config info. If not defined, --config option will not be present in the CLI
+     */
     bridgeConfig?: {
+        /**
+         * If true, the config will be required when generating a registration file.
+         */
         affectsRegistration?: boolean;
+        /**
+         * Path to a schema YAML file (string) or the parsed schema file (object).
+         */
         schema: string|Record<string, unknown>;
+        /**
+         * The default options for the config file.
+         */
         defaults: Record<string, unknown>;
     };
+    /**
+     * The path to write the registration file to. Users can overwrite this with -f.
+     * @default "registration.yaml"
+     */
     registrationPath?: string;
+    /**
+     * Enable '--generate-registration' to allow users to generate a registration file.
+     * @default true
+     */
     enableRegistration?: boolean;
+    /**
+     * Enable '--localpart [-l]' to allow users to configure the bot localpart.
+     * @default true
+     */
     enableLocalpart?: boolean;
-    port?: number;
+    /**
+     * Don't ask user for appservice url when generating registration.
+     * @default false
+     */
     noUrl?: boolean;
 }
 
-interface VettedCliOpts<ConfigType extends Record<string, unknown>> {
-    run: (port: number, config: ConfigType | null, registration: AppServiceRegistration | null) => void;
-    onConfigChanged?: (config: ConfigType) => void,
-    generateRegistration?: (reg: AppServiceRegistration, cb: (finalReg: AppServiceRegistration) => void) => void;
-    bridgeConfig?: {
-        affectsRegistration?: boolean;
-        schema: string | Record<string, unknown>;
-        defaults: Record<string, unknown>;
-    };
+interface VettedCliOpts<ConfigType extends Record<string, unknown>> extends CliOpts<ConfigType> {
     registrationPath: string;
     enableRegistration: boolean;
     enableLocalpart: boolean;
-    port: number;
-    noUrl?: boolean;
 }
 
 interface CliArgs {
-    "generate-registration": boolean;
-    config: string;
+    "generate-registration"?: boolean;
+    config?: string;
     url?: string;
-    localpart: string;
-    port: number;
-    file: string;
-    help: boolean;
+    localpart?: string;
+    port?: number;
+    file?: string;
+    help?: boolean;
 }
 
 export class Cli<ConfigType extends Record<string, unknown>> {
-    public static DEFAULT_PORT = 8090;
     public static DEFAULT_WATCH_INTERVAL = 2500;
     public static DEFAULT_FILENAME = "registration.yaml";
     private bridgeConfig: ConfigType|null = null;
@@ -77,25 +105,6 @@ export class Cli<ConfigType extends Record<string, unknown>> {
     /**
      * @constructor
      * @param opts CLI options
-     * @param opts.run The function called when you should run the bridge.
-     * @param opts.generateRegistration The function
-     * called when you should generate a registration.
-     * @param opts.bridgeConfig Bridge-specific config info. If null, no
-     * --config option will be present in the CLI. Default: null.
-     * @param opts.bridgeConfig.affectsRegistration True to make the
-     * --config option required when generating the registration. The parsed config
-     * can be accessed via <code>Cli.getConfig()</code>.
-     * @param opts.bridgeConfig.schema Path to a schema YAML file
-     * (string) or the parsed schema file (Object).
-     * @param opts.bridgeConfig.defaults The default options for the
-     * config file.
-     * @param opts.noUrl Don't ask user for appservice url when generating
-     * registration.
-     * @param opts.enableRegistration Enable '--generate-registration'.
-     * Default True.
-     * @param opts.registrationPath The path to write the registration
-     * file to. Users can overwrite this with -f.
-     * @param opts.enableLocalpart Enable '--localpart [-l]'. Default: false.
      */
     constructor(opts: CliOpts<ConfigType>) {
         if (!opts.run || typeof opts.run !== "function") {
@@ -114,21 +123,20 @@ export class Cli<ConfigType extends Record<string, unknown>> {
             enableRegistration: typeof opts.enableRegistration === 'boolean' ? opts.enableRegistration : true,
             enableLocalpart: Boolean(opts.enableLocalpart),
             registrationPath: opts.registrationPath || Cli.DEFAULT_FILENAME,
-            port: opts.port || Cli.DEFAULT_PORT,
         };
     }
     /**
      * Get the parsed arguments. Only set after run is called and arguments parsed.
      * @return The parsed arguments
      */
-    public getArgs() {
+    public getArgs(): CliArgs | null {
         return this.args;
     }
     /**
      * Get the loaded and parsed bridge config. Only set after run() has been called.
      * @return The config
      */
-    public getConfig() {
+    public getConfig(): ConfigType|null {
         return this.bridgeConfig;
     }
 
@@ -137,14 +145,14 @@ export class Cli<ConfigType extends Record<string, unknown>> {
      * in the constructor if the user passed a -f flag.
      * @return The path to the registration file.
      */
-    public getRegistrationFilePath() {
+    public getRegistrationFilePath(): string {
         return this.opts.registrationPath;
     }
 
     /**
      * Run the app from the command line. Will parse sys args.
      */
-    public run(args?: CliArgs) {
+    public run(args?: CliArgs): void {
         this.args = args || nopt({
             "generate-registration": Boolean,
             "config": path,
@@ -210,14 +218,11 @@ export class Cli<ConfigType extends Record<string, unknown>> {
             return;
         }
 
-        if (this.args.port) {
-            this.opts.port = this.args.port;
-        }
         this.assignConfigFile(this.args.config);
-        this.startWithConfig(this.bridgeConfig, this.args.config);
+        this.startWithConfig(this.args.config, this.args.port || null);
     }
 
-    private assignConfigFile(configFilePath: string) {
+    private assignConfigFile(configFilePath?: string) {
         const configFile = (this.opts.bridgeConfig && configFilePath) ? configFilePath : undefined;
         if (!configFile) {
             return;
@@ -245,7 +250,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         return validator.validate(cfg, this.opts.bridgeConfig.defaults) as ConfigType;
     }
 
-    private generateRegistration(appServiceUrl: string | undefined, localpart: string) {
+    private generateRegistration(appServiceUrl?: string, localpart?: string) {
         let reg = new AppServiceRegistration(appServiceUrl || "");
         if (localpart) {
             reg.setSenderLocalpart(localpart);
@@ -261,22 +266,24 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         });
     }
 
-    private startWithConfig(config: ConfigType|null, configFilename: string) {
+    private startWithConfig(configFilename: string|undefined, port: number|null) {
         if (this.opts.onConfigChanged && this.opts.bridgeConfig) {
             log.info("Will listen for SIGHUP");
-            process.on("SIGHUP",
+            if (configFilename) {
+                process.on("SIGHUP",
                 () => {
-                log.info("Got SIGHUP, reloading config file");
-                try {
-                    const newConfig = this.loadConfig(configFilename);
-                    if (this.opts.onConfigChanged) {
-                        this.opts.onConfigChanged(newConfig);
+                    log.info("Got SIGHUP, reloading config file");
+                    try {
+                        const newConfig = this.loadConfig(configFilename);
+                        if (this.opts.onConfigChanged) {
+                            this.opts.onConfigChanged(newConfig);
+                        }
                     }
-                }
-                catch (ex) {
-                    log.warn("Failed to reload config file:", ex);
-                }
-            });
+                    catch (ex) {
+                        log.warn("Failed to reload config file:", ex);
+                    }
+                });
+            }
         }
         const yamlObj = this.loadYaml(this.opts.registrationPath);
         if (typeof yamlObj !== "object") {
@@ -284,7 +291,8 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         }
 
         this.opts.run(
-            this.opts.port, config,
+            port,
+            this.bridgeConfig,
             AppServiceRegistration.fromObject(yamlObj as AppServiceOutput)
         );
     }

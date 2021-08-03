@@ -24,7 +24,7 @@ describe("AppServiceBot", function() {
                 }]
             }
         });
-        bot = new AppServiceBot(client, reg);
+        bot = new AppServiceBot(client, botUserId, reg);
     });
 
     describe("getMemberLists", function() {

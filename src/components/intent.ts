@@ -1078,12 +1078,8 @@ export class Intent {
         if (typeof eventContent.users?.[userId] === "number") {
             userPower = eventContent.users[userId] as number;
         }
-        console.log("A", requiredPower, userPower);
         if (requiredPower > userPower) {
-            console.log("EEG");
-            console.log("FOO", this.botClient.getUserId);
             const botUserId = await this.botClient.getUserId();
-            console.log("B", botUserId);
             let botPower = 0;
             if (typeof eventContent.users?.[botUserId] === "number") {
                 botPower = eventContent.users[botUserId] as number;
@@ -1096,10 +1092,8 @@ export class Intent {
             if (typeof eventContent.events?.[eventType] === "number") {
                 requiredPower = eventContent.events[eventType] as number;
             }
-            console.log("C");
 
             if (requiredPowerPowerLevels > botPower) {
-                console.log("D", eventType, requiredPowerPowerLevels > botPower);
                 // even the bot has no power here.. give up.
                 throw new Error(
                     `Cannot ensure client has power level for event ${eventType} ` +
@@ -1119,7 +1113,6 @@ export class Intent {
                 [userId]: requiredPower,
             };
         }
-        console.log("OK");
         return eventContent;
     }
 

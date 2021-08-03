@@ -1166,7 +1166,7 @@ export class Bridge {
     public async provisionUser(
         matrixUser: MatrixUser,
         provisionedUser?: {name?: string, url?: string, remote?: RemoteUser}
-    ) {
+    ): Promise<void> {
         if (!this.botSdkAS) {
             throw Error('Cannot call getIntent before calling .run()');
         }
@@ -1226,7 +1226,7 @@ export class Bridge {
         // If they didn't pass an existing `roomId` back,
         // we expect some `creationOpts` to create a new room
         if (roomId === undefined) {
-            roomId = await this.botSdkAS?.botClient.createRoom(
+            roomId = await this.botIntent.botSdkIntent.underlyingClient.createRoom(
                 provisionedRoom.creationOpts
             );
         }
@@ -1300,7 +1300,7 @@ export class Bridge {
             // Only allow edits from the same sender
             if (relatedEvent.sender !== event.sender) {
                 log.warn(
-                    `Rejecting ${event.event_id}: Message edit sender did NOT match the original message (${parentEventId})`
+                `Rejecting ${event.event_id}: Message edit sender did NOT match the original message (${parentEventId})`
                 );
                 return false;
             }

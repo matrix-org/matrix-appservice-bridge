@@ -270,7 +270,7 @@ describe("Bridge", function() {
         });
     });
 
-    xdescribe("pingAppserviceRoute", () => {
+    describe("pingAppserviceRoute", () => {
         it("should return successfully when the bridge receives it's own self ping", async () => {
             let sentEvent = false;
             await runBridge();
@@ -308,7 +308,7 @@ describe("Bridge", function() {
         });
     });
 
-    xdescribe("onEvent", function() {
+    describe("onEvent", function() {
         it("should suppress the event if it is an echo and suppressEcho=true", async() => {
             var event = {
                 content: {
@@ -602,7 +602,7 @@ describe("Bridge", function() {
         });
     });
 
-    xdescribe("run", () => {
+    describe("run", () => {
         it("should invoke listen(port) on the AppService instance", async() => {
             await bridge.run(101, appService);
             expect(appService.listen).toHaveBeenCalledWith(101, "0.0.0.0", 10);
@@ -613,7 +613,7 @@ describe("Bridge", function() {
         });
     });
 
-    xdescribe("getters", function() {
+    describe("getters", function() {
         it("should be able to getRoomStore", async() => {
             await bridge.run(101, appService);
             expect(bridge.getRoomStore()).toEqual(roomStore);
@@ -640,7 +640,7 @@ describe("Bridge", function() {
         });
     });
 
-    xdescribe("getIntent", function() {
+    describe("getIntent", function() {
         // 2h which should be long enough to cull it
         var cullTimeMs = 1000 * 60 * 60 * 2;
 
@@ -770,7 +770,7 @@ describe("Bridge", function() {
         });
     });
 
-    xdescribe("provisionUser", function() {
+    describe("provisionUser", function() {
 
         beforeEach(() => {
             return bridge.initalise();
@@ -861,7 +861,7 @@ describe("Bridge", function() {
         });
     });
 
-    xdescribe("_onEvent", () => {
+    describe("_onEvent", () => {
         it("should not upgrade a room if state_key is not defined", () => {
             bridge.roomUpgradeHandler = jasmine.createSpyObj("_roomUpgradeHandler", ["onTombstone"]);
             bridge.roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));

@@ -144,7 +144,7 @@ describe("Bridge", function() {
 
     describe("onUserQuery", function() {
         it("should invoke the user-supplied onUserQuery function with the right args", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             try {
                 await appService.onUserQuery("@alice:bar");
             }
@@ -162,7 +162,7 @@ describe("Bridge", function() {
         it("should not provision a user if null is returned from the function",
         async function(done) {
             bridgeCtrl.onUserQuery.and.returnValue(null);
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             appService.onUserQuery("@alice:bar").catch(function() {}).finally(function() {
                 expect(clients["bot"].register).not.toHaveBeenCalled();
                 done();
@@ -172,7 +172,7 @@ describe("Bridge", function() {
         it("should provision the user from the return object", async() => {
             bridgeCtrl.onUserQuery.and.returnValue({});
             clients["bot"].register.and.returnValue(Promise.resolve({}));
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             await appService.onUserQuery("@alice:bar");
             expect(clients["bot"].register).toHaveBeenCalledWith("alice");
         });
@@ -181,7 +181,7 @@ describe("Bridge", function() {
     describe("onAliasQuery", function() {
         it("should invoke the user-supplied onAliasQuery function with the right args",
         async function() {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
 
             try {
                 await appService.onAliasQuery("#foo:bar")
@@ -196,7 +196,7 @@ describe("Bridge", function() {
         it("should not provision a room if null is returned from the function",
         async function() {
             bridgeCtrl.onAliasQuery.and.returnValue(null);
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
 
             try {
                 await appService.onAliasQuery("#foo:bar");
@@ -210,7 +210,7 @@ describe("Bridge", function() {
         it("should not create a room if roomId is returned from the function but should still store it",
         async function() {
             bridgeCtrl.onAliasQuery.and.returnValue({ roomId: "!abc123:bar" });
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
 
             await appService.onAliasQuery("#foo:bar");
 
@@ -231,7 +231,7 @@ describe("Bridge", function() {
                 room_id: "!abc123:bar",
             });
             bridgeCtrl.onAliasQuery.and.returnValue(provisionedRoom);
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             await appService.onAliasQuery("#foo:bar");
             expect(clients["bot"].createRoom).toHaveBeenCalledWith(
                 provisionedRoom.creationOpts
@@ -247,7 +247,7 @@ describe("Bridge", function() {
                     room_alias_name: "foo",
                 },
             });
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
 
             await appService.onAliasQuery("#foo:bar");
 
@@ -266,7 +266,7 @@ describe("Bridge", function() {
                 },
                 remote: new RemoteRoom("__abc__")
             });
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
 
             await appService.onAliasQuery("#foo:bar");
 
@@ -279,7 +279,7 @@ describe("Bridge", function() {
     describe("pingAppserviceRoute", () => {
         it("should return successfully when the bridge receives it's own self ping", async () => {
             let sentEvent = false;
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             bridge.botIntent._ensureJoined = async () => true;
             bridge.botIntent._ensureHasPowerLevelFor = async () => true;
             bridge.botIntent.sendEvent = async () => {sentEvent = true};
@@ -298,7 +298,7 @@ describe("Bridge", function() {
         });
         it("should time out if the ping does not respond", async () => {
             let sentEvent = false;
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             bridge.botIntent._ensureJoined = async () => true;
             bridge.botIntent._ensureHasPowerLevelFor = async () => true;
             bridge.botIntent.sendEvent = async () => {sentEvent = true};
@@ -325,7 +325,7 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             await appService.emit("event", event);
             expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
         });
@@ -343,7 +343,7 @@ describe("Bridge", function() {
                     disableContext: true,
                     eventValidation
                 });
-                await bridge.run(101, {}, appService);
+                await bridge.run(101, appService);
 
                 return bridge;
             }
@@ -474,7 +474,7 @@ describe("Bridge", function() {
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
-            bridge.run(101, {}, appService).then(function() {
+            bridge.run(101, appService).then(function() {
                 return appService.emit("event", event);
             }).then(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
@@ -500,7 +500,7 @@ describe("Bridge", function() {
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
-            await bridge.run(101, {}, appService)
+            await bridge.run(101, appService)
             await bridge.getUserStore().linkUsers(
                 new MatrixUser("@alice:bar"),
                 new RemoteUser("__alice__")
@@ -527,7 +527,7 @@ describe("Bridge", function() {
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             await bridge.getUserStore().linkUsers(
                 new MatrixUser("@bob:bar"),
                 new RemoteUser("__bob__")
@@ -555,7 +555,7 @@ describe("Bridge", function() {
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
-            bridge.run(101, {}, appService).then(function() {
+            bridge.run(101, appService).then(function() {
                 return bridge.getRoomStore().linkRooms(
                     new MatrixRoom("!flibble:bar"),
                     new RemoteRoom("roomy")
@@ -597,7 +597,7 @@ describe("Bridge", function() {
                 disableContext: true
             });
 
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             await appService.emit("event", event);
             expect(bridgeCtrl.onEvent).toHaveBeenCalled();
             var call = bridgeCtrl.onEvent.calls.argsFor(0);
@@ -610,38 +610,38 @@ describe("Bridge", function() {
 
     describe("run", () => {
         it("should invoke listen(port) on the AppService instance", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(appService.listen).toHaveBeenCalledWith(101, "0.0.0.0", 10);
         });
         it("should invoke listen(port, hostname) on the AppService instance", async() => {
-            await bridge.run(101, {}, appService, "foobar");
+            await bridge.run(101, appService, "foobar");
             expect(appService.listen).toHaveBeenCalledWith(101, "foobar", 10);
         });
     });
 
     describe("getters", function() {
         it("should be able to getRoomStore", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(bridge.getRoomStore()).toEqual(roomStore);
         });
 
         it("should be able to getUserStore", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(bridge.getUserStore()).toEqual(userStore);
         });
 
         it("should be able to getEventStore", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(bridge.getEventStore()).toEqual(eventStore);
         });
 
         it("should be able to getRequestFactory", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(bridge.getRequestFactory()).toBeDefined();
         });
 
         it("should be able to getBot", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(bridge.getBot()).toBeDefined();
         });
     });
@@ -653,7 +653,7 @@ describe("Bridge", function() {
         beforeEach(async() => {
             jasmine.clock().install();
             jasmine.clock().mockDate();
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
         });
 
         afterEach(function() {
@@ -779,7 +779,7 @@ describe("Bridge", function() {
     describe("provisionUser", function() {
 
         beforeEach(function(done) {
-            bridge.run(101, {}, appService).then(function() {
+            bridge.run(101, appService).then(function() {
                 done();
             });
         });
@@ -876,7 +876,7 @@ describe("Bridge", function() {
             bridge.roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
             bridge.opts.roomUpgradeOpts = { consumeEvent: true };
-            return bridge.run(101, {}, appService).then(() => {
+            return bridge.run(101, appService).then(() => {
                 return bridge.onEvent({
                     type: "m.room.tombstone",
                     state_key: undefined,
@@ -892,7 +892,7 @@ describe("Bridge", function() {
             bridge.roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
             bridge.opts.roomUpgradeOpts = { consumeEvent: true };
-            return bridge.run(101, {}, appService).then(() => {
+            return bridge.run(101, appService).then(() => {
                 return bridge.onEvent({
                     type: "m.room.tombstone",
                     state_key: "fooobar",
@@ -922,7 +922,7 @@ describe("Bridge", function() {
             bridge.roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
             bridge.opts.roomUpgradeOpts = { consumeEvent: true };
-            return bridge.run(101, {}, appService).then(() => {
+            return bridge.run(101, appService).then(() => {
                 return bridge.onEvent({
                     type: "m.room.tombstone",
                     state_key: "",

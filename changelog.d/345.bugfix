@@ -1,0 +1,1 @@
+Remove unused `config` parameter from `Bridge.run`.

@@ -86,13 +86,13 @@ interface VettedCliOpts<ConfigType extends Record<string, unknown>> extends CliO
 }
 
 interface CliArgs {
-    "generate-registration": boolean;
-    config: string;
+    "generate-registration"?: boolean;
+    config?: string;
     url?: string;
-    localpart: string;
-    port: number;
-    file: string;
-    help: boolean;
+    localpart?: string;
+    port?: number;
+    file?: string;
+    help?: boolean;
 }
 
 export class Cli<ConfigType extends Record<string, unknown>> {
@@ -222,7 +222,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         this.startWithConfig(this.args.config, this.args.port || null);
     }
 
-    private assignConfigFile(configFilePath: string) {
+    private assignConfigFile(configFilePath?: string) {
         const configFile = (this.opts.bridgeConfig && configFilePath) ? configFilePath : undefined;
         if (!configFile) {
             return;
@@ -250,7 +250,7 @@ export class Cli<ConfigType extends Record<string, unknown>> {
         return validator.validate(cfg, this.opts.bridgeConfig.defaults) as ConfigType;
     }
 
-    private generateRegistration(appServiceUrl: string | undefined, localpart: string) {
+    private generateRegistration(appServiceUrl?: string, localpart?: string) {
         let reg = new AppServiceRegistration(appServiceUrl || "");
         if (localpart) {
             reg.setSenderLocalpart(localpart);
@@ -269,19 +269,21 @@ export class Cli<ConfigType extends Record<string, unknown>> {
     private startWithConfig(configFilename: string|undefined, port: number|null) {
         if (this.opts.onConfigChanged && this.opts.bridgeConfig) {
             log.info("Will listen for SIGHUP");
-            process.on("SIGHUP",
+            if (configFilename) {
+                process.on("SIGHUP",
                 () => {
-                log.info("Got SIGHUP, reloading config file");
-                try {
-                    const newConfig = this.loadConfig(configFilename);
-                    if (this.opts.onConfigChanged) {
-                        this.opts.onConfigChanged(newConfig);
+                    log.info("Got SIGHUP, reloading config file");
+                    try {
+                        const newConfig = this.loadConfig(configFilename);
+                        if (this.opts.onConfigChanged) {
+                            this.opts.onConfigChanged(newConfig);
+                        }
                     }
-                }
-                catch (ex) {
-                    log.warn("Failed to reload config file:", ex);
-                }
-            });
+                    catch (ex) {
+                        log.warn("Failed to reload config file:", ex);
+                    }
+                });
+            }
         }
         const yamlObj = this.loadYaml(this.opts.registrationPath);
         if (typeof yamlObj !== "object") {

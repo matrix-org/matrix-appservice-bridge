@@ -13,9 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * The room link validator is used to determine if a room can be bridged.
- */
 import util from "util";
 import { AppServiceBot } from "./app-service-bot";
 import logging from "./logging";
@@ -31,9 +28,13 @@ export interface Rules {
 
 /**
  * The RoomLinkValidator checks if a room should be linked to a remote
- * channel, given a set of rules supplied in a config. The ruleset is maintained
- * in a separate config from the bridge config. It can be reloaded by triggering
- * an endpoint specified in the {@link Bridge} class.
+ * channel, given a set of rules supplied in a config.
+ *
+ * This ruleset can be hot-reloaded. Developers should call `Bridge.updateRoomLinkValidatorRules`
+ * within the `CliOpts.onConfigChanged` callback to reload rules on
+ * config reload.
+ * @see CliOpts#onConfigChanged
+ * @see Bridge#updateRoomLinkValidatorRules
  */
 export class RoomLinkValidator {
     private conflictCache: Map<string, number> = new Map();

@@ -20,7 +20,8 @@ export * from "./components/request-factory";
 export * from "./components/client-factory";
 export * from "./components/encryption";
 export * from "./components/intent";
-
+export * from "./components/room-link-validator";
+export * from "./components/room-upgrade-handler";
 export * from "./components/app-service-bot";
 export * from "./components/state-lookup";
 

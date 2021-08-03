@@ -1,1 +1,2 @@
-The `port` option for `Cli` can be set to `null` to explicity opt out of using the default `8090` port.
+**Breaking**: The `Cli` will no longer specify a default port of `8090` if one is not provided as an command line argument. instead `run` will be called with `null`. Bridge developers **MUST** now handle
+this case.

@@ -974,8 +974,7 @@ export class Intent {
             opts.viaServers = viaServers;
         }
         // Resolve the alias
-        const roomId = await this.botClient.resolveRoom(roomIdOrAlias);
-
+        const roomId = await this.resolveRoom(roomIdOrAlias);
         if (!ignoreCache && this.opts.backingStore.getMembership(roomId, this.userId) === "join") {
             return roomId;
         }

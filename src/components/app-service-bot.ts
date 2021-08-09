@@ -17,7 +17,7 @@ limitations under the License.
 import { AppServiceRegistration } from "matrix-appservice";
 import { MembershipCache, UserProfile } from "./membership-cache";
 import { StateLookupEvent } from "..";
-import { MatrixClient } from "matrix-bot-sdk";
+import { MatrixClient, MatrixProfileInfo } from "matrix-bot-sdk";
 
 /**
  * Construct an AS bot user which has various helper methods.
@@ -67,10 +67,12 @@ export class AppServiceBot {
      * @param roomId The room to get a list of joined user IDs in.
      * @return Resolves to a map of user ID => display_name avatar_url
      */
-    public async getJoinedMembers(roomId: string) {
+    public async getJoinedMembers(roomId: string): Promise<{[userId: string]: MatrixProfileInfo}> {
+        // Until https://github.com/turt2live/matrix-bot-sdk/pull/138 is merged.
         // eslint-disable-next-line camelcase
-        const res = await this.client.getJoinedRoomMembersWithProfiles(roomId);
-        for (const [member, p] of Object.entries(res.joined)) {
+        const res: Record<string, {display_name?: string, avatar_url?: string}> =
+            await this.client.getJoinedRoomMembersWithProfiles(roomId);
+        for (const [member, p] of Object.entries(res)) {
             if (this.isRemoteUser(member)) {
                 const profile: UserProfile = {};
                 if (p.display_name) {
@@ -82,7 +84,7 @@ export class AppServiceBot {
                 this.memberCache.setMemberEntry(roomId, member, "join", profile);
             }
         }
-        return res.joined;
+        return res;
     }
 
     public async getRoomInfo(roomId: string, joinedRoom: {state?: { events: StateLookupEvent[]}} = {}) {

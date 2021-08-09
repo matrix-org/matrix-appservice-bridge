@@ -200,6 +200,10 @@ export interface BridgeOpts {
         clients?: IntentOpts;
     };
     /**
+     * The factory function used to create intents.
+     */
+    onIntentCreate?: (userId: string) => Intent,
+    /**
      * Options for the `onEvent` queue. When the bridge
      * receives an incoming transaction, it needs to asyncly query the data store for
      * contextual info before calling onEvent. A queue is used to keep the onEvent
@@ -346,6 +350,10 @@ interface VettedBridgeOpts {
         clients?: IntentOpts;
     };
     /**
+     * The factory function used to create intents.
+     */
+    onIntentCreate: (userId: string, opts: IntentOpts) => Intent,
+    /**
      * Options for the `onEvent` queue. When the bridge
      * receives an incoming transaction, it needs to asyncly query the data store for
      * contextual info before calling onEvent. A queue is used to keep the onEvent
@@ -435,11 +443,14 @@ export class Bridge {
 
     public readonly opts: VettedBridgeOpts;
 
-    public get appService() {
+    public get appService(): AppService {
+        if (!this.appservice) {
+            throw Error('appservice not defined yet');
+        }
         return this.appservice;
     }
 
-    public get botUserId() {
+    public get botUserId(): string {
         if (!this.registration) {
             throw Error('Registration not defined yet');
         }
@@ -475,6 +486,7 @@ export class Bridge {
             userStore: opts.userStore || "user-store.db",
             roomStore: opts.roomStore || "room-store.db",
             intentOptions: opts.intentOptions || {},
+            onIntentCreate: opts.onIntentCreate ?? this.onIntentCreate.bind(this),
             queue: {
                 type: opts.queue?.type || "single",
                 perRequest: opts.queue?.perRequest ?? false,
@@ -526,7 +538,7 @@ export class Bridge {
     /**
      * Load the user and room databases. Access them via getUserStore() and getRoomStore().
      */
-    public async loadDatabases() {
+    public async loadDatabases(): Promise<void> {
         if (this.opts.disableStores) {
             return;
         }
@@ -566,7 +578,7 @@ export class Bridge {
      *
      * **This must be called before `listen()`**
      */
-    public async initalise() {
+    public async initalise(): Promise<void> {
         if (typeof this.opts.registration === "string") {
             const regObj = yaml.load(await fs.readFile(this.opts.registration, 'utf8'));
             if (typeof regObj !== "object") {
@@ -656,6 +668,7 @@ export class Bridge {
                 )
             );
         }
+
         const botIntentOpts: IntentOpts = {
             registered: true,
             backingStore: this.intentBackingStore,
@@ -672,8 +685,7 @@ export class Bridge {
             },
             ...this.opts.intentOptions?.bot, // copy across opts, if defined
         };
-
-        this.botIntent = new Intent(this.botSdkAS.botIntent, this.botSdkAS.botClient, botIntentOpts);
+        this.botIntent = this.opts.onIntentCreate(this.botUserId, botIntentOpts);
 
         this.setupIntentCulling();
 
@@ -975,7 +987,7 @@ export class Bridge {
         checkToken?: boolean,
         path: string,
         handler: (req: ExRequest, respose: ExResponse, next: NextFunction) => void,
-    }) {
+    }): void {
         if (!this.appservice) {
             throw Error('Cannot call addAppServicePath before calling .run()');
         }
@@ -997,37 +1009,38 @@ export class Bridge {
     }
 
     /**
-     * Retrieve the connected room store instance.
+     * Retrieve the connected room store instance, if one was configured.
      */
-    public getRoomStore() {
+    public getRoomStore(): RoomBridgeStore|undefined {
         return this.roomStore;
     }
 
     /**
-     * Retrieve the connected user store instance.
+     * Retrieve the connected user store instance, if one was configured.
      */
-    public getUserStore() {
+    public getUserStore(): UserBridgeStore|undefined {
         return this.userStore;
     }
 
     /**
      * Retrieve the connected event store instance, if one was configured.
      */
-    public getEventStore() {
+    public getEventStore(): EventBridgeStore|undefined {
         return this.eventStore;
     }
 
     /**
      * Retrieve the request factory used to create incoming requests.
      */
-    public getRequestFactory() {
+    public getRequestFactory(): RequestFactory {
         return this.requestFactory;
     }
 
     /**
      * Retrieve the matrix client factory used when sending matrix requests.
+     * @deprecated The client factory is deprecated.
      */
-    public getClientFactory() {
+    public getClientFactory(): ClientFactory {
         if (!this.clientFactory) {
             throw Error('Bridge is not ready');
         }
@@ -1037,7 +1050,7 @@ export class Bridge {
     /**
      * Get the AS bot instance.
      */
-    public getBot() {
+    public getBot(): AppServiceBot {
         if (!this.appServiceBot) {
             throw Error('Bridge is not ready');
         }
@@ -1072,7 +1085,7 @@ export class Bridge {
      * instance to. Useful for logging contextual request IDs.
      * @return The intent instance
      */
-    public getIntent(userId?: string, request?: Request<unknown>) {
+    public getIntent(userId?: string, request?: Request<unknown>): Intent {
         if (!this.appServiceBot || !this.botSdkAS) {
             throw Error('Cannot call getIntent before calling .initalise()');
         }
@@ -1132,11 +1145,8 @@ export class Bridge {
                 },
             };
         }
-        const intent = new Intent(
-            this.botSdkAS.getIntentForUserId(userId),
-            this.botSdkAS.botClient,
-            clientIntentOpts,
-        );
+
+        const intent = this.opts.onIntentCreate(userId, clientIntentOpts);
         this.intents.set(key, { intent, lastAccessed: Date.now() });
 
         return intent;
@@ -1150,7 +1160,7 @@ export class Bridge {
      * instance to. Useful for logging contextual request IDs.
      * @return The intent instance
      */
-    public getIntentFromLocalpart(localpart: string, request?: Request<unknown>) {
+    public getIntentFromLocalpart(localpart: string, request?: Request<unknown>): Intent {
         return this.getIntent(
             "@" + localpart + ":" + this.opts.domain, request,
         );
@@ -1266,18 +1276,18 @@ export class Bridge {
      * Find a member for a given room. This method will fetch the joined members
      * from the homeserver if the cache doesn't have it stored.
      * @param preferBot Should we prefer the bot user over a ghost user
-     * @returns {Promise<string>} The userID of the member.
+     * @returns The userID of the member.
      */
-    public async getAnyASMemberInRoom(roomId: string, preferBot = true) {
+    public async getAnyASMemberInRoom(roomId: string, preferBot = true): Promise<string|null> {
         if (!this.registration) {
             throw Error('Registration must be defined before you can call this');
         }
         let members = this.membershipCache.getMembersForRoom(roomId, "join");
         if (!members) {
-            if (!this.appServiceBot) {
+            if (!this.botIntent) {
                 throw Error('AS Bot not defined yet');
             }
-            members = Object.keys(await this.appServiceBot.getJoinedMembers(roomId));
+            members = await this.botIntent.botSdkIntent.underlyingClient.getJoinedRoomMembers(roomId);
         }
         if (preferBot && members?.includes(this.botUserId)) {
             return this.botUserId;
@@ -1286,7 +1296,8 @@ export class Bridge {
         return members.find((u) => reg.isUserMatch(u, false)) || null;
     }
 
-    private async validateEditEvent(event: WeakEvent, parentEventId: string, allowEventOnLookupFail: boolean) {
+    private async validateEditEvent(
+        event: WeakEvent, parentEventId: string, allowEventOnLookupFail: boolean): Promise<boolean> {
         try {
             const roomMember = await this.getAnyASMemberInRoom(event.room_id);
             if (!roomMember) {
@@ -1323,7 +1334,7 @@ export class Bridge {
         }
         if (this.selfPingDeferred?.roomId === event.room_id && event.sender === this.botUserId) {
             this.selfPingDeferred.defer.resolve();
-            log.debug("Got self ping")
+            log.debug("Got self ping");
             return null;
         }
         const isCanonicalState = event.state_key === "";
@@ -1496,6 +1507,7 @@ export class Bridge {
             if (content && content.avatar_url) {
                 profile.avatar_url = content.avatar_url;
             }
+            console.log("CACHED membership entry!", event.room_id, event.state_key, content.membership);
             this.membershipCache.setMemberEntry(
                 event.room_id,
                 event.state_key,
@@ -1565,7 +1577,7 @@ export class Bridge {
      *     }
      * })
      */
-    public registerBridgeGauges(counterFunc: () => Promise<BridgeGaugesCounts>|BridgeGaugesCounts) {
+    public registerBridgeGauges(counterFunc: () => Promise<BridgeGaugesCounts>|BridgeGaugesCounts): void {
         this.getPrometheusMetrics().registerBridgeGauges(async () => {
             const counts = await counterFunc();
             if (counts.matrixGhosts !== undefined) {
@@ -1581,7 +1593,7 @@ export class Bridge {
      * and the `Authorization` header are checked.
      * @returns {Boolean} True if authenticated, False if not.
      */
-    public requestCheckToken(req: ExRequest) {
+    public requestCheckToken(req: ExRequest): boolean {
         if (!this.registration) {
             // Bridge isn't ready yet
             return false;
@@ -1599,7 +1611,7 @@ export class Bridge {
      * Close the appservice HTTP listener, and clear all timeouts.
      * @returns Resolves when the appservice HTTP listener has stopped
      */
-    public async close() {
+    public async close(): Promise<void> {
         if (this.intentLastAccessedTimeout) {
             clearTimeout(this.intentLastAccessedTimeout);
             this.intentLastAccessedTimeout = null;
@@ -1614,7 +1626,7 @@ export class Bridge {
     }
 
 
-    public async checkHomeserverSupport() {
+    public async checkHomeserverSupport(): Promise<void> {
         if (!this.botSdkAS) {
             throw Error("botSdkAS isn't ready yet");
         }
@@ -1637,7 +1649,7 @@ export class Bridge {
      * @throws This will throw if another ping attempt is made, or if the request times out.
      * @returns The delay in milliseconds
      */
-    public async pingAppserviceRoute(roomId: string, timeoutMs = BRIDGE_PING_TIMEOUT_MS) {
+    public async pingAppserviceRoute(roomId: string, timeoutMs = BRIDGE_PING_TIMEOUT_MS): Promise<number> {
         if (!this.botIntent) {
             throw Error("botIntent isn't ready yet");
         }
@@ -1658,6 +1670,15 @@ export class Bridge {
         await this.selfPingDeferred.defer.promise;
         clearTimeout(this.selfPingDeferred.timeout);
         return Date.now() - sentTs;
+    }
+
+    private onIntentCreate(userId: string, intentOpts: IntentOpts) {
+        if (!this.botSdkAS) {
+            throw Error('botSdkAS must be defined before onIntentCreate can be called');
+        }
+        const isBot = this.botUserId === userId;
+        const botIntent = isBot ? this.botSdkAS.botIntent : this.botSdkAS.getIntentForUserId(userId);
+        return new Intent(botIntent, this.botSdkAS.botClient, intentOpts);
     }
 
 }

@@ -26,7 +26,6 @@ import { ReadStream } from "fs";
 import BotSdk, { MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
 
 const log = Logging.get("Intent");
-
 export type IntentBackingStore = {
     getMembership: (roomId: string, userId: string) => UserMembership,
     getMemberProfile: (roomId: string, userid: string) => MatrixProfileInfo,
@@ -97,6 +96,9 @@ export type PowerLevelContent = {
 type UserProfileKeys = "avatar_url"|"displayname"|null;
 
 export class Intent {
+
+    private static getClientWarningFired = false;
+
     private _requestCaches: {
         profile: ClientRequestCache<MatrixProfileInfo, [string, UserProfileKeys]>,
         roomstate: ClientRequestCache<unknown, []>,
@@ -274,8 +276,11 @@ export class Intent {
         if (!this.opts.getJsSdkClient) {
             throw Error('Legacy client not available');
         }
-        log.warn("Support for the matrix-js-sdk will be going away in a future release." +
-        "Please update occurances of Intent.getClient() and Intent.client");
+        if (!Intent.getClientWarningFired) {
+            log.warn("Support for the matrix-js-sdk will be going away in a future release." +
+            "Please update occurances of Intent.getClient() and Intent.client");
+            Intent.getClientWarningFired = true;
+        }
         this.legacyClient = this.opts.getJsSdkClient();
         return this.legacyClient;
     }

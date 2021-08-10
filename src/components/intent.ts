@@ -23,7 +23,7 @@ import BridgeErrorReason = unstable.BridgeErrorReason;
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
 import { ReadStream } from "fs";
-import BotSdk, { MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
+import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
 
 const log = Logging.get("Intent");
 export type IntentBackingStore = {
@@ -251,6 +251,10 @@ export class Intent {
         };
     }
 
+    public get matrixClient(): MatrixClient {
+        return this.botSdkIntent.underlyingClient;
+    }
+
     /**
      * Legacy property to access the matrix-js-sdk.
      * @deprecated Support for the matrix-js-sdk client will be going away in
@@ -278,7 +282,8 @@ export class Intent {
         }
         if (!Intent.getClientWarningFired) {
             log.warn("Support for the matrix-js-sdk will be going away in a future release." +
-            "Please update occurances of Intent.getClient() and Intent.client");
+                    "Please replace usage of Intent.getClient() and Intent.client with either " +
+                    "Intent functions, or Intent.matrixClient");
             Intent.getClientWarningFired = true;
         }
         this.legacyClient = this.opts.getJsSdkClient();

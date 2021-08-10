@@ -1243,7 +1243,7 @@ export class Bridge {
 
         if (!roomId) {
             // In theory this should never be called, but typescript isn't happy.
-            throw Error('Expected roomId to be defined');
+            throw Error('Expected roomId to be truthy');
         }
 
         if (!this.opts.disableStores) {

@@ -15,10 +15,11 @@ limitations under the License.
 
 import PromClient, { Registry } from "prom-client";
 import { AgeCounters } from "./agecounters";
-import JsSdk from "matrix-js-sdk";
 import { Request, Response } from "express";
 import { Bridge } from "..";
 import Logger from "./logging";
+import { Appservice as BotSdkAppservice, FunctionCallContext, METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL,
+    METRIC_MATRIX_CLIENT_FUNCTION_CALL, METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL } from "matrix-bot-sdk";
 type CollectorFunction = () => Promise<void>|void;
 
 export interface BridgeGaugesCounts {
@@ -119,67 +120,53 @@ export class PrometheusMetrics {
     * matrix-js-sdk. In particular, a metric is added that counts the number of
     * calls to client API endpoints made by the client library.
     */
-    public registerMatrixSdkMetrics() {
+    public registerMatrixSdkMetrics(appservice: BotSdkAppservice): void {
         const callCounts = this.addCounter({
             name: "matrix_api_calls",
             help: "Count of the number of Matrix client API calls made",
             labels: ["method"],
         });
-
-        /*
-            * We'll now annotate a bunch of the methods in MatrixClient to keep counts
-            * of every time they're called. This seems to be neater than trying to
-            * intercept all HTTP requests and try to intuit what internal method was
-            * invoked based on the HTTP URL.
-            * It's kind of messy to do this because we have to maintain a list of
-            * client SDK method names, but the only other alternative is to hook the
-            * 'request' function and attempt to parse methods out by inspecting the
-            * underlying client API HTTP URLs, and that is even messier. So this is
-            * the lesser of two evils.
-            */
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const matrixClientPrototype = (JsSdk as any).MatrixClient.prototype;
-
-        const CLIENT_METHODS = [
-            "ban",
-            "createAlias",
-            "createRoom",
-            "getProfileInfo",
-            "getStateEvent",
-            "invite",
-            "joinRoom",
-            "kick",
-            "leave",
-            "register",
-            "roomState",
-            "sendEvent",
-            "sendReceipt",
-            "sendStateEvent",
-            "sendTyping",
-            "setAvatarUrl",
-            "setDisplayName",
-            "setPowerLevel",
-            "setPresence",
-            "setProfileInfo",
-            "unban",
-            "uploadContent",
-        ];
-
-        CLIENT_METHODS.forEach(function(method) {
-            callCounts.inc({method: method}, 0); // initialise the count to zero
-
-            const orig = matrixClientPrototype[method];
-            matrixClientPrototype[method] = function(...args: unknown[]) {
-                callCounts.inc({method: method});
-                return orig.apply(this, args);
-            }
+        const callCountsFailed = this.addCounter({
+            name: "matrix_api_calls_failed",
+            help: "Count of the number of Matrix client API calls made",
+            labels: ["method"],
         });
+
+        appservice.metrics.registerListener({
+            onStartMetric: () => {
+                // Not used yet.
+            },
+            onEndMetric: () => {
+                // Not used yet.
+            },
+            onIncrement: (metricName, context) => {
+                if (metricName === METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL) {
+                    const ctx = context as FunctionCallContext;
+                    callCounts.inc({method: ctx.functionName});
+                }
+                if (metricName === METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL) {
+                    const ctx = context as FunctionCallContext;
+                    callCountsFailed.inc({method: ctx.functionName});
+                }
+            },
+            onDecrement: () => {
+                // Not used yet.
+            },
+            onReset: (metricName) => {
+                if (metricName === METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL) {
+                    callCounts.reset();
+                }
+                if (metricName === METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL) {
+                    callCountsFailed.reset();
+                }
+            },
+        })
     }
 
     /**
      * Fetch metrics from all configured collectors
      */
-    public async refresh () {
+    public async refresh (): Promise<void> {
         try {
             await Promise.all(this.collectors.map((f) => f()));
         }
@@ -194,7 +181,8 @@ export class PrometheusMetrics {
      * @param {BridgeGaugesCallback} counterFunc A function that when invoked
      * returns the current counts of various items in the bridge.
      */
-    public async registerBridgeGauges (counterFunc: () => Promise<BridgeGaugesCounts>|BridgeGaugesCounts) {
+    public async registerBridgeGauges (
+        counterFunc: () => Promise<BridgeGaugesCounts>|BridgeGaugesCounts): Promise<void> {
         const matrixRoomsGauge = this.addGauge({
             name: "matrix_configured_rooms",
             help: "Current count of configured rooms by matrix room ID",
@@ -262,7 +250,7 @@ export class PrometheusMetrics {
      * This function is passed no arguments and is not expected to return anything.
      * It runs purely to have a side-effect on previously registered gauges.
      */
-    public addCollector (func: CollectorFunction) {
+    public addCollector (func: CollectorFunction): void {
         this.collectors.push(func);
     }
 
@@ -281,7 +269,7 @@ export class PrometheusMetrics {
      * gauge in order to provide a new value for it.
      * @return {Gauge} A gauge metric.
      */
-    public addGauge (opts: GagueOpts) {
+    public addGauge (opts: GagueOpts): PromClient.Gauge<string> {
         const refresh = opts.refresh;
         const name = [opts.namespace || "bridge", opts.name].join("_");
 
@@ -311,7 +299,7 @@ export class PrometheusMetrics {
      * @param {Array<string>=} opts.labels An optional list of string label names
      * @return {Counter} A counter metric.
      */
-    public addCounter (opts: CounterOpts) {
+    public addCounter (opts: CounterOpts): PromClient.Counter<string> {
         const name = [opts.namespace || "bridge", opts.name].join("_");
 
         const counter = this.counters[opts.name] =
@@ -330,7 +318,7 @@ export class PrometheusMetrics {
      * @param{string} name The name the metric was previously registered as.
      * @param{Object} labels Optional object containing additional label values.
      */
-    public incCounter (name: string, labels: {[label: string]: string}) {
+    public incCounter (name: string, labels: {[label: string]: string}): void {
         if (!this.counters[name]) {
             throw new Error("Unrecognised counter metric name '" + name + "'");
         }
@@ -360,7 +348,8 @@ export class PrometheusMetrics {
                 help: opts.help,
                 labelNames: opts.labels || [],
                 registers: [this.register],
-                buckets: opts.buckets,
+                // Only apply buckets if defined
+                ...(opts.buckets !== undefined ? {buckets: opts.buckets} : undefined),
             });
         return timer;
     }
@@ -372,7 +361,7 @@ export class PrometheusMetrics {
      * @return {function} A function to be called to end the timer and report the
      * observation.
      */
-    public startTimer(name: string, labels: {[label: string]: string}) {
+    public startTimer(name: string, labels: {[label: string]: string}): () => void {
         if (!this.timers[name]) {
             throw Error("Unrecognised timer metric name '" + name + "'");
         }
@@ -385,7 +374,7 @@ export class PrometheusMetrics {
      * containing Express app.
      * @param {Bridge} bridge The containing Bridge instance.
      */
-    public addAppServicePath(bridge: Bridge) {
+    public addAppServicePath(bridge: Bridge): void {
         bridge.addAppServicePath({
             method: "GET",
             path: "/metrics",

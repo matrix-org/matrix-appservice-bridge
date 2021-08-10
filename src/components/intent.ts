@@ -281,7 +281,7 @@ export class Intent {
             throw Error('Legacy client not available');
         }
         if (!Intent.getClientWarningFired) {
-            log.warn("Support for the matrix-js-sdk will be going away in a future release." +
+            console.warn("Support for the matrix-js-sdk will be going away in a future release." +
                     "Please replace usage of Intent.getClient() and Intent.client with either " +
                     "Intent functions, or Intent.matrixClient");
             Intent.getClientWarningFired = true;

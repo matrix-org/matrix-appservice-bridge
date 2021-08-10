@@ -67,7 +67,9 @@ export class AppServiceBot {
      * @param roomId The room to get a list of joined user IDs in.
      * @return Resolves to a map of user ID => display_name avatar_url
      */
-    public async getJoinedMembers(roomId: string): Promise<{[userId: string]: MatrixProfileInfo}> {
+    public async getJoinedMembers(
+        // eslint-disable-next-line camelcase
+        roomId: string): Promise<Record<string, {display_name?: string, avatar_url?: string}>> {
         // Until https://github.com/turt2live/matrix-bot-sdk/pull/138 is merged.
         // eslint-disable-next-line camelcase
         const res: Record<string, {display_name?: string, avatar_url?: string}> =

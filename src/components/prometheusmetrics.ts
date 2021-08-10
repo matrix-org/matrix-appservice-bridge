@@ -38,12 +38,11 @@ interface CounterOpts {
     help: string;
     labels?: string[];
 }
+interface HistogramOpts extends CounterOpts {
+    buckets?: number[];
+}
 
-interface GagueOpts {
-    namespace?: string;
-    name: string;
-    help: string;
-    labels?: string[];
+interface GagueOpts extends CounterOpts {
     refresh?: (gauge: PromClient.Gauge<string>) => void;
 }
 
@@ -346,12 +345,13 @@ export class PrometheusMetrics {
      * new metric. Default: <code>"bridge"</code>.
      * @param {string} opts.name The variable name for the new metric.
      * @param {string} opts.help Descriptive help text for the new metric.
+     * @param {string} opts.buckets The buckets that should be used for the histogram.
      * @param {Array<string>=} opts.labels An optional list of string label names
      * @return {Histogram} A histogram metric.
      * Once created, the value of this metric can be incremented with the
      * <code>startTimer</code> method.
      */
-    public addTimer(opts: CounterOpts) {
+    public addTimer(opts: HistogramOpts): PromClient.Histogram<string> {
         const name = [opts.namespace || "bridge", opts.name].join("_");
 
         const timer = this.timers[opts.name] =
@@ -359,9 +359,9 @@ export class PrometheusMetrics {
                 name,
                 help: opts.help,
                 labelNames: opts.labels || [],
-                registers: [this.register]
+                registers: [this.register],
+                buckets: opts.buckets,
             });
-
         return timer;
     }
 

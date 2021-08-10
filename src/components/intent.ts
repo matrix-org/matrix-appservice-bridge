@@ -493,7 +493,7 @@ export class Intent {
                 }
             }
             catch (ex) {
-                if (ex.errcode !== "M_FORBIDDEN") {
+                if (ex.body.errcode !== "M_FORBIDDEN") {
                     throw ex;
                 }
             }
@@ -828,7 +828,8 @@ export class Intent {
             return await this.botSdkIntent.underlyingClient.getRoomStateEvent(roomId, eventType, stateKey);
         }
         catch (ex) {
-            if (ex.errcode !== "M_NOT_FOUND" || !returnNull) {
+            console.log("getStateEvent", ex);
+            if (ex.body.errcode !== "M_NOT_FOUND" || !returnNull) {
                 throw ex;
             }
         }
@@ -856,7 +857,7 @@ export class Intent {
             return false;
         }
         catch (ex) {
-            if (ex.httpStatus == 404) {
+            if (ex.statusCode == 404) {
                 this.encryptedRooms.set(roomId, false);
                 return false;
             }
@@ -1028,7 +1029,7 @@ export class Intent {
                 mark(roomId, "join");
             }
             catch (ex) {
-                if (ex.errcode !== "M_FORBIDDEN") {
+                if (ex.body.errcode !== "M_FORBIDDEN") {
                     throw ex;
                 }
                 try {

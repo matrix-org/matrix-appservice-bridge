@@ -107,7 +107,7 @@ export class RoomUpgradeHandler {
             return true;
         }
         catch (ex) {
-            if (ex.errcode === "M_FORBIDDEN") {
+            if (ex.body.errcode === "M_FORBIDDEN") {
                 return false;
             }
             throw Error("Failed to handle upgrade");

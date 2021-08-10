@@ -1507,7 +1507,6 @@ export class Bridge {
             if (content && content.avatar_url) {
                 profile.avatar_url = content.avatar_url;
             }
-            console.log("CACHED membership entry!", event.room_id, event.state_key, content.membership);
             this.membershipCache.setMemberEntry(
                 event.room_id,
                 event.state_key,
@@ -1545,7 +1544,11 @@ export class Bridge {
 
         const metrics = this.metrics = new PrometheusMetrics(registry);
 
-        metrics.registerMatrixSdkMetrics();
+        if (!this.botSdkAS) {
+            throw Error('initalise() not called, cannot listen');
+        }
+
+        metrics.registerMatrixSdkMetrics(this.botSdkAS);
 
         // TODO(paul): register some bridge-wide standard ones here
 

@@ -1,1 +1,0 @@
-Add `buckets` option to PrometheusMetrics.addTimer, to specify custom bucket intervals.

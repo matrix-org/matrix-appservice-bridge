@@ -91,7 +91,7 @@ export class BridgeInfoStateSyncer<BridgeMappingInfo> {
                 }
             }
             catch (ex) {
-                log.warn(`Encountered error when trying to sync ${roomId}`);
+                log.warn(`Encountered error when trying to sync ${roomId}`, ex);
                 break; // To be on the safe side, do not retry this room.
             }
 

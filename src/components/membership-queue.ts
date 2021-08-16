@@ -247,11 +247,11 @@ export class MembershipQueue {
             });
         }
         catch (ex) {
-            if (ex.errcode || ex.httpStatus) {
+            if (ex.body.errcode || ex.statusCode) {
                 this.failureReasonCounter?.inc({
                     type: kickUser ? "kick" : type,
-                    errcode: ex.errcode || "none",
-                    http_status: ex.httpStatus || "none"
+                    errcode: ex.body.errcode || "none",
+                    http_status: ex.statusCode || "none"
                 });
             }
             if (!this.shouldRetry(ex, attempts)) {
@@ -266,7 +266,7 @@ export class MembershipQueue {
                 this.opts.actionDelayMs
             );
             log.warn(`${reqIdStr} Failed to ${type} ${roomId}, delaying for ${delay}ms`);
-            log.debug(`${reqIdStr} Failed with: ${ex.errcode} ${ex.message}`);
+            log.debug(`${reqIdStr} Failed with: ${ex.body.errcode} ${ex.message}`);
             await new Promise((r) => setTimeout(r, delay));
             this.queueMembership({...item, attempts: attempts + 1}).catch((innerEx) => {
                 log.error(`Failed to handle membership change:`, innerEx);
@@ -279,11 +279,11 @@ export class MembershipQueue {
         }
     }
 
-    private shouldRetry(ex: {code: string; errcode: string; httpStatus: number}, attempts: number): boolean {
+    private shouldRetry(ex: {body: {code: string; errcode: string;}, statusCode: number}, attempts: number): boolean {
         return !(
             attempts === this.opts.maxAttempts ||
-            ex.errcode === "M_FORBIDDEN" ||
-            ex.httpStatus === 403
+            ex.body.errcode === "M_FORBIDDEN" ||
+            ex.statusCode === 403
         );
     }
 }

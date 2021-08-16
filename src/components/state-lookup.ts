@@ -125,7 +125,7 @@ export class StateLookup {
             return r;
         }
         catch (err) {
-            if (err.httpStatus >= 400 && err.httpStatus < 600) { // 4xx, 5xx
+            if (err.statusCode >= 400 && err.statusCode < 600) { // 4xx, 5xx
                 throw err; // don't have permission, don't retry.
             }
             // wait a bit then try again

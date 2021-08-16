@@ -79,12 +79,12 @@ describe("StateLookup", function() {
         it("should fail the promise if the HTTP call returns 4xx", function(done) {
             cli.roomState.and.callFake(function(roomId) {
                 return Promise.reject({
-                    httpStatus: 403
+                    statusCode: 403
                 });
             });
 
             lookup.trackRoom("!foo:bar").catch(function(err) {
-                expect(err.httpStatus).toBe(403);
+                expect(err.statusCode).toBe(403);
                 done();
             });
         });
@@ -92,12 +92,12 @@ describe("StateLookup", function() {
         it("should fail the promise if the HTTP call returns 5xx", function(done) {
             cli.roomState.and.callFake(function(roomId) {
                 return Promise.reject({
-                    httpStatus: 500
+                    statusCode: 500
                 });
             });
 
             lookup.trackRoom("!foo:bar").catch(function(err) {
-                expect(err.httpStatus).toBe(500);
+                expect(err.statusCode).toBe(500);
                 done();
             });
         });

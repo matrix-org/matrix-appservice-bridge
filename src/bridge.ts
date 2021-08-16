@@ -51,6 +51,7 @@ import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
 import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
+import * as BotSDK from "matrix-bot-sdk";
 
 const log = logging.get("bridge");
 
@@ -199,6 +200,10 @@ export interface BridgeOpts {
         clients?: IntentOpts;
     };
     /**
+     * The factory function used to create intents.
+     */
+    onIntentCreate?: (userId: string) => Intent,
+    /**
      * Options for the `onEvent` queue. When the bridge
      * receives an incoming transaction, it needs to asyncly query the data store for
      * contextual info before calling onEvent. A queue is used to keep the onEvent
@@ -343,6 +348,10 @@ interface VettedBridgeOpts {
         clients?: IntentOpts;
     };
     /**
+     * The factory function used to create intents.
+     */
+    onIntentCreate: (userId: string, opts: IntentOpts) => Intent,
+    /**
      * Options for the `onEvent` queue. When the bridge
      * receives an incoming transaction, it needs to asyncly query the data store for
      * contextual info before calling onEvent. A queue is used to keep the onEvent
@@ -412,7 +421,6 @@ export class Bridge {
     private botIntent?: Intent;
     private appServiceBot?: AppServiceBot;
     private clientFactory?: ClientFactory;
-    private botClient?: any;
     private metrics?: PrometheusMetrics;
     private roomLinkValidator?: RoomLinkValidator;
     private roomUpgradeHandler?: RoomUpgradeHandler;
@@ -421,6 +429,7 @@ export class Bridge {
     private eventStore?: EventBridgeStore;
     private registration?: AppServiceRegistration;
     private appservice?: AppService;
+    private botSdkAS?: BotSDK.Appservice;
     private eeEventBroker?: EncryptedEventBroker;
     private selfPingDeferred?: {
         defer: Defer<void>;
@@ -430,11 +439,14 @@ export class Bridge {
 
     public readonly opts: VettedBridgeOpts;
 
-    public get appService() {
+    public get appService(): AppService {
+        if (!this.appservice) {
+            throw Error('appservice not defined yet');
+        }
         return this.appservice;
     }
 
-    public get botUserId() {
+    public get botUserId(): string {
         if (!this.registration) {
             throw Error('Registration not defined yet');
         }
@@ -470,6 +482,7 @@ export class Bridge {
             userStore: opts.userStore || "user-store.db",
             roomStore: opts.roomStore || "room-store.db",
             intentOptions: opts.intentOptions || {},
+            onIntentCreate: opts.onIntentCreate ?? this.onIntentCreate.bind(this),
             queue: {
                 type: opts.queue?.type || "single",
                 perRequest: opts.queue?.perRequest ?? false,
@@ -521,7 +534,7 @@ export class Bridge {
     /**
      * Load the user and room databases. Access them via getUserStore() and getRoomStore().
      */
-    public async loadDatabases() {
+    public async loadDatabases(): Promise<void> {
         if (this.opts.disableStores) {
             return;
         }
@@ -561,7 +574,7 @@ export class Bridge {
      *
      * **This must be called before `listen()`**
      */
-    public async initalise() {
+    public async initalise(): Promise<void> {
         if (typeof this.opts.registration === "string") {
             const regObj = yaml.load(await fs.readFile(this.opts.registration, 'utf8'));
             if (typeof regObj !== "object") {
@@ -581,6 +594,24 @@ export class Bridge {
         if (!asToken) {
             throw Error('No AS token provided, cannot create ClientFactory');
         }
+        const rawReg = this.registration.getOutput();
+        this.botSdkAS = new BotSDK.Appservice({
+            registration: {
+                ...rawReg,
+                url: rawReg.url || undefined,
+                protocols: rawReg.protocols || undefined,
+                namespaces: {
+                    users: rawReg.namespaces?.users || [],
+                    rooms: rawReg.namespaces?.rooms || [],
+                    aliases: rawReg.namespaces?.aliases || [],
+                }
+            },
+            homeserverUrl: this.opts.homeserverUrl,
+            homeserverName: this.opts.domain,
+            // Unused atm.
+            port: 0,
+            bindAddress: "127.0.0.1",
+        });
 
         this.clientFactory = this.opts.clientFactory || new ClientFactory({
             url: this.opts.homeserverUrl,
@@ -593,10 +624,9 @@ export class Bridge {
         this.clientFactory.setLogFunction((text, isErr) => {
             this.onLog(text, isErr || false);
         });
-        this.botClient = this.clientFactory.getClientAs();
         await this.checkHomeserverSupport();
         this.appServiceBot = new AppServiceBot(
-            this.botClient, this.registration, this.membershipCache,
+            this.botSdkAS.botClient, this.botUserId, this.registration, this.membershipCache,
         );
 
         if (this.opts.bridgeEncryption) {
@@ -634,13 +664,24 @@ export class Bridge {
                 )
             );
         }
+
         const botIntentOpts: IntentOpts = {
             registered: true,
             backingStore: this.intentBackingStore,
+            getJsSdkClient: () => {
+                if (!this.clientFactory) {
+                    throw Error('clientFactory not ready yet');
+                }
+                return this.clientFactory.getClientAs(
+                    undefined,
+                    undefined,
+                    this.opts.bridgeEncryption?.homeserverUrl,
+                    !!this.opts.bridgeEncryption,
+                )
+            },
             ...this.opts.intentOptions?.bot, // copy across opts, if defined
         };
-
-        this.botIntent = new Intent(this.botClient, this.botClient, botIntentOpts);
+        this.botIntent = this.opts.onIntentCreate(this.botUserId, botIntentOpts);
 
         this.setupIntentCulling();
 
@@ -649,13 +690,14 @@ export class Bridge {
 
     /**
      * Setup a HTTP listener to handle appservice traffic.
-     * **This must be called after .initalise()**
+     * ** This must be called after .initalise() **
      * @param port The port to listen on.
      * @param appServiceInstance The AppService instance to attach to.
      * If not provided, one will be created.
-     * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
+     * @param hostname Optional hostname to bind to.
      */
-    public async listen(port: number, hostname = "0.0.0.0", backlog = 10, appServiceInstance?: AppService) {
+    public async listen(
+        port: number, hostname = "0.0.0.0", backlog = 10, appServiceInstance?: AppService): Promise<void> {
         if (!this.registration) {
             throw Error('initalise() not called, cannot listen');
         }
@@ -697,15 +739,13 @@ export class Bridge {
 
     /**
      * Run the bridge (start listening). This calls `initalise()` and `listen()`.
-     * @deprecated Prefer calling initalise and listen seperately.
      * @param port The port to listen on.
-     * @param config Configuration options. NOT USED
      * @param appServiceInstance The AppService instance to attach to.
      * If not provided, one will be created.
-     * @param hostname Optional hostname to bind to. (e.g. 0.0.0.0)
-     * @return A promise resolving when the bridge is ready
+     * @param hostname Optional hostname to bind to.
+     * @return A promise resolving when the bridge is ready.
      */
-    public async run<T>(port: number, config: T, appServiceInstance?: AppService, hostname = "0.0.0.0", backlog = 10) {
+    public async run(port: number, appServiceInstance?: AppService, hostname = "0.0.0.0", backlog = 10): Promise<void> {
         await this.initalise();
         await this.listen(port, hostname, backlog, appServiceInstance);
     }
@@ -921,7 +961,7 @@ export class Bridge {
         checkToken?: boolean,
         path: string,
         handler: (req: ExRequest, respose: ExResponse, next: NextFunction) => void,
-    }) {
+    }): void {
         if (!this.appservice) {
             throw Error('Cannot call addAppServicePath before calling .run()');
         }
@@ -943,37 +983,38 @@ export class Bridge {
     }
 
     /**
-     * Retrieve the connected room store instance.
+     * Retrieve the connected room store instance, if one was configured.
      */
-    public getRoomStore() {
+    public getRoomStore(): RoomBridgeStore|undefined {
         return this.roomStore;
     }
 
     /**
-     * Retrieve the connected user store instance.
+     * Retrieve the connected user store instance, if one was configured.
      */
-    public getUserStore() {
+    public getUserStore(): UserBridgeStore|undefined {
         return this.userStore;
     }
 
     /**
      * Retrieve the connected event store instance, if one was configured.
      */
-    public getEventStore() {
+    public getEventStore(): EventBridgeStore|undefined {
         return this.eventStore;
     }
 
     /**
      * Retrieve the request factory used to create incoming requests.
      */
-    public getRequestFactory() {
+    public getRequestFactory(): RequestFactory {
         return this.requestFactory;
     }
 
     /**
      * Retrieve the matrix client factory used when sending matrix requests.
+     * @deprecated The client factory is deprecated.
      */
-    public getClientFactory() {
+    public getClientFactory(): ClientFactory {
         if (!this.clientFactory) {
             throw Error('Bridge is not ready');
         }
@@ -983,7 +1024,7 @@ export class Bridge {
     /**
      * Get the AS bot instance.
      */
-    public getBot() {
+    public getBot(): AppServiceBot {
         if (!this.appServiceBot) {
             throw Error('Bridge is not ready');
         }
@@ -1018,21 +1059,21 @@ export class Bridge {
      * instance to. Useful for logging contextual request IDs.
      * @return The intent instance
      */
-    public getIntent(userId?: string, request?: Request<unknown>) {
-        if (!this.clientFactory) {
-            throw Error('Cannot call getIntent before calling .run()');
+    public getIntent(userId?: string, request?: Request<unknown>): Intent {
+        if (!this.appServiceBot || !this.botSdkAS) {
+            throw Error('Cannot call getIntent before calling .initalise()');
         }
         if (!userId) {
             if (!this.botIntent) {
                 // This will be defined when .run is called.
-                throw Error('Cannot call getIntent before calling .run()');
+                throw Error('Cannot call getIntent before calling .initalise()');
             }
             return this.botIntent;
         }
         else if (userId === this.botUserId) {
             if (!this.botIntent) {
                 // This will be defined when .run is called.
-                throw Error('Cannot call getIntent before calling .run()');
+                throw Error('Cannot call getIntent before calling .initalise()');
             }
             return this.botIntent;
         }
@@ -1048,14 +1089,23 @@ export class Bridge {
             return existingIntent.intent;
         }
 
-        const client = this.clientFactory.getClientAs(
-            userId,
-            request,
-            this.opts.bridgeEncryption?.homeserverUrl,
-            !!this.opts.bridgeEncryption,
-        );
         const clientIntentOpts: IntentOpts = {
             backingStore: this.intentBackingStore,
+            /**
+             * We still support creating a JS SDK client if the bridge really needs it,
+             * but for memory/performance reasons we only create them on demand.
+             */
+            getJsSdkClient: () => {
+                if (!this.clientFactory) {
+                    throw Error('clientFactory not ready yet');
+                }
+                return this.clientFactory.getClientAs(
+                    userId,
+                    request,
+                    this.opts.bridgeEncryption?.homeserverUrl,
+                    !!this.opts.bridgeEncryption,
+                )
+            },
             ...this.opts.intentOptions?.clients,
         };
         clientIntentOpts.registered = this.membershipCache.isUserRegistered(userId);
@@ -1065,11 +1115,12 @@ export class Bridge {
                 sessionPromise: encryptionOpts.store.getStoredSession(userId),
                 sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(encryptionOpts.store),
                 ensureClientSyncingCallback: async () => {
-                    return this.eeEventBroker?.startSyncingUser(userId!);
+                    return this.eeEventBroker?.startSyncingUser(userId || this.botUserId);
                 },
             };
         }
-        const intent = new Intent(client, this.botClient, clientIntentOpts);
+
+        const intent = this.opts.onIntentCreate(userId, clientIntentOpts);
         this.intents.set(key, { intent, lastAccessed: Date.now() });
 
         return intent;
@@ -1083,7 +1134,7 @@ export class Bridge {
      * instance to. Useful for logging contextual request IDs.
      * @return The intent instance
      */
-    public getIntentFromLocalpart(localpart: string, request?: Request<unknown>) {
+    public getIntentFromLocalpart(localpart: string, request?: Request<unknown>): Intent {
         return this.getIntent(
             "@" + localpart + ":" + this.opts.domain, request,
         );
@@ -1099,11 +1150,12 @@ export class Bridge {
     public async provisionUser(
         matrixUser: MatrixUser,
         provisionedUser?: {name?: string, url?: string, remote?: RemoteUser}
-    ) {
-        if (!this.clientFactory) {
+    ): Promise<void> {
+        if (!this.botSdkAS) {
             throw Error('Cannot call getIntent before calling .run()');
         }
-        await this.botClient.register(matrixUser.localpart);
+        const intent = this.getIntentFromLocalpart(matrixUser.localpart);
+        await intent.ensureRegistered();
 
         if (!this.opts.disableStores) {
             if (!this.userStore) {
@@ -1114,12 +1166,11 @@ export class Bridge {
                 await this.userStore.linkUsers(matrixUser, provisionedUser.remote);
             }
         }
-        const userClient = await this.clientFactory.getClientAs(matrixUser.getId());
         if (provisionedUser?.name) {
-            await userClient.setDisplayName(provisionedUser.name);
+            await intent.setDisplayName(provisionedUser.name);
         }
         if (provisionedUser?.url) {
-            await userClient.setAvatarUrl(provisionedUser.url);
+            await intent.setAvatarUrl(provisionedUser.url);
         }
     }
 
@@ -1158,12 +1209,15 @@ export class Bridge {
         let roomId = provisionedRoom.roomId;
         // If they didn't pass an existing `roomId` back,
         // we expect some `creationOpts` to create a new room
-        if (!roomId) {
-            // eslint-disable-next-line camelcase
-            const createRoomResponse: {room_id: string} = await this.botClient.createRoom(
+        if (roomId === undefined) {
+            roomId = await this.botIntent.botSdkIntent.underlyingClient.createRoom(
                 provisionedRoom.creationOpts
             );
-            roomId = createRoomResponse.room_id;
+        }
+
+        if (!roomId) {
+            // In theory this should never be called, but typescript isn't happy.
+            throw Error('Expected roomId to be truthy');
         }
 
         if (!this.opts.disableStores) {
@@ -1196,18 +1250,18 @@ export class Bridge {
      * Find a member for a given room. This method will fetch the joined members
      * from the homeserver if the cache doesn't have it stored.
      * @param preferBot Should we prefer the bot user over a ghost user
-     * @returns {Promise<string>} The userID of the member.
+     * @returns The userID of the member.
      */
-    public async getAnyASMemberInRoom(roomId: string, preferBot = true) {
+    public async getAnyASMemberInRoom(roomId: string, preferBot = true): Promise<string|null> {
         if (!this.registration) {
             throw Error('Registration must be defined before you can call this');
         }
         let members = this.membershipCache.getMembersForRoom(roomId, "join");
         if (!members) {
-            if (!this.appServiceBot) {
+            if (!this.botIntent) {
                 throw Error('AS Bot not defined yet');
             }
-            members = Object.keys(await this.appServiceBot.getJoinedMembers(roomId));
+            members = await this.botIntent.botSdkIntent.underlyingClient.getJoinedRoomMembers(roomId);
         }
         if (preferBot && members?.includes(this.botUserId)) {
             return this.botUserId;
@@ -1216,7 +1270,8 @@ export class Bridge {
         return members.find((u) => reg.isUserMatch(u, false)) || null;
     }
 
-    private async validateEditEvent(event: WeakEvent, parentEventId: string, allowEventOnLookupFail: boolean) {
+    private async validateEditEvent(
+        event: WeakEvent, parentEventId: string, allowEventOnLookupFail: boolean): Promise<boolean> {
         try {
             const roomMember = await this.getAnyASMemberInRoom(event.room_id);
             if (!roomMember) {
@@ -1253,7 +1308,7 @@ export class Bridge {
         }
         if (this.selfPingDeferred?.roomId === event.room_id && event.sender === this.botUserId) {
             this.selfPingDeferred.defer.resolve();
-            log.debug("Got self ping")
+            log.debug("Got self ping");
             return null;
         }
         const isCanonicalState = event.state_key === "";
@@ -1463,7 +1518,11 @@ export class Bridge {
 
         const metrics = this.metrics = new PrometheusMetrics(registry);
 
-        metrics.registerMatrixSdkMetrics();
+        if (!this.botSdkAS) {
+            throw Error('initalise() not called, cannot listen');
+        }
+
+        metrics.registerMatrixSdkMetrics(this.botSdkAS);
 
         // TODO(paul): register some bridge-wide standard ones here
 
@@ -1495,7 +1554,7 @@ export class Bridge {
      *     }
      * })
      */
-    public registerBridgeGauges(counterFunc: () => Promise<BridgeGaugesCounts>|BridgeGaugesCounts) {
+    public registerBridgeGauges(counterFunc: () => Promise<BridgeGaugesCounts>|BridgeGaugesCounts): void {
         this.getPrometheusMetrics().registerBridgeGauges(async () => {
             const counts = await counterFunc();
             if (counts.matrixGhosts !== undefined) {
@@ -1511,7 +1570,7 @@ export class Bridge {
      * and the `Authorization` header are checked.
      * @returns {Boolean} True if authenticated, False if not.
      */
-    public requestCheckToken(req: ExRequest) {
+    public requestCheckToken(req: ExRequest): boolean {
         if (!this.registration) {
             // Bridge isn't ready yet
             return false;
@@ -1529,7 +1588,7 @@ export class Bridge {
      * Close the appservice HTTP listener, and clear all timeouts.
      * @returns Resolves when the appservice HTTP listener has stopped
      */
-    public async close() {
+    public async close(): Promise<void> {
         if (this.intentLastAccessedTimeout) {
             clearTimeout(this.intentLastAccessedTimeout);
             this.intentLastAccessedTimeout = null;
@@ -1544,14 +1603,15 @@ export class Bridge {
     }
 
 
-    public async checkHomeserverSupport() {
-        if (!this.botClient) {
-            throw Error("botClient isn't ready yet");
+    public async checkHomeserverSupport(): Promise<void> {
+        if (!this.botSdkAS) {
+            throw Error("botSdkAS isn't ready yet");
         }
         // Min required version
         if (this.opts.bridgeEncryption) {
             // Ensure that we have support for /login
-            const loginFlows: {flows: {type: string}[]} = await this.botClient.loginFlows();
+            const loginFlows: {flows: {type: string}[]} =
+                await this.botSdkAS.botClient.doRequest("GET", "/_matrix/client/r0/login");
             if (!EncryptedEventBroker.supportsLoginFlow(loginFlows)) {
                 throw Error('To enable support for encryption, your homeserver must support MSC2666');
             }
@@ -1566,9 +1626,9 @@ export class Bridge {
      * @throws This will throw if another ping attempt is made, or if the request times out.
      * @returns The delay in milliseconds
      */
-    public async pingAppserviceRoute(roomId: string, timeoutMs = BRIDGE_PING_TIMEOUT_MS) {
+    public async pingAppserviceRoute(roomId: string, timeoutMs = BRIDGE_PING_TIMEOUT_MS): Promise<number> {
         if (!this.botIntent) {
-            throw Error("botClient isn't ready yet");
+            throw Error("botIntent isn't ready yet");
         }
         const sentTs = Date.now();
         if (this.selfPingDeferred) {
@@ -1591,6 +1651,15 @@ export class Bridge {
 
     public updateRoomLinkValidatorRules(rules: Rules): void {
         this.roomLinkValidator?.updateRules(rules);
+    }
+
+    private onIntentCreate(userId: string, intentOpts: IntentOpts) {
+        if (!this.botSdkAS) {
+            throw Error('botSdkAS must be defined before onIntentCreate can be called');
+        }
+        const isBot = this.botUserId === userId;
+        const botIntent = isBot ? this.botSdkAS.botIntent : this.botSdkAS.getIntentForUserId(userId);
+        return new Intent(botIntent, this.botSdkAS.botClient, intentOpts);
     }
 
 }

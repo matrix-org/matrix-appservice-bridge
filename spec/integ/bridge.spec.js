@@ -1,7 +1,6 @@
 "use strict";
 const Datastore = require("nedb");
 const fs = require("fs");
-const log = require("../log");
 
 const HS_URL = "http://example.com";
 const HS_DOMAIN = "example.com";
@@ -11,39 +10,35 @@ const BOT_USER_ID = `@${BOT_LOCALPART}:${HS_DOMAIN}`;
 const TEST_USER_DB_PATH = __dirname + "/test-users.db";
 const TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
 const TEST_EVENT_DB_PATH = __dirname + "/test-events.db";
-const UserBridgeStore = require("../..").UserBridgeStore;
-const RoomBridgeStore = require("../..").RoomBridgeStore;
-const EventBridgeStore = require("../..").EventBridgeStore;
-const MatrixUser = require("../..").MatrixUser;
-const RemoteUser = require("../..").RemoteUser;
-const MatrixRoom = require("../..").MatrixRoom;
-const RemoteRoom = require("../..").RemoteRoom;
-const AppServiceRegistration = require("matrix-appservice").AppServiceRegistration;
-const {Bridge, BRIDGE_PING_EVENT_TYPE, BRIDGE_PING_TIMEOUT_MS} = require("../..");
+const { UserBridgeStore, RoomBridgeStore, EventBridgeStore, MatrixUser,
+    RemoteUser, MatrixRoom, RemoteRoom, AppServiceRegistration, Bridge,
+    BRIDGE_PING_EVENT_TYPE, BRIDGE_PING_TIMEOUT_MS, Intent } = require("../..");
 
 const deferPromise = require("../../lib/utils/promiseutil").defer;
 
 describe("Bridge", function() {
-    var bridge, bridgeCtrl, appService, clientFactory, appServiceRegistration;
-    var roomStore, userStore, eventStore, clients;
+    let bridge, bridgeCtrl, appService, appServiceRegistration, intents, intentCreateFn;
+    let roomStore, userStore, eventStore;
+    let userIsRegistered;
 
-    beforeEach(
-    /** @this */
-    function(done) {
-        log.beforeEach(this);
-        // Setup mock client factory to avoid making real outbound HTTP conns
-        clients = {};
-        clientFactory = jasmine.createSpyObj("ClientFactory", [
-            "setLogFunction", "getClientAs", "configure"
-        ]);
-        clientFactory.getClientAs.and.callFake(function(uid, req) {
-            return clients[
-                (uid ? uid : "bot") + (req ? req.getId() : "")] || {uid};
-        });
-        clients["bot"] = mkMockMatrixClient(
-            "@" + BOT_LOCALPART + ":" + HS_DOMAIN
-        );
-
+    beforeEach(async function() {
+        userIsRegistered = true;
+        intentCreateFn = (userId, opts) => {
+            const underlyingClient = jasmine.createSpyObj("underlyingClient", [
+                'createRoom', 'sendEvent', 'getJoinedRoomMembers', 'getEvent', 'joinRoom',
+                'resolveRoom', 'setDisplayName', 'setAvatarUrl'
+            ]);
+            const botSdkIntent = jasmine.createSpyObj("botSdkIntent", [
+                'underlyingClient', 'ensureRegistered',
+            ]);
+            const botClient = jasmine.createSpyObj("botClient", [
+                'createRoom'
+            ]);
+            underlyingClient.resolveRoom.and.callFake((roomId) => roomId);
+            botSdkIntent.underlyingClient = underlyingClient;
+            botSdkIntent.userId = userId;
+            return new Intent(botSdkIntent, botClient, { ...opts, registered: userIsRegistered });
+        }
         // Setup mock AppService to avoid listening on a real port
         appService = jasmine.createSpyObj("AppService", [
             "onAliasQuery", "onUserQuery", "listen", "on"
@@ -83,7 +78,7 @@ describe("Bridge", function() {
 
         function loadDatabase(path, Cls) {
             const defer = deferPromise();
-            var db = new Datastore({
+            const db = new Datastore({
                 filename: path,
                 autoload: true,
                 onload: function(err) {
@@ -97,7 +92,7 @@ describe("Bridge", function() {
             return defer.promise;
         }
 
-        Promise.all([
+        await Promise.all([
             loadDatabase(TEST_USER_DB_PATH, UserBridgeStore),
             loadDatabase(TEST_ROOM_DB_PATH, RoomBridgeStore),
             loadDatabase(TEST_EVENT_DB_PATH, EventBridgeStore)
@@ -113,12 +108,14 @@ describe("Bridge", function() {
                 roomStore: roomDb,
                 eventStore: eventDb,
                 controller: bridgeCtrl,
-                clientFactory: clientFactory
+                onIntentCreate: (...args) => intentCreateFn(...args),
             });
             return bridge.loadDatabases();
-        }).then(() => {
-            done();
         });
+
+        // Mock the BotSdk Intents
+        // ---
+        intents = bridge.intents;
     });
 
     afterEach(function() {
@@ -143,45 +140,47 @@ describe("Bridge", function() {
     });
 
     describe("onUserQuery", function() {
+        const userId = `@alice:${HS_DOMAIN}`;
         it("should invoke the user-supplied onUserQuery function with the right args", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             try {
-                await appService.onUserQuery("@alice:bar");
+                await appService.onUserQuery(userId);
             }
             catch (error) {
                 // do nothing
             }
             finally {
                 expect(bridgeCtrl.onUserQuery).toHaveBeenCalled();
-                var call = bridgeCtrl.onUserQuery.calls.argsFor(0);
-                var mxUser = call[0];
-                expect(mxUser.getId()).toEqual("@alice:bar");
+                const [mxUser] = bridgeCtrl.onUserQuery.calls.argsFor(0);
+                expect(mxUser.getId()).toEqual(userId);
             }
         });
 
         it("should not provision a user if null is returned from the function",
-        async function(done) {
+        async function() {
             bridgeCtrl.onUserQuery.and.returnValue(null);
-            await bridge.run(101, {}, appService);
-            appService.onUserQuery("@alice:bar").catch(function() {}).finally(function() {
-                expect(clients["bot"].register).not.toHaveBeenCalled();
-                done();
-            });
+            await bridge.run(101, appService);
+            try {
+                await appService.onUserQuery(userId);
+            }
+            catch (ex) {
+                //...
+            }
+            expect([...intents.keys()]).not.toContain(userId);
         });
 
         it("should provision the user from the return object", async() => {
             bridgeCtrl.onUserQuery.and.returnValue({});
-            clients["bot"].register.and.returnValue(Promise.resolve({}));
-            await bridge.run(101, {}, appService);
-            await appService.onUserQuery("@alice:bar");
-            expect(clients["bot"].register).toHaveBeenCalledWith("alice");
+            await bridge.run(101, appService);
+            await appService.onUserQuery(userId);
+            expect([...intents.keys()]).toContain(userId);
         });
     });
 
     describe("onAliasQuery", function() {
         it("should invoke the user-supplied onAliasQuery function with the right args",
         async function() {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
 
             try {
                 await appService.onAliasQuery("#foo:bar")
@@ -196,25 +195,24 @@ describe("Bridge", function() {
         it("should not provision a room if null is returned from the function",
         async function() {
             bridgeCtrl.onAliasQuery.and.returnValue(null);
-            await bridge.run(101, {}, appService);
-
+            await bridge.run(101, appService);
             try {
                 await appService.onAliasQuery("#foo:bar");
                 fail(new Error('We expect `onAliasQuery` to fail and throw an error'))
             }
             catch (err) {
-                expect(clients["bot"].createRoom).not.toHaveBeenCalled();
+                expect(bridge.botIntent.botSdkIntent.underlyingClient.createRoom).not.toHaveBeenCalled();
             }
         });
 
         it("should not create a room if roomId is returned from the function but should still store it",
         async function() {
             bridgeCtrl.onAliasQuery.and.returnValue({ roomId: "!abc123:bar" });
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
 
             await appService.onAliasQuery("#foo:bar");
 
-            expect(clients["bot"].createRoom).not.toHaveBeenCalled();
+            expect(bridge.botIntent.botSdkIntent.underlyingClient.createRoom).not.toHaveBeenCalled();
 
             const room = await bridge.getRoomStore().getMatrixRoom("!abc123:bar");
             expect(room).toBeDefined();
@@ -227,28 +225,23 @@ describe("Bridge", function() {
                     room_alias_name: "foo",
                 },
             };
-            clients["bot"].createRoom.and.returnValue({
-                room_id: "!abc123:bar",
-            });
+            await bridge.run(101, appService);
+            bridge.botIntent.botSdkIntent.underlyingClient.createRoom.and.returnValue("!abc123:bar");
             bridgeCtrl.onAliasQuery.and.returnValue(provisionedRoom);
-            await bridge.run(101, {}, appService);
             await appService.onAliasQuery("#foo:bar");
-            expect(clients["bot"].createRoom).toHaveBeenCalledWith(
+            expect(bridge.botIntent.botSdkIntent.underlyingClient.createRoom).toHaveBeenCalledWith(
                 provisionedRoom.creationOpts
             );
         });
 
         it("should store the new matrix room", async() => {
-            clients["bot"].createRoom.and.returnValue({
-                room_id: "!abc123:bar",
-            });
+            await bridge.run(101, appService);
+            bridge.botIntent.botSdkIntent.underlyingClient.createRoom.and.returnValue("!abc123:bar");
             bridgeCtrl.onAliasQuery.and.returnValue({
                 creationOpts: {
                     room_alias_name: "foo",
                 },
             });
-            await bridge.run(101, {}, appService);
-
             await appService.onAliasQuery("#foo:bar");
 
             const room = await bridge.getRoomStore().getMatrixRoom("!abc123:bar");
@@ -257,16 +250,14 @@ describe("Bridge", function() {
         });
 
         it("should store and link the new matrix room if a remote room was supplied", async() => {
-            clients["bot"].createRoom.and.returnValue({
-                room_id: "!abc123:bar"
-            });
+            await bridge.run(101, appService);
+            bridge.botIntent.botSdkIntent.underlyingClient.createRoom.and.returnValue("!abc123:bar");
             bridgeCtrl.onAliasQuery.and.returnValue({
                 creationOpts: {
                     room_alias_name: "foo",
                 },
                 remote: new RemoteRoom("__abc__")
             });
-            await bridge.run(101, {}, appService);
 
             await appService.onAliasQuery("#foo:bar");
 
@@ -279,10 +270,10 @@ describe("Bridge", function() {
     describe("pingAppserviceRoute", () => {
         it("should return successfully when the bridge receives it's own self ping", async () => {
             let sentEvent = false;
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             bridge.botIntent._ensureJoined = async () => true;
             bridge.botIntent._ensureHasPowerLevelFor = async () => true;
-            bridge.botIntent.sendEvent = async () => {sentEvent = true};
+            bridge.botIntent.botSdkIntent.underlyingClient.sendEvent.and.callFake(async () => {sentEvent = true});
             const event = {
                 content: {
                     sentTs: 1000,
@@ -298,7 +289,7 @@ describe("Bridge", function() {
         });
         it("should time out if the ping does not respond", async () => {
             let sentEvent = false;
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             bridge.botIntent._ensureJoined = async () => true;
             bridge.botIntent._ensureHasPowerLevelFor = async () => true;
             bridge.botIntent.sendEvent = async () => {sentEvent = true};
@@ -316,7 +307,7 @@ describe("Bridge", function() {
 
     describe("onEvent", function() {
         it("should suppress the event if it is an echo and suppressEcho=true", async() => {
-            var event = {
+            const event = {
                 content: {
                     body: "oh noes!",
                     msgtype: "m.text"
@@ -325,12 +316,13 @@ describe("Bridge", function() {
                 room_id: "!flibble:bar",
                 type: "m.room.message"
             };
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             await appService.emit("event", event);
             expect(bridgeCtrl.onEvent).not.toHaveBeenCalled();
         });
 
         describe('opts.eventValidation.validateEditSender', () => {
+            let botClient;
             async function setupBridge(eventValidation) {
                 const bridge = new Bridge({
                     homeserverUrl: HS_URL,
@@ -339,11 +331,18 @@ describe("Bridge", function() {
                     userStore: userStore,
                     roomStore: roomStore,
                     controller: bridgeCtrl,
-                    clientFactory: clientFactory,
                     disableContext: true,
-                    eventValidation
+                    eventValidation,
+                    onIntentCreate: (...args) => intentCreateFn(...args),
                 });
-                await bridge.run(101, {}, appService);
+                await bridge.run(101, appService);
+                botClient = bridge.botIntent.botSdkIntent.underlyingClient;
+                botClient.getJoinedRoomMembers.and.returnValue(Promise.resolve(
+                    [bridge.botUserId]
+                ));
+
+                // Mock onEvent callback
+                bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
                 return bridge;
             }
@@ -368,21 +367,6 @@ describe("Bridge", function() {
                 return event;
             }
 
-            let botClient;
-            beforeEach(async () => {
-                botClient = clients["bot"];
-                botClient.getJoinedRoomMembers.and.returnValue(Promise.resolve({
-                    joined: {
-                        [botClient.credentials.userId]: {
-                            display_name: "bot"
-                        }
-                    }
-                }));
-
-                // Mock onEvent callback
-                bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
-            });
-
             describe('when enabled', () => {
                 beforeEach(async () => {
                     bridge = await setupBridge({
@@ -395,7 +379,7 @@ describe("Bridge", function() {
                 it("should suppress the event if the edit is coming from a different person than the original message", async() => {
                     const event = createMessageEditEvent('@root:my.matrix.host');
 
-                    botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
+                    botClient.getEvent.and.returnValue(Promise.resolve({
                         event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
                         // The original message has different sender than the edit event
                         sender: '@some-other-user:different.host',
@@ -408,7 +392,7 @@ describe("Bridge", function() {
                 it("should emit event when the edit sender matches the original message sender", async() => {
                     const event = createMessageEditEvent('@root:my.matrix.host');
                     
-                    botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
+                    botClient.getEvent.and.returnValue(Promise.resolve({
                         event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
                         // The original message sender is the same as the edit event
                         sender: '@root:my.matrix.host',
@@ -429,15 +413,11 @@ describe("Bridge", function() {
                     }
                 })
 
-                const botClient = clients["bot"];
-                botClient.getJoinedRoomMembers.and.returnValue(Promise.resolve({
-                    joined: {
-                        [botClient.credentials.userId]: {
-                            display_name: "bot"
-                        }
-                    }
-                }));
-                botClient.fetchRoomEvent.and.returnValue(Promise.reject(new Error('Some problem fetching original event')));
+                const botClient = bridge.botIntent.botSdkIntent.underlyingClient;
+                botClient.getJoinedRoomMembers.and.returnValue(Promise.resolve(
+                    [bridge.botUserId]
+                ));
+                botClient.getEvent.and.returnValue(Promise.reject(new Error('Some problem fetching original event')));
 
                 await appService.emit("event", event);
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
@@ -449,7 +429,7 @@ describe("Bridge", function() {
                     
                     bridge = await setupBridge(undefined)
 
-                    botClient.fetchRoomEvent.and.returnValue(Promise.resolve({
+                    botClient.getEvent.and.returnValue(Promise.resolve({
                         event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
                         // The original message has different sender than the edit event
                         sender: '@some-other-user:different.host',
@@ -463,7 +443,7 @@ describe("Bridge", function() {
 
         it("should invoke the user-supplied onEvent function with the right args",
         function(done) {
-            var event = {
+            const event = {
                 content: {
                     body: "oh noes!",
                     msgtype: "m.text"
@@ -474,13 +454,13 @@ describe("Bridge", function() {
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
-            bridge.run(101, {}, appService).then(function() {
+            bridge.run(101, appService).then(function() {
                 return appService.emit("event", event);
             }).then(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-                var call = bridgeCtrl.onEvent.calls.argsFor(0);
-                var req = call[0];
-                var ctx = call[1];
+                const call = bridgeCtrl.onEvent.calls.argsFor(0);
+                const req = call[0];
+                const ctx = call[1];
                 expect(req.getData()).toEqual(event);
                 expect(ctx.senders.matrix.getId()).toEqual("@foo:bar");
                 expect(ctx.rooms.matrix.getId()).toEqual("!flibble:bar");
@@ -489,7 +469,7 @@ describe("Bridge", function() {
         });
 
         it("should include remote senders in the context if applicable", async() => {
-            var event = {
+            const event = {
                 content: {
                     body: "oh noes!",
                     msgtype: "m.text"
@@ -500,23 +480,22 @@ describe("Bridge", function() {
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
-            await bridge.run(101, {}, appService)
+            await bridge.run(101, appService)
             await bridge.getUserStore().linkUsers(
                 new MatrixUser("@alice:bar"),
                 new RemoteUser("__alice__")
             );
             await appService.emit("event", event);
             expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-            var call = bridgeCtrl.onEvent.calls.argsFor(0);
-            var req = call[0];
-            var ctx = call[1];
+            const call = bridgeCtrl.onEvent.calls.argsFor(0);
+            const [req, ctx] = call;
             expect(req.getData()).toEqual(event);
             expect(ctx.senders.remote.getId()).toEqual("__alice__");
             expect(ctx.senders.remotes.length).toEqual(1);
         });
 
         it("should include remote targets in the context if applicable", async() => {
-            var event = {
+            const event = {
                 content: {
                     membership: "invite"
                 },
@@ -527,16 +506,15 @@ describe("Bridge", function() {
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             await bridge.getUserStore().linkUsers(
                 new MatrixUser("@bob:bar"),
                 new RemoteUser("__bob__")
             );
             await appService.emit("event", event);
             expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-            var call = bridgeCtrl.onEvent.calls.argsFor(0);
-            var req = call[0];
-            var ctx = call[1];
+            const call = bridgeCtrl.onEvent.calls.argsFor(0);
+            const [req, ctx] = call;
             expect(req.getData()).toEqual(event);
             expect(ctx.targets.remote.getId()).toEqual("__bob__");
             expect(ctx.targets.remotes.length).toEqual(1);
@@ -544,7 +522,7 @@ describe("Bridge", function() {
 
         it("should include remote rooms in the context if applicable",
         function(done) {
-            var event = {
+            const event = {
                 content: {
                     membership: "invite"
                 },
@@ -555,7 +533,7 @@ describe("Bridge", function() {
             };
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
 
-            bridge.run(101, {}, appService).then(function() {
+            bridge.run(101, appService).then(function() {
                 return bridge.getRoomStore().linkRooms(
                     new MatrixRoom("!flibble:bar"),
                     new RemoteRoom("roomy")
@@ -564,9 +542,8 @@ describe("Bridge", function() {
                 return appService.emit("event", event);
             }).then(function() {
                 expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-                var call = bridgeCtrl.onEvent.calls.argsFor(0);
-                var req = call[0];
-                var ctx = call[1];
+                const call = bridgeCtrl.onEvent.calls.argsFor(0);
+                const [req, ctx] = call;
                 expect(req.getData()).toEqual(event);
                 expect(ctx.rooms.remote.getId()).toEqual("roomy");
                 expect(ctx.rooms.remotes.length).toEqual(1);
@@ -593,16 +570,15 @@ describe("Bridge", function() {
                 userStore: userStore,
                 roomStore: roomStore,
                 controller: bridgeCtrl,
-                clientFactory: clientFactory,
-                disableContext: true
+                disableContext: true,
+                onIntentCreate: (...args) => intentCreateFn(...args),
             });
 
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             await appService.emit("event", event);
             expect(bridgeCtrl.onEvent).toHaveBeenCalled();
-            var call = bridgeCtrl.onEvent.calls.argsFor(0);
-            var req = call[0];
-            var ctx = call[1];
+            const call = bridgeCtrl.onEvent.calls.argsFor(0);
+            const [req, ctx] = call
             expect(req.getData()).toEqual(event);
             expect(ctx).toBeNull();
         });
@@ -610,50 +586,50 @@ describe("Bridge", function() {
 
     describe("run", () => {
         it("should invoke listen(port) on the AppService instance", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(appService.listen).toHaveBeenCalledWith(101, "0.0.0.0", 10);
         });
         it("should invoke listen(port, hostname) on the AppService instance", async() => {
-            await bridge.run(101, {}, appService, "foobar");
+            await bridge.run(101, appService, "foobar");
             expect(appService.listen).toHaveBeenCalledWith(101, "foobar", 10);
         });
     });
 
     describe("getters", function() {
         it("should be able to getRoomStore", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(bridge.getRoomStore()).toEqual(roomStore);
         });
 
         it("should be able to getUserStore", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(bridge.getUserStore()).toEqual(userStore);
         });
 
         it("should be able to getEventStore", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(bridge.getEventStore()).toEqual(eventStore);
         });
 
         it("should be able to getRequestFactory", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(bridge.getRequestFactory()).toBeDefined();
         });
 
         it("should be able to getBot", async() => {
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
             expect(bridge.getBot()).toBeDefined();
         });
     });
 
     describe("getIntent", function() {
         // 2h which should be long enough to cull it
-        var cullTimeMs = 1000 * 60 * 60 * 2;
+        const cullTimeMs = 1000 * 60 * 60 * 2;
 
         beforeEach(async() => {
             jasmine.clock().install();
             jasmine.clock().mockDate();
-            await bridge.run(101, {}, appService);
+            await bridge.run(101, appService);
         });
 
         afterEach(function() {
@@ -662,46 +638,44 @@ describe("Bridge", function() {
 
         it("should return the same intent on multiple invokations within the cull time",
         function() {
-            var intent = bridge.getIntent("@foo:bar");
+            const intent = bridge.getIntent("@foo:bar");
             // sentinel. If the same object is returned, this will be present.
             intent._test = 42;
-            var intent2 = bridge.getIntent("@foo:bar");
+            const intent2 = bridge.getIntent("@foo:bar");
             expect(intent).toEqual(intent2);
         });
 
         it(
         "should not return the same intent on multiple invokations outside the cull time",
         function() {
-            var intent = bridge.getIntent("@foo:bar");
+            const intent = bridge.getIntent("@foo:bar");
             // sentinel. If the same object is returned, this will be present.
             intent._test = 42;
             jasmine.clock().tick(cullTimeMs);
-            var intent2 = bridge.getIntent("@foo:bar");
+            const intent2 = bridge.getIntent("@foo:bar");
             expect(intent).not.toEqual(intent2);
         });
 
         it("should not cull intents which are accessed again via getIntent", function() {
-            var intent = bridge.getIntent("@foo:bar");
+            const intent = bridge.getIntent("@foo:bar");
             // sentinel. If the same object is returned, this will be present.
             intent._test = 42;
 
             // Call getIntent 1000 times evenly up to the cull time. If the cull time is
             // 2hrs, then this is called once every ~7.2s
-            for (var i = 0; i < 1000; i ++) {
+            for (let i = 0; i < 1000; i ++) {
                 jasmine.clock().tick(cullTimeMs/1000);
                 bridge.getIntent("@foo:bar");
             }
-            var intent2 = bridge.getIntent("@foo:bar");
+            const intent2 = bridge.getIntent("@foo:bar");
             expect(intent).toEqual(intent2);
         });
 
-        it("should keep the Intent up-to-date with incoming events", function(done) {
-            var client = mkMockMatrixClient("@foo:bar");
-            client.joinRoom.and.returnValue(Promise.resolve({})); // shouldn't be called
-            clients["@foo:bar"] = client;
+        it("should keep the Intent up-to-date with incoming events", async() => {
+            const intent = bridge.getIntent("@foo:bar");
+            intent.botSdkIntent.underlyingClient.joinRoom.and.returnValue(Promise.resolve({})); // shouldn't be called
 
-            var intent = bridge.getIntent("@foo:bar");
-            var joinEvent = {
+            const joinEvent = {
                 content: {
                     membership: "join"
                 },
@@ -711,24 +685,20 @@ describe("Bridge", function() {
                 type: "m.room.member"
             };
             appService.emit("event", joinEvent);
-            intent.join("!flibble:bar").then(() => {
-                expect(client.joinRoom).not.toHaveBeenCalled();
-                done();
-            });
+            await intent.join("!flibble:bar");
+            expect(intent.botSdkIntent.underlyingClient.joinRoom).not.toHaveBeenCalled();
         });
 
-        it("should keep culled Intents up-to-date with incoming events", function(done) {
+        it("should keep culled Intents up-to-date with incoming events", function() {
             // We tell the bridge that @foo:bar is joined to the room.
             // Therefore, we expect that intent.join() should NOT call the SDK's join
             // method. This should still be the case even if the Intent object is culled
             // and we try to join using a new intent, in addition to if we use the old
             // stale Intent.
-            var client = mkMockMatrixClient("@foo:bar");
-            client.joinRoom.and.returnValue(Promise.resolve({})); // shouldn't be called
-            clients["@foo:bar"] = client;
+            const intent = bridge.getIntent("@foo:bar");
+            intent.botSdkIntent.underlyingClient.joinRoom.and.returnValue(Promise.resolve({})); // shouldn't be called
 
-            var intent = bridge.getIntent("@foo:bar");
-            var joinEvent = {
+            const joinEvent = {
                 content: {
                     membership: "join"
                 },
@@ -741,21 +711,20 @@ describe("Bridge", function() {
             // wait the cull time then attempt the join, it shouldn't try to join.
             jasmine.clock().tick(cullTimeMs);
 
-            intent.join("!flibble:bar").then(function() {
-                expect(client.joinRoom).not.toHaveBeenCalled();
+            return intent.join("!flibble:bar").then(function() {
+                expect(intent.botSdkIntent.underlyingClient.joinRoom).not.toHaveBeenCalled();
                 // wait the cull time again and use a new intent, still shouldn't join.
                 jasmine.clock().tick(cullTimeMs);
                 return bridge.getIntent("@foo:bar").join("!flibble:bar");
             }).then(() => {
-                expect(client.joinRoom).not.toHaveBeenCalled();
-                done();
+                expect(intent.botSdkIntent.underlyingClient.joinRoom).not.toHaveBeenCalled();
             });
         });
 
         it("should scope Intents to a request if provided", function() {
-            var intent = bridge.getIntent("@foo:bar");
+            const intent = bridge.getIntent("@foo:bar");
             intent._test = 42; // sentinel
-            var intent2 = bridge.getIntent("@foo:bar", {
+            const intent2 = bridge.getIntent("@foo:bar", {
                 getId: function() { return "request id here"; }
             });
             expect(intent2).toBeDefined();
@@ -765,108 +734,107 @@ describe("Bridge", function() {
         it("should return an escaped userId",
         function() {
             const intent = bridge.getIntent("@foo£$&!£:bar");
-            expect(intent.client.uid).toEqual("@foo=a3=24=26=21=a3:bar");
+            expect(intent.userId).toEqual("@foo=a3=24=26=21=a3:bar");
         });
 
         it("should not return an escaped userId if disabled",
         function() {
             bridge.opts.escapeUserIds = false;
             const intent = bridge.getIntent("@foo£$&!£:bar");
-            expect(intent.client.uid).toEqual("@foo£$&!£:bar");
+            expect(intent.userId).toEqual("@foo£$&!£:bar");
         });
     });
 
     describe("provisionUser", function() {
 
-        beforeEach(function(done) {
-            bridge.run(101, {}, appService).then(function() {
-                done();
-            });
+        beforeEach(() => {
+            userIsRegistered = false;
+            return bridge.initalise();
         });
 
+        afterAll(() => {
+            userIsRegistered = true;
+        })
+
         it("should provision a user with the specified user ID", function() {
-            var mxUser = new MatrixUser("@foo:bar");
-            var provisionedUser = {};
-            var botClient = clients["bot"];
-            botClient.register.and.returnValue(Promise.resolve({}));
+            const mxUser = new MatrixUser("@foo:example.com");
+            const provisionedUser = {};
+            const intent = bridge.getIntent(mxUser.getId());
+            intent.botSdkIntent.ensureRegistered.and.returnValue(Promise.resolve({}));
             return bridge.provisionUser(mxUser, provisionedUser).then(function() {
-                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
+                expect(intent.botSdkIntent.ensureRegistered).toHaveBeenCalled();
                 // should also be persisted in storage
-                return bridge.getUserStore().getMatrixUser("@foo:bar");
+                return bridge.getUserStore().getMatrixUser("@foo:example.com");
             }).then((usr) => {
                 expect(usr).toBeDefined();
-                expect(usr.getId()).toEqual("@foo:bar");
+                expect(usr.getId()).toEqual("@foo:example.com");
             });
         });
 
         it("should set the display name if one was provided", function() {
-            var mxUser = new MatrixUser("@foo:bar");
-            var provisionedUser = {
+            const mxUser = new MatrixUser("@foo:example.com");
+            const provisionedUser = {
                 name: "Foo Bar"
             };
-            var botClient = clients["bot"];
-            botClient.register.and.returnValue(Promise.resolve({}));
-            var client = mkMockMatrixClient("@foo:bar");
-            client.setDisplayName.and.returnValue(Promise.resolve({}));
-            clients["@foo:bar"] = client;
+            const intent = bridge.getIntent(mxUser.getId());
+            const botClient = intent.botSdkIntent;
+            botClient.ensureRegistered.and.returnValue(Promise.resolve({}));
+            botClient.underlyingClient.setDisplayName.and.returnValue(Promise.resolve({}));
             return bridge.provisionUser(mxUser, provisionedUser).then(() => {
-                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
-                expect(client.setDisplayName).toHaveBeenCalledWith("Foo Bar");
+                expect(botClient.ensureRegistered).toHaveBeenCalled();
+                expect(botClient.underlyingClient.setDisplayName).toHaveBeenCalledWith("Foo Bar");
             });
         });
 
         it("should set the avatar URL if one was provided", function() {
-            var mxUser = new MatrixUser("@foo:bar");
-            var provisionedUser = {
-                url: "http://avatar.jpg"
+            const mxUser = new MatrixUser("@foo:example.com");
+            const provisionedUser = {
+                url: "mxc://server/avatar.jpg"
             };
-            var botClient = clients["bot"];
-            botClient.register.and.returnValue(Promise.resolve({}));
-            var client = mkMockMatrixClient("@foo:bar");
-            client.setAvatarUrl.and.returnValue(Promise.resolve({}));
-            clients["@foo:bar"] = client;
+            const intent = bridge.getIntent(mxUser.getId());
+            const botClient = intent.botSdkIntent;
+            botClient.ensureRegistered.and.returnValue(Promise.resolve({}));
+            botClient.underlyingClient.setAvatarUrl.and.returnValue(Promise.resolve({}));
             return bridge.provisionUser(mxUser, provisionedUser).then(() => {
-                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
-                expect(client.setAvatarUrl).toHaveBeenCalledWith("http://avatar.jpg");
+                expect(botClient.ensureRegistered).toHaveBeenCalled();
+                expect(botClient.underlyingClient.setAvatarUrl).toHaveBeenCalledWith("mxc://server/avatar.jpg");
             });
         });
 
         it("should link the user with a remote user if one was provided",
-        function(done) {
-            var mxUser = new MatrixUser("@foo:bar");
-            var provisionedUser = {
+        function() {
+            const mxUser = new MatrixUser("@foo:example.com");
+            const provisionedUser = {
                 remote: new RemoteUser("__remote__")
             };
-            var botClient = clients["bot"];
-            botClient.register.and.returnValue(Promise.resolve({}));
-            var client = mkMockMatrixClient("@foo:bar");
-            clients["@foo:bar"] = client;
-            bridge.provisionUser(mxUser, provisionedUser).then(function() {
-                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
-                return bridge.getUserStore().getRemoteUsersFromMatrixId("@foo:bar");
+            const intent = bridge.getIntent(mxUser.getId());
+            const botClient = intent.botSdkIntent;
+            botClient.ensureRegistered.and.returnValue(Promise.resolve({}));
+            return bridge.provisionUser(mxUser, provisionedUser).then(function() {
+                expect(botClient.ensureRegistered).toHaveBeenCalled();
+                return bridge.getUserStore().getRemoteUsersFromMatrixId("@foo:example.com");
             }).then(function(users) {
                 expect(users.length).toEqual(1);
                 if (users.length > 0) {
                     expect(users[0].getId()).toEqual("__remote__");
                 }
-                done();
             });
         });
 
-        it("should fail if the HTTP registration fails", function(done) {
-            var mxUser = new MatrixUser("@foo:bar");
-            var provisionedUser = {};
-            var botClient = clients["bot"];
-            const err = { errcode: "M_FORBIDDEN" };
-            const errorPromise = Promise.reject(err)
-            botClient.register.and.returnValue(errorPromise);
-            bridge.provisionUser(mxUser, provisionedUser).catch(function(ex) {
-                expect(ex).toBe(err);
-                expect(botClient.register).toHaveBeenCalledWith(mxUser.localpart);
-                done();
-            });
+        it("should fail if the HTTP registration fails", function() {
+            const provisionedUser = {};
+            const mxUser = new MatrixUser("@foo:example.com");
+            const intent = bridge.getIntent(mxUser.getId());
+            const botClient = intent.botSdkIntent;
+            const err =  { errcode: "M_FORBIDDEN" };
+            const errorPromise = Promise.reject({ errcode: "M_FORBIDDEN" })
             // This complains otherwise.
             errorPromise.catch((ex) => {});
+            botClient.ensureRegistered.and.returnValue(errorPromise);
+            return bridge.provisionUser(mxUser, provisionedUser).catch(function(ex) {
+                expect(ex).toEqual(err);
+                expect(botClient.ensureRegistered).toHaveBeenCalled();
+            });
         });
     });
 
@@ -876,7 +844,7 @@ describe("Bridge", function() {
             bridge.roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
             bridge.opts.roomUpgradeOpts = { consumeEvent: true };
-            return bridge.run(101, {}, appService).then(() => {
+            return bridge.run(101, appService).then(() => {
                 return bridge.onEvent({
                     type: "m.room.tombstone",
                     state_key: undefined,
@@ -892,7 +860,7 @@ describe("Bridge", function() {
             bridge.roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
             bridge.opts.roomUpgradeOpts = { consumeEvent: true };
-            return bridge.run(101, {}, appService).then(() => {
+            return bridge.run(101, appService).then(() => {
                 return bridge.onEvent({
                     type: "m.room.tombstone",
                     state_key: "fooobar",
@@ -922,7 +890,7 @@ describe("Bridge", function() {
             bridge.roomUpgradeHandler.onTombstone.and.returnValue(Promise.resolve({}));
             bridgeCtrl.onEvent.and.callFake(function(req) { req.resolve(); });
             bridge.opts.roomUpgradeOpts = { consumeEvent: true };
-            return bridge.run(101, {}, appService).then(() => {
+            return bridge.run(101, appService).then(() => {
                 return bridge.onEvent({
                     type: "m.room.tombstone",
                     state_key: "",
@@ -934,23 +902,3 @@ describe("Bridge", function() {
         });
     });
 });
-
-function mkMockMatrixClient(uid) {
-    var client = jasmine.createSpyObj(
-        "MatrixClient", [
-            "register", "joinRoom", "credentials", "createRoom", "setDisplayName",
-            "setAvatarUrl", "fetchRoomEvent", "getJoinedRoomMembers", "_http"
-        ]
-    );
-    // Shim requests to authedRequestWithPrefix to register() if it is
-    // directed at /register
-    client._http.authedRequest = jasmine.createSpy("authedRequest");
-    client._http.authedRequest.and.callFake(function(a, method, path, d, data) {
-        if (method === "POST" && path === "/register") {
-            return client.register(data.user);
-        }
-        return undefined;
-    });
-    client.credentials.userId = uid;
-    return client;
-}

@@ -1,3 +1,29 @@
+3.0.0-rc1 (2021-08-16)
+=======================
+
+This release introduces **BREAKING** changes. We are now using the [matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk) under the hood. While the library has kept the same
+function signatures in many places, some changes have been made. Please take care to review your bridge after upgrading to ensure that you do not depend on depecated
+or undefined behaviours.
+
+Since 3.0.0 is a major release, there will be a release candidate process.
+
+Features
+--------
+
+- **Breaking**: This library now uses the [matrix-bot-sdk](https://github.com/turt2live/matrix-bot-sdk) for Matrix requests. Previously, the bridge used the matrix-js-sdk which
+  is now deprecated in this release, but can still be accessed via `Intent.getClient()`. ([\#326](https://github.com/matrix-org/matrix-appservice-bridge/issues/326))
+- **Breaking**: The `Cli` will no longer specify a default port of `8090` if one is not provided as an command line argument. instead `run` will be called with `null`. Bridge developers **MUST** now handle
+  this case. ([\#344](https://github.com/matrix-org/matrix-appservice-bridge/issues/344))
+- Add `buckets` option to PrometheusMetrics.addTimer, to specify custom bucket intervals. ([\#347](https://github.com/matrix-org/matrix-appservice-bridge/issues/347))
+
+
+Bugfixes
+--------
+
+- Leave the new room on room upgrade if the upgrade was not successful. ([\#342](https://github.com/matrix-org/matrix-appservice-bridge/issues/342))
+- Remove unused `config` parameter from `Bridge.run`. ([\#345](https://github.com/matrix-org/matrix-appservice-bridge/issues/345))
+
+
 2.7.0 (2021-07-15)
 ==================
 

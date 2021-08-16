@@ -35,7 +35,7 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomId) => { joined = roomId; return Promise.reject({errcode: "M_FORBIDDEN"}); },
+                    join: (roomId) => { joined = roomId; return Promise.reject({body: {errcode: "M_FORBIDDEN"}}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -91,7 +91,7 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomId) => { joined = roomId; return Promise.reject({errcode: "M_FORBIDDEN"}); },
+                    join: (roomId) => { joined = roomId; return Promise.reject({body: {errcode: "M_FORBIDDEN"}}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);

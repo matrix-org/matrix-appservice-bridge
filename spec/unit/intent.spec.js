@@ -1,5 +1,7 @@
 const { Intent } = require("../..");
 
+const matrixError = (errcode, error) => Promise.reject({body: {errcode, error}});
+
 describe("Intent", function() {
     let intent, botIntent, client, botClient, underlyingClient;
     const userId = "@alice:bar";
@@ -66,10 +68,10 @@ describe("Intent", function() {
 
         it("should fail if the join returned an error other than forbidden",
         function() {
-            underlyingClient.joinRoom.and.callFake(() => Promise.reject({
-                errcode: "M_YOU_ARE_A_FISH",
-                error: "you're a fish"
-            }));
+            underlyingClient.joinRoom.and.callFake(() => matrixError(
+                "M_YOU_ARE_A_FISH",
+                "you're a fish"
+            ));
             return intent.join(roomId).catch(function() {
                 expect(underlyingClient.joinRoom).toHaveBeenCalled();
             });
@@ -80,10 +82,10 @@ describe("Intent", function() {
             it("should make the bot invite then the client join", function() {
                 underlyingClient.joinRoom.and.callFake(function() {
                     if (botClient.inviteUser.calls.count() === 0) {
-                        return Promise.reject({
-                            errcode: "M_FORBIDDEN",
-                            error: "Join first"
-                        });
+                        return matrixError(
+                            "M_FORBIDDEN",
+                            "Join first"
+                        );
                     }
                     return Promise.resolve(roomId);
                 });
@@ -103,19 +105,19 @@ describe("Intent", function() {
                 function() {
                     underlyingClient.joinRoom.and.callFake(function() {
                         if (botClient.inviteUser.calls.count() === 0) {
-                            return Promise.reject({
-                                errcode: "M_FORBIDDEN",
-                                error: "Join first"
-                            });
+                            return matrixError(
+                                "M_FORBIDDEN",
+                                "Join first"
+                            );
                         }
                         return Promise.resolve({});
                     });
                     botClient.inviteUser.and.callFake(function() {
                         if (botClient.joinRoom.calls.count() === 0) {
-                            return Promise.reject({
-                                errcode: "M_FORBIDDEN",
-                                error: "Join first"
-                            });
+                            return matrixError(
+                                "M_FORBIDDEN",
+                                "Join first"
+                            );
                         }
                         return Promise.resolve({});
                     });
@@ -135,18 +137,18 @@ describe("Intent", function() {
                 });
 
                 it("should give up if the bot cannot join the room", function() {
-                    underlyingClient.joinRoom.and.callFake(() => Promise.reject({
-                        errcode: "M_FORBIDDEN",
-                        error: "Join first"
-                    }));
-                    botClient.inviteUser.and.callFake(() => Promise.reject({
-                        errcode: "M_FORBIDDEN",
-                        error: "No invites kthx"
-                    }));
-                    botClient.joinRoom.and.callFake(() => Promise.reject({
-                        errcode: "M_FORBIDDEN",
-                        error: "No bots allowed!"
-                    }));
+                    underlyingClient.joinRoom.and.callFake(() => matrixError(
+                        "M_FORBIDDEN",
+                        "Join first"
+                    ));
+                    botClient.inviteUser.and.callFake(() => matrixError(
+                        "M_FORBIDDEN",
+                        "No invites kthx"
+                    ));
+                    botClient.joinRoom.and.callFake(() =>  matrixError(
+                        "M_FORBIDDEN",
+                        "No bots allowed!"
+                    ));
 
                     return intent.join(roomId).catch(function() {
                         expect(underlyingClient.joinRoom).toHaveBeenCalledWith(
@@ -222,10 +224,10 @@ describe("Intent", function() {
                 if (underlyingClient.sendStateEvent.calls.count() > 1) {
                     return Promise.resolve({});
                 }
-                return Promise.reject({
-                    errcode: "M_FORBIDDEN",
-                    error: "Not enough powaaaaaa"
-                });
+                return matrixError(
+                    "M_FORBIDDEN",
+                    "Not enough powaaaaaa",
+                );
             });
             botClient.setUserPowerLevel.and.returnValue(Promise.resolve({}));
             // give the power to the bot
@@ -289,10 +291,10 @@ describe("Intent", function() {
         });
 
         it("should fail if get an error that isn't M_FORBIDDEN", function() {
-            underlyingClient.sendEvent.and.callFake(() => Promise.reject({
-                error: "Oh no",
-                errcode: "M_UNKNOWN"
-            }));
+            underlyingClient.sendEvent.and.callFake(() => matrixError(
+                "M_UNKNOWN",
+                "Oh no",
+            ));
             return intent.sendMessage(roomId, content).catch(function() {
                 expect(underlyingClient.sendEvent).toHaveBeenCalledWith(
                     roomId, "m.room.message", content
@@ -307,10 +309,10 @@ describe("Intent", function() {
                 if (isJoined) {
                     return Promise.resolve("$12345:6789");
                 }
-                return Promise.reject({
-                    error: "You are not joined",
-                    errcode: "M_FORBIDDEN"
-                });
+                return matrixError(
+                    "M_FORBIDDEN",
+                    "You are not joined",
+                );
             });
             underlyingClient.joinRoom.and.callFake(function(joinRoomId) {
                 isJoined = true;
@@ -327,15 +329,15 @@ describe("Intent", function() {
 
         it("should fail if the join on M_FORBIDDEN fails", function() {
             underlyingClient.sendEvent.and.callFake(function() {
-                return Promise.reject({
-                    error: "You are not joined",
-                    errcode: "M_FORBIDDEN"
-                });
+                return matrixError(
+                    "M_FORBIDDEN",
+                    "You are not joined",
+                );
             });
-            underlyingClient.joinRoom.and.callFake(() => Promise.reject({
-                error: "Never!",
-                errcode: "M_YOU_ARE_A_FISH"
-            }));
+            underlyingClient.joinRoom.and.callFake(() => matrixError(
+                "M_YOU_ARE_A_FISH",
+                "Never!",
+            ));
             return intent.sendMessage(roomId, content).catch(function() {
                 expect(underlyingClient.sendEvent).toHaveBeenCalledWith(
                     roomId, "m.room.message", content
@@ -348,15 +350,15 @@ describe("Intent", function() {
             let isJoined = false;
             underlyingClient.sendEvent.and.callFake(function() {
                 if (isJoined) {
-                    return Promise.reject({
-                        error: "Internal Server Error",
-                        errcode: "M_WHOOPSIE",
-                    });
+                    return matrixError(
+                        "M_WHOOPSIE",
+                        "Internal Server Error",
+                    );
                 }
-                return Promise.reject({
-                    error: "You are not joined",
-                    errcode: "M_FORBIDDEN",
-                });
+                return matrixError(
+                    "M_FORBIDDEN",
+                    "You are not joined",
+                );
             });
             underlyingClient.joinRoom.and.callFake(function(joinRoomId) {
                 isJoined = true;

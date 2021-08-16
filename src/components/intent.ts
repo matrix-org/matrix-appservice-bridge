@@ -968,7 +968,7 @@ export class Intent {
             return await promiseFn();
         }
         catch (err) {
-            if (err.errcode !== "M_FORBIDDEN") {
+            if (err.body?.errcode !== "M_FORBIDDEN") {
                 // not a guardable error
                 throw err;
             }
@@ -1162,11 +1162,11 @@ export class Intent {
                 this.opts.registered = true;
             }
             catch (err) {
-                if (err.errcode === "M_EXCLUSIVE" && this.botClient === this.botSdkIntent.underlyingClient) {
+                if (err.body?.errcode === "M_EXCLUSIVE" && this.botClient === this.botSdkIntent.underlyingClient) {
                     // Registering the bot will leave it
                     this.opts.registered = true;
                 }
-                else if (err.errcode === "M_USER_IN_USE") {
+                else if (err.body?.errcode === "M_USER_IN_USE") {
                     this.opts.registered = true;
                 }
                 else {

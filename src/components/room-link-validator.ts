@@ -13,41 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * The room link validator is used to determine if a room can be bridged.
- */
 import util from "util";
 import { AppServiceBot } from "./app-service-bot";
-import { ConfigValidator } from "./config-validator";
 import logging from "./logging";
 const log = logging.get("room-link-validator");
 const VALIDATION_CACHE_LIFETIME = 30 * 60 * 1000;
-
-const RULE_SCHEMA = {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    type: "object",
-    properties: {
-        userIds: {
-            type: "object",
-            properties: {
-                exempt: {
-                    type: "array",
-                    items: {
-                        type: "string"
-                    }
-                },
-                conflict: {
-                    type: "array",
-                    items: {
-                        type: "string"
-                    }
-                }
-            }
-        }
-    }
-};
-
-const VALIDATOR = new ConfigValidator(RULE_SCHEMA);
 
 export interface Rules {
     userIds: {
@@ -58,14 +28,23 @@ export interface Rules {
 
 /**
  * The RoomLinkValidator checks if a room should be linked to a remote
- * channel, given a set of rules supplied in a config. The ruleset is maintained
- * in a separate config from the bridge config. It can be reloaded by triggering
- * an endpoint specified in the {@link Bridge} class.
+ * channel, given a set of rules supplied in a config.
+ *
+ * This ruleset can be hot-reloaded. Developers should call `Bridge.updateRoomLinkValidatorRules`
+ * within the `CliOpts.onConfigChanged` callback to reload rules on
+ * config reload.
+ * @see CliOpts#onConfigChanged
+ * @see Bridge#updateRoomLinkValidatorRules
  */
 export class RoomLinkValidator {
     private conflictCache: Map<string, number> = new Map();
-    private ruleFile?: string;
-    public readonly rules: Rules; // Public to allow unit tests to inspect it.
+    private internalRules: Rules;
+
+     // Public to allow unit tests to inspect it.
+    public get rules(): Rules {
+        return this.internalRules;
+    }
+
 
     /**
      * @param config Config for the validator.
@@ -74,37 +53,18 @@ export class RoomLinkValidator {
      *                               overwritten if both is set.
      * @param asBot The AS bot.
      */
-    constructor(config: {ruleFile?: string, rules?: Rules}, private asBot: AppServiceBot) {
-        if (config.ruleFile) {
-            this.ruleFile = config.ruleFile;
-            this.rules = this.readRuleFile();
+    constructor(config: {rules: Rules}, private asBot: AppServiceBot) {
+        if (!config.rules) {
+            throw new Error("config.rules must be set");
         }
-        else if (config.rules) {
-            this.rules = this.evaluateRules(config.rules);
-        }
-        else {
-            throw new Error("Either config.ruleFile or config.rules must be set");
-        }
+        this.internalRules = this.evaluateRules(config.rules);
     }
 
-    public readRuleFile (filename?: string) {
-        filename = filename || this.ruleFile;
-        if (!filename) {
-            throw new Error("No filename given and config is not using a file");
-        }
-        log.info(`Detected rule config change...`);
-        const rules = VALIDATOR.validate(filename);
-        if (rules === undefined) {
-            throw Error("Rule file contents was undefined");
-        }
-        log.info(`Rule file ok, checking rules...`);
-        const evaluatedRules = this.evaluateRules(rules);
-        log.info(`Applied new ruleset`);
-        this.conflictCache.clear();
-        return evaluatedRules;
+    public updateRules(rules: Rules): void {
+        this.internalRules = this.evaluateRules(rules);
     }
 
-    private evaluateRules (rules: unknown): Rules {
+    private evaluateRules (rules: Rules): Rules {
         const newRules: Rules = {
             userIds: {
                 conflict: [],

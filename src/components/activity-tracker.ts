@@ -1,7 +1,8 @@
 import { MatrixClient } from "matrix-bot-sdk";
+import * as logging from "./logging";
+const log = logging.get("ActivityTracker");
 
-interface MatrixActivityTrackerOpts {
-    client: MatrixClient,
+export interface ActivityTrackerOpts {
     /**
      * Matrix server name. Used for determining local and remote users.
      * @example matrix.org
@@ -15,6 +16,10 @@ interface MatrixActivityTrackerOpts {
      * Should presence be used. Set to false if the homeserver has presence disabled.
      */
     usePresence?: boolean;
+    /**
+     * Run a function when the last active time for a user gets updated
+     */
+    onLastActiveTimeUpdated?: (userId: string, ts: number) => void|Promise<void>
 }
 
 /**
@@ -24,14 +29,11 @@ interface MatrixActivityTrackerOpts {
 export class ActivityTracker {
     private lastActiveTime: Map<string, number>;
     private canUseWhois: boolean|null = null;
-    constructor(private opts: MatrixActivityTrackerOpts) {
+    constructor(private readonly client: MatrixClient, private opts: ActivityTrackerOpts) {
         opts.usePresence = opts.usePresence !== undefined ? opts.usePresence : true;
         this.lastActiveTime = new Map();
     }
 
-    private get client(): MatrixClient {
-        return this.opts.client;
-    }
 
     public get usingWhois(): boolean|null {
         return this.canUseWhois;
@@ -44,6 +46,12 @@ export class ActivityTracker {
      */
     public setLastActiveTime(userId: string, ts: number = Date.now()): void {
         this.lastActiveTime.set(userId, ts);
+        if (this.opts.onLastActiveTimeUpdated) {
+            this.opts.onLastActiveTimeUpdated(userId, ts)?.catch((ex) => {
+                // Not considered fatal, but disappointing.
+                log.debug(`onLastActiveTimeUpdated failed to run for ${userId}`, ex);
+            });
+        }
     }
 
     /**

@@ -27,8 +27,7 @@ function createTracker(canUseWhois: boolean = false, presence?: PresenceEventCon
         }
         throw Error("Path/Method is wrong");
     }
-    const tracker = new ActivityTracker({
-        client,
+    const tracker = new ActivityTracker(client, {
         serverName: "example.com",
         usePresence: !!presence,
         defaultOnline,
@@ -38,10 +37,11 @@ function createTracker(canUseWhois: boolean = false, presence?: PresenceEventCon
 
 describe("ActivityTracker", () => {
     it("constructs", () => {
-        const tracker: any = new ActivityTracker({
-            client: new MatrixClient("http://example.com", "foo"),
-            serverName: "example.com",
-            defaultOnline: false,
+        const tracker: any = new ActivityTracker(
+            new MatrixClient("http://example.com", "foo"),
+            {
+                serverName: "example.com",
+                defaultOnline: false,
         });
     });
     describe("isUserOnline", () => {

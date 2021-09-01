@@ -52,6 +52,7 @@ import { Registry } from "prom-client";
 import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
 import * as BotSDK from "matrix-bot-sdk";
+import { ActivityTracker, ActivityTrackerOpts } from "./components/activity-tracker";
 
 const log = logging.get("bridge");
 
@@ -62,6 +63,9 @@ const INTENT_CULL_EVICT_AFTER_MS = 1000 * 60 * 15; // 15 minutes
 
 export const BRIDGE_PING_EVENT_TYPE = "org.matrix.bridge.ping";
 export const BRIDGE_PING_TIMEOUT_MS = 60000;
+
+// How old can a receipt be before we treat it as stale.
+const RECEIPT_CUTOFF_TIME_MS = 60000;
 
 export interface BridgeController {
     /**
@@ -266,6 +270,8 @@ export interface BridgeOpts {
             allowEventOnLookupFail: boolean;
         };
     };
+
+    trackUserActivity?: ActivityTrackerOpts;
 }
 
 interface VettedBridgeOpts {
@@ -405,6 +411,7 @@ interface VettedBridgeOpts {
             allowEventOnLookupFail: boolean;
         };
     };
+    userActivityTracking?: ActivityTrackerOpts;
 }
 
 export class Bridge {
@@ -438,6 +445,12 @@ export class Bridge {
     }
 
     public readonly opts: VettedBridgeOpts;
+
+    private internalActivityTracker?: ActivityTracker;
+
+    public get activityTracker(): ActivityTracker {
+        return this.internalActivityTracker;
+    }
 
     public get appService(): AppService {
         if (!this.appservice) {
@@ -684,6 +697,16 @@ export class Bridge {
         this.botIntent = this.opts.onIntentCreate(this.botUserId, botIntentOpts);
 
         this.setupIntentCulling();
+
+        if (this.opts.userActivityTracking) {
+            if (!this.registration.pushEphemeral) {
+                log.info("Sending ephemeral events to the bridge is currently disabled in the registration file," +
+                " so user activity will not be captured");
+            }
+            this.internalActivityTracker = new ActivityTracker(
+                this.botIntent.matrixClient, this.opts.userActivityTracking
+            );
+        }
 
         await this.loadDatabases();
     }
@@ -1240,6 +1263,12 @@ export class Bridge {
     }
 
     private async onEphemeralEvent(event: EphemeralEvent) {
+        try {
+            await this.onEphemeralActivity(event);
+        }
+        catch (ex) {
+            log.error(`Failed to handle ephemeral activity`, ex);
+        }
         if (this.opts.controller.onEphemeralEvent) {
             const request = this.requestFactory.newRequest({ data: event });
             await this.opts.controller.onEphemeralEvent(request as Request<EphemeralEvent>);
@@ -1317,6 +1346,10 @@ export class Bridge {
                 (this.registration.isUserMatch(event.sender, true) ||
                 event.sender === this.botUserId)) {
             return null;
+        }
+
+        if (this.activityTracker && event.sender && event.origin_server_ts) {
+            this.activityTracker.setLastActiveTime(event.sender, );
         }
 
         // eslint-disable-next-line camelcase
@@ -1660,6 +1693,44 @@ export class Bridge {
         const isBot = this.botUserId === userId;
         const botIntent = isBot ? this.botSdkAS.botIntent : this.botSdkAS.getIntentForUserId(userId);
         return new Intent(botIntent, this.botSdkAS.botClient, intentOpts);
+    }
+
+    private onEphemeralActivity(event: EphemeralEvent) {
+        if (!this.activityTracker) {
+            // Not in use.
+            return;
+        }
+        // If we see one of these events over federation, bump the
+        // last active time for those users.
+        let userIds: string[]|undefined = undefined;
+        if (!this.activityTracker) {
+            return;
+        }
+        if (event.type === "m.presence" && event.content.presence === "online") {
+            userIds = [event.sender];
+        }
+        else if (event.type === "m.receipt") {
+            userIds = [];
+            const currentTime = Date.now();
+            // The homeserver will send us a map of all userIDs => ts for each event.
+            // We are only interested in recent receipts though.
+            for (const eventData of Object.values(event.content).map((v) => v["m.read"])) {
+                for (const [userId, { ts }] of Object.entries(eventData)) {
+                    if (currentTime - ts <= RECEIPT_CUTOFF_TIME_MS) {
+                        userIds.push(userId);
+                    }
+                }
+            }
+        }
+        else if (event.type === "m.typing") {
+            userIds = event.content.user_ids;
+        }
+
+        if (userIds) {
+            for (const userId of userIds) {
+                this.activityTracker.setLastActiveTime(userId);
+            }
+        }
     }
 
 }

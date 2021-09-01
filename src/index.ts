@@ -24,6 +24,7 @@ export * from "./components/room-link-validator";
 export * from "./components/room-upgrade-handler";
 export * from "./components/app-service-bot";
 export * from "./components/state-lookup";
+export * from "./components/activity-tracker";
 
 // Config and CLI
 export * from "./components/cli";

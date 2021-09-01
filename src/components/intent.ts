@@ -34,6 +34,8 @@ export type IntentBackingStore = {
     setPowerLevelContent: (roomId: string, content: PowerLevelContent) => void,
 };
 
+type OnEventSentHook = (roomId: string, type: string, content: Record<string, unknown>, eventId: string) => void;
+
 export interface IntentOpts {
     backingStore?: IntentBackingStore,
     caching?: {
@@ -51,6 +53,7 @@ export interface IntentOpts {
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
         ensureClientSyncingCallback: () => Promise<void>;
     };
+    onEventSent?: OnEventSentHook,
 }
 
 export interface RoomCreationOpts {
@@ -116,6 +119,7 @@ export class Intent {
         dontJoin?: boolean;
         enablePresence: boolean;
         registered?: boolean;
+        onEventSent?: OnEventSentHook,
     }
     // These two are only used if no opts.backingStore is provided to the constructor.
     private readonly _membershipStates: Record<string, [UserMembership, MatrixProfileInfo]> = {};
@@ -464,10 +468,12 @@ export class Intent {
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type, false);
         return this._joinGuard(roomId, async() => {
-            return {
+            const result = {
                 // eslint-disable-next-line camelcase
                 event_id: await this.botSdkIntent.underlyingClient.sendEvent(roomId, type, content),
-            }
+            };
+            this.opts.onEventSent?.(roomId, type, content, result.event_id);
+            return result;
         });
     }
 

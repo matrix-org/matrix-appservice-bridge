@@ -39,6 +39,7 @@ import { RoomLinkValidator, RoomLinkValidatorStatus, Rules } from "./components/
 import { RoomUpgradeHandler, RoomUpgradeHandlerOpts } from "./components/room-upgrade-handler";
 import { EventQueue } from "./components/event-queue";
 import * as logging from "./components/logging";
+import { UserActivityTracker, UserActivityTrackerConfig } from "./components/userActivity";
 import { Defer, defer as deferPromise } from "./utils/promiseutil";
 import { unstable } from "./errors";
 import { BridgeStore } from "./components/bridge-store";
@@ -62,6 +63,7 @@ const INTENT_CULL_EVICT_AFTER_MS = 1000 * 60 * 15; // 15 minutes
 
 export const BRIDGE_PING_EVENT_TYPE = "org.matrix.bridge.ping";
 export const BRIDGE_PING_TIMEOUT_MS = 60000;
+export const BRIDGE_USER_ACTIVITY_STORAGE_KEY = "org.matrix.bridge.user_activity";
 
 export interface BridgeController {
     /**
@@ -110,6 +112,8 @@ export interface BridgeController {
             PossiblePromise<ThirdpartyUserResponse[]>;
         parseUser?(userid: string): PossiblePromise<ThirdpartyLocationResponse[]>;
     };
+
+    activeUsersChanged?: (activeUsers: number) => void;
 }
 
 type PossiblePromise<T> = T|Promise<T>;
@@ -405,6 +409,8 @@ interface VettedBridgeOpts {
             allowEventOnLookupFail: boolean;
         };
     };
+
+    userActivityTrackerConfig?: UserActivityTrackerConfig;
 }
 
 export class Bridge {
@@ -431,6 +437,7 @@ export class Bridge {
     private appservice?: AppService;
     private botSdkAS?: BotSDK.Appservice;
     private eeEventBroker?: EncryptedEventBroker;
+    private userActivityTracker?: UserActivityTracker;
     private selfPingDeferred?: {
         defer: Defer<void>;
         roomId: string;
@@ -686,6 +693,16 @@ export class Bridge {
         this.setupIntentCulling();
 
         await this.loadDatabases();
+
+        this.userActivityTracker = new UserActivityTracker(
+            this.opts.userActivityTrackerConfig || UserActivityTrackerConfig.DEFAULT,
+            await this.botSdkAS.botClient.getSafeAccountData(BRIDGE_USER_ACTIVITY_STORAGE_KEY, { users: {} }),
+            { set: async (data) => {
+                const activeUsers = this.userActivityTracker!.countActiveUsers().allUsers;
+                this.opts.controller.activeUsersChanged?.(activeUsers);
+                this.botSdkAS!.botClient.setAccountData(BRIDGE_USER_ACTIVITY_STORAGE_KEY, data);
+            } }
+        );
     }
 
     /**
@@ -1107,6 +1124,7 @@ export class Bridge {
                 )
             },
             ...this.opts.intentOptions?.clients,
+            onEventSent: () => this.userActivityTracker!.updateUserActivity(userId!),
         };
         clientIntentOpts.registered = this.membershipCache.isUserRegistered(userId);
         const encryptionOpts = this.opts.bridgeEncryption;

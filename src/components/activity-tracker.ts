@@ -46,12 +46,18 @@ export class ActivityTracker {
      */
     public setLastActiveTime(userId: string, ts: number = Date.now()): void {
         this.lastActiveTime.set(userId, ts);
-        if (this.opts.onLastActiveTimeUpdated) {
-            this.opts.onLastActiveTimeUpdated(userId, ts)?.catch((ex) => {
+        (async () => {
+            if (!this.opts.onLastActiveTimeUpdated) {
+                return;
+            }
+            try {
+                await this.opts.onLastActiveTimeUpdated(userId, ts);
+            }
+            catch (ex) {
                 // Not considered fatal, but disappointing.
                 log.debug(`onLastActiveTimeUpdated failed to run for ${userId}`, ex);
-            });
-        }
+            }
+        })();
     }
 
     /**

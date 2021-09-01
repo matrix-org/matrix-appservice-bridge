@@ -448,7 +448,7 @@ export class Bridge {
 
     private internalActivityTracker?: ActivityTracker;
 
-    public get activityTracker(): ActivityTracker {
+    public get activityTracker(): ActivityTracker|undefined {
         return this.internalActivityTracker;
     }
 

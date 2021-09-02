@@ -9,7 +9,6 @@ const USER_THREE = "@charlie:example.com";
 const ONE_DAY = 24 * 60 * 60 * 1000;
 
 describe("userActivity", () => {
-    const mockStorage = { set: async () => {} };
     const emptyDataSet = () => { return { users: {} } };
     describe("updateUserActivity", () => {
         it("can update a user's activity", async () => {
@@ -18,7 +17,7 @@ describe("userActivity", () => {
                 const tracker = new UserActivityTracker(
                     UserActivityTrackerConfig.DEFAULT,
                     emptyDataSet(),
-                    { set: async (data) => resolve(data) },
+                    (data) => resolve(data.dataSet),
                 );
                 tracker.updateUserActivity(USER_ONE, undefined, DATE_NOW);
                 userData = tracker.getUserData(USER_ONE);
@@ -37,7 +36,6 @@ describe("userActivity", () => {
             const tracker = new UserActivityTracker(
                 UserActivityTrackerConfig.DEFAULT,
                 emptyDataSet(),
-                mockStorage,
             );
             tracker.updateUserActivity(USER_ONE, { private: true }, DATE_NOW);
             expect(tracker.getUserData(USER_ONE)).toEqual({
@@ -51,7 +49,6 @@ describe("userActivity", () => {
             const tracker = new UserActivityTracker(
                 UserActivityTrackerConfig.DEFAULT,
                 emptyDataSet(),
-                mockStorage,
             );
             tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_ONE);
             tracker.updateUserActivity(USER_ONE, undefined, DATE_NOW);
@@ -67,7 +64,6 @@ describe("userActivity", () => {
             const tracker = new UserActivityTracker(
                 UserActivityTrackerConfig.DEFAULT,
                 emptyDataSet(),
-                mockStorage,
             );
             tracker.updateUserActivity(USER_ONE, { private: true}, DATE_MINUS_ONE);
             tracker.updateUserActivity(USER_ONE, undefined, DATE_NOW);
@@ -85,7 +81,6 @@ describe("userActivity", () => {
             const tracker = new UserActivityTracker(
                 UserActivityTrackerConfig.DEFAULT,
                 emptyDataSet(),
-                mockStorage,
             );
             const LAST_EXPECTED_DATE = (DATE_NOW.getTime() - (ONE_DAY * 30)) / 1000;
             for (let index = 40; index >= 0; index--) {
@@ -102,7 +97,6 @@ describe("userActivity", () => {
             const tracker = new UserActivityTracker(
                 UserActivityTrackerConfig.DEFAULT,
                 emptyDataSet(),
-                mockStorage,
             );
             expect(tracker.countActiveUsers(DATE_NOW)).toEqual({
                 allUsers: 0,
@@ -113,7 +107,6 @@ describe("userActivity", () => {
             const tracker = new UserActivityTracker(
                 UserActivityTrackerConfig.DEFAULT,
                 emptyDataSet(),
-                mockStorage,
             );
             tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_ONE);
             tracker.updateUserActivity(USER_ONE, undefined, DATE_NOW);
@@ -126,7 +119,6 @@ describe("userActivity", () => {
             const tracker = new UserActivityTracker(
                 UserActivityTrackerConfig.DEFAULT,
                 emptyDataSet(),
-                mockStorage,
             );
             tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_TWO);
             tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_ONE);
@@ -150,7 +142,6 @@ describe("userActivity", () => {
                         }
                     }
                 },
-                mockStorage,
             );
             expect(tracker.countActiveUsers(DATE_NOW)).toEqual({
                 allUsers: 0,
@@ -171,7 +162,6 @@ describe("userActivity", () => {
                         }
                     }
                 },
-                mockStorage,
             );
             expect(tracker.countActiveUsers(DATE_NOW)).toEqual({
                 allUsers: 1,
@@ -182,7 +172,6 @@ describe("userActivity", () => {
             const tracker = new UserActivityTracker(
                 UserActivityTrackerConfig.DEFAULT,
                 emptyDataSet(),
-                mockStorage,
             );
             tracker.updateUserActivity(USER_ONE, { private: true}, DATE_MINUS_TWO);
             tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_ONE);
@@ -196,7 +185,6 @@ describe("userActivity", () => {
             const tracker = new UserActivityTracker(
                 UserActivityTrackerConfig.DEFAULT,
                 emptyDataSet(),
-                mockStorage,
             );
             tracker.updateUserActivity(USER_ONE, { private: true }, DATE_MINUS_TWO);
             tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_ONE);

@@ -1,3 +1,17 @@
+/*
+Copyright 2021 The Matrix.org Foundation C.I.C.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 import * as logging from "./logging";
 const log = logging.get("UserActTracker");
 
@@ -16,6 +30,13 @@ export interface UserActivitySet {
     users: {[userId: string]: UserActivity};
 }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace,no-redeclare
+export namespace UserActivitySet {
+    export const DEFAULT: UserActivitySet = {
+        users: {}
+    };
+}
+
 interface UserActivity {
     ts: number[];
     metadata: UserActivityMetadata;
@@ -26,16 +47,19 @@ export interface UserActivityTrackerConfig {
     minUserActiveDays: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace,no-redeclare
 export namespace UserActivityTrackerConfig {
-    export const DEFAULT = {
+    export const DEFAULT: UserActivityTrackerConfig = {
         inactiveAfterDays: 31,
         minUserActiveDays: 3,
     };
 }
 
-interface UserActivityStorage {
-    set(arg: UserActivitySet): Promise<void>;
+export interface UserActivityState {
+    dataSet: UserActivitySet;
+    activeUsers: number;
 }
+type ChangesCallback = (state: UserActivityState) => void;
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 
@@ -43,7 +67,7 @@ export class UserActivityTracker {
     constructor(
         private readonly config: UserActivityTrackerConfig,
         private readonly dataSet: UserActivitySet,
-        private readonly storage: UserActivityStorage,
+        private readonly onChanges?: ChangesCallback,
     ) { }
 
     public updateUserActivity(userId: string, metadata?: UserActivityMetadata, dateOverride?: Date): void {
@@ -65,7 +89,7 @@ export class UserActivityTracker {
             // Always insert at the start.
             userObject.ts.unshift(newTs);
             // Slice after 31 days
-            userObject.ts = userObject.ts.sort((a,b) => b-a).slice(0, 31);
+            userObject.ts = userObject.ts.sort((a, b) => b-a).slice(0, 31);
         }
 
         if (!userObject.metadata.active) {
@@ -79,10 +103,11 @@ export class UserActivityTracker {
 
         this.dataSet.users[userId] = userObject;
         setImmediate(() => {
-            log.debug("Committing user activity to storage");
-            this.storage.set(this.dataSet).catch(
-                (err) => log.error(`Failed to commit user activity`, err)
-            );
+            log.debug("Notifying the listener of RMAU changes");
+            this.onChanges?.({
+                dataSet: this.dataSet,
+                activeUsers: this.countActiveUsers().allUsers,
+            });
         });
     }
 

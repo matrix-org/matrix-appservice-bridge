@@ -39,7 +39,7 @@ import { RoomLinkValidator, RoomLinkValidatorStatus, Rules } from "./components/
 import { RoomUpgradeHandler, RoomUpgradeHandlerOpts } from "./components/room-upgrade-handler";
 import { EventQueue } from "./components/event-queue";
 import * as logging from "./components/logging";
-import { UserActivityTracker, UserActivityTrackerConfig } from "./components/userActivity";
+import { UserActivitySet, UserActivityState, UserActivityTracker, UserActivityTrackerConfig } from "./components/userActivity";
 import { Defer, defer as deferPromise } from "./utils/promiseutil";
 import { unstable } from "./errors";
 import { BridgeStore } from "./components/bridge-store";
@@ -113,7 +113,8 @@ export interface BridgeController {
         parseUser?(userid: string): PossiblePromise<ThirdpartyLocationResponse[]>;
     };
 
-    activeUsersChanged?: (activeUsers: number) => void;
+    getUserActivity?: () => Promise<UserActivitySet>;
+    onUserActivityChanged?: (changes: UserActivityState) => void;
 }
 
 type PossiblePromise<T> = T|Promise<T>;
@@ -696,12 +697,8 @@ export class Bridge {
 
         this.userActivityTracker = new UserActivityTracker(
             this.opts.userActivityTrackerConfig || UserActivityTrackerConfig.DEFAULT,
-            await this.botSdkAS.botClient.getSafeAccountData(BRIDGE_USER_ACTIVITY_STORAGE_KEY, { users: {} }),
-            { set: async (data) => {
-                const activeUsers = this.userActivityTracker!.countActiveUsers().allUsers;
-                this.opts.controller.activeUsersChanged?.(activeUsers);
-                this.botSdkAS!.botClient.setAccountData(BRIDGE_USER_ACTIVITY_STORAGE_KEY, data);
-            } }
+            await this.opts.controller.getUserActivity?.() || UserActivitySet.DEFAULT,
+            (changes: UserActivityState) => this.opts.controller.onUserActivityChanged?.(changes),
         );
     }
 

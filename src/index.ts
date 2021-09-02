@@ -53,6 +53,7 @@ export * as Logging from "./components/logging";
 export { unstable } from "./errors";
 export * from "./components/event-types";
 export * from "./components/bridge-info-state";
+export * from "./components/userActivity";
 
 export { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
 

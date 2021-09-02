@@ -32,6 +32,7 @@ export * from "./components/config-validator";
 // Store
 export * from "./components/bridge-store";
 export * from "./components/user-bridge-store";
+export * from "./components/user-activity-store";
 export * from "./components/room-bridge-store";
 export * from "./components/event-bridge-store";
 

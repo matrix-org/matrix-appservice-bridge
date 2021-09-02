@@ -30,6 +30,7 @@ import { Request } from "./components/request";
 import { Intent, IntentOpts, IntentBackingStore, PowerLevelContent } from "./components/intent";
 import { RoomBridgeStore } from "./components/room-bridge-store";
 import { UserBridgeStore } from "./components/user-bridge-store";
+import { UserActivityStore } from "./components/user-activity-store";
 import { EventBridgeStore } from "./components/event-bridge-store";
 import { MatrixUser } from "./models/users/matrix"
 import { MatrixRoom } from "./models/rooms/matrix"
@@ -160,6 +161,12 @@ export interface BridgeOpts {
      * no database will be created or used.
      */
     userStore?: UserBridgeStore|string;
+    /**
+     * The user activity store instance to use, or the path to the user .db file to load.
+     * A database will be created if this is not specified. If `disableStores` is set,
+     * no database will be created or used.
+     */
+    userActivityStore?: UserActivityStore|string;
     /**
      * The event store instance to use, or the path to the user .db file to load.
      * A database will NOT be created if this is not specified. If `disableStores` is set,
@@ -315,6 +322,12 @@ interface VettedBridgeOpts {
      */
     userStore: UserBridgeStore | string;
     /**
+     * The user activity store instance to use, or the path to the user .db file to load.
+     * A database will be created if this is not specified. If `disableStores` is set,
+     * no database will be created or used.
+     */
+    userActivityStore: UserActivityStore | string;
+    /**
      * The event store instance to use, or the path to the user .db file to load.
      * A database will NOT be created if this is not specified. If `disableStores` is set,
      * no database will be created or used.
@@ -433,6 +446,7 @@ export class Bridge {
     private roomUpgradeHandler?: RoomUpgradeHandler;
     private roomStore?: RoomBridgeStore;
     private userStore?: UserBridgeStore;
+    private userActivityStore?: UserActivityStore;
     private eventStore?: EventBridgeStore;
     private registration?: AppServiceRegistration;
     private appservice?: AppService;
@@ -488,6 +502,7 @@ export class Bridge {
             disableStores: opts.disableStores ?? false,
             authenticateThirdpartyEndpoints: opts.authenticateThirdpartyEndpoints ?? false,
             userStore: opts.userStore || "user-store.db",
+            userActivityStore: opts.userActivityStore || "user-activity-store.db",
             roomStore: opts.roomStore || "room-store.db",
             intentOptions: opts.intentOptions || {},
             onIntentCreate: opts.onIntentCreate ?? this.onIntentCreate.bind(this),
@@ -555,6 +570,12 @@ export class Bridge {
         else {
             storePromises.push(Promise.resolve(this.opts.userStore));
         }
+        if (typeof this.opts.userActivityStore === "string") {
+            storePromises.push(loadDatabase(this.opts.userActivityStore, UserActivityStore));
+        }
+        else {
+            storePromises.push(Promise.resolve(this.opts.userActivityStore));
+        }
         if (typeof this.opts.roomStore === "string") {
             storePromises.push(loadDatabase(this.opts.roomStore, RoomBridgeStore));
         }
@@ -571,8 +592,9 @@ export class Bridge {
         // This works because if they provided a string we converted it to a Promise
         // which will be resolved when we have the db instance. If they provided a
         // db instance then this will resolve immediately.
-        const [userStore, roomStore, eventStore] = await Promise.all(storePromises);
+        const [userStore, userActivityStore, roomStore, eventStore] = await Promise.all(storePromises);
         this.userStore = userStore as UserBridgeStore;
+        this.userActivityStore = userActivityStore as UserActivityStore;
         this.roomStore = roomStore as RoomBridgeStore;
         this.eventStore = eventStore as EventBridgeStore;
     }
@@ -1008,6 +1030,13 @@ export class Bridge {
      */
     public getUserStore(): UserBridgeStore|undefined {
         return this.userStore;
+    }
+
+    /**
+     * Retrieve the connected user activity store instance.
+     */
+    public getUserActivityStore() {
+        return this.userActivityStore;
     }
 
     /**

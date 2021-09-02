@@ -1047,6 +1047,13 @@ export class Bridge {
     }
 
     /**
+     * Retrieve the user activity tracker
+     */
+    public getUserActivityTracker() {
+        return this.userActivityTracker;
+    }
+
+    /**
      * Retrieve the request factory used to create incoming requests.
      */
     public getRequestFactory(): RequestFactory {

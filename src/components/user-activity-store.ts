@@ -34,7 +34,7 @@ limitations under the License.
  */
 import Datastore from "nedb";
 import { BridgeStore } from "./bridge-store";
-import { UserActivitySet } from "./userActivity";
+import { UserActivity, UserActivitySet } from "./userActivity";
 
 export class UserActivityStore extends BridgeStore {
     /**
@@ -45,13 +45,10 @@ export class UserActivityStore extends BridgeStore {
         super(db);
     }
 
-    public async storeActivitySet(activitySet: UserActivitySet) {
-        for (const mxid of Object.keys(activitySet.users)) {
-            const activity = activitySet.users[mxid];
-            this.upsert({ mxid }, {
-                ...activity,
-            });
-        }
+    public async storeUserActivity(mxid: string, activity: UserActivity) {
+        this.upsert({ mxid }, {
+            ...activity,
+        });
     }
 
     public async getActivitySet(): Promise<UserActivitySet> {

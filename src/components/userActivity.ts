@@ -37,7 +37,7 @@ export namespace UserActivitySet {
     };
 }
 
-interface UserActivity {
+export interface UserActivity {
     ts: number[];
     metadata: UserActivityMetadata;
 }
@@ -57,6 +57,7 @@ export namespace UserActivityTrackerConfig {
 
 export interface UserActivityState {
     dataSet: UserActivitySet;
+    changed: string[];
     activeUsers: number;
 }
 type ChangesCallback = (state: UserActivityState) => void;
@@ -105,6 +106,7 @@ export class UserActivityTracker {
         setImmediate(() => {
             log.debug("Notifying the listener of RMAU changes");
             this.onChanges?.({
+                changed: [userId],
                 dataSet: this.dataSet,
                 activeUsers: this.countActiveUsers().allUsers,
             });

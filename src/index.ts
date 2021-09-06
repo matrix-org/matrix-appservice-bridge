@@ -55,6 +55,7 @@ export { unstable } from "./errors";
 export * from "./components/event-types";
 export * from "./components/bridge-info-state";
 export * from "./components/userActivity";
+export * from "./components/bridge-blocker";
 
 export { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
 

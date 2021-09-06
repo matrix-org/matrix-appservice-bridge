@@ -1594,6 +1594,9 @@ export class Bridge {
             if (counts.matrixGhosts !== undefined) {
                 counts.matrixGhosts = Object.keys(this.intents.size).length;
             }
+            if (counts.rmau !== undefined) {
+                counts.rmau = this.opts.controller.userActivityTracker?.countActiveUsers().allUsers;
+            }
             return counts;
         });
     }

@@ -40,7 +40,7 @@ import { RoomLinkValidator, RoomLinkValidatorStatus, Rules } from "./components/
 import { RoomUpgradeHandler, RoomUpgradeHandlerOpts } from "./components/room-upgrade-handler";
 import { EventQueue } from "./components/event-queue";
 import * as logging from "./components/logging";
-import { UserActivitySet, UserActivityState, UserActivityTracker, UserActivityTrackerConfig } from "./components/userActivity";
+import { UserActivityTracker } from "./components/userActivity";
 import { Defer, defer as deferPromise } from "./utils/promiseutil";
 import { unstable } from "./errors";
 import { BridgeStore } from "./components/bridge-store";
@@ -114,8 +114,7 @@ export interface BridgeController {
         parseUser?(userid: string): PossiblePromise<ThirdpartyLocationResponse[]>;
     };
 
-    getUserActivity?: () => Promise<UserActivitySet>;
-    onUserActivityChanged?: (changes: UserActivityState) => void;
+    userActivityTracker?: UserActivityTracker;
 }
 
 type PossiblePromise<T> = T|Promise<T>;
@@ -423,8 +422,6 @@ interface VettedBridgeOpts {
             allowEventOnLookupFail: boolean;
         };
     };
-
-    userActivityTrackerConfig?: UserActivityTrackerConfig;
 }
 
 export class Bridge {
@@ -452,7 +449,6 @@ export class Bridge {
     private appservice?: AppService;
     private botSdkAS?: BotSDK.Appservice;
     private eeEventBroker?: EncryptedEventBroker;
-    private userActivityTracker?: UserActivityTracker;
     private selfPingDeferred?: {
         defer: Defer<void>;
         roomId: string;
@@ -716,12 +712,6 @@ export class Bridge {
         this.setupIntentCulling();
 
         await this.loadDatabases();
-
-        this.userActivityTracker = new UserActivityTracker(
-            this.opts.userActivityTrackerConfig || UserActivityTrackerConfig.DEFAULT,
-            await this.opts.controller.getUserActivity?.() || UserActivitySet.DEFAULT,
-            (changes: UserActivityState) => this.opts.controller.onUserActivityChanged?.(changes),
-        );
     }
 
     /**
@@ -1047,13 +1037,6 @@ export class Bridge {
     }
 
     /**
-     * Retrieve the user activity tracker
-     */
-    public getUserActivityTracker() {
-        return this.userActivityTracker;
-    }
-
-    /**
      * Retrieve the request factory used to create incoming requests.
      */
     public getRequestFactory(): RequestFactory {
@@ -1157,7 +1140,7 @@ export class Bridge {
                 )
             },
             ...this.opts.intentOptions?.clients,
-            onEventSent: () => this.userActivityTracker!.updateUserActivity(userId!),
+            onEventSent: () => this.opts.controller.userActivityTracker?.updateUserActivity(userId!),
         };
         clientIntentOpts.registered = this.membershipCache.isUserRegistered(userId);
         const encryptionOpts = this.opts.bridgeEncryption;

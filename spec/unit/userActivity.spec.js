@@ -1,4 +1,4 @@
-const { UserActivityTracker, UserActivityTrackerConfig  } = require("../../lib/components/userActivity")
+const { UserActivityTracker, UserActivityTrackerConfig  } = require("../..");
 
 const DATE_MINUS_TWO = new Date(Date.UTC(2020, 12, 30, 0));
 const DATE_MINUS_ONE = new Date(Date.UTC(2020, 12, 31, 0));

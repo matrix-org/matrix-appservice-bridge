@@ -15,6 +15,22 @@ limitations under the License.
 import * as logging from "./logging";
 const log = logging.get("BridgeBlocker");
 
+/**
+ * Monitor the active user limit (or any limit you desire),
+ * and block the bridge when it's exceeded.
+ *
+ * Bridge blocking is represented by an `isBlocked` attribute,
+ * and it's up to the implementation to decide what to do with that information.
+ *
+ * If a custom blocking/unblocking implementation is needed,
+ * override `blockBridge()` and `unblockBridge()` respectively.
+ * It's the caller's responsibility to call the base class methods
+ * to flip the actual `isBlocked` flag. Any errors thrown in the custom implementations
+ * get automatically caught (and logged) by `checkLimits()`
+ *
+ * @constructor
+ * @param limit The upper user limit - the bridge gets blocked when it gets *exceeded* (not reached!)
+ */
 export class BridgeBlocker {
     _isBlocked = false;
 
@@ -24,6 +40,9 @@ export class BridgeBlocker {
 
     constructor(private userLimit: number) {}
 
+    /**
+     * Check `users` param against the limit and block the bridge when it's exceeded.
+     */
     public async checkLimits(users: number) {
         log.debug(`Bridge now serving ${users} users`);
 

@@ -64,6 +64,19 @@ type ChangesCallback = (state: UserActivityState) => void;
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * Track user activity and produce summaries thereof.
+ *
+ * This stores (manually entered through `updateUserActivity()`) timestamps of user activity,
+ * with optional metadata - which is stored once per user, not timestamped,
+ * and overwritten upon each update.
+ *
+ * Only one timestamp is kept per day, rounded to 12 AM UTC.
+ * Only the last 31 timestamps are kept, with older ones being dropped.
+ *
+ * In metadata, `active` is a reserved key that must not be used
+ * to not interfere with UserActivityTracker's operations.
+ */
 export class UserActivityTracker {
     constructor(
         private readonly config: UserActivityTrackerConfig,
@@ -113,6 +126,12 @@ export class UserActivityTracker {
         });
     }
 
+    /**
+     * Return the number of users active within the number of days specified in `config.inactiveAfterDays`.
+     *
+     * It returns the total number of active users under `allUsers` in the returned object.
+     * `privateUsers` represents those users with their `metadata.private` set to `true`
+     */
     public countActiveUsers(dateNow?: Date): {allUsers: number; privateUsers: number;} {
         let allUsers = 0;
         let privateUsers = 0;

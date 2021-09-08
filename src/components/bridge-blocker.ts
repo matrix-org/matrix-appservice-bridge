@@ -24,21 +24,27 @@ export class BridgeBlocker {
 
     constructor(private userLimit: number) {}
 
-    public checkLimits(users: number) {
+    public async checkLimits(users: number) {
         log.debug(`Bridge now serving ${users} users`);
 
         if (users > this.userLimit) {
             if (!this._isBlocked) {
-                this.blockBridge().then(() => {
+                try {
+                    await this.blockBridge()
                     log.info(`Bridge has reached the user limit of ${this.userLimit} and is now blocked`);
-                });
+                } catch (err: unknown) {
+                    log.error(`Failed to block the bridge: ${err}`);
+                }
             }
         }
         else {
             if (this._isBlocked) {
-                this.unblockBridge().then(() => {
+                try {
+                    await this.unblockBridge()
                     log.info(`Bridge has has gone below the user limit of ${this.userLimit} and is now unblocked`);
-                });
+                } catch (err: unknown) {
+                    log.error(`Failed to unblock the bridge: ${err}`);
+                }
             }
         }
     }

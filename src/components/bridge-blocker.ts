@@ -51,7 +51,8 @@ export class BridgeBlocker {
                 try {
                     await this.blockBridge()
                     log.info(`Bridge has reached the user limit of ${this.userLimit} and is now blocked`);
-                } catch (err: unknown) {
+                }
+                catch (err: unknown) {
                     log.error(`Failed to block the bridge: ${err}`);
                 }
             }
@@ -61,7 +62,8 @@ export class BridgeBlocker {
                 try {
                     await this.unblockBridge()
                     log.info(`Bridge has has gone below the user limit of ${this.userLimit} and is now unblocked`);
-                } catch (err: unknown) {
+                }
+                catch (err: unknown) {
                     log.error(`Failed to unblock the bridge: ${err}`);
                 }
             }

@@ -34,7 +34,7 @@ limitations under the License.
  */
 import Datastore from "nedb";
 import { BridgeStore } from "./bridge-store";
-import { UserActivity, UserActivitySet } from "./userActivity";
+import { UserActivity, UserActivitySet } from "./user-activity";
 
 export class UserActivityStore extends BridgeStore {
     /**

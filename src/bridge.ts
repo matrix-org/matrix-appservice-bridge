@@ -40,7 +40,7 @@ import { RoomLinkValidator, RoomLinkValidatorStatus, Rules } from "./components/
 import { RoomUpgradeHandler, RoomUpgradeHandlerOpts } from "./components/room-upgrade-handler";
 import { EventQueue } from "./components/event-queue";
 import * as logging from "./components/logging";
-import { UserActivityTracker } from "./components/userActivity";
+import { UserActivityTracker } from "./components/user-activity";
 import { Defer, defer as deferPromise } from "./utils/promiseutil";
 import { unstable } from "./errors";
 import { BridgeStore } from "./components/bridge-store";
@@ -64,7 +64,6 @@ const INTENT_CULL_EVICT_AFTER_MS = 1000 * 60 * 15; // 15 minutes
 
 export const BRIDGE_PING_EVENT_TYPE = "org.matrix.bridge.ping";
 export const BRIDGE_PING_TIMEOUT_MS = 60000;
-export const BRIDGE_USER_ACTIVITY_STORAGE_KEY = "org.matrix.bridge.user_activity";
 
 export interface BridgeController {
     /**

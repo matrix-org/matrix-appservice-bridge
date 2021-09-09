@@ -1,3 +1,9 @@
+3.0.0 (2021-09-09)
+===================
+
+This release uses `^0.6.0-beta.2` in order to resolve an issue in `matrix-bot-sdk` with unusual registration namespaces.
+
+
 3.0.0-rc1 (2021-08-16)
 =======================
 

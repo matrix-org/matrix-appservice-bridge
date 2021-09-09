@@ -20,6 +20,7 @@ Features
   is now deprecated in this release, but can still be accessed via `Intent.getClient()`. ([\#326](https://github.com/matrix-org/matrix-appservice-bridge/issues/326))
 - **Breaking**: The `Cli` will no longer specify a default port of `8090` if one is not provided as an command line argument. instead `run` will be called with `null`. Bridge developers **MUST** now handle
   this case. ([\#344](https://github.com/matrix-org/matrix-appservice-bridge/issues/344))
+- **Breaking** The room link validator no longer has a seperate rule file. Bridge developers should maintain their own rules in the config file and call `updateRoomLinkValidatorRules` to update the ruleset on config reload.
 - Add `buckets` option to PrometheusMetrics.addTimer, to specify custom bucket intervals. ([\#347](https://github.com/matrix-org/matrix-appservice-bridge/issues/347))
 
 

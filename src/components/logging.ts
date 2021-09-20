@@ -41,19 +41,19 @@ export class LogWrapper {
     private logger: Logger|null = null;
     private messages: {type: LogLevel, message: string}[] = [];
 
-    public setLogger(logger: Logger) {
+    public setLogger(logger: Logger): void {
         this.logger = logger;
     }
 
-    public debug(...messageParts: MessagePart[]) { this.log(messageParts, 'debug') }
+    public debug(...messageParts: MessagePart[]): void { this.log(messageParts, 'debug') }
 
-    public info(...messageParts: MessagePart[]) { this.log(messageParts, 'info') }
+    public info(...messageParts: MessagePart[]): void { this.log(messageParts, 'info') }
 
-    public warn(...messageParts: MessagePart[]) { this.log(messageParts, 'warn') }
+    public warn(...messageParts: MessagePart[]): void { this.log(messageParts, 'warn') }
 
-    public error(...messageParts: MessagePart[]) { this.log(messageParts, 'error') }
+    public error(...messageParts: MessagePart[]): void { this.log(messageParts, 'error') }
 
-    public drain() {
+    public drain(): void {
         if (!this.logger) { return; }
         while (this.messages.length > 0) {
             const msg = this.messages[0];
@@ -71,7 +71,7 @@ export class LogWrapper {
         });
     }
 
-    private log(messageParts: MessagePart[], type: LogLevel) {
+    private log(messageParts: MessagePart[], type: LogLevel): void {
         const formattedParts = this.formatParts(messageParts).join(" ");
         if (this.logger === null) {
             this.messages.push({type, message: formattedParts});
@@ -118,7 +118,7 @@ class Logging {
         }
         maxFiles: 5
     */
-    configure(config: LoggerConfig = {}) {
+    configure(config: LoggerConfig = {}): void {
         if (!config.fileDatePattern) {
             config.fileDatePattern = "YYYY-MM-DD";
         }
@@ -177,7 +177,7 @@ class Logging {
         });
     }
 
-    public get(name: string) {
+    public get(name: string): LogWrapper {
         const existingLogger = this.loggers.get(name);
         if (existingLogger) {
             return existingLogger;
@@ -192,7 +192,7 @@ class Logging {
         return wrapper;
     }
 
-    public createLogger(name: string) {
+    public createLogger(name: string): Logger {
         const logger = winston.createLogger({
             transports: this.transports,
             format: format.combine(
@@ -211,16 +211,16 @@ const instance: Logging = new Logging();
 instance.configure({console: "off"});
 let isConfigured = false;
 
-export function get(name: string) {
+export function get(name: string): LogWrapper {
     return instance.get(name);
 }
 
-export function configure (config: LoggerConfig) {
+export function configure (config: LoggerConfig): void {
     instance.configure(config);
     isConfigured = true;
 }
 
-export function configured() {
+export function configured(): boolean {
     return isConfigured;
 }
 

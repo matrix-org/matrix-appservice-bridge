@@ -1509,6 +1509,7 @@ export class Bridge {
      * The instance will automatically register the Matrix SDK metrics by calling
      * {PrometheusMetrics~registerMatrixSdkMetrics}.
      * @param {boolean} registerEndpoint Register the /metrics endpoint on the appservice HTTP server. Defaults to true.
+     *                                   Note: `listen()` must have been called if this is true or this will throw.
      * @param {Registry?} registry Optionally provide an alternative registry for metrics.
      */
     public getPrometheusMetrics(registerEndpoint = true, registry?: Registry): PrometheusMetrics {
@@ -1524,10 +1525,8 @@ export class Bridge {
 
         metrics.registerMatrixSdkMetrics(this.botSdkAS);
 
-        // TODO(paul): register some bridge-wide standard ones here
-
-        // In case we're called after .run()
-        if (this.appService && registerEndpoint) {
+        // This will throw if true and not called after run.
+        if (registerEndpoint && this.appService) {
             metrics.addAppServicePath(this);
         }
 

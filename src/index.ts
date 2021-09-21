@@ -32,6 +32,7 @@ export * from "./components/config-validator";
 // Store
 export * from "./components/bridge-store";
 export * from "./components/user-bridge-store";
+export * from "./components/user-activity-store";
 export * from "./components/room-bridge-store";
 export * from "./components/event-bridge-store";
 
@@ -53,6 +54,8 @@ export * as Logging from "./components/logging";
 export { unstable } from "./errors";
 export * from "./components/event-types";
 export * from "./components/bridge-info-state";
+export * from "./components/user-activity";
+export * from "./components/bridge-blocker";
 
 export { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
 

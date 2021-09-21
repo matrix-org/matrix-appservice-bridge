@@ -27,6 +27,7 @@ export interface BridgeGaugesCounts {
     remoteRoomConfigs?: number;
     matrixGhosts?: number;
     remoteGhosts?: number;
+    rmau?: number;
     matrixRoomsByAge?: AgeCounters;
     remoteRoomsByAge?: AgeCounters;
     matrixUsersByAge?: AgeCounters;
@@ -223,6 +224,11 @@ export class PrometheusMetrics {
             labels: ["age"],
         });
 
+        const remoteMonthlyActiveUsers = this.addGauge({
+            name: "remote_monthly_active_users",
+            help: "Current count of remote users active this month",
+        });
+
         this.addCollector(async () => {
             const counts = await counterFunc();
 
@@ -233,6 +239,8 @@ export class PrometheusMetrics {
             if (counts.matrixGhosts) {matrixGhostsGauge.set(counts.matrixGhosts);}
 
             if (counts.remoteGhosts) {remoteGhostsGauge.set(counts.remoteGhosts);}
+
+            if (counts.rmau) {remoteMonthlyActiveUsers.set(counts.rmau);}
 
             counts.matrixRoomsByAge?.setGauge(matrixRoomsByAgeGauge);
             counts.remoteRoomsByAge?.setGauge(remoteRoomsByAgeGauge);

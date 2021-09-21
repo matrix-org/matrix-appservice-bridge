@@ -613,6 +613,10 @@ export class Bridge {
             bindAddress: "127.0.0.1",
         });
 
+        if (this.metrics) {
+            this.metrics.registerMatrixSdkMetrics(this.botSdkAS);
+        }
+
         this.clientFactory = this.opts.clientFactory || new ClientFactory({
             url: this.opts.homeserverUrl,
             token: asToken,
@@ -730,7 +734,7 @@ export class Bridge {
             this.onLog(line, false);
         });
 
-        this.customiseAppservice();
+        this.customiseAppserviceThirdPartyLookup();
         if (this.metrics) {
             this.metrics.addAppServicePath(this);
         }
@@ -748,13 +752,6 @@ export class Bridge {
     public async run(port: number, appServiceInstance?: AppService, hostname = "0.0.0.0", backlog = 10): Promise<void> {
         await this.initalise();
         await this.listen(port, hostname, backlog, appServiceInstance);
-    }
-
-    /**
-     * Apply any customisations required on the appService object.
-     */
-    private customiseAppservice() {
-        this.customiseAppserviceThirdPartyLookup();
     }
 
     // Set a timer going which will periodically remove Intent objects to prevent
@@ -1519,16 +1516,12 @@ export class Bridge {
 
         const metrics = this.metrics = new PrometheusMetrics(registry);
 
-        if (!this.botSdkAS) {
-            throw Error('initalise() not called, cannot listen');
-        }
-
-        metrics.registerMatrixSdkMetrics(this.botSdkAS);
-
-        // This will throw if true and not called after run.
-        if (registerEndpoint && this.appService) {
+        if (this.botSdkAS) {
+            metrics.registerMatrixSdkMetrics(this.botSdkAS);
+        } // Else, we will set this up in initalise()
+        if (registerEndpoint && this.appservice) {
             metrics.addAppServicePath(this);
-        }
+        } // Else, we will add the path in listen()
 
         return metrics;
     }

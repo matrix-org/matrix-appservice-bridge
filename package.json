@@ -1,6 +1,6 @@
 {
   "name": "matrix-appservice-bridge",
-  "version": "2.7.0",
+  "version": "3.0.0",
   "description": "Bridging infrastructure for Matrix Application Services",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -35,7 +35,7 @@
     "is-my-json-valid": "^2.20.5",
     "js-yaml": "^4.0.0",
     "matrix-appservice": "^0.8.0",
-    "matrix-bot-sdk": "^0.5.19",
+    "matrix-bot-sdk": "^0.6.0-beta.2",
     "matrix-js-sdk": "^9.9.0",
     "nedb": "^1.8.0",
     "nopt": "^5.0.0",

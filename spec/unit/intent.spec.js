@@ -1,6 +1,7 @@
+const { default: MatrixError } = require("@half-shot/matrix-bot-sdk/lib/models/MatrixError");
 const { Intent } = require("../..");
 
-const matrixError = (errcode, error) => Promise.reject({body: {errcode, error}});
+const matrixError = (errcode, error) => Promise.reject(new MatrixError({errcode, error}));
 
 describe("Intent", function() {
     let intent, botIntent, client, botClient, underlyingClient;

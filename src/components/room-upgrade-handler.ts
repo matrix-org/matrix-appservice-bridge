@@ -17,6 +17,7 @@ import { MatrixRoom } from "../models/rooms/matrix";
 import { MatrixUser } from "../models/users/matrix";
 import { RoomBridgeStoreEntry } from "./room-bridge-store";
 import { Bridge } from "..";
+import MatrixError from "@half-shot/matrix-bot-sdk/lib/models/MatrixError";
 
 const log = logging.get("RoomUpgradeHandler");
 
@@ -87,8 +88,7 @@ export class RoomUpgradeHandler {
         const joinVia = new MatrixUser(ev.sender).host;
         // Try to join the new room.
         try {
-            const couldJoin = await this.joinNewRoom(movingTo, [joinVia]);
-            if (couldJoin) {
+            if (await this.joinNewRoom(movingTo, [joinVia])) {
                 return this.onJoinedNewRoom(ev.room_id, movingTo);
             }
             this.waitingForInvite.set(movingTo, ev.room_id);
@@ -100,14 +100,14 @@ export class RoomUpgradeHandler {
         }
     }
 
-    private async joinNewRoom(newRoomId: string, joinVia: string[] = []) {
+    private async joinNewRoom(newRoomId: string, joinVia: string[] = []): Promise<boolean> {
         const intent = this.bridge.getIntent();
         try {
             await intent.join(newRoomId, joinVia);
             return true;
         }
-        catch (ex) {
-            if (ex.body?.errcode === "M_FORBIDDEN") {
+        catch (ex: any) {
+            if (ex.errcode === "M_FORBIDDEN") {
                 return false;
             }
             throw Error("Failed to handle upgrade");

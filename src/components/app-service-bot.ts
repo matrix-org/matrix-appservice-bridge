@@ -17,7 +17,7 @@ limitations under the License.
 import { AppServiceRegistration } from "matrix-appservice";
 import { MembershipCache, UserProfile } from "./membership-cache";
 import { StateLookupEvent } from "..";
-import { MatrixClient, MatrixProfileInfo } from "matrix-bot-sdk";
+import { MatrixClient, MatrixProfileInfo } from "@half-shot/matrix-bot-sdk";
 
 /**
  * Construct an AS bot user which has various helper methods.

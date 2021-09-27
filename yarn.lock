@@ -231,6 +231,30 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
+"@half-shot/matrix-bot-sdk@0.6.0-hs-beta.1":
+  version "0.6.0-hs-beta.1"
+  resolved "https://npm.pkg.github.com/download/@half-shot/matrix-bot-sdk/0.6.0-hs-beta.1/abe1ae01f0a80953ca7a25a298bf4c1cb46da2dcb60105c0513aae507fe8a156#d38b04e4f3a8be6224e6d4ba7ef5dc91f9b7fbe3"
+  integrity sha512-fy5qoNMYIW5BPykxxU7rt/YbS2wXiw6iNB6h5DXHdttL4LC+QEMnOaAR2ovGl9QoLWu0Qg8udR0+Ph2OCO2Ysw==
+  dependencies:
+    "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.4.tgz"
+    "@types/express" "^4.17.13"
+    another-json "^0.2.0"
+    chalk "^4.1.0"
+    express "^4.17.1"
+    glob-to-regexp "^0.4.1"
+    hash.js "^1.1.7"
+    html-to-text "^6.0.0"
+    htmlencode "^0.0.4"
+    lowdb "^1.0.0"
+    lru-cache "^6.0.0"
+    mkdirp "^1.0.4"
+    morgan "^1.10.0"
+    request "^2.88.2"
+    request-promise "^4.2.6"
+    sanitize-html "^2.3.2"
+  optionalDependencies:
+    better-sqlite3 "^7.4.3"
+
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@istanbuljs/load-nyc-config/-/load-nyc-config-1.1.0.tgz#fd3db1d59ecf7cf121e80650bb86712f9b55eced"
@@ -2314,30 +2338,6 @@ matrix-appservice@^0.9.0:
     express "^4.17.1"
     js-yaml "^3.14.0"
     morgan "^1.10.0"
-
-matrix-bot-sdk@^0.6.0-beta.2:
-  version "0.6.0-beta.2"
-  resolved "https://registry.yarnpkg.com/matrix-bot-sdk/-/matrix-bot-sdk-0.6.0-beta.2.tgz#abfddaeaf339da167717a1ca4148fa8f847f36f5"
-  integrity sha512-D9aQ2++1bJIzka2uIz22HkaeyT058QGOh96xdxiDOaezyzLY5BN7ehYg+P0xRzDYDFKx9DbqDYCt97IkfahtPw==
-  dependencies:
-    "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.4.tgz"
-    "@types/express" "^4.17.13"
-    another-json "^0.2.0"
-    chalk "^4.1.0"
-    express "^4.17.1"
-    glob-to-regexp "^0.4.1"
-    hash.js "^1.1.7"
-    html-to-text "^6.0.0"
-    htmlencode "^0.0.4"
-    lowdb "^1.0.0"
-    lru-cache "^6.0.0"
-    mkdirp "^1.0.4"
-    morgan "^1.10.0"
-    request "^2.88.2"
-    request-promise "^4.2.6"
-    sanitize-html "^2.3.2"
-  optionalDependencies:
-    better-sqlite3 "^7.4.3"
 
 matrix-js-sdk@^9.9.0:
   version "9.11.0"

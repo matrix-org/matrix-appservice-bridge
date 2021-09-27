@@ -19,7 +19,7 @@ import { Request, Response } from "express";
 import { Bridge } from "..";
 import Logger from "./logging";
 import { Appservice as BotSdkAppservice, FunctionCallContext, METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL,
-    METRIC_MATRIX_CLIENT_FUNCTION_CALL, METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL } from "matrix-bot-sdk";
+    METRIC_MATRIX_CLIENT_FUNCTION_CALL, METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL } from "@half-shot/matrix-bot-sdk";
 type CollectorFunction = () => Promise<void>|void;
 
 export interface BridgeGaugesCounts {

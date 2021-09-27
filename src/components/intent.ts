@@ -23,7 +23,8 @@ import BridgeErrorReason = unstable.BridgeErrorReason;
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
 import { ReadStream } from "fs";
-import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
+import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "@half-shot/matrix-bot-sdk";
+import MatrixError from "@half-shot/matrix-bot-sdk/lib/models/MatrixError";
 
 const log = Logging.get("Intent");
 export type IntentBackingStore = {
@@ -64,18 +65,6 @@ export interface RoomCreationOpts {
 export interface FileUploadOpts {
     name?: string;
     type?: string;
-}
-
-/**
- * Returns the first parameter that is a number or 0.
- */
-const returnFirstNumber = (...args: unknown[]) => {
-    for (const arg of args) {
-        if (typeof arg === "number") {
-            return arg;
-        }
-    }
-    return 0;
 }
 
 const DEFAULT_CACHE_TTL = 90000;
@@ -499,7 +488,7 @@ export class Intent {
                 }
             }
             catch (ex) {
-                if (ex.body.errcode !== "M_FORBIDDEN") {
+                if (!(ex instanceof MatrixError) || ex.errcode !== "M_FORBIDDEN") {
                     throw ex;
                 }
             }
@@ -834,12 +823,11 @@ export class Intent {
             return await this.botSdkIntent.underlyingClient.getRoomStateEvent(roomId, eventType, stateKey);
         }
         catch (ex) {
-            console.log("getStateEvent", ex);
-            if (ex.body.errcode !== "M_NOT_FOUND" || !returnNull) {
-                throw ex;
+            if (ex instanceof MatrixError && ex.errcode === "M_NOT_FOUND" && returnNull) {
+                return null;
             }
+            throw ex;
         }
-        return null;
     }
 
     /**
@@ -974,12 +962,11 @@ export class Intent {
             return await promiseFn();
         }
         catch (err) {
-            if (err.body?.errcode !== "M_FORBIDDEN") {
-                // not a guardable error
-                throw err;
+            if (err instanceof MatrixError && err.errcode === "M_FORBIDDEN") {
+                await this._ensureJoined(roomId, true);
+                return promiseFn();
             }
-            await this._ensureJoined(roomId, true);
-            return promiseFn();
+            throw err;
         }
     }
 
@@ -1035,7 +1022,7 @@ export class Intent {
                 mark(roomId, "join");
             }
             catch (ex) {
-                if (ex.body.errcode !== "M_FORBIDDEN") {
+                if (!(ex instanceof MatrixError) || ex.errcode !== "M_FORBIDDEN") {
                     throw ex;
                 }
                 try {
@@ -1168,11 +1155,12 @@ export class Intent {
                 this.opts.registered = true;
             }
             catch (err) {
-                if (err.body?.errcode === "M_EXCLUSIVE" && this.botClient === this.botSdkIntent.underlyingClient) {
+                if (err instanceof MatrixError && err.errcode === "M_EXCLUSIVE" &&
+                    this.botClient === this.botSdkIntent.underlyingClient) {
                     // Registering the bot will leave it
                     this.opts.registered = true;
                 }
-                else if (err.body?.errcode === "M_USER_IN_USE") {
+                else if (err instanceof MatrixError && err.errcode === "M_USER_IN_USE") {
                     this.opts.registered = true;
                 }
                 else {

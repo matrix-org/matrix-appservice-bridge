@@ -1,3 +1,4 @@
+const { default: MatrixError } = require("matrix-bot-sdk/lib/models/MatrixError");
 const { RoomUpgradeHandler } = require("../../lib/components/room-upgrade-handler")
 
 describe("RoomUpgradeHandler", () => {
@@ -35,7 +36,7 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomId) => { joined = roomId; return Promise.reject({body: {errcode: "M_FORBIDDEN"}}); },
+                    join: async (roomId) => { joined = roomId; throw new MatrixError({errcode: "M_FORBIDDEN", error: "You are forbidden"}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -55,7 +56,7 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomId) => { joined = roomId; return Promise.reject({}); },
+                    join: async (roomId) => { joined = roomId; throw Error("Generic test failure") },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -91,7 +92,10 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomId) => { joined = roomId; return Promise.reject({body: {errcode: "M_FORBIDDEN"}}); },
+                    join: async (roomId) => {
+                        joined = roomId;
+                        throw new MatrixError({errcode: "M_FORBIDDEN", error: "Disallowed by test"});
+                    },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -103,7 +107,9 @@ describe("RoomUpgradeHandler", () => {
         it("should fail for any other reason", () => {
             const bridge = {
                 getIntent: () => ({
-                    join: (roomId) => { return Promise.reject({}); },
+                    join: async () => {
+                        throw Error('Generic test failure');
+                    },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);

@@ -2,6 +2,7 @@ import { Bridge } from "../bridge";
 import { get as getLogger } from "./logging";
 import PQueue from "p-queue";
 import { Counter, Gauge } from "prom-client";
+import MatrixError from "@half-shot/matrix-bot-sdk/lib/models/MatrixError";
 
 const log = getLogger("MembershipQueue");
 
@@ -246,11 +247,18 @@ export class MembershipQueue {
                 outcome: "success",
             });
         }
-        catch (ex) {
-            if (ex.body.errcode || ex.statusCode) {
+        catch (_ex: unknown) {
+            const ex = _ex as Error|MatrixError|{statusCode: number, message: string};
+            if (ex instanceof MatrixError) {
                 this.failureReasonCounter?.inc({
                     type: kickUser ? "kick" : type,
-                    errcode: ex.body.errcode || "none",
+                    errcode: ex.errcode || "none",
+                    http_status: ex.statusCode || "none"
+                });
+            }
+            else if ('statusCode' in ex) {
+                this.failureReasonCounter?.inc({
+                    type: kickUser ? "kick" : type,
                     http_status: ex.statusCode || "none"
                 });
             }
@@ -266,7 +274,7 @@ export class MembershipQueue {
                 this.opts.actionDelayMs
             );
             log.warn(`${reqIdStr} Failed to ${type} ${roomId}, delaying for ${delay}ms`);
-            log.debug(`${reqIdStr} Failed with: ${ex.body.errcode} ${ex.message}`);
+            log.debug(`${reqIdStr} Failed with ${ex.message}`);
             await new Promise((r) => setTimeout(r, delay));
             this.queueMembership({...item, attempts: attempts + 1}).catch((innerEx) => {
                 log.error(`Failed to handle membership change:`, innerEx);
@@ -279,11 +287,19 @@ export class MembershipQueue {
         }
     }
 
-    private shouldRetry(ex: {body: {code: string; errcode: string;}, statusCode: number}, attempts: number): boolean {
-        return !(
-            attempts === this.opts.maxAttempts ||
-            ex.body.errcode === "M_FORBIDDEN" ||
-            ex.statusCode === 403
-        );
+    private shouldRetry(ex: Error|MatrixError|{statusCode: number}, attempts: number): boolean {
+        if (attempts >= this.opts.maxAttempts) {
+            // Do not retry if we're out of attempts
+            return false;
+        }
+        if (ex instanceof MatrixError) {
+            // Only retry if the call wasn' forbidden
+            return ex.errcode !== "M_FORBIDDEN";
+        }
+        if ('statusCode' in ex) {
+            return ex.statusCode !== 403;
+        }
+        // It's just a regular exception, do not retry.
+        return false;
     }
 }

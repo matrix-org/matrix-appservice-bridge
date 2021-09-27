@@ -1,0 +1,1 @@
+Add tracking of last active Matrix users (previously maintained in https://github.com/Half-Shot/matrix-lastactive)

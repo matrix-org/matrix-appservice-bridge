@@ -638,6 +638,10 @@ export class Bridge {
             bindAddress: "127.0.0.1",
         });
 
+        if (this.metrics) {
+            this.metrics.registerMatrixSdkMetrics(this.botSdkAS);
+        }
+
         this.clientFactory = this.opts.clientFactory || new ClientFactory({
             url: this.opts.homeserverUrl,
             token: asToken,
@@ -755,7 +759,7 @@ export class Bridge {
             this.onLog(line, false);
         });
 
-        this.customiseAppservice();
+        this.customiseAppserviceThirdPartyLookup();
         if (this.metrics) {
             this.metrics.addAppServicePath(this);
         }
@@ -773,13 +777,6 @@ export class Bridge {
     public async run(port: number, appServiceInstance?: AppService, hostname = "0.0.0.0", backlog = 10): Promise<void> {
         await this.initalise();
         await this.listen(port, hostname, backlog, appServiceInstance);
-    }
-
-    /**
-     * Apply any customisations required on the appService object.
-     */
-    private customiseAppservice() {
-        this.customiseAppserviceThirdPartyLookup();
     }
 
     // Set a timer going which will periodically remove Intent objects to prevent
@@ -1542,6 +1539,7 @@ export class Bridge {
      * The instance will automatically register the Matrix SDK metrics by calling
      * {PrometheusMetrics~registerMatrixSdkMetrics}.
      * @param {boolean} registerEndpoint Register the /metrics endpoint on the appservice HTTP server. Defaults to true.
+     *                                   Note: `listen()` must have been called if this is true or this will throw.
      * @param {Registry?} registry Optionally provide an alternative registry for metrics.
      */
     public getPrometheusMetrics(registerEndpoint = true, registry?: Registry): PrometheusMetrics {
@@ -1551,18 +1549,12 @@ export class Bridge {
 
         const metrics = this.metrics = new PrometheusMetrics(registry);
 
-        if (!this.botSdkAS) {
-            throw Error('initalise() not called, cannot listen');
-        }
-
-        metrics.registerMatrixSdkMetrics(this.botSdkAS);
-
-        // TODO(paul): register some bridge-wide standard ones here
-
-        // In case we're called after .run()
-        if (this.appService && registerEndpoint) {
+        if (this.botSdkAS) {
+            metrics.registerMatrixSdkMetrics(this.botSdkAS);
+        } // Else, we will set this up in initalise()
+        if (registerEndpoint && this.appservice) {
             metrics.addAppServicePath(this);
-        }
+        } // Else, we will add the path in listen()
 
         return metrics;
     }

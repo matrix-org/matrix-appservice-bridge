@@ -1,0 +1,1 @@
+Fix a bug that prevented bridges from calling `getPrometheusMetrics` without first calling `listen` in `Bridge`.

@@ -13,11 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import PQueue from "p-queue";
-import { Intent } from "..";
+import { Intent } from "./intent";
+import Logging from "./logging";
 
 interface StateLookupOpts {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    client: any; //TODO: Needs to be MatrixClient (once that becomes TypeScript)
+    intent: Intent;
     stateLookupConcurrency?: number;
     eventTypes?: string[];
     retryStateInMs?: number;
@@ -33,6 +33,7 @@ interface StateLookupRoom {
     };
 }
 
+const log = Logging.get("StateLookup");
 export interface StateLookupEvent {
     // eslint-disable-next-line camelcase
     room_id: string;
@@ -48,11 +49,10 @@ const RETRY_STATE_IN_MS = 300;
 const DEFAULT_STATE_CONCURRENCY = 4;
 
 export class StateLookup {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private _client: any|Intent;
-    private eventTypes: {[eventType: string]: boolean} = {};
-    private dict: { [roomId: string]: StateLookupRoom } = {};
-    private lookupQueue: PQueue;
+    private readonly intent: Intent;
+    private readonly eventTypes: {[eventType: string]: boolean} = {};
+    private readonly dict: { [roomId: string]: StateLookupRoom } = {};
+    private readonly lookupQueue: PQueue;
     private retryStateIn: number;
 
     /**
@@ -72,8 +72,8 @@ export class StateLookup {
      * @throws if there is no client.
      */
     constructor (opts: StateLookupOpts) {
-        if (!opts.client) {
-            throw new Error("client property must be supplied");
+        if (!opts.intent) {
+            throw new Error("intent property must be supplied");
         }
 
         this.lookupQueue = new PQueue({
@@ -82,7 +82,7 @@ export class StateLookup {
 
         this.retryStateIn = opts.retryStateInMs || RETRY_STATE_IN_MS;
 
-        this._client = opts.client instanceof Intent ? opts.client.client : opts.client;
+        this.intent = opts.intent;
         (opts.eventTypes || []).forEach((t) => {
             this.eventTypes[t] = true;
         });
@@ -116,8 +116,8 @@ export class StateLookup {
     private async getInitialState(roomId: string): Promise<StateLookupRoom> {
         const r = this.dict[roomId];
         try {
-            const events: StateLookupEvent[] = await this.lookupQueue.add(
-                () => this._client.roomState(roomId)
+            const events = await this.lookupQueue.add(
+                () => this.intent.roomState(roomId, false) as Promise<StateLookupEvent[]>
             );
             events.forEach((ev) => {
                 this.insertEvent(r, ev);
@@ -125,7 +125,12 @@ export class StateLookup {
             return r;
         }
         catch (err) {
-            if (err.statusCode >= 400 && err.statusCode < 600) { // 4xx, 5xx
+            log.debug(`Failed to lookup state for room ${roomId}`, err);
+            const error = err as {statusCode?: number, message?: string};
+            if (error.message === "Failed to join room") {
+                throw err; // Could not join the room, don't retry.
+            }
+            if (error.statusCode && error.statusCode >= 400 && error.statusCode <= 599) { // 4xx, 5xx
                 throw err; // don't have permission, don't retry.
             }
             // wait a bit then try again
@@ -145,7 +150,7 @@ export class StateLookup {
      * @return {Promise} Resolves when the room is being tracked. Rejects if the room
      * cannot be tracked.
      */
-    public trackRoom(roomId: string) {
+    public trackRoom(roomId: string): Promise<StateLookupRoom> {
         const r = this.dict[roomId] = this.dict[roomId] || {
             syncPending: false,
         };
@@ -157,6 +162,7 @@ export class StateLookup {
         r.syncPending = true;
         r.syncPromise = (async () => {
             const res = await this.getInitialState(roomId);
+            log.debug(`Tracking ${roomId}`);
             r.syncPending = false;
             return res;
         })();
@@ -172,7 +178,8 @@ export class StateLookup {
      *
      * @param {string} roomId The room ID to stop tracking.
      */
-    public untrackRoom(roomId: string) {
+    public untrackRoom(roomId: string): void {
+        log.debug(`Stopped tracking ${roomId}`);
         delete this.dict[roomId];
     }
 
@@ -181,7 +188,7 @@ export class StateLookup {
      * this room, nothing is stored.
      * @param {Object} event Raw matrix event
      */
-    public async onEvent(event: StateLookupEvent) {
+    public async onEvent(event: StateLookupEvent): Promise<void> {
         if (!this.dict[event.room_id]) {
             return;
         }
@@ -195,7 +202,7 @@ export class StateLookup {
         this.insertEvent(r, event);
     }
 
-    private insertEvent(roomSet: StateLookupRoom, event: StateLookupEvent) {
+    private insertEvent(roomSet: StateLookupRoom, event: StateLookupEvent): void {
         if (typeof event.content !== "object") {
             // Reject - unexpected content type
             return;

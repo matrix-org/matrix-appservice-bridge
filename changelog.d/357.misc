@@ -1,1 +1,0 @@
-The `StateLookup` class now takes an `intent` rather than using a deprecated `MatrixClient` instance.

@@ -1,3 +1,25 @@
+ 3.1.0 (2021-09-28)
+===================
+
+Features
+--------
+
+- Add optional UserActivityTracker for tracking & reporting monthly active users, and BridgeBlocker allowing for locking down the bridge communications (intended to be used together) ([\#350](https://github.com/matrix-org/matrix-appservice-bridge/issues/350))
+- Add tracking of last active Matrix users (previously maintained in https://github.com/Half-Shot/matrix-lastactive) ([\#594](https://github.com/matrix-org/matrix-appservice-bridge/issues/594))
+
+
+Bugfixes
+--------
+
+- Fix a bug that prevented bridges from calling `getPrometheusMetrics` without first calling `listen` in `Bridge`. ([\#355](https://github.com/matrix-org/matrix-appservice-bridge/issues/355))
+
+
+Internal Changes
+----------------
+
+- The `StateLookup` class now takes an `intent` rather than using a deprecated `MatrixClient` instance. ([\#357](https://github.com/matrix-org/matrix-appservice-bridge/issues/357))
+
+
 3.0.0 (2021-09-09)
 ===================
 

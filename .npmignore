@@ -1,3 +1,5 @@
 examples/encryption
 .typedoc
 .nyc_output
+yarn-error.log
+*.db

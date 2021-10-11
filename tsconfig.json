@@ -10,6 +10,8 @@
     "outDir": "./lib",
     "composite": false,
     "strict": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "strictNullChecks": true,
     "skipLibCheck": true, /* matrix-js-sdk throws up errors */

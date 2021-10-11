@@ -12,6 +12,8 @@
     "strict": true,
     "esModuleInterop": true,
     "strictNullChecks": true,
+    /* We don't support this yet */
+    "useUnknownInCatchVariables": false,
     "skipLibCheck": true, /* matrix-js-sdk throws up errors */
   },
   "include": [

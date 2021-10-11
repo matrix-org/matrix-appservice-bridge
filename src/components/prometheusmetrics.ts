@@ -19,7 +19,8 @@ import { Request, Response } from "express";
 import { Bridge } from "..";
 import Logger from "./logging";
 import { Appservice as BotSdkAppservice, FunctionCallContext, METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL,
-    METRIC_MATRIX_CLIENT_FUNCTION_CALL, METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL } from "matrix-bot-sdk";
+    METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL } from "matrix-bot-sdk";
+import { getBridgeVersion } from "../utils/package-info";
 type CollectorFunction = () => Promise<void>|void;
 
 export interface BridgeGaugesCounts {
@@ -113,6 +114,15 @@ export class PrometheusMetrics {
     private register: Registry;
     constructor(register?: Registry) {
         this.register = register || PromClient.register;
+        this.addCounter({
+            name: "app_version",
+            help: "Version number of the bridge",
+            labels: ["version"],
+        });
+        // This may change, so we need to refresh this.
+        this.addCollector(() => {
+            this.counters["app_version"].inc({ version: getBridgeVersion()});
+        });
         PromClient.collectDefaultMetrics({ register: this.register });
     }
 

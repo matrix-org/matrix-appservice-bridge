@@ -40,7 +40,7 @@
     "nedb": "^1.8.0",
     "nopt": "^5.0.0",
     "p-queue": "^6.6.2",
-    "prom-client": "^13.1.0",
+    "prom-client": "^14.0.0",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.5.1"
   },

@@ -58,6 +58,8 @@ export * from "./components/bridge-info-state";
 export * from "./components/user-activity";
 export * from "./components/bridge-blocker";
 
+export * from "./utils/package-info";
+
 export { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
 
 

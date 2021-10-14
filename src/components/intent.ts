@@ -834,7 +834,6 @@ export class Intent {
             return await this.botSdkIntent.underlyingClient.getRoomStateEvent(roomId, eventType, stateKey);
         }
         catch (ex) {
-            console.log("getStateEvent", ex);
             if (ex.body.errcode !== "M_NOT_FOUND" || !returnNull) {
                 throw ex;
             }

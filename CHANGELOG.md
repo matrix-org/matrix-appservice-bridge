@@ -1,4 +1,12 @@
- 3.1.0 (2021-09-28)
+3.1.1 (2021-10-14)
+===================
+
+Bugfixes
+--------
+
+- Fixed excessive logging ([\#364](https://github.com/matrix-org/matrix-appservice-bridge/issues/364))
+
+3.1.0 (2021-09-28)
 ===================
 
 Features

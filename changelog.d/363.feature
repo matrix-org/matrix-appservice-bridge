@@ -1,0 +1,1 @@
+Add `BotCommandHandler` component to handle bot commands in rooms.

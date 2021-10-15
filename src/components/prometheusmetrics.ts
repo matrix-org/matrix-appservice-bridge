@@ -112,6 +112,12 @@ export class PrometheusMetrics {
     private counters: {[name: string]: PromClient.Counter<string>} = {};
     private collectors: CollectorFunction[] = [];
     private register: Registry;
+    /**
+     * Constructs a new Prometheus Metrics instance.
+     * The metric `app_version` will be set here, so ensure that `getBridgeVersion`
+     * will return the correct bridge version.
+     * @param register A custom registry to provide, if not using the global default.
+     */
     constructor(register?: Registry) {
         this.register = register || PromClient.register;
         this.addCounter({
@@ -119,10 +125,7 @@ export class PrometheusMetrics {
             help: "Version number of the bridge",
             labels: ["version"],
         });
-        // This may change, so we need to refresh this.
-        this.addCollector(() => {
-            this.counters["app_version"].inc({ version: getBridgeVersion()});
-        });
+        this.counters["app_version"].inc({ version: getBridgeVersion()});
         PromClient.collectDefaultMetrics({ register: this.register });
     }
 

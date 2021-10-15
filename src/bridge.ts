@@ -1571,6 +1571,10 @@ export class Bridge {
      * serve the "/metrics" page in the usual way.
      * The instance will automatically register the Matrix SDK metrics by calling
      * {PrometheusMetrics~registerMatrixSdkMetrics}.
+     *
+     * Ensure that `PackageInfo.getBridgeVersion` is returns the correct version before calling this,
+     * as changes to the bridge version after metric instantiation will not be detected.
+     *
      * @param {boolean} registerEndpoint Register the /metrics endpoint on the appservice HTTP server. Defaults to true.
      *                                   Note: `listen()` must have been called if this is true or this will throw.
      * @param {Registry?} registry Optionally provide an alternative registry for metrics.

@@ -7,14 +7,14 @@ const md = new Markdown();
 
 interface BotCommandEntry<R> {
     fn: BotCommandFunction<R>;
-    requiredArgs: string[];
+    requiredArgs?: string[];
     optionalArgs?: string[];
 }
 
 interface BotCommandMetadata {
     help: string;
     name: string;
-    requiredArgs: string[],
+    requiredArgs?: string[],
     optionalArgs?: string[],
 }
 
@@ -25,8 +25,9 @@ const botCommandSymbol = Symbol("botCommandMetadata");
  * `CommandArguments` parameter.
  * @param options Metadata about the command.
  */
-export function BotCommand(options: BotCommandMetadata): void {
-    Reflect.metadata(botCommandSymbol, options);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function BotCommand(options: BotCommandMetadata): any {
+    return Reflect.metadata(botCommandSymbol, options);
 }
 export interface CommandArguments<R> {
     request: R;
@@ -54,7 +55,9 @@ export class BotCommandError extends Error {
     }
 }
 
-export class BotCommandHandler<T, R extends Record<string, unknown>> {
+// Typescript doesn't understand that classes are indexable.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class BotCommandHandler<T extends Record<string, any>, R extends Record<string, unknown>|null|undefined> {
     /**
      * The body of a Matrix message to be sent to users when they ask for help.
      */
@@ -70,23 +73,25 @@ export class BotCommandHandler<T, R extends Record<string, unknown>> {
      * should **include** any whitspace E.g. `!irc `.
      */
     constructor(
-        prototype: Record<string, BotCommandFunction<R>>,
         instance: T,
         private readonly prefix?: string) {
         let content = "Commands:\n";
         const botCommands: {[prefix: string]: BotCommandEntry<R>} = {};
-        Object.getOwnPropertyNames(prototype).forEach(propetyKey => {
-            const b = Reflect.getMetadata(botCommandSymbol, prototype, propetyKey) as BotCommandMetadata;
+        const proto = Object.getPrototypeOf(instance);
+        Object.getOwnPropertyNames(proto).forEach(propetyKey => {
+            const b = Reflect.getMetadata(botCommandSymbol, instance, propetyKey) as BotCommandMetadata;
             if (!b) {
                 // Not a bot command function.
                 return;
             }
-            const requiredArgs = b.requiredArgs.join(" ");
-            const optionalArgs = b.optionalArgs?.map((arg: string) => `[${arg}]`).join(" ") || "";
-            content += ` - \`${this.prefix || ""}${b.name}\` ${requiredArgs} ${optionalArgs} - ${b.help}\n`;
+            const optionalArgs = b.optionalArgs?.map((arg: string) => `[${arg}]`) || [];
+            const args = [...(b.requiredArgs || []), ...optionalArgs].join(" ");
+
+            content += ` - \`${this.prefix || ""}${b.name}\`${args && " "}${args} - ${b.help}\n`;
             // We know that this is safe.
+            const fn = instance[propetyKey];
             botCommands[b.name as string] = {
-                fn: prototype[propetyKey].bind(instance),
+                fn: fn.bind(instance),
                 requiredArgs: b.requiredArgs,
                 optionalArgs: b.optionalArgs,
             };
@@ -143,7 +148,7 @@ export class BotCommandHandler<T, R extends Record<string, unknown>> {
                 continue;
             }
             // We have a match!
-            if (command.requiredArgs.length > parts.length - i) {
+            if ((command.requiredArgs?.length || 0) > parts.length - i) {
                 throw new BotCommandError("Missing arguments", "Missing required arguments for this command");
             }
             await command.fn({

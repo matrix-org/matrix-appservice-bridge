@@ -30,6 +30,7 @@ export function getBridgeVersion(packageJsonPath = "./package.json"): string {
     {
         BridgeVersion = "unknown"
     }
+    return BridgeVersion;
 }
 
 console.log(getBridgeVersion("."));

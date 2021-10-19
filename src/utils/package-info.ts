@@ -17,16 +17,19 @@ export function setBridgeVersion(version: string): void {
  * @returns Either the version number, or unknown.
  */
 export function getBridgeVersion(packageJsonPath = "./package.json"): string {
-    packageJsonPath = join(resolve(packageJsonPath));
-    if (!BridgeVersion) {
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const nodePackage = require(packageJsonPath);
-            BridgeVersion = nodePackage.version;
-        }
-        catch (err) { BridgeVersion = "unknown" }
+    if (BridgeVersion) {
+        return BridgeVersion;
     }
-
+    packageJsonPath = join(resolve(packageJsonPath));
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const nodePackage = require(packageJsonPath);
+        BridgeVersion = nodePackage.version;
+    }
+    catch (err)
+    {
+        BridgeVersion = "unknown"
+    }
     return BridgeVersion;
 }
 

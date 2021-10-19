@@ -60,6 +60,9 @@ export * from "./components/bridge-blocker";
 
 export { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
 
+// Provisioning APIs
+export * from "./provisioning";
+
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const jsSdk = require("matrix-js-sdk");

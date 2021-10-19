@@ -86,47 +86,6 @@ export class ProvisioningApi {
         this.server?.close();
     }
 
-    // private async getRoomFromRequest(req: Request): Promise<AdminRoom|{error: string, statusCode: number}> {
-    //     const { roomId } = req.params;
-    //     const token = req.headers.authorization?.substr('Bearer '.length);
-    //     if (!token) {
-    //         return {
-    //             error: 'Access token not given',
-    //             statusCode: 400,
-    //         };
-    //     }
-    //     // Replace with actual auth
-    //     const room = this.adminRooms.get(roomId);
-    //     if (!room || !room.verifyWidgetAccessToken(token)) {
-    //         return {error: 'Unauthorized access to room', statusCode: 401};
-    //     }
-
-    //     return room;
-    // }
-
-
-    // private async getVerifyToken(req: Request, res: Response) {
-    //     const roomOrError = await this.getRoomFromRequest(req);
-    //     if (roomOrError instanceof AdminRoom) {
-    //         return res.sendStatus(204);
-    //     }
-
-    //     return res.status(roomOrError.statusCode).send({error: roomOrError.error});
-    // }
-
-    // private async getRoomState(req: Request, res: Response) {
-    //     const roomOrError = await this.getRoomFromRequest(req);
-    //     if (!(roomOrError instanceof AdminRoom)) {
-    //         return res.status(roomOrError.statusCode).send({error: roomOrError.error});
-    //     }
-    //     try {
-    //         return res.send(await roomOrError.getBridgeState());
-    //     } catch (ex) {
-    //         log.error(`Failed to get room state:`, ex);
-    //         return res.status(500).send({error: "An error occured when getting room state"});
-    //     }
-    // }
-
     private authenticateRequest(req: Request, res: Response, next: NextFunction) {
         const authHeader = req.header("Authorization")?.toLowerCase();
         if (!authHeader) {

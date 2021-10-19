@@ -26,9 +26,8 @@ export function getBridgeVersion(packageJsonPath = "./package.json"): string {
         const nodePackage = require(packageJsonPath);
         BridgeVersion = nodePackage.version;
     }
-    catch (err)
-    {
-        BridgeVersion = "unknown"
+    catch (err) {
+        BridgeVersion = "unknown";
     }
     return BridgeVersion;
 }

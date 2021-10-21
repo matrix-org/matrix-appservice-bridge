@@ -1,15 +1,21 @@
-import { Application, default as express, NextFunction, Request, Response } from "express";
-import cors from "cors";
-import Logs, { LogWrapper } from "../components/logging";
-import { Server } from "http";
+import { Application, default as express, NextFunction, Request, Response, Router, Router as router } from "express";
 import { ProvisioningStore } from "./store";
-import axios from "axios";
+import { Server } from "http";
 import { v4 as uuid } from "uuid";
+import axios from "axios";
+import cors from "cors";
+import Logs from "../components/logging";
+import ProvisioningRequest from "./request";
 
 const log = Logs.get("ProvisioningApi");
 
 interface MatrixServerWellKnown {
     "m.server": string;
+}
+
+interface ExpRequestProvisioner extends Request {
+    matrixWidgetToken?: string;
+    matrixUserId: string;
 }
 
 export interface ProvisioningApiOpts {
@@ -29,14 +35,20 @@ export interface ProvisioningApiOpts {
      * Where are the files stored for the widget frontend. If undefined, do not host a frontend.
      */
     widgetFrontendLocation?: string;
+    /**
+     * Provide an existing express app to bind to.
+     *
+     * Note: start() and close() will no-op when this is used.
+     */
+    expressApp?: Application;
+    /**
+     * Prefix to use for the API. E.g. `/api` in `/api/v1/session`
+     *
+     * Default is `/api`.
+     */
+    apiPrefix?: string;
 }
 
-export interface ProvisioningRequest extends Request {
-    matrixUserId: string;
-    matrixRequestType: "widget"|"provisioner";
-    matrixSessionToken?: string;
-    log: LogWrapper,
-}
 
 const DEFAULT_WIDGET_TOKEN_PREFIX = "br-sdk-utoken-";
 const DEFAULT_WIDGET_TOKEN_LIFETIME_MS = 24 * 60 * 60 * 1000; // One day
@@ -46,9 +58,10 @@ const DEFAULT_WIDGET_TOKEN_LIFETIME_MS = 24 * 60 * 60 * 1000; // One day
  *  - Integration managers which provide a unique secret token, and a userId
  *  - Widget users which provide a openId token.
  */
-export class ProvisioningApi {
-    protected app: Application;
-    protected server?: Server;
+export abstract class ProvisioningApi {
+    private app: Application;
+    private server?: Server;
+    protected baseRoute: Router;
     private readonly widgetTokenPrefix: string;
     private readonly widgetTokenLifetimeMs: number;
     constructor(protected store: ProvisioningStore, private opts: ProvisioningApiOpts) {
@@ -57,33 +70,61 @@ export class ProvisioningApi {
             log.info(`${req.method} ${req.path} ${req.ip || ''} ${req.headers["user-agent"] || ''}`);
             next();
         });
+
         this.widgetTokenPrefix = opts.widgetTokenPrefix || DEFAULT_WIDGET_TOKEN_PREFIX;
         this.widgetTokenLifetimeMs = opts.widgetTokenLifetimeMs || DEFAULT_WIDGET_TOKEN_LIFETIME_MS;
+        this.opts.apiPrefix = opts.apiPrefix || "/api";
+
         this.app.get('/health', this.getHealth.bind(this));
         this.app.use(cors());
         if (opts.widgetFrontendLocation) {
             this.app.use('/', express.static(opts.widgetFrontendLocation));
         }
 
-        this.app.use(express.json());
+        this.baseRoute = router();
+        this.baseRoute.use(express.json());
         // Unsecured requests
-        this.app.post('/api/v1/exchange_openid', (req, res) => this.postExchangeOpenId(req, res));
+        this.baseRoute.post(`/v1/exchange_openid`, (req, res) => this.postExchangeOpenId(req, res));
 
         // Secure requests
-        this.app.use('/api', this.authenticateRequest.bind(this));
-        // authenticateRequest ensures all successful requests are of type ProvisioningRequest
-        this.app.get('/api/v1/session', (req, res) => this.getSession(req as ProvisioningRequest, res));
-        this.app.delete('/api/v1/session', (req, res) => this.deleteSession(req as ProvisioningRequest, res));
-        this.app.delete('/api/v1/session/all', (req, res) => this.deleteAllSessions(req as ProvisioningRequest, res));
+        // addRoute ensures all successful requests are of type ProvisioningRequest
+        this.baseRoute.use("/", this.authenticateRequest.bind(this));
+        this.addRoute("get", "/v1/session", this.getSession.bind(this));
+        this.addRoute("delete", "/v1/session", this.getSession.bind(this));
+        this.addRoute("delete", "/v1/session/all", this.getSession.bind(this));
+
+        this.app.use(this.opts.apiPrefix, this.baseRoute);
     }
 
     public start(port: number, hostname = "0.0.0.0", backlog = 10): void {
+        if (this.opts.expressApp) {
+            log.warn(`Ignoring call to start(), api configured to use parent express app`);
+            return;
+        }
         log.info(`Widget API listening on port ${port}`)
         this.server = this.app.listen(port, hostname, backlog);
     }
 
     public close(): void {
         this.server?.close();
+    }
+
+    public addRoute(
+        method: "get"|"post"|"delete"|"put",
+        path: string,
+        handler: (req: ProvisioningRequest, res: Response, next: NextFunction) => void|Promise<void>,
+        fnName?: string,): void {
+        this.baseRoute[method](path, (req, res, next) => {
+            const expRequest = req as ExpRequestProvisioner;
+            const provisioningRequest = new ProvisioningRequest(
+                expRequest,
+                expRequest.matrixUserId,
+                expRequest.matrixWidgetToken ? "widget" : "provisioner",
+                expRequest.matrixWidgetToken,
+                fnName,
+            );
+            handler(provisioningRequest, res, next);
+        });
     }
 
     private authenticateRequest(req: Request, res: Response, next: NextFunction) {
@@ -98,6 +139,7 @@ export class ProvisioningApi {
         if (!token) {
             return;
         }
+        const requestProv = (req as ExpRequestProvisioner);
         if (token === this.opts.provisioningToken) {
             // Integration managers splice in the user_id in the body.
             const userId = req.body?.user_id;
@@ -107,11 +149,8 @@ export class ProvisioningApi {
                 });
                 return;
             }
-            // Provisioning request.
-            const provisioningRequest = req as ProvisioningRequest;
-            provisioningRequest.matrixUserId = userId;
-            provisioningRequest.matrixRequestType = "provisioner";
-            provisioningRequest.log = Logs.get(`ProvisioningApi:provisioner:${userId}`);
+            requestProv.matrixUserId = userId;
+            requestProv.matrixWidgetToken = undefined;
             next();
             return;
         }
@@ -120,11 +159,9 @@ export class ProvisioningApi {
                 this.store.deleteSession(token);
                 throw Error('Token expired');
             }
-            const provisioningRequest = req as ProvisioningRequest;
-            provisioningRequest.matrixUserId = session.userId;
-            provisioningRequest.matrixSessionToken = token;
-            provisioningRequest.matrixRequestType = "widget";
-            provisioningRequest.log = Logs.get(`ProvisioningApi:widget:${session.userId}`);
+
+            requestProv.matrixUserId = session.userId;
+            requestProv.matrixWidgetToken = token;
             next();
         }).catch(() => {
             res.status(401).send({
@@ -140,13 +177,13 @@ export class ProvisioningApi {
 
     private getSession(req: ProvisioningRequest, res: Response) {
         res.send({
-            userId: req.matrixUserId,
-            type: req.matrixRequestType,
+            userId: req.userId,
+            type: req.requestSource,
         });
     }
 
     private async deleteSession(req: ProvisioningRequest, res: Response) {
-        if (!req.matrixSessionToken) {
+        if (!req.widgetToken) {
             req.log.debug("tried to delete session");
             res.status(400).send({
                 error: "Session cannot be deleted",
@@ -154,7 +191,7 @@ export class ProvisioningApi {
             return;
         }
         try {
-            await this.store.deleteSession(req.matrixSessionToken);
+            await this.store.deleteSession(req.widgetToken);
         }
         catch (ex) {
             req.log.error("Failed to delete session", ex);
@@ -165,7 +202,7 @@ export class ProvisioningApi {
     }
 
     private async deleteAllSessions(req: ProvisioningRequest, res: Response) {
-        if (!req.matrixSessionToken) {
+        if (!req.widgetToken) {
             req.log.debug("tried to delete session");
             res.status(400).send({
                 error: "Session cannot be deleted",
@@ -173,7 +210,7 @@ export class ProvisioningApi {
             return;
         }
         try {
-            await this.store.deleteAllSessions(req.matrixUserId);
+            await this.store.deleteAllSessions(req.userId);
         }
         catch (ex) {
             req.log.error("Failed to delete all sessions", ex);
@@ -223,7 +260,7 @@ export class ProvisioningApi {
                 return;
             }
             const userId = response.data.sub;
-            const token = this.widgetTokenPrefix + uuid().replace("-", "");
+            const token = this.widgetTokenPrefix + uuid().replace(/-/g, "");
             const expiresTs = Date.now() + this.widgetTokenLifetimeMs;
             await this.store.createSession({
                 userId,

@@ -639,7 +639,13 @@ export class Bridge {
                 url: rawReg.url || undefined,
                 protocols: rawReg.protocols || undefined,
                 namespaces: {
-                    users: rawReg.namespaces?.users || [],
+                    users: [{
+                        // Deliberately greedy regex to fix https://github.com/turt2live/matrix-bot-sdk/issues/159
+                        // Note: We don't use the localpart generating functionality of the bot-sdk,
+                        // so this is okay to do.
+                        regex: "@.+_.+:.*",
+                        exclusive: true,
+                    }],
                     rooms: rawReg.namespaces?.rooms || [],
                     aliases: rawReg.namespaces?.aliases || [],
                 }

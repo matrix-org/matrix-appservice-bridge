@@ -1,3 +1,12 @@
+3.1.2 (2021-10-25)
+===================
+
+Bugfixes
+--------
+
+- Fix a bug where bridges could not register multiple user namespaces ([\#366](https://github.com/matrix-org/matrix-appservice-bridge/issues/366))
+
+
 3.1.1 (2021-10-14)
 ===================
 

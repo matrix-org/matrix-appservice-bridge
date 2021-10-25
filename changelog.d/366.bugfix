@@ -1,1 +1,0 @@
-Fix a bug where bridges could not register multiple user namespaces

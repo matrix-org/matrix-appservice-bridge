@@ -211,7 +211,7 @@ export class EncryptedEventBroker {
         // First come, first serve handling.
         this.handledEvents.set(`${event.room_id}:${event.event_id}`);
 
-        log.debug(`Handling ${event.event_id} through sync`);
+        log.debug(`Handling ${event.event_id} (${event.room_id}) through sync`);
         this.onEvent(event);
 
         // Delete the event from the pending list
@@ -236,26 +236,9 @@ export class EncryptedEventBroker {
             await existingState.preparingPromise;
             return;
         }
+        log.debug(`Starting to sync ${userId}`);
         const intent = this.getIntent(userId);
         const { matrixClient } = intent;
-
-        // The automatic filter handling logic in .start() seems to break
-        // and return too soon, so we set the filter in here.
-        try {
-            // eslint-disable-next-line camelcase
-            const { filter_id } = await matrixClient.doRequest(
-                "POST",
-                `/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`,
-                null,
-                SYNC_FILTER
-            );
-            // More private property manipulation.
-            // eslint-disable-next-line camelcase, @typescript-eslint/no-explicit-any
-            (matrixClient as any).filterId = filter_id;
-        }
-        catch (ex) {
-            log.warn(`Failed to set filter on client:`, ex, 'continuing');
-        }
 
         // Wrenching into the bot sdk to pull the token out.
         matrixClient.storageProvider.setSyncToken = async (token) => {
@@ -264,18 +247,37 @@ export class EncryptedEventBroker {
             }
         };
 
-        const preparingPromise = matrixClient.start();
-        log.debug(`Starting to sync ${userId}`);
+        const preparingPromise = (async () => {
+            // The automatic filter handling logic in .start() seems to break
+            // and return too soon, so we set the filter in here.
+            try {
+                // eslint-disable-next-line camelcase
+                const { filter_id } = await matrixClient.doRequest(
+                    "POST",
+                    `/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`,
+                    null,
+                    SYNC_FILTER
+                );
+                // More private property manipulation.
+                // eslint-disable-next-line camelcase, @typescript-eslint/no-explicit-any
+                (matrixClient as any).filterId = filter_id;
+            }
+            catch (ex) {
+                log.warn(`Failed to set filter on client:`, ex, 'continuing');
+            }
+            return matrixClient.start();
+        })();
+
+        // This MUST be stored before we do any awaits to avoid races.
         this.syncingClients.set(userId, {
             preparingPromise,
             state: "preparing",
             matrixClient: matrixClient,
         });
 
-        // Bind handlers
-        matrixClient.on('room.event', this.onSyncEvent.bind(this));
         try {
             await preparingPromise;
+            matrixClient.on('room.event', this.onSyncEvent.bind(this));
             this.syncingClients.set(userId, {
                 preparingPromise: Promise.resolve(),
                 state: "syncing",

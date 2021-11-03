@@ -31,5 +31,3 @@ export function getBridgeVersion(packageJsonPath = "./package.json"): string {
     }
     return BridgeVersion;
 }
-
-console.log(getBridgeVersion("."));

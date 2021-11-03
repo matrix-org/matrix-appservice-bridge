@@ -683,8 +683,6 @@ export class Bridge {
                 this.membershipCache,
                 this.appServiceBot,
                 this.onEvent.bind(this),
-                // If the bridge supports pushEphemeral, don't use sync data.
-                !this.registration.pushEphemeral ? this.onEphemeralEvent.bind(this) : undefined,
                 this.getIntent.bind(this),
                 this.opts.bridgeEncryption.store,
             );
@@ -1166,7 +1164,7 @@ export class Bridge {
                 )
             },
             ...this.opts.intentOptions?.clients,
-            onEventSent: () => this.opts.controller.userActivityTracker?.updateUserActivity(userId!),
+            onEventSent: () => userId && this.opts.controller.userActivityTracker?.updateUserActivity(userId),
         };
         clientIntentOpts.registered = this.membershipCache.isUserRegistered(userId);
         const encryptionOpts = this.opts.bridgeEncryption;

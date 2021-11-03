@@ -40,17 +40,16 @@ const SYNC_FILTER = {
             lazy_load_members: true,
         },
         account_data: {
+            not_types: ["*"],
             limit: 0,
         },
         ephemeral: {
-            // No way to disable presence, so make it filter for an impossible type
-            types: ["not.a.real.type"],
+            not_types: ["*"],
             limit: 0,
         }
     },
     presence: {
-        // No way to disable presence, so make it filter for an impossible type
-        types: ["not.a.real.type"],
+        not_types: ["*"],
         limit: 0,
     }
 };
@@ -187,6 +186,7 @@ export class EncryptedEventBroker {
     }
 
     private onSyncEvent(roomId: string, event: PanWeakEvent): void {
+        log.info("BLARGH", roomId, event);
         if (!event.decrypted) {
             // We only care about encrypted events, and pan appends a decrypted key to each event.
             return;
@@ -219,13 +219,6 @@ export class EncryptedEventBroker {
         this.eventsPendingAS = this.eventsPendingAS.filter((e) => e.event_id !== event.event_id);
     }
 
-    private async onSync(userId: string, state: string, data: {nextSyncToken: string; catchingUp: boolean;}) {
-        log.debug(`${userId} sync is ${state}`);
-        if ((state === "SYNCING" || state === "PREPARED") && data.nextSyncToken) {
-            await this.store.updateSyncToken(userId, data.nextSyncToken);
-        }
-    }
-
     /**
      * Start a sync loop for a given bridge user
      * @param userId The user whos matrix client should start syncing
@@ -238,28 +231,49 @@ export class EncryptedEventBroker {
             // No-op, already running
             return;
         }
+        else if (existingState?.state === "preparing") {
+            log.debug(`Client is preparing to sync`);
+            await existingState.preparingPromise;
+            return;
+        }
         const intent = this.getIntent(userId);
         const { matrixClient } = intent;
 
-        const preparingPromise = matrixClient.start(SYNC_FILTER);
-        log.debug(`Starting to sync ${userId}`)
-        this.syncingClients.set(userId, {
-            preparingPromise,
-            state: "preparing",
-            matrixClient: matrixClient,
-        });
+        // The automatic filter handling logic in .start() seems to break
+        // and return too soon, so we set the filter in here.
+        try {
+            // eslint-disable-next-line camelcase
+            const { filter_id } = await matrixClient.doRequest(
+                "POST",
+                `/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`,
+                null,
+                SYNC_FILTER
+            );
+            // More private property manipulation.
+            // eslint-disable-next-line camelcase, @typescript-eslint/no-explicit-any
+            (matrixClient as any).filterId = filter_id;
+        }
+        catch (ex) {
+            log.warn(`Failed to set filter on client:`, ex, 'continuing');
+        }
 
         // Wrenching into the bot sdk to pull the token out.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         matrixClient.storageProvider.setSyncToken = async (token) => {
             if (token) {
                 await this.store.updateSyncToken(userId, token);
             }
         };
 
+        const preparingPromise = matrixClient.start();
+        log.debug(`Starting to sync ${userId}`);
+        this.syncingClients.set(userId, {
+            preparingPromise,
+            state: "preparing",
+            matrixClient: matrixClient,
+        });
+
         // Bind handlers
         matrixClient.on('room.event', this.onSyncEvent.bind(this));
-
         try {
             await preparingPromise;
             this.syncingClients.set(userId, {
@@ -274,7 +288,7 @@ export class EncryptedEventBroker {
             throw Error(`Failed to start a sync loop for ${userId}`);
         }
 
-        log.debug(`Starting a new sync for ${userId}`);
+        log.debug(`Started a new sync for ${userId}`);
     }
 
     public shouldAvoidCull(intent: Intent): boolean {

@@ -118,7 +118,7 @@ export class Intent {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
         ensureClientSyncingCallback: () => Promise<void>;
-        origianlHomeserver: string;
+        origianlHomeserver: string
     };
     private encryptionReadyPromise?: Promise<void>;
 
@@ -455,6 +455,9 @@ export class Intent {
                 // This is unexpected. Fail safe.
                 log.debug(`Could not determine if room is encrypted. Assuming yes:`, ex);
                 encrypted = true;
+            }
+            if (!this.encryptionHsClient) {
+                console.warn(`NO HS CLIENT!!!`);
             }
             if (encrypted) {
                 // We *need* to sync before we can send a message to an encrypted room.
@@ -854,7 +857,11 @@ export class Intent {
             return existing;
         }
         try {
-            const ev = await this.getStateEvent(roomId, "m.room.encryption", "");
+            const ev = await this.getStateEvent(roomId, "m.room.encryption", "", true);
+            if (ev === null) {
+                this.encryptedRooms.set(roomId, false);
+                return false;
+            }
             const algo = ev.algorithm as unknown;
             if (typeof algo === 'string' && algo) {
                 this.encryptedRooms.set(roomId, algo);

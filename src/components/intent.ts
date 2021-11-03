@@ -1151,7 +1151,7 @@ export class Intent {
         };
     }
 
-    public async ensureRegistered(forceRegister = false) {
+    public async ensureRegistered(forceRegister = false): Promise<"registered=true"|undefined> {
         const userId: string = this.userId;
         log.debug(`Checking if user ${this.userId} is registered`);
         // We want to skip if and only if all of these conditions are met.
@@ -1201,14 +1201,22 @@ export class Intent {
         // Encryption enabled, check if we have a session.
         let session = await this.encryption.sessionPromise;
         if (session) {
+            // Check that the access token is still valid.
             log.debug("ensureRegistered: Existing enc session, reusing");
             // We have existing credentials, set them on the client and run away.
             // We need to overwrite the access token here.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (this.botSdkIntent.underlyingClient as any).accessToken = session.accessToken;
-            this.botSdkIntent.underlyingClient.storageProvider.setSyncToken(session.syncToken);
+            try {
+                await this.botSdkIntent.underlyingClient.getWhoAmI();
+                this.botSdkIntent.underlyingClient.storageProvider.setSyncToken(session.syncToken);
+            }
+            catch (ex) {
+                log.warn(`Whoami for existing session failed:`, ex);
+                session = null;
+            }
         }
-        else {
+        if (!session) {
             this.readyPromise = (async () => {
                 log.debug("ensureRegistered: Attempting encrypted login");
                 // Login as the user

@@ -130,7 +130,7 @@ export class Intent {
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
         ensureClientSyncingCallback: () => Promise<void>;
     };
-    private readyPromise?: Promise<unknown>;
+    private encryptionReadyPromise?: Promise<void>;
     // The legacyClient is created on demand when bridges need to use
     // it, but is not created by default anymore.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -961,6 +961,7 @@ export class Intent {
             this.opts.backingStore.setPowerLevelContent(event.room_id, event.content as unknown as PowerLevelContent);
         }
         else if (event.type === "m.room.encryption" && typeof event.content.algorithm === "string") {
+            log.info(`Room ${event.room_id} enabled encryption (${event.content.algorithm})`);
             this.encryptedRooms.set(event.room_id, event.content.algorithm);
         }
     }
@@ -1152,7 +1153,6 @@ export class Intent {
     }
 
     public async ensureRegistered(forceRegister = false): Promise<"registered=true"|undefined> {
-        const userId: string = this.userId;
         log.debug(`Checking if user ${this.userId} is registered`);
         // We want to skip if and only if all of these conditions are met.
         // Calling /register twice isn't disasterous, but not calling it *at all* IS.
@@ -1160,6 +1160,7 @@ export class Intent {
             log.debug("ensureRegistered: Registered, and not encrypted");
             return "registered=true";
         }
+
         let registerRes;
         if (forceRegister || !this.opts.registered) {
             try {
@@ -1186,53 +1187,66 @@ export class Intent {
             return registerRes;
         }
 
-        if (this.readyPromise) {
-            log.debug("ensureRegistered: ready promise ongoing");
-            try {
-                // Should fall through and find the session.
-                await this.readyPromise;
-            }
-            catch (ex) {
-                log.debug("ensureRegistered: failed to ready", ex);
-                // Failed to ready up - fall through and try again.
-            }
+        // Past this point, we're an encryption enabled Intent.
+        if (!this.encryptionReadyPromise) {
+            this.encryptionReadyPromise = this.getEncryptedSession();
         }
 
-        // Encryption enabled, check if we have a session.
+        // We're already trying to generate a new session.
+        try {
+            // Should fall through and find the session.
+            await this.encryptionReadyPromise;
+            // Session ready!
+            return "registered=true";
+        }
+        catch (ex) {
+            log.warn("ensureRegistered: failed to ready encryption", ex);
+            throw Error('Failed to ready encryption');
+            // Failed to ready up - fall through and try again.
+        }
+    }
+
+    private async getEncryptedSession(): Promise<void> {
+        if (!this.encryption) {
+            throw Error('Cannot call getEncryptedSession without enabling encryption');
+        }
+        // We've not got a session so let's see if the store has one.
         let session = await this.encryption.sessionPromise;
+
         if (session) {
-            // Check that the access token is still valid.
+            // Store has a session, check we're authenticted.
             log.debug("ensureRegistered: Existing enc session, reusing");
-            // We have existing credentials, set them on the client and run away.
-            // We need to overwrite the access token here.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (this.botSdkIntent.underlyingClient as any).accessToken = session.accessToken;
             try {
-                await this.botSdkIntent.underlyingClient.getWhoAmI();
-                this.botSdkIntent.underlyingClient.storageProvider.setSyncToken(session.syncToken);
+                const tempClient = new MatrixClient(
+                    this.botSdkIntent.underlyingClient.homeserverUrl, session.accessToken
+                );
+                await tempClient.getWhoAmI();
             }
             catch (ex) {
-                log.warn(`Whoami for existing session failed:`, ex);
+                log.warn(`Session was invalid for ${this.userId}, generating a new session`);
                 session = null;
             }
         }
+
         if (!session) {
-            this.readyPromise = (async () => {
-                log.debug("ensureRegistered: Attempting encrypted login");
-                // Login as the user
-                const result = await this.loginForEncryptedClient();
-                session = {
-                    userId,
-                    ...result,
-                    syncToken: null,
-                };
-                if (this.encryption) {
-                    this.encryption.sessionPromise = Promise.resolve(session);
-                }
-                await this.encryption?.sessionCreatedCallback(session);
-            })();
-            await this.readyPromise;
+            // No session in the store, attempt a login.
+            log.debug("ensureRegistered: Attempting encrypted login");
+            // Login as the user
+            const result = await this.loginForEncryptedClient();
+            session = {
+                userId: this.userId,
+                ...result,
+                syncToken: null,
+            };
+            log.info(`Created new encrypted session for ${this.userId}`);
+            this.encryption.sessionPromise = Promise.resolve(session);
+            await this.encryption?.sessionCreatedCallback(session);
         }
-        return undefined;
+
+        // We need to overwrite the access token here, as we don't want to use the
+        // appservice token but rather a token specific to this user.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (this.botSdkIntent.underlyingClient as any).accessToken = session.accessToken;
+        this.botSdkIntent.underlyingClient.storageProvider.setSyncToken(session.syncToken);
     }
 }

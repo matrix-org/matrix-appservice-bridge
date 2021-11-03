@@ -1,0 +1,1 @@
+Do not retry membership queue operations after a 404 response.

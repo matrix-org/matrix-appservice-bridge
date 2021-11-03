@@ -1171,6 +1171,7 @@ export class Bridge {
         if (encryptionOpts) {
             clientIntentOpts.encryption = {
                 sessionPromise: encryptionOpts.store.getStoredSession(userId),
+                origianlHomeserver: this.opts.homeserverUrl,
                 sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(encryptionOpts.store),
                 ensureClientSyncingCallback: async () => {
                     return this.eeEventBroker?.startSyncingUser(userId || this.botUserId);

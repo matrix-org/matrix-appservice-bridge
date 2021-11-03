@@ -52,6 +52,7 @@ export interface IntentOpts {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
         ensureClientSyncingCallback: () => Promise<void>;
+        origianlHomeserver: string;
     };
     onEventSent?: OnEventSentHook,
 }
@@ -117,6 +118,7 @@ export class Intent {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
         ensureClientSyncingCallback: () => Promise<void>;
+        origianlHomeserver: string;
     };
     private encryptionReadyPromise?: Promise<void>;
 
@@ -1185,6 +1187,10 @@ export class Intent {
             }
         }
 
+        // NOTES:
+        // Still seeing errors about invalid access tokens.
+        // Still seeing the server attempt to send stuff to pan without sync being enabled.
+
         if (!this.encryption) {
             log.debug("ensureRegistered: Registered, and not encrypted");
             // We don't care about encryption, or the encryption is ready.
@@ -1250,7 +1256,7 @@ export class Intent {
         // We still need a direct client to the homeserver in some cases, so clone
         // the existing one.
         const underlyingClient = this.botSdkIntent.underlyingClient;
-        this.encryptionHsClient = new MatrixClient(underlyingClient.homeserverUrl, underlyingClient.accessToken);
+        this.encryptionHsClient = new MatrixClient(this.encryption.origianlHomeserver, underlyingClient.accessToken);
         // We need to overwrite the access token here, as we don't want to use the
         // appservice token but rather a token specific to this user.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

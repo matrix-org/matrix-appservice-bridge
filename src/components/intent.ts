@@ -66,18 +66,6 @@ export interface FileUploadOpts {
     type?: string;
 }
 
-/**
- * Returns the first parameter that is a number or 0.
- */
-const returnFirstNumber = (...args: unknown[]) => {
-    for (const arg of args) {
-        if (typeof arg === "number") {
-            return arg;
-        }
-    }
-    return 0;
-}
-
 const DEFAULT_CACHE_TTL = 90000;
 const DEFAULT_CACHE_SIZE = 1024;
 
@@ -131,6 +119,10 @@ export class Intent {
         ensureClientSyncingCallback: () => Promise<void>;
     };
     private encryptionReadyPromise?: Promise<void>;
+
+    // A client that talks directly to the homeserver, bypassing pan.
+    private encryptionHsClient?: MatrixClient;
+
     // The legacyClient is created on demand when bridges need to use
     // it, but is not created by default anymore.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -449,8 +441,11 @@ export class Intent {
     public async sendEvent(roomId: string, type: string, content: Record<string, unknown>)
         // eslint-disable-next-line camelcase
         : Promise<{event_id: string}> {
+        await this.ensureRegistered();
+        await this._ensureJoined(roomId);
+        await this._ensureHasPowerLevelFor(roomId, type, false);
+        let encrypted = false;
         if (this.encryption) {
-            let encrypted = false;
             try {
                 encrypted = !!(await this.isRoomEncrypted(roomId));
             }
@@ -461,20 +456,25 @@ export class Intent {
             }
             if (encrypted) {
                 // We *need* to sync before we can send a message to an encrypted room.
-                await this.ensureRegistered();
                 await this.encryption.ensureClientSyncingCallback();
             }
+            else if (this.encryptionHsClient) {
+                // We want to send the event to the homeserver directly to avoid pan checking for
+                // a syncing client.
+                const result = {
+                    // eslint-disable-next-line camelcase
+                    event_id: await this.encryptionHsClient.sendEvent(roomId, type, content),
+                };
+                this.opts.onEventSent?.(roomId, type, content, result.event_id);
+                return result;
+            }
         }
-        await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, type, false);
-        return this._joinGuard(roomId, async() => {
-            const result = {
-                // eslint-disable-next-line camelcase
-                event_id: await this.botSdkIntent.underlyingClient.sendEvent(roomId, type, content),
-            };
-            this.opts.onEventSent?.(roomId, type, content, result.event_id);
-            return result;
-        });
+        const result = {
+            // eslint-disable-next-line camelcase
+            event_id: await this.botSdkIntent.underlyingClient.sendEvent(roomId, type, content),
+        };
+        this.opts.onEventSent?.(roomId, type, content, result.event_id);
+        return result;
     }
 
     /**
@@ -852,7 +852,7 @@ export class Intent {
             return existing;
         }
         try {
-            const ev = await this.getStateEvent(roomId, "m.room.encryption");
+            const ev = await this.getStateEvent(roomId, "m.room.encryption", "");
             const algo = ev.algorithm as unknown;
             if (typeof algo === 'string' && algo) {
                 this.encryptedRooms.set(roomId, algo);
@@ -878,6 +878,10 @@ export class Intent {
      */
     public async uploadContent(content: Buffer|string|ReadStream, opts: FileUploadOpts = {}): Promise<string> {
         await this.ensureRegistered();
+        if (this.encryption) {
+            // Media is encrypted, since we don't know the destination room assume this media will be encrypted.
+            await this.encryption.ensureClientSyncingCallback();
+        }
         let buffer: Buffer;
         if (typeof content === "string") {
             buffer = Buffer.from(content, "utf8");
@@ -1243,10 +1247,14 @@ export class Intent {
             await this.encryption?.sessionCreatedCallback(session);
         }
 
+        // We still need a direct client to the homeserver in some cases, so clone
+        // the existing one.
+        const underlyingClient = this.botSdkIntent.underlyingClient;
+        this.encryptionHsClient = new MatrixClient(underlyingClient.homeserverUrl, underlyingClient.accessToken);
         // We need to overwrite the access token here, as we don't want to use the
         // appservice token but rather a token specific to this user.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this.botSdkIntent.underlyingClient as any).accessToken = session.accessToken;
+        (underlyingClient as any).accessToken = session.accessToken;
         this.botSdkIntent.underlyingClient.storageProvider.setSyncToken(session.syncToken);
     }
 }

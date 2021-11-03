@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/matrix-org/matrix-appservice-bridge#readme",
   "dependencies": {
+    "@alloc/quick-lru": "^5.2.0",
     "chalk": "^4.1.0",
     "extend": "^3.0.2",
     "is-my-json-valid": "^2.20.5",

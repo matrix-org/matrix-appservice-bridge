@@ -280,10 +280,14 @@ export class MembershipQueue {
     }
 
     private shouldRetry(ex: {body: {code: string; errcode: string;}, statusCode: number}, attempts: number): boolean {
+        const { errcode } = ex.body;
         return !(
             attempts === this.opts.maxAttempts ||
-            ex.body.errcode === "M_FORBIDDEN" ||
-            ex.statusCode === 403
+            // Forbidden
+            errcode === "M_FORBIDDEN" ||
+            ex.statusCode === 403 ||
+            // Not found
+            ex.statusCode === 404
         );
     }
 }

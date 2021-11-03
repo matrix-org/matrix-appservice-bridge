@@ -1,0 +1,1 @@
+Refactor Encryption broker code to use the bot-sdk, and generally be more race-resistant when starting new sessions

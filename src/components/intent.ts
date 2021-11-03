@@ -445,8 +445,9 @@ export class Intent {
         : Promise<{event_id: string}> {
         await this.ensureRegistered();
         await this._ensureJoined(roomId);
-        await this._ensureHasPowerLevelFor(roomId, type, false);
+        await this._joinGuard(roomId, () => this._ensureHasPowerLevelFor(roomId, type, false));
         let encrypted = false;
+        let client = this.botSdkIntent.underlyingClient;
         if (this.encryption) {
             try {
                 encrypted = !!(await this.isRoomEncrypted(roomId));
@@ -456,30 +457,20 @@ export class Intent {
                 log.debug(`Could not determine if room is encrypted. Assuming yes:`, ex);
                 encrypted = true;
             }
-            if (!this.encryptionHsClient) {
-                console.warn(`NO HS CLIENT!!!`);
-            }
             if (encrypted) {
                 // We *need* to sync before we can send a message to an encrypted room.
                 await this.encryption.ensureClientSyncingCallback();
             }
             else if (this.encryptionHsClient) {
-                // We want to send the event to the homeserver directly to avoid pan checking for
-                // a syncing client.
-                const result = {
-                    // eslint-disable-next-line camelcase
-                    event_id: await this.encryptionHsClient.sendEvent(roomId, type, content),
-                };
-                this.opts.onEventSent?.(roomId, type, content, result.event_id);
-                return result;
+                // We want to send the event to the homeserver directly to avoid pan. Pan
+                // always requires the sending client to be syncing, even for non-encrypted rooms.
+                // We don't want to always sync to unencrypted rooms because it's expensive.
+                client = this.encryptionHsClient;
             }
         }
-        const result = {
-            // eslint-disable-next-line camelcase
-            event_id: await this.botSdkIntent.underlyingClient.sendEvent(roomId, type, content),
-        };
-        this.opts.onEventSent?.(roomId, type, content, result.event_id);
-        return result;
+        const eventId = await this._joinGuard(roomId, () => client.sendEvent(roomId, type, content));
+        this.opts.onEventSent?.(roomId, type, content, eventId);
+        return {event_id: eventId};
     }
 
     /**

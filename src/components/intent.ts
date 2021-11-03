@@ -1263,6 +1263,7 @@ export class Intent {
         // We still need a direct client to the homeserver in some cases, so clone
         // the existing one.
         const underlyingClient = this.botSdkIntent.underlyingClient;
+        underlyingClient.impersonateUserId(this.userId);
         this.encryptionHsClient = new MatrixClient(this.encryption.origianlHomeserver, underlyingClient.accessToken);
         // We need to overwrite the access token here, as we don't want to use the
         // appservice token but rather a token specific to this user.

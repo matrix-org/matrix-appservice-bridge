@@ -3,7 +3,7 @@ import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
 import { ReadStream } from "fs";
 import BotSdk, { MatrixClient } from "matrix-bot-sdk";
-import { FileUploadOpts, Intent, IntentOpts } from "..";
+import { FileUploadOpts, Intent, IntentOpts } from "./intent";
 
 const log = Logging.get("EncryptedIntent");
 

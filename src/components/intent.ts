@@ -14,13 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import { ClientRequestCache } from "./client-request-cache";
 import { defer } from "../utils/promiseutil";
 import { UserMembership } from "./membership-cache";
 import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
-import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import Logging from "./logging";
 import { ReadStream } from "fs";
 import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
@@ -48,12 +46,6 @@ export interface IntentOpts {
     registered?: boolean;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     getJsSdkClient?: () => any,
-    encryption?: {
-        sessionPromise: Promise<ClientEncryptionSession|null>;
-        sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
-        ensureClientSyncingCallback: () => Promise<void>;
-        originalHomeserverUrl: string;
-    };
     onEventSent?: OnEventSentHook,
 }
 
@@ -88,7 +80,6 @@ export type PowerLevelContent = {
 type UserProfileKeys = "avatar_url"|"displayname"|null;
 
 export class Intent {
-
     private static getClientWarningFired = false;
 
     private _requestCaches: {
@@ -96,7 +87,7 @@ export class Intent {
         roomstate: ClientRequestCache<unknown, []>,
         event: ClientRequestCache<unknown, [string, string]>
     }
-    private opts: {
+    protected opts: {
         backingStore: IntentBackingStore,
         caching: {
             ttl: number,
@@ -113,17 +104,6 @@ export class Intent {
     // These two are only used if no opts.backingStore is provided to the constructor.
     private readonly _membershipStates: Record<string, [UserMembership, MatrixProfileInfo]> = {};
     private readonly _powerLevels: Record<string, PowerLevelContent> = {};
-    private readonly encryptedRooms = new Map<string, string|false>();
-    private readonly encryption?: {
-        sessionPromise: Promise<ClientEncryptionSession|null>;
-        sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
-        ensureClientSyncingCallback: () => Promise<void>;
-        originalHomeserverUrl: string
-    };
-    private encryptionReadyPromise?: Promise<void>;
-
-    // A client that talks directly to the homeserver, bypassing pantalaimon.
-    private encryptionHsClient?: MatrixClient;
 
     // The legacyClient is created on demand when bridges need to use
     // it, but is not created by default anymore.
@@ -188,7 +168,6 @@ export class Intent {
                 throw new Error("Intent backingStore missing required functions");
             }
         }
-        this.encryption = opts.encryption;
         this.opts = {
             ...opts,
             backingStore: opts.backingStore ? { ...opts.backingStore } : {
@@ -443,36 +422,13 @@ export class Intent {
     public async sendEvent(roomId: string, type: string, content: Record<string, unknown>)
         // eslint-disable-next-line camelcase
         : Promise<{event_id: string}> {
-
         await this.ensureRegistered();
         await this._ensureJoined(roomId);
         await this._ensureHasPowerLevelFor(roomId, type, false);
-        let encrypted = false; // Is the room encrypted.
-        let client = this.botSdkIntent.underlyingClient;
 
-        if (this.encryption) {
-            try {
-                encrypted = !!(await this.isRoomEncrypted(roomId));
-            }
-            catch (ex) {
-                // This is unexpected. Fail safe.
-                log.debug(`Could not determine if room is encrypted. Assuming yes:`, ex);
-                encrypted = true;
-            }
-            if (encrypted) {
-                // We *need* to sync before we can send a message to an encrypted room, because pantalaimon
-                // requires it.
-                await this.encryption.ensureClientSyncingCallback();
-            }
-            else if (this.encryptionHsClient) {
-                // We want to send the event to the homeserver directly to avoid pantalaimon. Pantalaimon
-                // always requires the sending client to be syncing, even for non-encrypted rooms.
-                // We don't want to always sync to unencrypted rooms because it's expensive.
-                client = this.encryptionHsClient;
-            }
-        }
-
-        const eventId = await this._joinGuard(roomId, () => client.sendEvent(roomId, type, content));
+        const eventId = await this._joinGuard(roomId,
+            () => this.botSdkIntent.underlyingClient.sendEvent(roomId, type, content)
+        );
         this.opts.onEventSent?.(roomId, type, content, eventId);
         return {event_id: eventId};
     }
@@ -842,39 +798,6 @@ export class Intent {
     }
 
     /**
-     * Check if a room is encrypted. If it is, return the algorithm.
-     * @param roomId The room ID to be checked
-     * @returns The encryption algorithm or false
-     */
-    public async isRoomEncrypted(roomId: string): Promise<string|false> {
-        const existing = this.encryptedRooms.get(roomId);
-        if (existing !== undefined) {
-            return existing;
-        }
-        try {
-            const ev = await this.getStateEvent(roomId, "m.room.encryption", "", true);
-            if (ev === null) {
-                this.encryptedRooms.set(roomId, false);
-                return false;
-            }
-            const algo = ev.algorithm as unknown;
-            if (typeof algo === 'string' && algo) {
-                this.encryptedRooms.set(roomId, algo);
-                return algo;
-            }
-            // Return false if missing, not a string or empty.
-            return false;
-        }
-        catch (ex) {
-            if (ex.statusCode == 404) {
-                this.encryptedRooms.set(roomId, false);
-                return false;
-            }
-            throw ex;
-        }
-    }
-
-    /**
      * Upload a file to the homeserver.
      * @param content The file contents
      * @param opts Additional options for the upload.
@@ -882,10 +805,6 @@ export class Intent {
      */
     public async uploadContent(content: Buffer|string|ReadStream, opts: FileUploadOpts = {}): Promise<string> {
         await this.ensureRegistered();
-        if (this.encryption) {
-            // Media is encrypted, since we don't know the destination room assume this media will be encrypted.
-            await this.encryption.ensureClientSyncingCallback();
-        }
         let buffer: Buffer;
         if (typeof content === "string") {
             buffer = Buffer.from(content, "utf8");
@@ -968,15 +887,11 @@ export class Intent {
         else if (event.type === "m.room.power_levels") {
             this.opts.backingStore.setPowerLevelContent(event.room_id, event.content as unknown as PowerLevelContent);
         }
-        else if (event.type === "m.room.encryption" && typeof event.content.algorithm === "string") {
-            log.info(`Room ${event.room_id} enabled encryption (${event.content.algorithm})`);
-            this.encryptedRooms.set(event.room_id, event.content.algorithm);
-        }
     }
 
     // Guard a function which returns a promise which may reject if the user is not
     // in the room. If the promise rejects, join the room and retry the function.
-    private async _joinGuard<T>(roomId: string, promiseFn: () => Promise<T>): Promise<T> {
+    protected async _joinGuard<T>(roomId: string, promiseFn: () => Promise<T>): Promise<T> {
         try {
             // await so we can handle the error
             return await promiseFn();
@@ -991,7 +906,7 @@ export class Intent {
         }
     }
 
-    private async _ensureJoined(
+    protected async _ensureJoined(
         roomIdOrAlias: string, ignoreCache = false, viaServers?: string[], passthroughError = false
     ): Promise<string> {
         const opts: { viaServers?: string[] } = { };
@@ -1075,7 +990,7 @@ export class Intent {
      * @param isState Are we checking for state permissions or regular event permissions.
      * @return If found, the power level event
      */
-    private async _ensureHasPowerLevelFor(roomId: string, eventType: string, isState: boolean) {
+    protected async _ensureHasPowerLevelFor(roomId: string, eventType: string, isState: boolean) {
         if (this.opts.dontCheckPowerLevel && eventType !== "m.room.power_levels") {
             return undefined;
         }
@@ -1140,40 +1055,20 @@ export class Intent {
         return eventContent;
     }
 
-    private async loginForEncryptedClient() {
-        const userId: string = this.userId;
-        const res = await this.botSdkIntent.underlyingClient.doRequest(
-            "POST",
-            "/_matrix/client/r0/login",
-            undefined,
-            {
-                type: APPSERVICE_LOGIN_TYPE,
-                identifier: {
-                    type: "m.id.user",
-                    user: userId,
-                }
-            },
-        );
-        return {
-            accessToken: res.access_token as string,
-            deviceId: res.device_id as string,
-        };
-    }
-
     public async ensureRegistered(forceRegister = false): Promise<"registered=true"|undefined> {
         log.debug(`Checking if user ${this.userId} is registered`);
         // We want to skip if and only if all of these conditions are met.
         // Calling /register twice isn't disasterous, but not calling it *at all* IS.
-        if (!forceRegister && this.opts.registered && !this.encryption) {
-            log.debug("ensureRegistered: Registered, and not encrypted");
+        if (!forceRegister && this.opts.registered) {
+            log.debug("ensureRegistered: already registered");
             return "registered=true";
         }
 
-        let registerRes;
         if (forceRegister || !this.opts.registered) {
             try {
-                registerRes = await this.botSdkIntent.ensureRegistered();
+                await this.botSdkIntent.ensureRegistered();
                 this.opts.registered = true;
+                return "registered=true";
             }
             catch (err) {
                 if (err.body?.errcode === "M_EXCLUSIVE" && this.botClient === this.botSdkIntent.underlyingClient) {
@@ -1188,83 +1083,6 @@ export class Intent {
                 }
             }
         }
-
-        if (!this.encryption) {
-            log.debug("ensureRegistered: Registered, and not encrypted");
-            // We don't care about encryption, or the encryption is ready.
-            return registerRes;
-        }
-        // Past this point, we're an encryption-enabled Intent
-
-        if (!this.encryptionReadyPromise) {
-            this.encryptionReadyPromise = this.getEncryptedSession();
-        }
-
-        // We're already trying to generate a new session.
-        try {
-            // Should fall through and find the session.
-            await this.encryptionReadyPromise;
-            // Session ready!
-            return "registered=true";
-        }
-        catch (ex) {
-            log.warn("ensureRegistered: failed to ready encryption", ex);
-            throw Error('Failed to ready encryption');
-            // Failed to ready up - fall through and try again.
-        }
-    }
-
-    /**
-     * Get an encrypted session, either by resolving the `encryption.sessionPromise`
-     * promise or creating a new session by logging in to the homeserver.
-     */
-    private async getEncryptedSession(): Promise<void> {
-        if (!this.encryption) {
-            throw Error('Cannot call getEncryptedSession without enabling encryption');
-        }
-        // First, see if this user already has a session in the store.
-        let session = await this.encryption.sessionPromise;
-
-        if (session) {
-            // Store has a session, check we're authenticted.
-            log.debug("getEncryptedSession: Existing session, reusing");
-            try {
-                const tempClient = new MatrixClient(
-                    this.botSdkIntent.underlyingClient.homeserverUrl, session.accessToken
-                );
-                // Check that the access token works, any failures should be treated as a no.
-                await tempClient.getWhoAmI();
-            }
-            catch (ex) {
-                log.warn(`Session was invalid for ${this.userId}, generating a new session`);
-                session = null;
-            }
-        }
-
-        if (!session) {
-            // No session in the store, attempt a login.
-            log.debug("getEncryptedSession: Attempting login");
-            const result = await this.loginForEncryptedClient();
-            session = {
-                userId: this.userId,
-                ...result,
-                syncToken: null,
-            };
-            log.info(`getEncryptedSession: Created new session for ${this.userId}`);
-            this.encryption.sessionPromise = Promise.resolve(session);
-            await this.encryption?.sessionCreatedCallback(session);
-        }
-
-        // We still need a direct client to the homeserver in some cases, so clone
-        // the existing one.
-        const underlyingClient = this.botSdkIntent.underlyingClient;
-        this.encryptionHsClient = new MatrixClient(this.encryption.originalHomeserverUrl, underlyingClient.accessToken);
-        this.encryptionHsClient.impersonateUserId(this.userId);
-
-        // We need to overwrite the access token here, as we don't want to use the
-        // appservice token but rather a token specific to this user.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (underlyingClient as any).accessToken = session.accessToken;
-        this.botSdkIntent.underlyingClient.storageProvider.setSyncToken(session.syncToken);
+        return undefined;
     }
 }

@@ -55,6 +55,8 @@ import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryp
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
 import * as BotSDK from "matrix-bot-sdk";
 import { ActivityTracker, ActivityTrackerOpts } from "./components/activity-tracker";
+import { EncryptedIntent, EncryptedIntentOpts } from "./components/encrypted-intent";
+import e = require("express");
 
 const log = logging.get("bridge");
 
@@ -370,9 +372,10 @@ interface VettedBridgeOpts {
         clients?: IntentOpts;
     };
     /**
-     * The factory function used to create intents.
+     * The factory function used to create intents. If encryptionOpts is specified, this should create an
+     * EncryptedIntent instead.
      */
-    onIntentCreate: (userId: string, opts: IntentOpts) => Intent,
+    onIntentCreate: (userId: string, opts: IntentOpts, encryptionOpts?: EncryptedIntentOpts) => Intent|EncryptedIntent,
     /**
      * Options for the `onEvent` queue. When the bridge
      * receives an incoming transaction, it needs to asyncly query the data store for
@@ -432,7 +435,9 @@ interface VettedBridgeOpts {
 
 export class Bridge {
     private requestFactory: RequestFactory;
-    private intents: Map<string, { intent: Intent, lastAccessed: number}>; // user_id + request_id => Intent
+    private intents: Map<string, {
+        intent: Intent|EncryptedIntent, lastAccessed: number
+    }>; // user_id + request_id => Intent
     private powerlevelMap: Map<string, PowerLevelContent>; // room_id => powerlevels
     private membershipCache: MembershipCache;
     private queue: EventQueue;
@@ -1116,7 +1121,7 @@ export class Bridge {
      * instance to. Useful for logging contextual request IDs.
      * @return The intent instance
      */
-    public getIntent(userId?: string, request?: Request<unknown>): Intent {
+    public getIntent(userId?: string, request?: Request<unknown>): Intent|EncryptedIntent {
         if (!this.appServiceBot || !this.botSdkAS) {
             throw Error('Cannot call getIntent before calling .initalise()');
         }
@@ -1167,9 +1172,10 @@ export class Bridge {
             onEventSent: () => userId && this.opts.controller.userActivityTracker?.updateUserActivity(userId),
         };
         clientIntentOpts.registered = this.membershipCache.isUserRegistered(userId);
+        let encryptionIntentOpts: undefined|EncryptedIntentOpts;
         const encryptionOpts = this.opts.bridgeEncryption;
         if (encryptionOpts) {
-            clientIntentOpts.encryption = {
+            encryptionIntentOpts = {
                 sessionPromise: encryptionOpts.store.getStoredSession(userId),
                 originalHomeserverUrl: this.opts.homeserverUrl,
                 sessionCreatedCallback: encryptionOpts.store.setStoredSession.bind(encryptionOpts.store),
@@ -1179,7 +1185,7 @@ export class Bridge {
             };
         }
 
-        const intent = this.opts.onIntentCreate(userId, clientIntentOpts);
+        const intent = this.opts.onIntentCreate(userId, clientIntentOpts, encryptionIntentOpts);
         this.intents.set(key, { intent, lastAccessed: Date.now() });
 
         return intent;
@@ -1720,12 +1726,15 @@ export class Bridge {
         this.roomLinkValidator?.updateRules(rules);
     }
 
-    private onIntentCreate(userId: string, intentOpts: IntentOpts) {
+    private onIntentCreate(userId: string, intentOpts: IntentOpts, encOpts?: EncryptedIntentOpts) {
         if (!this.botSdkAS) {
             throw Error('botSdkAS must be defined before onIntentCreate can be called');
         }
         const isBot = this.botUserId === userId;
         const botIntent = isBot ? this.botSdkAS.botIntent : this.botSdkAS.getIntentForUserId(userId);
+        if (encOpts) {
+            return new EncryptedIntent(botIntent, this.botSdkAS.botClient, intentOpts, encOpts);
+        }
         return new Intent(botIntent, this.botSdkAS.botClient, intentOpts);
     }
 

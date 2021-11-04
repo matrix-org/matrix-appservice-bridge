@@ -52,7 +52,7 @@ export interface IntentOpts {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
         ensureClientSyncingCallback: () => Promise<void>;
-        origianlHomeserver: string;
+        originalHomeserverUrl: string;
     };
     onEventSent?: OnEventSentHook,
 }
@@ -118,7 +118,7 @@ export class Intent {
         sessionPromise: Promise<ClientEncryptionSession|null>;
         sessionCreatedCallback: (session: ClientEncryptionSession) => Promise<void>;
         ensureClientSyncingCallback: () => Promise<void>;
-        origianlHomeserver: string
+        originalHomeserverUrl: string
     };
     private encryptionReadyPromise?: Promise<void>;
 
@@ -443,11 +443,13 @@ export class Intent {
     public async sendEvent(roomId: string, type: string, content: Record<string, unknown>)
         // eslint-disable-next-line camelcase
         : Promise<{event_id: string}> {
+
         await this.ensureRegistered();
         await this._ensureJoined(roomId);
-        await this._joinGuard(roomId, () => this._ensureHasPowerLevelFor(roomId, type, false));
-        let encrypted = false;
+        await this._ensureHasPowerLevelFor(roomId, type, false);
+        let encrypted = false; // Is the room encrypted.
         let client = this.botSdkIntent.underlyingClient;
+
         if (this.encryption) {
             try {
                 encrypted = !!(await this.isRoomEncrypted(roomId));
@@ -458,7 +460,8 @@ export class Intent {
                 encrypted = true;
             }
             if (encrypted) {
-                // We *need* to sync before we can send a message to an encrypted room.
+                // We *need* to sync before we can send a message to an encrypted room, because pantalaimon
+                // requires it.
                 await this.encryption.ensureClientSyncingCallback();
             }
             else if (this.encryptionHsClient) {
@@ -468,6 +471,7 @@ export class Intent {
                 client = this.encryptionHsClient;
             }
         }
+
         const eventId = await this._joinGuard(roomId, () => client.sendEvent(roomId, type, content));
         this.opts.onEventSent?.(roomId, type, content, eventId);
         return {event_id: eventId};
@@ -1185,17 +1189,13 @@ export class Intent {
             }
         }
 
-        // NOTES:
-        // Still seeing errors about invalid access tokens.
-        // Still seeing the server attempt to send stuff to pan without sync being enabled.
-
         if (!this.encryption) {
             log.debug("ensureRegistered: Registered, and not encrypted");
             // We don't care about encryption, or the encryption is ready.
             return registerRes;
         }
+        // Past this point, we're an encryption enabled Intent
 
-        // Past this point, we're an encryption enabled Intent.
         if (!this.encryptionReadyPromise) {
             this.encryptionReadyPromise = this.getEncryptedSession();
         }
@@ -1214,6 +1214,10 @@ export class Intent {
         }
     }
 
+    /**
+     * Get an encrypted session, either by resolving the `encryption.sessionPromise`
+     * promise or creating a new session by logging in to the homeserver.
+     */
     private async getEncryptedSession(): Promise<void> {
         if (!this.encryption) {
             throw Error('Cannot call getEncryptedSession without enabling encryption');
@@ -1223,11 +1227,12 @@ export class Intent {
 
         if (session) {
             // Store has a session, check we're authenticted.
-            log.debug("ensureRegistered: Existing enc session, reusing");
+            log.debug("getEncryptedSession: Existing session, reusing");
             try {
                 const tempClient = new MatrixClient(
                     this.botSdkIntent.underlyingClient.homeserverUrl, session.accessToken
                 );
+                // Check that the access token works, any failures should be treated as a no.
                 await tempClient.getWhoAmI();
             }
             catch (ex) {
@@ -1238,15 +1243,14 @@ export class Intent {
 
         if (!session) {
             // No session in the store, attempt a login.
-            log.debug("ensureRegistered: Attempting encrypted login");
-            // Login as the user
+            log.debug("getEncryptedSession: Attempting login");
             const result = await this.loginForEncryptedClient();
             session = {
                 userId: this.userId,
                 ...result,
                 syncToken: null,
             };
-            log.info(`Created new encrypted session for ${this.userId}`);
+            log.info(`getEncryptedSession: Created new session for ${this.userId}`);
             this.encryption.sessionPromise = Promise.resolve(session);
             await this.encryption?.sessionCreatedCallback(session);
         }
@@ -1254,8 +1258,9 @@ export class Intent {
         // We still need a direct client to the homeserver in some cases, so clone
         // the existing one.
         const underlyingClient = this.botSdkIntent.underlyingClient;
-        this.encryptionHsClient = new MatrixClient(this.encryption.origianlHomeserver, underlyingClient.accessToken);
+        this.encryptionHsClient = new MatrixClient(this.encryption.originalHomeserverUrl, underlyingClient.accessToken);
         this.encryptionHsClient.impersonateUserId(this.userId);
+
         // We need to overwrite the access token here, as we don't want to use the
         // appservice token but rather a token specific to this user.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1194,7 +1194,7 @@ export class Intent {
             // We don't care about encryption, or the encryption is ready.
             return registerRes;
         }
-        // Past this point, we're an encryption enabled Intent
+        // Past this point, we're an encryption-enabled Intent
 
         if (!this.encryptionReadyPromise) {
             this.encryptionReadyPromise = this.getEncryptedSession();
@@ -1222,7 +1222,7 @@ export class Intent {
         if (!this.encryption) {
             throw Error('Cannot call getEncryptedSession without enabling encryption');
         }
-        // We've not got a session so let's see if the store has one.
+        // First, see if this user already has a session in the store.
         let session = await this.encryption.sessionPromise;
 
         if (session) {

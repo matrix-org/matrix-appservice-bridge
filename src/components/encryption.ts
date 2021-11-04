@@ -190,6 +190,8 @@ export class EncryptedEventBroker {
             // We only care about encrypted events, and pantalaimon appends a decrypted key to each event.
             return;
         }
+        // Events coming down sync do not include the room_id, so set it here.
+        event.room_id = roomId;
         if (!this.eventsPendingSync.has(event.event_id)) {
             log.debug("Got AS event before sync event");
             // We weren't waiting for this event, but we might have got here too quick.

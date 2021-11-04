@@ -102,9 +102,10 @@ export class EncryptedEventBroker {
     private handledEvents = new LRU<string, void>({ maxAge: EVENT_CACHE_FOR_MS, maxSize: 10000 });
     private userForRoom = new Map<string, string>();
 
-    private eventsPendingSync = new Set<string>();
-    // We should probably make these LRUs eventually
-    private eventsPendingAS: WeakEvent[] = [];
+    // Set of matrix event ids that arrived in an AS transaction before a sync loop.
+    private eventsPendingSync = new LRU<string, void>({ maxAge: EVENT_CACHE_FOR_MS, maxSize: 10000 });
+    // Set of matrix event ids -> event content that arrived in a sync loop before an AS transaction.
+    private eventsPendingAS = new LRU<string, WeakEvent>({ maxAge: EVENT_CACHE_FOR_MS, maxSize: 10000 });
 
     private syncingClients = new Map<string, SyncingUser>();
 
@@ -128,14 +129,12 @@ export class EncryptedEventBroker {
             return true;
         }
 
-        log.debug(`Got AS event ${event.event_id}`);
-        this.eventsPendingSync.add(event.event_id);
-        const syncedEvent = this.eventsPendingAS.find((syncEvent) => syncEvent.event_id === event.event_id);
+        const syncedEvent = this.eventsPendingAS.get(event.event_id);
         if (syncedEvent) {
-            log.debug("Got sync event before AS event");
             this.handleEvent(syncedEvent);
             return false;
         }
+        this.eventsPendingSync.set(event.event_id);
 
         // We need to determine if anyone is syncing for this room?
         const existingUserForRoom = this.userForRoom.get(event.room_id);
@@ -193,9 +192,9 @@ export class EncryptedEventBroker {
         // Events coming down sync do not include the room_id, so set it here.
         event.room_id = roomId;
         if (!this.eventsPendingSync.has(event.event_id)) {
-            log.debug("Got AS event before sync event");
+            log.debug(`Got sync event (${event.event_id}) before AS event`);
             // We weren't waiting for this event, but we might have got here too quick.
-            this.eventsPendingAS.push(event);
+            this.eventsPendingAS.set(event.event_id, event);
             return;
         }
         const key = `${roomId}}:${event.event_id}`;
@@ -213,9 +212,9 @@ export class EncryptedEventBroker {
         log.debug(`Handling ${event.event_id} (${event.room_id}) through sync`);
         this.onEvent(event);
 
-        // Delete the event from the pending list
+        // Delete the event from the pending lists
         this.eventsPendingSync.delete(event.event_id);
-        this.eventsPendingAS = this.eventsPendingAS.filter((e) => e.event_id !== event.event_id);
+        this.eventsPendingAS.delete(event.event_id);
     }
 
     /**
@@ -330,7 +329,13 @@ export class EncryptedEventBroker {
      */
     public close(): void {
         for (const client of this.syncingClients.values()) {
-            client.matrixClient.stop();
+            try {
+                client.matrixClient.stop();
+            }
+            catch (ex) {
+                // Non-fatal
+                log.warn(`MatrixClient failed to stop`, ex);
+            }
         }
     }
 

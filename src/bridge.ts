@@ -650,7 +650,7 @@ export class Bridge {
                     aliases: rawReg.namespaces?.aliases || [],
                 }
             },
-            // If using encryption, we want to go via pan.
+            // If using encryption, we want to go via pantalaimon.
             homeserverUrl: this.opts.bridgeEncryption?.homeserverUrl || this.opts.homeserverUrl,
             homeserverName: this.opts.domain,
             // Unused atm.

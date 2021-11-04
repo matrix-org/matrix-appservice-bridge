@@ -188,7 +188,7 @@ export class EncryptedEventBroker {
     private onSyncEvent(roomId: string, event: PanWeakEvent): void {
         log.info("BLARGH", roomId, event);
         if (!event.decrypted) {
-            // We only care about encrypted events, and pan appends a decrypted key to each event.
+            // We only care about encrypted events, and pantalaimon appends a decrypted key to each event.
             return;
         }
         // TODO: Do we need this?

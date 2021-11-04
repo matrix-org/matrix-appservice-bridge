@@ -122,7 +122,7 @@ export class Intent {
     };
     private encryptionReadyPromise?: Promise<void>;
 
-    // A client that talks directly to the homeserver, bypassing pan.
+    // A client that talks directly to the homeserver, bypassing pantalaimon.
     private encryptionHsClient?: MatrixClient;
 
     // The legacyClient is created on demand when bridges need to use
@@ -465,7 +465,7 @@ export class Intent {
                 await this.encryption.ensureClientSyncingCallback();
             }
             else if (this.encryptionHsClient) {
-                // We want to send the event to the homeserver directly to avoid pan. Pan
+                // We want to send the event to the homeserver directly to avoid pantalaimon. Pantalaimon
                 // always requires the sending client to be syncing, even for non-encrypted rooms.
                 // We don't want to always sync to unencrypted rooms because it's expensive.
                 client = this.encryptionHsClient;

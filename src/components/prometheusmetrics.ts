@@ -44,7 +44,7 @@ interface HistogramOpts extends CounterOpts {
     buckets?: number[];
 }
 
-interface GagueOpts extends CounterOpts {
+interface GaugeOpts extends CounterOpts {
     refresh?: (gauge: PromClient.Gauge<string>) => void;
 }
 
@@ -277,7 +277,7 @@ export class PrometheusMetrics {
      * gauge in order to provide a new value for it.
      * @return {Gauge} A gauge metric.
      */
-    public addGauge (opts: GagueOpts): PromClient.Gauge<string> {
+    public addGauge (opts: GaugeOpts): PromClient.Gauge<string> {
         const refresh = opts.refresh;
         const name = [opts.namespace || "bridge", opts.name].join("_");
 

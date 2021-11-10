@@ -124,12 +124,12 @@ export class PrometheusMetrics {
     public registerMatrixSdkMetrics(appservice: BotSdkAppservice): void {
         const callCounts = this.addCounter({
             name: "matrix_api_calls",
-            help: "Count of the number of Matrix client API calls made",
+            help: "The number of Matrix client API calls made",
             labels: ["method"],
         });
         const callCountsFailed = this.addCounter({
             name: "matrix_api_calls_failed",
-            help: "Count of the number of Matrix client API calls made",
+            help: "The number of Matrix client API calls which failed",
             labels: ["method"],
         });
 

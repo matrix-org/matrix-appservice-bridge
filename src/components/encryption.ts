@@ -11,7 +11,7 @@ const log = Logging.get("EncryptedEventBroker");
 export const APPSERVICE_LOGIN_TYPE = "uk.half-shot.msc2778.login.application_service";
 const EVENT_CACHE_FOR_MS = 5 * 60000; // 5 minutes
 
-interface PanWeakEvent extends WeakEvent {
+interface PantalaimonWeakEvent extends WeakEvent {
     decrypted: true;
 }
 
@@ -184,7 +184,7 @@ export class EncryptedEventBroker {
         return false;
     }
 
-    private onSyncEvent(roomId: string, event: PanWeakEvent): void {
+    private onSyncEvent(roomId: string, event: PantalaimonWeakEvent): void {
         if (!event.decrypted) {
             // We only care about encrypted events, and pantalaimon appends a decrypted key to each event.
             return;

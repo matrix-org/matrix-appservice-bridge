@@ -91,7 +91,7 @@ export class MembershipCache {
      * Is a user considered registered with the homeserver.
      * @param userId A Matrix userId
      */
-     public isUserRegistered(userId: string): boolean {
+    public isUserRegistered(userId: string): boolean {
         return this.registeredUsers.has(userId);
     }
 

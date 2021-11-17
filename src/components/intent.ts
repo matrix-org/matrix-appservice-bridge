@@ -22,6 +22,7 @@ import BridgeErrorReason = unstable.BridgeErrorReason;
 import Logging from "./logging";
 import { ReadStream } from "fs";
 import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
+import { WeakStateEvent } from "./event-types";
 
 const log = Logging.get("Intent");
 export type IntentBackingStore = {
@@ -853,15 +854,7 @@ export class Intent {
      * if a backing store was provided to the Intent.
      * @param event The incoming event JSON
      */
-    public onEvent(event: {
-        type: string,
-        // eslint-disable-next-line camelcase
-        content: {membership: UserMembership, displayname?: string, avatar_url?: string, algorithm?: string},
-        // eslint-disable-next-line camelcase
-        state_key: unknown,
-        // eslint-disable-next-line camelcase
-        room_id: string
-    }) {
+    public onEvent(event: WeakStateEvent): void {
         if (event.state_key === undefined) {
             // We MUST operate on state events exclusively
             return;
@@ -876,13 +869,13 @@ export class Intent {
                 event.state_key === this.userId &&
                 event.content.membership) {
             const profile: MatrixProfileInfo = {};
-            if (event.content.displayname) {
+            if (typeof event.content.displayname === "string") {
                 profile.displayname = event.content.displayname;
             }
-            if (event.content.avatar_url) {
+            if (typeof event.content.avatar_url === "string") {
                 profile.avatar_url = event.content.avatar_url;
             }
-            this._membershipStates[event.room_id] = [event.content.membership, profile];
+            this._membershipStates[event.room_id] = [event.content.membership as UserMembership, profile];
         }
         else if (event.type === "m.room.power_levels") {
             this.opts.backingStore.setPowerLevelContent(event.room_id, event.content as unknown as PowerLevelContent);

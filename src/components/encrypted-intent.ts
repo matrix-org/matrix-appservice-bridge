@@ -4,6 +4,7 @@ import Logging from "./logging";
 import { ReadStream } from "fs";
 import BotSdk, { MatrixClient } from "matrix-bot-sdk";
 import { FileUploadOpts, Intent, IntentOpts } from "./intent";
+import { WeakStateEvent } from "./event-types";
 
 const log = Logging.get("EncryptedIntent");
 
@@ -19,7 +20,7 @@ export interface EncryptedIntentOpts {
  */
 export class EncryptedIntent extends Intent {
 
-    private readonly encryptedRooms = new Map<string, string|false>();
+    private readonly encryptedRooms = new Map<string, boolean>();
     private encryptionReadyPromise?: Promise<void>;
     // A client that talks directly to the homeserver, bypassing pantalaimon.
     private encryptionHsClient: MatrixClient;
@@ -52,19 +53,11 @@ export class EncryptedIntent extends Intent {
         return super.uploadContent(content, opts);
     }
 
-    public onEvent(event: {
-        type: string,
-        // eslint-disable-next-line camelcase
-        content: {membership: UserMembership, displayname?: string, avatar_url?: string, algorithm?: string},
-        // eslint-disable-next-line camelcase
-        state_key: unknown,
-        // eslint-disable-next-line camelcase
-        room_id: string
-    }): void {
+    public onEvent(event: WeakStateEvent): void {
         super.onEvent(event);
         if (event.type === "m.room.encryption" && typeof event.content.algorithm === "string") {
             log.info(`Room ${event.room_id} enabled encryption (${event.content.algorithm})`);
-            this.encryptedRooms.set(event.room_id, event.content.algorithm);
+            this.encryptedRooms.set(event.room_id, true);
         }
     }
 
@@ -207,7 +200,7 @@ export class EncryptedIntent extends Intent {
      * @param roomId The room ID to be checked
      * @returns The encryption algorithm or false
      */
-    public async isRoomEncrypted(roomId: string): Promise<string|false> {
+    public async isRoomEncrypted(roomId: string): Promise<boolean> {
         const existing = this.encryptedRooms.get(roomId);
         if (existing !== undefined) {
             return existing;
@@ -220,8 +213,8 @@ export class EncryptedIntent extends Intent {
             }
             const algo = ev.algorithm as unknown;
             if (typeof algo === 'string' && algo) {
-                this.encryptedRooms.set(roomId, algo);
-                return algo;
+                this.encryptedRooms.set(roomId, true);
+                return true;
             }
             // Return false if missing, not a string or empty.
             return false;

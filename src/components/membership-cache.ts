@@ -37,7 +37,7 @@ export class MembershipCache {
      * @param userId The userid to check the state of.
      * @returns The membership state of the user, e.g. "joined"
      */
-    getMemberEntry(roomId: string, userId: string): UserMembership {
+    public getMemberEntry(roomId: string, userId: string): UserMembership {
         if (this.membershipMap[roomId] === undefined || this.membershipMap[roomId][userId] === undefined) {
             return null;
         }
@@ -55,7 +55,7 @@ export class MembershipCache {
      * @param userId The userid to check the state of.
      * @returns The member's profile information.
      */
-    getMemberProfile(roomId: string, userId: string): UserProfile {
+    public getMemberProfile(roomId: string, userId: string): UserProfile {
         if (this.membershipMap[roomId] === undefined || this.membershipMap[roomId][userId] === undefined) {
             return {};
         }
@@ -74,7 +74,7 @@ export class MembershipCache {
      * @param membership The membership value to set for the user
      *                       e.g joined.
      */
-    setMemberEntry(roomId: string, userId: string, membership: UserMembership, profile: UserProfile) {
+    public setMemberEntry(roomId: string, userId: string, membership: UserMembership, profile: UserProfile): void {
         if (this.membershipMap[roomId] === undefined) {
             this.membershipMap[roomId] = {};
         }
@@ -91,11 +91,11 @@ export class MembershipCache {
      * Is a user considered registered with the homeserver.
      * @param userId A Matrix userId
      */
-    isUserRegistered(userId: string) {
+    public isUserRegistered(userId: string): boolean {
         return this.registeredUsers.has(userId);
     }
 
-    public getMembersForRoom(roomId: string, filterFor?: UserMembership) {
+    public getMembersForRoom(roomId: string, filterFor?: UserMembership): string[]|null {
         if (!this.membershipMap[roomId]) {
             return null;
         }

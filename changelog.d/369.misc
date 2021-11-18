@@ -1,0 +1,3 @@
+Refactor Encryption broker code to use the bot-sdk, and generally be more race-resistant when starting new sessions.
+
+**Breaking**: This change drops support for ephemeral events via the encryption broker, so ephemeral events MUST be enabled within the appservice registration to work.

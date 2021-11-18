@@ -37,7 +37,7 @@
     "js-yaml": "^4.0.0",
     "matrix-appservice": "^0.8.0",
     "matrix-bot-sdk": "^0.6.0-beta.2",
-    "matrix-js-sdk": "^9.9.0",
+    "matrix-js-sdk": "^12.4.1",
     "nedb": "^1.8.0",
     "nopt": "^5.0.0",
     "p-queue": "^6.6.2",

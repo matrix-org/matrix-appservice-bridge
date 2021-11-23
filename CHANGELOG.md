@@ -1,3 +1,28 @@
+ 3.2.0 (2021-11-23)
+===================
+
+Features
+--------
+
+- Add `bridge_app_version` metric, and utility functions to get the bridge app version. ([\#362](https://github.com/matrix-org/matrix-appservice-bridge/issues/362))
+
+
+Bugfixes
+--------
+
+- Do not retry membership queue operations after a 404 response. ([\#371](https://github.com/matrix-org/matrix-appservice-bridge/issues/371))
+
+
+Internal Changes
+----------------
+
+- Refactor Encryption broker code to use the bot-sdk, and generally be more race-resistant when starting new sessions.
+
+  **Breaking**: This change drops support for ephemeral events via the encryption broker, so ephemeral events MUST be enabled within the appservice registration to work. ([\#369](https://github.com/matrix-org/matrix-appservice-bridge/issues/369))
+- Clarify help text of matrix_api_calls_failed metric ([\#372](https://github.com/matrix-org/matrix-appservice-bridge/issues/372))
+- Update `matrix-appservice` to 0.10.0 ([\#374](https://github.com/matrix-org/matrix-appservice-bridge/issues/374))
+
+
 3.1.2 (2021-10-25)
 ===================
 

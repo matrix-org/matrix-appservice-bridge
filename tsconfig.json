@@ -1,17 +1,16 @@
 {
+  "extends": "@tsconfig/node14/tsconfig.json",
   "compilerOptions": {
     "incremental": true,
-    "target": "ES2019",
-    "module": "commonjs",
     "allowJs": true,
     "checkJs": false,
     "declaration": true,
     "sourceMap": true,
     "outDir": "./lib",
     "composite": false,
-    "strict": true,
-    "esModuleInterop": true,
     "strictNullChecks": true,
+    /* We don't support this yet */
+    "useUnknownInCatchVariables": false,
     "skipLibCheck": true, /* matrix-js-sdk throws up errors */
   },
   "include": [

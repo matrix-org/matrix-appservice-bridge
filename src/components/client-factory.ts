@@ -191,7 +191,7 @@ export class ClientFactory {
             localTimeoutMs: 1000 * 60 * 2, // Time out CS-API calls after 2mins
         };
         client = this.sdk.createClient(clientOpts);
-        client._http.opts._reqId = reqId; // FIXME gut wrenching
+        client.http.opts._reqId = reqId; // FIXME gut wrenching
 
         // add a listener for the completion of this request so we can cleanup
         // the clients we've made

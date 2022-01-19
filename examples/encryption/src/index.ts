@@ -16,7 +16,7 @@ limitations under the License.
 // Usage:
 // node index.js -r -u "http://localhost:9000" # remember to add the registration!
 // node index.js -p 9000
-import { Cli, Bridge, AppServiceRegistration, ClientEncryptionSession, ClientEncryptionStore, Logging} from 'matrix-appservice-bridge';
+import { Cli, Bridge, AppServiceRegistration, ClientEncryptionSession, ClientEncryptionStore, Logging} from '../../..';
 
 Logging.configure({
     console: "debug",
@@ -31,7 +31,10 @@ const encryptionStore: ClientEncryptionStore = {
     async setStoredSession(session: ClientEncryptionSession) {
         log.info("Set session", session.userId, session.deviceId);
         encMap.set(session.userId, session);
-    }
+    },
+    async updateSyncToken() {
+        // No-op
+    },
 };
 
 new Cli({
@@ -44,18 +47,18 @@ new Cli({
         reg.addRegexPattern("users", "@enc_.*", true);
         callback(reg);
     },
-    run: function (port, config) {
+    run: function (port, _config, registration) {
         let bridge: Bridge;
         bridge = new Bridge({
             homeserverUrl: "http://localhost:8008",
-            domain: "halfyxps",
+            domain: process.env.MATRIX_DOMAIN,
             registration: "enc-registration.yaml",
             bridgeEncryption: {
-                homeserverUrl: "http://localhost:8009",
+                homeserverUrl: "http://localhost:8004",
                 store: encryptionStore,
             },
             controller: {
-                onUserQuery: function (queriedUser) {
+                onUserQuery: function () {
                     return {}; // auto-provision users with no additonal data
                 },
 
@@ -63,15 +66,16 @@ new Cli({
                     const event = request.getData();
                     const bot = bridge.getBot();
                     const intent = bridge.getIntentFromLocalpart(`enc_${context.senders.matrix.localpart}`);
-                    console.log(event, bot.getUserId());
+                    console.log(request, bot.getUserId());
                     if (event.type === "m.room.member" &&
                         event.content.membership === "invite" &&
-                        event.state_key === "@encbot:halfyxps") {
+                        event.state_key === bot.getUserId()) {
                             console.log("Joining the room!");
                             try {
                                 await intent.join(event.room_id);
                                 console.log("Joined the room!");
-                            } catch (ex) {
+                            }
+                            catch (ex) {
                                 console.log("Err joining room:", ex);
                             }
                         return;
@@ -90,7 +94,10 @@ new Cli({
                 }
             }
         });
-        log.info("Matrix-side listening on port %s", port);
-        bridge.run(port, config);
+        const splitUrl = registration.getAppServiceUrl().split(":");
+        const urlPort = parseInt(splitUrl[splitUrl.length-1]);
+        port = port || urlPort || 8000;
+        bridge.run(port);
+        log.info(`Matrix-side listening on port ${port}`);
     }
 }).run();

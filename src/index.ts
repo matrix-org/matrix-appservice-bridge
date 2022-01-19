@@ -19,6 +19,7 @@ export * from "./components/request-factory";
 
 export * from "./components/client-factory";
 export * from "./components/encryption";
+export * from "./components/encrypted-intent";
 export * from "./components/intent";
 export * from "./components/room-link-validator";
 export * from "./components/room-upgrade-handler";
@@ -57,6 +58,8 @@ export * from "./components/event-types";
 export * from "./components/bridge-info-state";
 export * from "./components/user-activity";
 export * from "./components/bridge-blocker";
+
+export * from "./utils/package-info";
 
 export { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
 

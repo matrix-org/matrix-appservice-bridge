@@ -146,7 +146,7 @@ export class ProvisioningApi {
 
         this.baseRoute = router();
         if (opts.widgetFrontendLocation) {
-            this.app.use('/', express.static(opts.widgetFrontendLocation));
+            this.app.use('/v1/static', express.static(opts.widgetFrontendLocation));
         }
 
         if (limiter) {

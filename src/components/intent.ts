@@ -23,7 +23,6 @@ import Logging from "./logging";
 import { ReadStream } from "fs";
 import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
 import { WeakStateEvent } from "./event-types";
-import { url } from "inspector";
 
 const log = Logging.get("Intent");
 export type IntentBackingStore = {

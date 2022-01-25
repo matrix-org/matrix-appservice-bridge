@@ -14,7 +14,6 @@ limitations under the License.
 */
 const Datastore = require("nedb");
 const fs = require("fs");
-const log = require("../log");
 
 const EventBridgeStore = require("../..").EventBridgeStore;
 const StoredEvent = require("../..").StoredEvent;
@@ -26,7 +25,6 @@ describe("EventBridgeStore", function() {
     beforeEach(
     /** @this TestCase */
     function(done) {
-        log.beforeEach(this);
         db = new Datastore({
             filename: TEST_DB_PATH,
             autoload: true,

@@ -1,7 +1,6 @@
 "use strict";
 var Datastore = require("nedb");
 var fs = require("fs");
-var log = require("../log");
 
 var UserBridgeStore = require("../..").UserBridgeStore;
 var MatrixUser = require("../..").MatrixUser;
@@ -14,7 +13,6 @@ describe("UserBridgeStore", function() {
     beforeEach(
     /** @this TestCase */
     async function(done) {
-        log.beforeEach(this);
         db = new Datastore({
             filename: TEST_DB_PATH,
             autoload: true,

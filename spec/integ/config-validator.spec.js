@@ -1,6 +1,5 @@
 "use strict";
 const { ConfigValidator } = require("../..");
-var log = require("../log");
 
 describe("ConfigValidator", function() {
     var validator;
@@ -8,7 +7,6 @@ describe("ConfigValidator", function() {
     beforeEach(
     /** @this */
     function() {
-        log.beforeEach(this);
         validator = new ConfigValidator({
             type: "object",
             properties: {

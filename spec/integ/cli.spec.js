@@ -4,7 +4,6 @@ const { Cli } = require("../..");
 const { Logging } = require("../..");
 const path = require('path');
 const { defer } = require("../../lib/utils/promiseutil");
-Logging.configure();
 
 let tempDir;
 

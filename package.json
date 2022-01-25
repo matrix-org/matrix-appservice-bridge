@@ -33,6 +33,7 @@
     "@alloc/quick-lru": "^5.2.0",
     "axios": "^0.23.0",
     "chalk": "^4.1.0",
+    "express-rate-limit": "^6.2.0",
     "extend": "^3.0.2",
     "ip-cidr": "^3.0.4",
     "is-my-json-valid": "^2.20.5",

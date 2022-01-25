@@ -12,6 +12,7 @@ import { MatrixHostResolver } from "../utils/matrix-host-resolver";
 import IPCIDR from "ip-cidr";
 import { isIP } from "net";
 import { promises as dns } from "dns";
+import ratelimiter, { RateLimitInfo, Options as RatelimitOptions, AugmentedRequest } from "express-rate-limit";
 
 // Borrowed from
 // https://github.com/matrix-org/synapse/blob/91221b696156e9f1f9deecd425ae58af03ebb5d3/docs/sample_config.yaml#L215
@@ -94,6 +95,12 @@ export interface ProvisioningApiOpts {
      * Default is `/api`.
      */
     apiPrefix?: string;
+
+    /**
+     * Options for ratelimiting requests to the api server. Does not affect
+     * static content loading.
+     */
+    ratelimit?: boolean|RatelimitOptions;
 }
 
 
@@ -125,17 +132,33 @@ export class ProvisioningApi {
         this.opts.apiPrefix = opts.apiPrefix || "/provisioning";
         this.disallowedIpRanges = (opts.disallowedIpRanges || DefaultDisallowedIpRanges).map(ip => new IPCIDR(ip));
         this.app.get('/health', this.getHealth.bind(this));
+
+        const limiter = this.opts.ratelimit && ratelimiter({
+            handler: (req, _res, next) => {
+                const info = (req as AugmentedRequest).ratelimit as RateLimitInfo;
+                const retryAfterMs = info?.resetTime ? info.resetTime.getTime() - Date.now() : null;
+                next(new ApiError("Too many requests", ErrCode.Ratelimited, 429, { retry_after_ms: retryAfterMs }));
+            },
+            windowMs: 6 * 60 * 1000, // 5 minutes
+            max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+            ...(typeof this.opts.ratelimit === "object" ? this.opts.ratelimit : undefined)
+        });
+
+        this.baseRoute = router();
         if (opts.widgetFrontendLocation) {
             this.app.use('/', express.static(opts.widgetFrontendLocation));
         }
 
-        this.app.use((req: express.Request, res: express.Response, next: NextFunction) => {
+        if (limiter) {
+            this.baseRoute.use(limiter);
+        }
+
+        this.baseRoute.use((req: express.Request, res: express.Response, next: NextFunction) => {
             res.header('Access-Control-Allow-Origin', '*');
             res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
             next();
         });
 
-        this.baseRoute = router();
         this.baseRoute.use(express.json());
         // Unsecured requests
         this.baseRoute.post(

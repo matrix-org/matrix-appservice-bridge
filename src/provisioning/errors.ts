@@ -26,6 +26,8 @@ export enum ErrCode {
      * Couldn't complete the openId process.
      */
     BadOpenID = "M_AS_BAD_OPENID",
+
+    Ratelimited = "M_AS_LIMIT_EXCEEDED"
 }
 
 const ErrCodeToStatusCode: Record<ErrCode, number> = {
@@ -35,6 +37,7 @@ const ErrCodeToStatusCode: Record<ErrCode, number> = {
     M_AS_BAD_TOKEN: 401,
     M_AS_DISABLED_FEATURE: 500,
     M_AS_BAD_OPENID: 500,
+    M_AS_LIMIT_EXCEEDED: 429,
 }
 
 export class ApiError extends Error {

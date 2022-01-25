@@ -9,6 +9,33 @@ import { ApiError } from "./errors";
 import { ErrCode } from ".";
 import { URL } from "url";
 import { MatrixHostResolver } from "../utils/matrix-host-resolver";
+import IPCIDR from "ip-cidr";
+import { isIP } from "net";
+import { promises as dns } from "dns";
+
+// Borrowed from
+// https://github.com/matrix-org/synapse/blob/91221b696156e9f1f9deecd425ae58af03ebb5d3/docs/sample_config.yaml#L215
+export const DefaultDisallowedIpRanges = [
+    '127.0.0.0/8',
+    '10.0.0.0/8',
+    '172.16.0.0/12',
+    '192.168.0.0/16',
+    '100.64.0.0/10',
+    '192.0.0.0/24',
+    '169.254.0.0/16',
+    '192.88.99.0/24',
+    '198.18.0.0/15',
+    '192.0.2.0/24',
+    '198.51.100.0/24',
+    '203.0.113.0/24',
+    '224.0.0.0/4',
+    '::1/128',
+    'fe80::/10',
+    'fc00::/7',
+    '2001:db8::/32',
+    'ff00::/8',
+    'fec0::/10'
+]
 
 const log = Logs.get("ProvisioningApi");
 
@@ -33,6 +60,12 @@ export interface ProvisioningApiOpts {
      * only be used for testing.
      */
     openIdOverride?: {[serverName: string]: URL},
+    /**
+     * Disallow these IP ranges from being hit when handling OpenID requests. By default, a number of
+     * intenal ranges are blocked.
+     * @see DefaultDisallowedIpRanges
+     */
+    disallowedIpRanges?: string[];
     /**
      * Secret token for provisioning requests
      */
@@ -79,6 +112,7 @@ export class ProvisioningApi {
     private readonly widgetTokenPrefix: string;
     private readonly widgetTokenLifetimeMs: number;
     private readonly wellknown = new MatrixHostResolver();
+    private readonly disallowedIpRanges: IPCIDR[];
     constructor(protected store: ProvisioningStore, private opts: ProvisioningApiOpts) {
         this.app = express();
         this.app.use((req, _res, next) => {
@@ -89,7 +123,7 @@ export class ProvisioningApi {
         this.widgetTokenPrefix = opts.widgetTokenPrefix || DEFAULT_WIDGET_TOKEN_PREFIX;
         this.widgetTokenLifetimeMs = opts.widgetTokenLifetimeMs || DEFAULT_WIDGET_TOKEN_LIFETIME_MS;
         this.opts.apiPrefix = opts.apiPrefix || "/provisioning";
-
+        this.disallowedIpRanges = (opts.disallowedIpRanges || DefaultDisallowedIpRanges).map(ip => new IPCIDR(ip));
         this.app.get('/health', this.getHealth.bind(this));
         if (opts.widgetFrontendLocation) {
             this.app.use('/', express.static(opts.widgetFrontendLocation));
@@ -236,6 +270,22 @@ export class ProvisioningApi {
         res.send({ok: true});
     }
 
+    private async checkIpBlacklist(url: URL) {
+        const host = url.hostname;
+        let ip: string;
+        if (isIP(host)) {
+            ip = host;
+        }
+        else {
+            const record = await dns.lookup(host);
+            ip = record.address;
+        }
+
+        if (this.disallowedIpRanges.find(d => d.contains(ip))) {
+            throw new ApiError('Server is disallowed', ErrCode.BadOpenID);
+        }
+    }
+
     private async postExchangeOpenId(
         req: Request<unknown, unknown, ExchangeOpenAPIRequestBody>, res: Response<ExchangeOpenAPIResponseBody>) {
         const server = req.body?.matrixServer;
@@ -258,6 +308,7 @@ export class ProvisioningApi {
                 const urlRes = await this.wellknown.resolveMatrixServer(server);
                 hostHeader = urlRes.hostHeader;
                 url = urlRes.url;
+                await this.checkIpBlacklist(url);
             }
         }
         catch (ex) {

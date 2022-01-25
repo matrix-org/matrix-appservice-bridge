@@ -120,7 +120,7 @@ export class ProvisioningApi {
     private readonly widgetTokenLifetimeMs: number;
     private readonly wellknown = new MatrixHostResolver();
     private readonly disallowedIpRanges: IPCIDR[];
-    constructor(protected store: ProvisioningStore, private opts: ProvisioningApiOpts) {
+    constructor(protected store: ProvisioningStore, private opts: ProvisioningApiOpts = {}) {
         this.app = express();
         this.app.use((req, _res, next) => {
             log.info(`${req.method} ${req.path} ${req.ip || ''} ${req.headers["user-agent"] || ''}`);

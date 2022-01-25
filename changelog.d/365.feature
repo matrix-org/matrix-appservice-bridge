@@ -1,0 +1,1 @@
+Add new `Provisioning and Widgets API`, so that bridges can provide richer integration APIs

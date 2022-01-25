@@ -3,7 +3,6 @@ import { ProvisioningStore } from "./store";
 import { Server } from "http";
 import { v4 as uuid } from "uuid";
 import axios from "axios";
-import cors from "cors";
 import Logs from "../components/logging";
 import ProvisioningRequest from "./request";
 import { ApiError } from "./errors";

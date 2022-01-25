@@ -57,7 +57,7 @@ export class MatrixHostResolver {
 
     private static sortSrvRecords(a: SrvRecord, b: SrvRecord): number {
         // This algorithm is intentionally simple, as we're unlikely
-        // to encounter many Matrix servers that acatually load balance this way.
+        // to encounter many Matrix servers that actually load balance this way.
         const diffPrio = a.priority - b.priority;
         if (diffPrio != 0) {
             return diffPrio;

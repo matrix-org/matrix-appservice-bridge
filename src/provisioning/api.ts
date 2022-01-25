@@ -96,7 +96,12 @@ export class ProvisioningApi {
         if (opts.widgetFrontendLocation) {
             this.app.use('/', express.static(opts.widgetFrontendLocation));
         }
-        this.app.use(cors());
+
+        this.app.use((req: express.Request, res: express.Response, next: NextFunction) => {
+            res.header('Access-Control-Allow-Origin', '*');
+            res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+            next();
+        });
 
         this.baseRoute = router();
         this.baseRoute.use(express.json());
@@ -117,13 +122,15 @@ export class ProvisioningApi {
         this.app.use(this.opts.apiPrefix, this.baseRoute);
     }
 
-    public start(port: number, hostname = "0.0.0.0", backlog = 10): void {
+    public async start(port: number, hostname = "0.0.0.0", backlog = 10): Promise<void> {
         if (this.opts.expressApp) {
             log.warn(`Ignoring call to start(), api configured to use parent express app`);
             return;
         }
-        log.info(`Widget API listening on port ${port}`);
-        this.server = this.app.listen(port, hostname, backlog);
+        return new Promise((res) => {
+            this.server = this.app.listen(port, hostname, backlog, () => res());
+            log.info(`Widget API listening on port ${port}`);
+        });
     }
 
     public close(): Promise<void> {
@@ -203,7 +210,7 @@ export class ProvisioningApi {
 
     private async deleteSession(req: ProvisioningRequest, res: Response) {
         if (!req.widgetToken) {
-            req.log.debug("tried to delete session");
+            req.log.debug("tried to delete non-existent session");
             throw new ApiError("Session cannot be deleted", ErrCode.UnsupportedOperation);
         }
         try {
@@ -218,7 +225,7 @@ export class ProvisioningApi {
 
     private async deleteAllSessions(req: ProvisioningRequest, res: Response) {
         if (!req.widgetToken) {
-            req.log.debug("tried to delete session");
+            req.log.debug("tried to delete non-existent session");
             throw new ApiError("Session cannot be deleted", ErrCode.UnsupportedOperation);
         }
         try {

@@ -33,7 +33,6 @@
     "@alloc/quick-lru": "^5.2.0",
     "axios": "^0.23.0",
     "chalk": "^4.1.0",
-    "cors": "^2.8.5",
     "extend": "^3.0.2",
     "is-my-json-valid": "^2.20.5",
     "js-yaml": "^4.0.0",

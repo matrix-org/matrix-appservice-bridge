@@ -6,6 +6,7 @@ import axios from "axios";
 import cors from "cors";
 import Logs from "../components/logging";
 import ProvisioningRequest from "./request";
+import { ApiError } from "./errors";
 
 const log = Logs.get("ProvisioningApi");
 
@@ -92,6 +93,7 @@ export abstract class ProvisioningApi {
         this.addRoute("get", "/v1/session", this.getSession.bind(this));
         this.addRoute("delete", "/v1/session", this.getSession.bind(this));
         this.addRoute("delete", "/v1/session/all", this.getSession.bind(this));
+        this.baseRoute.use(this.onError);
 
         this.app.use(this.opts.apiPrefix, this.baseRoute);
     }
@@ -130,24 +132,21 @@ export abstract class ProvisioningApi {
     private authenticateRequest(req: Request, res: Response, next: NextFunction) {
         const authHeader = req.header("Authorization")?.toLowerCase();
         if (!authHeader) {
-            res.status(400).send({
-                error: 'No Authorization header'
-            });
-            return;
+            throw new ApiError('No Authorization header', ErrCode.BadToken);
         }
         const token = authHeader.startsWith("bearer ") && authHeader.substr("bearer ".length);
         if (!token) {
             return;
         }
         const requestProv = (req as ExpRequestProvisioner);
+        if (!this.opts.provisioningToken && req.body.userId) {
+            throw new ApiError('Provisioing feature disabled', ErrCode.DisabledFeature);
+        }
         if (token === this.opts.provisioningToken) {
             // Integration managers splice in the user_id in the body.
             const userId = req.body?.user_id;
             if (!userId) {
-                res.status(400).send({
-                    error: 'No user_id in body'
-                });
-                return;
+                throw new ApiError('No userId in body', ErrCode.BadValue);
             }
             requestProv.matrixUserId = userId;
             requestProv.matrixWidgetToken = undefined;
@@ -185,38 +184,28 @@ export abstract class ProvisioningApi {
     private async deleteSession(req: ProvisioningRequest, res: Response) {
         if (!req.widgetToken) {
             req.log.debug("tried to delete session");
-            res.status(400).send({
-                error: "Session cannot be deleted",
-            });
-            return;
+            throw new ApiError("Session cannot be deleted", ErrCode.UnsupportedOperation);
         }
         try {
             await this.store.deleteSession(req.widgetToken);
         }
         catch (ex) {
             req.log.error("Failed to delete session", ex);
-            res.status(500).send({
-                error: "Session could be deleted",
-            });
+            throw new ApiError("Session could not be deleted", ErrCode.Unknown);
         }
     }
 
     private async deleteAllSessions(req: ProvisioningRequest, res: Response) {
         if (!req.widgetToken) {
             req.log.debug("tried to delete session");
-            res.status(400).send({
-                error: "Session cannot be deleted",
-            });
-            return;
+            throw new ApiError("Session cannot be deleted", ErrCode.UnsupportedOperation);
         }
         try {
             await this.store.deleteAllSessions(req.userId);
         }
         catch (ex) {
             req.log.error("Failed to delete all sessions", ex);
-            res.status(500).send({
-                error: "Sessions could be deleted",
-            });
+            throw new ApiError("Sessions could not be deleted", ErrCode.Unknown);
         }
     }
 
@@ -238,11 +227,7 @@ export abstract class ProvisioningApi {
         }
         catch (ex) {
             log.warn(`Failed to fetch the server URL for ${server}`, ex);
-            // TODO: need better fail logic
-            res.status(500).send({
-                error: "Failed to fetch server url",
-            });
-            return;
+            throw new ApiError("Could not identify server url", ErrCode.BadOpenID);
         }
 
         // Now do the token exchange
@@ -254,9 +239,7 @@ export abstract class ProvisioningApi {
             });
             if (!response.data.sub) {
                 log.warn(`Server responded with invalid sub information for ${server}`, response.data);
-                res.status(500).send({
-                    error: "Server did not respond with the correct sub information",
-                });
+                throw new ApiError("Server did not respond with the correct sub information", ErrCode.BadOpenID);
                 return;
             }
             const userId = response.data.sub;
@@ -270,11 +253,30 @@ export abstract class ProvisioningApi {
             res.send({ token, userId });
         }
         catch (ex) {
-            log.warn(`Failed to exhcnage the token for ${server}`, ex);
-            res.status(500).send({
-                error: "Failed to exchange token",
-            });
+            log.warn(`Failed to exchnage the token for ${server}`, ex);
+            throw new ApiError("Failed to exchange token", ErrCode.BadOpenID);
+
+    // Needed so that _next can be defined in order to preserve signature.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    private onError(err: [unknown, ProvisioningRequest|Request], _req: Request, res: Response, _next: NextFunction) {
+        if (!err) {
             return;
+        }
+        const [error, request] = err;
+        if (request instanceof ProvisioningRequest) {
+            request.log.error(error);
+        }
+        else {
+            log.error(error);
+        }
+        if (res.headersSent) {
+            return;
+        }
+        if (err instanceof ApiError) {
+            err.apply(res);
+        }
+        else {
+            new ApiError("An internal error occured").apply(res);
         }
     }
 }

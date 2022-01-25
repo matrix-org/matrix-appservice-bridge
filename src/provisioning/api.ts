@@ -91,8 +91,8 @@ export abstract class ProvisioningApi {
         // addRoute ensures all successful requests are of type ProvisioningRequest
         this.baseRoute.use("/", this.authenticateRequest.bind(this));
         this.addRoute("get", "/v1/session", this.getSession.bind(this));
-        this.addRoute("delete", "/v1/session", this.getSession.bind(this));
-        this.addRoute("delete", "/v1/session/all", this.getSession.bind(this));
+        this.addRoute("delete", "/v1/session", this.deleteSession.bind(this));
+        this.addRoute("delete", "/v1/session/all", this.deleteAllSessions.bind(this));
         this.baseRoute.use(this.onError);
 
         this.app.use(this.opts.apiPrefix, this.baseRoute);

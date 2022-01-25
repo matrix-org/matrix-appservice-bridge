@@ -23,6 +23,7 @@ import Logging from "./logging";
 import { ReadStream } from "fs";
 import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
 import { WeakStateEvent } from "./event-types";
+import { url } from "inspector";
 
 const log = Logging.get("Intent");
 export type IntentBackingStore = {
@@ -77,6 +78,15 @@ export type PowerLevelContent = {
         [eventType: string]: unknown;
     }
 };
+
+export type WidgetOpts = {
+    name: string,
+    url: string,
+    data?: Record<string, unknown>,
+    type?: string,
+    waitForIframeLoad: boolean,
+    extra?: Record<string, unknown>,
+}
 
 type UserProfileKeys = "avatar_url"|"displayname"|null;
 
@@ -845,6 +855,46 @@ export class Intent {
         await this.ensureRegistered();
         // XXX: No function for this yet.
         return this.client.setRoomDirectoryVisibilityAppService(roomId, visibility, networkId);
+    }
+
+    /**
+     * Create a widget in a room.
+     * @param roomId The room to create the widget in.
+     * @param widgetId The widget ID
+     * @param opts Options for the widget.
+     * @returns An eventID if the event was created.
+     */
+    public async createWidget(roomId: string, widgetId: string, opts: WidgetOpts): Promise<string> {
+        return await this.matrixClient.sendStateEvent(
+            roomId,
+            "im.vector.modular.widgets",
+            widgetId,
+            {
+                creatorUserId: this.userId,
+                data: opts.data,
+                id: widgetId,
+                name: opts.name,
+                type: opts.type || "m.custom",
+                url: opts.url,
+                waitForIframeLoad: opts.waitForIframeLoad,
+                ...opts.extra,
+            }
+        );
+    }
+
+    /**
+     * Create a widget in a room, if one doesn't already exist
+     * @param roomId The room to create the widget in.
+     * @param widgetId The widget ID
+     * @param opts Options for the widget.
+     * @returns An eventID if the event was created, otherwise null.
+     */
+    public async ensureWidgetInRoom(roomId: string, widgetId: string, opts: WidgetOpts): Promise<string|null> {
+        const widgetState = await this.getStateEvent(roomId, "im.vector.modular.widgets", widgetId, true);
+        if (widgetState && widgetState.deleted !== true) {
+            return null;
+        }
+        return await this.createWidget(roomId, widgetId, opts);
     }
 
     /**

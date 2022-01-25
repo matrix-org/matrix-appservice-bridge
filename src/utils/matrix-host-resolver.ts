@@ -34,10 +34,15 @@ interface DnsInterface {
     resolveSrv(hostname: string): Promise<SrvRecord[]>;
 }
 
+/**
+ * Class to lookup the hostname, port and host headers of a given Matrix servername
+ * according to the
+ * [server discovery section of the spec](https://spec.matrix.org/v1.1/server-server-api/#server-discovery).
+ */
 export class MatrixHostResolver {
-
     private axios: Axios;
     private dns: DnsInterface;
+    private resultCache = new Map<string, CachedResult>();
 
     constructor(private readonly opts: {axios?: Axios, dns?: DnsInterface, currentTimeMs?: number} = {}) {
         // To allow for easier mocking.
@@ -49,9 +54,8 @@ export class MatrixHostResolver {
         return this.opts.currentTimeMs || Date.now();
     }
 
-    private resultCache = new Map<string, CachedResult>();
 
-    static sortSrvRecords(a: SrvRecord, b: SrvRecord): number {
+    private static sortSrvRecords(a: SrvRecord, b: SrvRecord): number {
         // This algorithm is intentionally simple, as we're unlikely
         // to encounter many Matrix servers that acatually load balance this way.
         const diffPrio = a.priority - b.priority;
@@ -61,7 +65,7 @@ export class MatrixHostResolver {
         return a.weight - b.weight;
     }
 
-    static determineHostType(serverName: string): {type: 4|6|"unknown", host: string, port?: number} {
+    private static determineHostType(serverName: string): {type: 4|6|"unknown", host: string, port?: number} {
         const hostPortPair = /(.+):(\d+)/.exec(serverName);
         let host = serverName;
         let port = undefined;
@@ -143,29 +147,35 @@ export class MatrixHostResolver {
         return { cacheFor, mServer };
     }
 
-    async resolveMatrixServerName(serverName: string): Promise<HostResolveResult> {
+    /**
+     * Resolves a Matrix serverName, fetching any delegated information.
+     * This request is NOT cached. For general use, please use `resolveMatrixServer`.
+     * @param hostname The Matrix `hostname` to resolve. e.g. `matrix.org`
+     * @returns An object describing the delegated details for the host.
+     */
+    async resolveMatrixServerName(hostname: string): Promise<HostResolveResult> {
         // https://spec.matrix.org/v1.1/server-server-api/#resolving-server-names
-        const { type, host, port } = MatrixHostResolver.determineHostType(serverName);
+        const { type, host, port } = MatrixHostResolver.determineHostType(hostname);
         // Step 1 - IP literal / Step 2
         if (type !== "unknown" || port) {
-            log.debug(`Resolved ${serverName} to be IP literal / non-ip literal with port`);
+            log.debug(`Resolved ${hostname} to be IP literal / non-ip literal with port`);
             return {
                 host,
                 port: port || DefaultMatrixServerPort,
                 // Host header should include the port
-                hostname: serverName,
+                hostname: hostname,
                 cacheFor: DefaultCacheForMs,
             }
         }
         // Step 3 - Well-known
         let wellKnownResponse: {mServer: string, cacheFor: number}|undefined = undefined;
         try {
-            wellKnownResponse = await this.getWellKnown(serverName);
-            log.debug(`Resolved ${serverName} to be well-known`);
+            wellKnownResponse = await this.getWellKnown(hostname);
+            log.debug(`Resolved ${hostname} to be well-known`);
         }
         catch (ex) {
             // Fall through to step 4.
-            log.debug(`No well-known found for ${serverName}: ${ex.message}`);
+            log.debug(`No well-known found for ${hostname}: ${ex.message}`);
         }
 
         if (wellKnownResponse) {
@@ -183,7 +193,7 @@ export class MatrixHostResolver {
             }
             // 3.3
             try {
-                const [srvResult] = (await this.dns.resolveSrv(`_matrix._tcp.${serverName}`))
+                const [srvResult] = (await this.dns.resolveSrv(`_matrix._tcp.${hostname}`))
                     .sort(MatrixHostResolver.sortSrvRecords);
                 return {
                     host: srvResult.name,
@@ -193,7 +203,7 @@ export class MatrixHostResolver {
                 };
             }
             catch (ex) {
-                log.debug(`No well-known SRV found for ${serverName}: ${ex.message}`);
+                log.debug(`No well-known SRV found for ${hostname}: ${ex.message}`);
             }
             // 3.4
             return {
@@ -207,17 +217,17 @@ export class MatrixHostResolver {
 
         // Step 4 - SRV
         try {
-            const [srvResult] = (await this.dns.resolveSrv(`_matrix._tcp.${serverName}`))
+            const [srvResult] = (await this.dns.resolveSrv(`_matrix._tcp.${hostname}`))
                 .sort(MatrixHostResolver.sortSrvRecords);
             return {
                 host: srvResult.name,
                 port: srvResult.port,
-                hostname: serverName,
+                hostname: hostname,
                 cacheFor: DefaultCacheForMs,
             };
         }
         catch (ex) {
-            log.debug(`No SRV found for ${serverName}: ${ex.message}`);
+            log.debug(`No SRV found for ${hostname}: ${ex.message}`);
         }
 
         // Step 5 - Normal resolve
@@ -225,48 +235,58 @@ export class MatrixHostResolver {
             host,
             port: port || DefaultMatrixServerPort,
             // Host header should include the port
-            hostname: serverName,
+            hostname: hostname,
             cacheFor: DefaultCacheForMs,
         }
     }
 
-
-    async getMatrixServerURL(serverName: string, skipCache = false): Promise<{url: URL, hostname: string}> {
-        const cachedResult = skipCache ? false : this.resultCache.get(serverName);
+    /**
+     * Resolves a Matrix serverName into the baseURL for federated requests, and the
+     * `Host` header to use when serving requests.
+     *
+     * Results are cached by default. Please note that failures are cached, determined by
+     * the constant `CacheFailureForMS`.
+     * @param hostname The Matrix `hostname` to resolve. e.g. `matrix.org`
+     * @param skipCache Should the request be executed regardless of the cached value? Existing cached values will
+     *                 be overwritten.
+     * @returns The baseurl of the Matrix server (excluding /_matrix/federation suffix), and the hostHeader to be used.
+     */
+    async resolveMatrixServer(hostname: string, skipCache = false): Promise<{url: URL, hostHeader: string}> {
+        const cachedResult = skipCache ? false : this.resultCache.get(hostname);
         if (cachedResult) {
             const cacheAge = this.currentTime - cachedResult.timestamp;
             if ("result" in cachedResult && cacheAge <= cachedResult.result.cacheFor) {
                 const result = cachedResult.result;
                 log.debug(
-                    `Cached result for ${serverName}, returning (alive for ${result.cacheFor - cacheAge}ms)`
+                    `Cached result for ${hostname}, returning (alive for ${result.cacheFor - cacheAge}ms)`
                 );
                 return {
                     url: new URL(`https://${result.host}:${result.port}/`),
-                    hostname: result.hostname,
+                    hostHeader: result.hostname,
                 };
             }
             else if ("error" in cachedResult && cacheAge <= CacheFailureForMS) {
                 log.debug(
-                    `Cached error for ${serverName}, throwing (alive for ${CacheFailureForMS - cacheAge}ms)`
+                    `Cached error for ${hostname}, throwing (alive for ${CacheFailureForMS - cacheAge}ms)`
                 );
                 throw cachedResult.error;
             }
             // Otherwise expired entry.
         }
         try {
-            const result = await this.resolveMatrixServerName(serverName);
+            const result = await this.resolveMatrixServerName(hostname);
             if (result.cacheFor) {
-                this.resultCache.set(serverName, { result, timestamp: this.currentTime});
+                this.resultCache.set(hostname, { result, timestamp: this.currentTime});
             }
-            log.debug(`No result cached for ${serverName}, caching result for ${result.cacheFor}ms`);
+            log.debug(`No result cached for ${hostname}, caching result for ${result.cacheFor}ms`);
             return {
                 url: new URL(`https://${result.host}:${result.port}/`),
-                hostname: result.hostname,
+                hostHeader: result.hostname,
             };
         }
         catch (error) {
-            this.resultCache.set(serverName, { error, timestamp: this.currentTime});
-            log.debug(`No result cached for ${serverName}, caching error for ${CacheFailureForMS}ms`);
+            this.resultCache.set(hostname, { error, timestamp: this.currentTime});
+            log.debug(`No result cached for ${hostname}, caching error for ${CacheFailureForMS}ms`);
             throw error;
         }
     }

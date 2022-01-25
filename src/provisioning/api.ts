@@ -123,9 +123,9 @@ export class ProvisioningApi {
     public async start(port: number, hostname = "0.0.0.0", backlog = 10): Promise<void> {
         if (this.opts.expressApp) {
             log.warn(`Ignoring call to start(), api configured to use parent express app`);
-            return;
+            return undefined;
         }
-        return new Promise((res) => {
+        return new Promise<void>((res) => {
             this.server = this.app.listen(port, hostname, backlog, () => res());
             log.info(`Widget API listening on port ${port}`);
         });
@@ -247,16 +247,16 @@ export class ProvisioningApi {
             throw new ApiError("Missing/invalid openIdToken in body", ErrCode.BadValue);
         }
         let url: URL;
-        let hostname: string;
+        let hostHeader: string;
         try {
             const overrideUrl = this.opts.openIdOverride?.[server];
             if (overrideUrl) {
                 url = overrideUrl;
-                hostname = server;
+                hostHeader = server;
             }
             else {
-                const urlRes = await this.wellknown.getMatrixServerURL(server);
-                hostname = urlRes.hostname;
+                const urlRes = await this.wellknown.resolveMatrixServer(server);
+                hostHeader = urlRes.hostHeader;
                 url = urlRes.url;
             }
         }
@@ -272,7 +272,7 @@ export class ProvisioningApi {
                     access_token: openIdToken,
                 },
                 headers: {
-                    'Host': hostname,
+                    'Host': hostHeader,
                 }
             });
             if (!response.data.sub) {

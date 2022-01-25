@@ -7,6 +7,7 @@ import cors from "cors";
 import Logs from "../components/logging";
 import ProvisioningRequest from "./request";
 import { ApiError } from "./errors";
+import { ErrCode } from ".";
 
 const log = Logs.get("ProvisioningApi");
 
@@ -19,11 +20,26 @@ interface ExpRequestProvisioner extends Request {
     matrixUserId: string;
 }
 
+export interface ExchangeOpenAPIRequestBody {
+    openIdToken: string;
+    matrixServer: string;
+}
+
+export interface ExchangeOpenAPIResponseBody {
+    token: string;
+    userId: string;
+}
+
 export interface ProvisioningApiOpts {
+    /**
+     * A set of Matrix server names to override the well known response to. Should
+     * only be used for testing.
+     */
+    openIdOverride?: {[serverName: string]: string},
     /**
      * Secret token for provisioning requests
      */
-    provisioningToken: string;
+    provisioningToken?: string;
     /**
      * For widget tokens, use this prefix.
      */
@@ -59,7 +75,7 @@ const DEFAULT_WIDGET_TOKEN_LIFETIME_MS = 24 * 60 * 60 * 1000; // One day
  *  - Integration managers which provide a unique secret token, and a userId
  *  - Widget users which provide a openId token.
  */
-export abstract class ProvisioningApi {
+export class ProvisioningApi {
     private app: Application;
     private server?: Server;
     protected baseRoute: Router;
@@ -74,22 +90,25 @@ export abstract class ProvisioningApi {
 
         this.widgetTokenPrefix = opts.widgetTokenPrefix || DEFAULT_WIDGET_TOKEN_PREFIX;
         this.widgetTokenLifetimeMs = opts.widgetTokenLifetimeMs || DEFAULT_WIDGET_TOKEN_LIFETIME_MS;
-        this.opts.apiPrefix = opts.apiPrefix || "/api";
+        this.opts.apiPrefix = opts.apiPrefix || "/provisioning";
 
         this.app.get('/health', this.getHealth.bind(this));
-        this.app.use(cors());
         if (opts.widgetFrontendLocation) {
             this.app.use('/', express.static(opts.widgetFrontendLocation));
         }
+        this.app.use(cors());
 
         this.baseRoute = router();
         this.baseRoute.use(express.json());
         // Unsecured requests
-        this.baseRoute.post(`/v1/exchange_openid`, (req, res) => this.postExchangeOpenId(req, res));
+        this.baseRoute.post(
+            `/v1/exchange_openid`,
+            (req, res, next) => this.postExchangeOpenId(req, res).catch(ex => next(ex))
+        );
 
         // Secure requests
         // addRoute ensures all successful requests are of type ProvisioningRequest
-        this.baseRoute.use("/", this.authenticateRequest.bind(this));
+        this.baseRoute.use((req, res, next) => this.authenticateRequest(req, res, next).catch(ex => next([ex, req])));
         this.addRoute("get", "/v1/session", this.getSession.bind(this));
         this.addRoute("delete", "/v1/session", this.deleteSession.bind(this));
         this.addRoute("delete", "/v1/session/all", this.deleteAllSessions.bind(this));
@@ -103,20 +122,20 @@ export abstract class ProvisioningApi {
             log.warn(`Ignoring call to start(), api configured to use parent express app`);
             return;
         }
-        log.info(`Widget API listening on port ${port}`)
+        log.info(`Widget API listening on port ${port}`);
         this.server = this.app.listen(port, hostname, backlog);
     }
 
-    public close(): void {
-        this.server?.close();
+    public close(): Promise<void> {
+        return new Promise((res, rej) => this.server?.close(e => e ? rej(e) : res()));
     }
 
     public addRoute(
         method: "get"|"post"|"delete"|"put",
         path: string,
-        handler: (req: ProvisioningRequest, res: Response, next: NextFunction) => void|Promise<void>,
+        handler: (req: ProvisioningRequest, res: Response, next?: NextFunction) => void|Promise<void>,
         fnName?: string,): void {
-        this.baseRoute[method](path, (req, res, next) => {
+        this.baseRoute[method](path, async (req, res, next) => {
             const expRequest = req as ExpRequestProvisioner;
             const provisioningRequest = new ProvisioningRequest(
                 expRequest,
@@ -125,11 +144,18 @@ export abstract class ProvisioningApi {
                 expRequest.matrixWidgetToken,
                 fnName,
             );
-            handler(provisioningRequest, res, next);
+            try {
+                await handler(provisioningRequest, res, next);
+            }
+            catch (ex) {
+                // Pass to error handler.
+                next([ex, provisioningRequest]);
+            }
         });
     }
 
-    private authenticateRequest(req: Request, res: Response, next: NextFunction) {
+    private async authenticateRequest(
+        req: Request<unknown, unknown, {userId?: string}>, res: Response, next: NextFunction) {
         const authHeader = req.header("Authorization")?.toLowerCase();
         if (!authHeader) {
             throw new ApiError('No Authorization header', ErrCode.BadToken);
@@ -144,7 +170,7 @@ export abstract class ProvisioningApi {
         }
         if (token === this.opts.provisioningToken) {
             // Integration managers splice in the user_id in the body.
-            const userId = req.body?.user_id;
+            const userId = req.body?.userId;
             if (!userId) {
                 throw new ApiError('No userId in body', ErrCode.BadValue);
             }
@@ -153,22 +179,16 @@ export abstract class ProvisioningApi {
             next();
             return;
         }
-        this.store.getSessionForToken(token).then(session => {
-            if (session.expiresTs < Date.now()) {
-                this.store.deleteSession(token);
-                throw Error('Token expired');
-            }
+        const session = await this.store.getSessionForToken(token);
+        if (session.expiresTs < Date.now()) {
+            this.store.deleteSession(token);
+            throw new ApiError('Token expired', ErrCode.BadToken);
+        }
 
-            requestProv.matrixUserId = session.userId;
-            requestProv.matrixWidgetToken = token;
-            next();
-        }).catch(() => {
-            res.status(401).send({
-                error: 'Could not authenticate with token'
-            });
-        });
+        requestProv.matrixUserId = session.userId;
+        requestProv.matrixWidgetToken = token;
+        next();
     }
-
 
     private getHealth(req: Request, res: Response) {
         res.send({ok: true});
@@ -193,6 +213,7 @@ export abstract class ProvisioningApi {
             req.log.error("Failed to delete session", ex);
             throw new ApiError("Session could not be deleted", ErrCode.Unknown);
         }
+        res.send({ok: true});
     }
 
     private async deleteAllSessions(req: ProvisioningRequest, res: Response) {
@@ -207,22 +228,36 @@ export abstract class ProvisioningApi {
             req.log.error("Failed to delete all sessions", ex);
             throw new ApiError("Sessions could not be deleted", ErrCode.Unknown);
         }
+        res.send({ok: true});
     }
 
-    private async postExchangeOpenId(req: Request, res: Response) {
+    private async postExchangeOpenId(
+        req: Request<unknown, unknown, ExchangeOpenAPIRequestBody>, res: Response<ExchangeOpenAPIResponseBody>) {
         const server = req.body?.matrixServer;
         const openIdToken = req.body?.openIdToken;
+        if (typeof server !== "string") {
+            throw new ApiError("Missing/invalid matrixServer in body", ErrCode.BadValue);
+        }
+        if (typeof openIdToken !== "string") {
+            throw new ApiError("Missing/invalid openIdToken in body", ErrCode.BadValue);
+        }
         let url: string;
-        // TODO: Need a MUCH better impl:
         try {
-            const wellKnown = await axios.get<MatrixServerWellKnown>(`https://${server}/.well-known/matrix/server`, {
-                validateStatus: null
-            });
-            if (wellKnown.status === 200) {
-                url = `https://${wellKnown.data["m.server"]}`;
+            if (this.opts.openIdOverride?.[server]) {
+                url = this.opts.openIdOverride?.[server]
             }
             else {
-                url = `https://${server}:8448`;
+                // TODO: Need a MUCH better impl:
+                const wellKnown = await axios.get<MatrixServerWellKnown>(
+                    `https://${server}/.well-known/matrix/server`, {
+                    validateStatus: null
+                });
+                if (wellKnown.status === 200) {
+                    url = `https://${wellKnown.data["m.server"]}`;
+                }
+                else {
+                    url = `https://${server}:8448`;
+                }
             }
         }
         catch (ex) {
@@ -255,6 +290,8 @@ export abstract class ProvisioningApi {
         catch (ex) {
             log.warn(`Failed to exchnage the token for ${server}`, ex);
             throw new ApiError("Failed to exchange token", ErrCode.BadOpenID);
+        }
+    }
 
     // Needed so that _next can be defined in order to preserve signature.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

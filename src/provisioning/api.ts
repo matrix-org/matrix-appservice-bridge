@@ -7,12 +7,10 @@ import Logs from "../components/logging";
 import ProvisioningRequest from "./request";
 import { ApiError } from "./errors";
 import { ErrCode } from ".";
+import { URL } from "url";
+import { MatrixHostResolver } from "../utils/matrix-host-resolver";
 
 const log = Logs.get("ProvisioningApi");
-
-interface MatrixServerWellKnown {
-    "m.server": string;
-}
 
 interface ExpRequestProvisioner extends Request {
     matrixWidgetToken?: string;
@@ -34,7 +32,7 @@ export interface ProvisioningApiOpts {
      * A set of Matrix server names to override the well known response to. Should
      * only be used for testing.
      */
-    openIdOverride?: {[serverName: string]: string},
+    openIdOverride?: {[serverName: string]: URL},
     /**
      * Secret token for provisioning requests
      */
@@ -80,6 +78,7 @@ export class ProvisioningApi {
     protected baseRoute: Router;
     private readonly widgetTokenPrefix: string;
     private readonly widgetTokenLifetimeMs: number;
+    private readonly wellknown = new MatrixHostResolver();
     constructor(protected store: ProvisioningStore, private opts: ProvisioningApiOpts) {
         this.app = express();
         this.app.use((req, _res, next) => {
@@ -247,23 +246,18 @@ export class ProvisioningApi {
         if (typeof openIdToken !== "string") {
             throw new ApiError("Missing/invalid openIdToken in body", ErrCode.BadValue);
         }
-        let url: string;
+        let url: URL;
+        let hostname: string;
         try {
-            if (this.opts.openIdOverride?.[server]) {
-                url = this.opts.openIdOverride?.[server]
+            const overrideUrl = this.opts.openIdOverride?.[server];
+            if (overrideUrl) {
+                url = overrideUrl;
+                hostname = server;
             }
             else {
-                // TODO: Need a MUCH better impl:
-                const wellKnown = await axios.get<MatrixServerWellKnown>(
-                    `https://${server}/.well-known/matrix/server`, {
-                    validateStatus: null
-                });
-                if (wellKnown.status === 200) {
-                    url = `https://${wellKnown.data["m.server"]}`;
-                }
-                else {
-                    url = `https://${server}:8448`;
-                }
+                const urlRes = await this.wellknown.getMatrixServerURL(server);
+                hostname = urlRes.hostname;
+                url = urlRes.url;
             }
         }
         catch (ex) {
@@ -277,6 +271,9 @@ export class ProvisioningApi {
                 params: {
                     access_token: openIdToken,
                 },
+                headers: {
+                    'Host': hostname,
+                }
             });
             if (!response.data.sub) {
                 log.warn(`Server responded with invalid sub information for ${server}`, response.data);

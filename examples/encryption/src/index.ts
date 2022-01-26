@@ -18,9 +18,6 @@ limitations under the License.
 // node index.js -p 9000
 import { Cli, Bridge, AppServiceRegistration, ClientEncryptionSession, ClientEncryptionStore, Logging} from '../../..';
 
-Logging.configure({
-    console: "debug",
-});
 const log = Logging.get("index");
 
 const encMap = new Map<string, ClientEncryptionSession>();

@@ -1,5 +1,4 @@
 "use strict";
-const log = require("../log");
 const { StateLookup } = require("../..");
 const promiseutil = require("../../lib/utils/promiseutil");
 
@@ -9,7 +8,6 @@ describe("StateLookup", function() {
     beforeEach(
     /** @this */
     function() {
-        log.beforeEach(this);
         intent = jasmine.createSpyObj("intent", ["roomState"]);
         lookup = new StateLookup({
             eventTypes: ["m.room.member", "m.room.name"],

@@ -60,8 +60,12 @@ export * from "./components/user-activity";
 export * from "./components/bridge-blocker";
 
 export * from "./utils/package-info";
+export * from "./utils/matrix-host-resolver";
 
 export { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
+
+// Provisioning APIs
+export * from "./provisioning";
 
 
 /* eslint-disable @typescript-eslint/no-var-requires */

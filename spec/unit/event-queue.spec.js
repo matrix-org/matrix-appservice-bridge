@@ -1,5 +1,4 @@
 "use strict";
-const log = require("../log");
 
 const EventQueue = require("../../lib/components/event-queue").EventQueue;
 
@@ -76,7 +75,6 @@ describe("EventQueue", function() {
     beforeEach(
     /** @this */
     function() {
-        log.beforeEach(this);
         jasmine.addMatchers(customMatchers);
 
         callbackData = [[new Date().getTime(), null]];

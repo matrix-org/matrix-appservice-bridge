@@ -1,7 +1,6 @@
 "use strict";
 const Datastore = require("nedb");
 const fs = require("fs");
-const log = require("../log");
 
 const RoomBridgeStore = require("../..").RoomBridgeStore;
 const MatrixRoom = require("../..").MatrixRoom;
@@ -14,7 +13,6 @@ describe("RoomBridgeStore", function () {
     beforeEach(
         /** @this */
         function (done) {
-            log.beforeEach(this);
             db = new Datastore({
                 filename: TEST_DB_PATH,
                 autoload: true,

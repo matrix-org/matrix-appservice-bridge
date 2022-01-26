@@ -1054,7 +1054,7 @@ export class Bridge {
     /**
      * Retrieve the connected user activity store instance.
      */
-    public getUserActivityStore() {
+    public getUserActivityStore(): UserActivityStore|undefined {
         return this.userActivityStore;
     }
 

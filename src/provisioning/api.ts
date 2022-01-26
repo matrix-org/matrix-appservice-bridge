@@ -228,7 +228,7 @@ export class ProvisioningApi {
         }
         const requestProv = (req as ExpRequestProvisioner);
         if (!this.opts.provisioningToken && req.body.userId) {
-            throw new ApiError('Provisioing feature disabled', ErrCode.DisabledFeature);
+            throw new ApiError('Provisioning feature disabled', ErrCode.DisabledFeature);
         }
         if (token === this.opts.provisioningToken) {
             // Integration managers splice in the user_id in the body.

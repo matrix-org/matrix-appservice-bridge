@@ -6,7 +6,7 @@ import axios from "axios";
 import Logs from "../components/logging";
 import ProvisioningRequest from "./request";
 import { ApiError } from "./errors";
-import { ErrCode } from ".";
+import { ErrCode, IApiError } from ".";
 import { URL } from "url";
 import { MatrixHostResolver } from "../utils/matrix-host-resolver";
 import IPCIDR from "ip-cidr";
@@ -352,7 +352,6 @@ export class ProvisioningApi {
             if (!response.data.sub) {
                 log.warn(`Server responded with invalid sub information for ${server}`, response.data);
                 throw new ApiError("Server did not respond with the correct sub information", ErrCode.BadOpenID);
-                return;
             }
             const userId = response.data.sub;
             const token = this.widgetTokenPrefix + uuid().replace(/-/g, "");
@@ -371,8 +370,9 @@ export class ProvisioningApi {
     }
 
     // Needed so that _next can be defined in order to preserve signature.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    private onError(err: [unknown, ProvisioningRequest|Request], _req: Request, res: Response, _next: NextFunction) {
+    private onError(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        err: [IApiError|Error, ProvisioningRequest|Request], _req: Request, res: Response, _next: NextFunction) {
         if (!err) {
             return;
         }
@@ -386,8 +386,8 @@ export class ProvisioningApi {
         if (res.headersSent) {
             return;
         }
-        if (err instanceof ApiError) {
-            err.apply(res);
+        if ("apply" in error && typeof error.apply === "function") {
+            error.apply(res);
         }
         else {
             new ApiError("An internal error occured").apply(res);

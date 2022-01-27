@@ -2,7 +2,7 @@ import Logging, { LogWrapper } from "../components/logging";
 import crypto from "crypto";
 import { ThinRequest } from "..";
 
-export default class ProvisioningRequest<
+export class ProvisioningRequest<
     Body = Record<string, unknown>, Params = Record<string, unknown>
     > implements ThinRequest {
     public readonly log: LogWrapper;

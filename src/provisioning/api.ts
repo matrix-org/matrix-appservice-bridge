@@ -242,8 +242,11 @@ export class ProvisioningApi {
             return;
         }
         const session = await this.store.getSessionForToken(token);
+        if (!session) {
+            throw new ApiError('Token not found', ErrCode.BadToken);
+        }
         if (session.expiresTs < Date.now()) {
-            this.store.deleteSession(token);
+            await this.store.deleteSession(token);
             throw new ApiError('Token expired', ErrCode.BadToken);
         }
 

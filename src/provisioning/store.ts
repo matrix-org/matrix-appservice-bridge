@@ -6,8 +6,9 @@ export interface ProvisionSession {
     expiresTs: number;
 }
 
+
 export interface ProvisioningStore {
-    getSessionForToken(token: string): Promise<ProvisionSession>|ProvisionSession;
+    getSessionForToken(token: string): Promise<ProvisionSession|null>|ProvisionSession|null;
     createSession(session: ProvisionSession): Promise<void>|void;
     deleteSession(token: string): Promise<void>|void;
     deleteAllSessions(userId: string): Promise<void>|void;
@@ -16,10 +17,10 @@ export interface ProvisioningStore {
 export class MemoryProvisioningStore implements ProvisioningStore {
     private readonly sessions = new Map<string, ProvisionSession>();
 
-    public getSessionForToken(token: string): ProvisionSession {
+    public getSessionForToken(token: string): ProvisionSession|null {
         const session = this.sessions.get(token);
         if (!session) {
-            throw new ApiError("Token not recognised", ErrCode.BadToken);
+            return null;
         }
         return session;
     }

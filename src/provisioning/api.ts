@@ -40,7 +40,7 @@ const log = Logs.get("ProvisioningApi");
 
 interface ExpRequestProvisioner extends Request {
     matrixWidgetToken?: string;
-    matrixUserId: string;
+    matrixUserId: string|null;
 }
 
 export interface ExchangeOpenAPIRequestBody {
@@ -172,7 +172,12 @@ export class ProvisioningApi {
         this.addRoute("delete", "/v1/session/all", this.deleteAllSessions.bind(this));
         this.baseRoute.use(this.onError);
 
-        this.app.use(this.opts.apiPrefix, this.baseRoute);
+        if (this.opts.expressApp) {
+            this.opts.expressApp.use(this.opts.apiPrefix, this.baseRoute);
+        }
+        else {
+            this.app.use(this.opts.apiPrefix, this.baseRoute);
+        }
     }
 
     public async start(port: number, hostname = "0.0.0.0", backlog = 10): Promise<void> {
@@ -194,7 +199,7 @@ export class ProvisioningApi {
         method: "get"|"post"|"delete"|"put",
         path: string,
         handler: (req: ProvisioningRequest, res: Response, next?: NextFunction) => void|Promise<void>,
-        fnName?: string,): void {
+        fnName?: string): void {
         this.baseRoute[method](path, async (req, res, next) => {
             const expRequest = req as ExpRequestProvisioner;
             const provisioningRequest = new ProvisioningRequest(
@@ -215,12 +220,14 @@ export class ProvisioningApi {
     }
 
     private async authenticateRequest(
-        req: Request<unknown, unknown, {userId?: string}>, res: Response, next: NextFunction) {
+        // Historically, user_id has been used. The bridge library supports either.
+        // eslint-disable-next-line camelcase
+        req: Request<unknown, unknown, {userId?: string, user_id?: string}>, res: Response, next: NextFunction) {
         const authHeader = req.header("Authorization")?.toLowerCase();
         if (!authHeader) {
             throw new ApiError('No Authorization header', ErrCode.BadToken);
         }
-        const token = authHeader.startsWith("bearer ") && authHeader.substr("bearer ".length);
+        const token = authHeader.startsWith("bearer ") && authHeader.substring("bearer ".length);
         if (!token) {
             return;
         }
@@ -230,11 +237,8 @@ export class ProvisioningApi {
         }
         if (token === this.opts.provisioningToken) {
             // Integration managers splice in the user_id in the body.
-            const userId = req.body?.userId;
-            if (!userId) {
-                throw new ApiError('No userId in body', ErrCode.BadValue);
-            }
-            requestProv.matrixUserId = userId;
+            // Sometimes it's not required though.
+            requestProv.matrixUserId = req.body?.userId || req.body?.user_id || null;
             requestProv.matrixWidgetToken = undefined;
             next();
             return;
@@ -283,6 +287,9 @@ export class ProvisioningApi {
         if (!req.widgetToken) {
             req.log.debug("tried to delete non-existent session");
             throw new ApiError("Session cannot be deleted", ErrCode.UnsupportedOperation);
+        }
+        if (!req.userId) {
+            throw new ApiError("")
         }
         try {
             await this.store.deleteAllSessions(req.userId);
@@ -372,12 +379,13 @@ export class ProvisioningApi {
 
     // Needed so that _next can be defined in order to preserve signature.
     private onError(
+        err: [IApiError|Error, ProvisioningRequest|Request]|IApiError|Error,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        err: [IApiError|Error, ProvisioningRequest|Request], _req: Request, res: Response, _next: NextFunction) {
+        _req: Request, res: Response, _next: NextFunction) {
         if (!err) {
             return;
         }
-        const [error, request] = err;
+        const [error, request] = Array.isArray(err) ? err : [err, undefined];
         if (request instanceof ProvisioningRequest) {
             request.log.error(error);
         }

@@ -11,7 +11,7 @@ export class ProvisioningRequest<
 
     constructor(
         private expressReq: {body: Body, params: Params, path?: string},
-        public readonly userId: string,
+        public readonly userId: string|null,
         public readonly requestSource: "widget"|"provisioner",
         public readonly widgetToken?: string,
         public readonly fnName?: string,

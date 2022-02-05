@@ -1,0 +1,1 @@
+Logging in as an appservice user (for encryption support) now uses `m.login.application_service` rather than the unstable prefix. This may break on homeservers that are not up to date with Matrix v1.2.

@@ -40,10 +40,18 @@ const ErrCodeToStatusCode: Record<ErrCode, number> = {
     M_AS_LIMIT_EXCEEDED: 429,
 }
 
-export class ApiError extends Error {
+export interface IApiError {
+    readonly error: string;
+    readonly errcode: string;
+    readonly statusCode: number;
+    apply(response: Response): void;
+}
+
+
+export class ApiError extends Error implements IApiError {
     constructor(
         public readonly error: string,
-        public readonly errcode = ErrCode.Unknown,
+        public readonly errcode: ErrCode = ErrCode.Unknown,
         public readonly statusCode = -1,
         public readonly additionalContent: Record<string, unknown> = {},
     ) {

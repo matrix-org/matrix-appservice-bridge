@@ -2,7 +2,7 @@ import Logging, { LogWrapper } from "../components/logging";
 import crypto from "crypto";
 import { ThinRequest } from "..";
 
-export default class ProvisioningRequest<
+export class ProvisioningRequest<
     Body = Record<string, unknown>, Params = Record<string, unknown>
     > implements ThinRequest {
     public readonly log: LogWrapper;
@@ -11,7 +11,7 @@ export default class ProvisioningRequest<
 
     constructor(
         private expressReq: {body: Body, params: Params, path?: string},
-        public readonly userId: string,
+        public readonly userId: string|null,
         public readonly requestSource: "widget"|"provisioner",
         public readonly widgetToken?: string,
         public readonly fnName?: string,

@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  pull_request:
+
+jobs:
+
+  changelog:
+    if: ${{ github.base_ref == 'develop'  || contains(github.base_ref, 'release-') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v2
+      - run: pip install towncrier==19.2.0
+      - run: scripts/check-newsfragment
+        env:
+          PULL_REQUEST_NUMBER: ${{ github.event.number }}
+
+
+
+  test-14:
+    runs-on: ubuntu-20.04
+    container: node:14
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      - run: yarn --frozen-lockfile
+      - run: yarn build && yarn test
+
+  test-16:
+    runs-on: ubuntu-20.04
+    container: node:16
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - run: yarn --frozen-lockfile
+      - run: yarn build && yarn test

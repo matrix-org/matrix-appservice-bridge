@@ -1,0 +1,50 @@
+name: Build docs
+
+on:
+  release:
+    types: [published]
+
+  workflow_dispatch:
+
+jobs:
+  docs:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: get-npm-version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@master
+
+      - uses: actions/checkout@v2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16
+
+      - run: yarn --frozen-lockfile
+
+      - run: yarn gendoc
+
+      - name: Deploy v${{ steps.package-version.outputs.current-version }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          keep_files: true
+          publish_dir: ./
+          destination_dir: ./v${{ steps.package-version.outputs.current-version }}
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v2
+        with:
+          branch: gh-pages
+
+      - run: node insert-new-version.js v${{ steps.package-version.outputs.current-version }} > index.html
+
+      - uses: github-actions-x/commit@v2.8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          push-branch: 'gh-pages'
+          commit-message: publish v${{ steps.package-version.outputs.current-version }}
+          files: v${{ steps.package-version.outputs.current-version }} index.html
+          name: Github Actions
+          email: actions@github.com 

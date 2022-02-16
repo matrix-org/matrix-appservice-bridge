@@ -34,6 +34,6 @@ export function defer<T>(): Defer<T> {
     };
 }
 
-export function delay(delayMs: number) {
+export function delay(delayMs: number): Promise<void> {
     return new Promise((r) => setTimeout(r, delayMs));
 }

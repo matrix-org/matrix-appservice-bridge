@@ -56,7 +56,7 @@ import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent
 import * as BotSDK from "matrix-bot-sdk";
 import { ActivityTracker, ActivityTrackerOpts } from "./components/activity-tracker";
 import { EncryptedIntent, EncryptedIntentOpts } from "./components/encrypted-intent";
-import e = require("express");
+import { ExtensibleEvent, ExtensibleEvents, NoticeEvent } from "matrix-events-sdk";
 
 const log = logging.get("bridge");
 
@@ -74,8 +74,27 @@ const RECEIPT_CUTOFF_TIME_MS = 60000;
 export interface BridgeController {
     /**
      * The bridge will invoke when an event has been received from the HS.
+     *
+     * When using `unstableOnExtensibleEvent`, events that are parsed as
+     * extensible events will not be emitted from this callback.
      */
     onEvent: (request: Request<WeakEvent>, context?: BridgeContext) => void;
+
+    /**
+     * The bridge will invoke this an event has been received from the HS. The event
+     * object will be an extensible event.
+     *
+     * If an event is successfully parsed as an extensible event, it will be
+     * emitted through this callback. If it is not parsed, it will be emitted
+     * through `onEvent`.
+     *
+     * This callback is unstable and may break at any time.
+     *
+     * @see https://github.com/matrix-org/matrix-events-sdk
+     * @see https://github.com/matrix-org/matrix-doc/pull/1767
+     */
+    unstableOnExtensibleEvent?: (
+        request: Request<ExtensibleEvent>, context?: BridgeContext) => void;
     /**
      * The bridge will invoke this when a typing, read reciept or presence event
      * is received from the HS. **This will only work with the `bridgeEncryption`
@@ -774,6 +793,8 @@ export class Bridge {
         });
         this.appservice.onUserQuery = (userId) => this.onUserQuery(userId);
         this.appservice.onAliasQuery = this.onAliasQuery.bind(this);
+
+
         this.appservice.on("event", async (event) => {
             let passthrough = true;
             const weakEvent = event as WeakEvent;
@@ -1432,7 +1453,16 @@ export class Bridge {
             }
         }
 
-        const request = this.requestFactory.newRequest({ data: event });
+        // Extensible events
+        let request: Request<ExtensibleEvent|WeakEvent>;
+        const extensibleEvent = this.opts.controller.unstableOnExtensibleEvent && ExtensibleEvents.parse(event);
+        if (extensibleEvent) {
+            request = this.requestFactory.newRequest({ data: extensibleEvent });
+        }
+        else {
+            request = this.requestFactory.newRequest({ data: event });
+        }
+
         const contextReady = this.getBridgeContext(event);
         const dataReady = contextReady.then(context => ({ request, context }));
 
@@ -1483,14 +1513,23 @@ export class Bridge {
         return promise;
     }
 
-    private onConsume(err: Error|null, data: { request: Request<WeakEvent>, context?: BridgeContext}) {
+    private onConsume(err: Error|null, data: { request: Request<WeakEvent|ExtensibleEvent>, context?: BridgeContext}) {
         if (err) {
             // The data for the event could not be retrieved.
             this.onLog("onEvent failure: " + err, true);
             return;
         }
+        const { onEvent, unstableOnExtensibleEvent } = this.opts.controller;
+        const evt = data.request.getData();
+        // unstableOnExtensibleEvent is ALWAYS defined if evt is ExtensibleEvent, because
+        // we only parse EE when unstableOnExtensibleEvent is truthy.
+        if (unstableOnExtensibleEvent && evt instanceof ExtensibleEvent) {
+            unstableOnExtensibleEvent(data.request as unknown as Request<ExtensibleEvent>, data.context);
+        }
+        else {
+            onEvent(data.request as unknown as Request<WeakEvent>, data.context);
+        }
 
-        this.opts.controller.onEvent(data.request, data.context);
     }
 
     // eslint-disable-next-line camelcase

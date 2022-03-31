@@ -8,7 +8,7 @@ import LRU from "@alloc/quick-lru"
 
 const log = Logging.get("EncryptedEventBroker");
 
-export const APPSERVICE_LOGIN_TYPE = "uk.half-shot.msc2778.login.application_service";
+export const APPSERVICE_LOGIN_TYPE = "m.login.application_service";
 const EVENT_CACHE_FOR_MS = 5 * 60000; // 5 minutes
 
 interface PantalaimonWeakEvent extends WeakEvent {

@@ -349,7 +349,8 @@ export class ProvisioningApi {
 
         // Now do the token exchange
         try {
-            const response = await axios.get<{sub: string}>(`${url}/_matrix/federation/v1/openid/userinfo`, {
+            const requestUrl = new URL("/_matrix/federation/v1/openid/userinfo", url);
+            const response = await axios.get<{sub: string}>(requestUrl.toString(), {
                 params: {
                     access_token: openIdToken,
                 },

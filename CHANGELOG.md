@@ -1,4 +1,27 @@
- 3.2.0 (2021-11-23)
+4.0.0 (2022-03-31)
+==================
+
+Features
+--------
+
+- Add new `Provisioning and Widgets API`, so that bridges can provide richer integration APIs ([\#365](https://github.com/matrix-org/matrix-appservice-bridge/issues/365), [\#388](https://github.com/matrix-org/matrix-appservice-bridge/issues/388))
+
+
+Deprecations and Removals
+-------------------------
+
+- Drop support for Node 12. Support Node 14+. ([\#382](https://github.com/matrix-org/matrix-appservice-bridge/issues/382))
+
+
+Internal Changes
+----------------
+
+- Update typedoc to 0.22.9 ([\#377](https://github.com/matrix-org/matrix-appservice-bridge/issues/377))
+- Logging in as an appservice user (for encryption support) now uses `m.login.application_service` rather than the unstable prefix. This may break on homeservers that are not up to date with Matrix v1.2. ([\#389](https://github.com/matrix-org/matrix-appservice-bridge/issues/389))
+- Replace Buildkite with GitHub Actions for CI. ([\#392](https://github.com/matrix-org/matrix-appservice-bridge/issues/392))
+
+
+3.2.0 (2021-11-23)
 ===================
 
 Features

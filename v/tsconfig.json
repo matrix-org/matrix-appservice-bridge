@@ -1,0 +1,30 @@
+{
+  "extends": "@tsconfig/node14/tsconfig.json",
+  "compilerOptions": {
+    "incremental": true,
+    "allowJs": true,
+    "checkJs": false,
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "./lib",
+    "composite": false,
+    "strictNullChecks": true,
+    /* We don't support this yet */
+    "useUnknownInCatchVariables": false,
+    "skipLibCheck": true, /* matrix-js-sdk throws up errors */
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "spec/**/*",
+    "scripts/**/*",
+    "app.js"
+  ],
+  "typedocOptions": {
+    "out": ".typedoc",
+    "entryPoints": ["src/index.ts"],
+    "excludePrivate": true,
+    "exclude": ["**/index.ts"]
+  }
+}

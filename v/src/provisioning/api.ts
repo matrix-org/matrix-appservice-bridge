@@ -11,6 +11,7 @@ import IPCIDR from "ip-cidr";
 import { isIP } from "net";
 import { promises as dns } from "dns";
 import ratelimiter, { RateLimitInfo, Options as RatelimitOptions, AugmentedRequest } from "express-rate-limit";
+import { Methods } from "./request";
 
 // Borrowed from
 // https://github.com/matrix-org/synapse/blob/91221b696156e9f1f9deecd425ae58af03ebb5d3/docs/sample_config.yaml#L215
@@ -196,7 +197,7 @@ export class ProvisioningApi {
     }
 
     public addRoute(
-        method: "get"|"post"|"delete"|"put",
+        method: Methods,
         path: string,
         handler: (req: ProvisioningRequest, res: Response, next?: NextFunction) => void|Promise<void>,
         fnName?: string): void {
@@ -349,7 +350,8 @@ export class ProvisioningApi {
 
         // Now do the token exchange
         try {
-            const response = await axios.get<{sub: string}>(`${url}/_matrix/federation/v1/openid/userinfo`, {
+            const requestUrl = new URL("/_matrix/federation/v1/openid/userinfo", url);
+            const response = await axios.get<{sub: string}>(requestUrl.toString(), {
                 params: {
                     access_token: openIdToken,
                 },

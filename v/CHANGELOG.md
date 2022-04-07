@@ -1,3 +1,12 @@
+4.0.1 (2022-04-07)
+==================
+
+Bugfixes
+--------
+
+- Fix an issue where the provisioner API's `/v1/exchange_openid` route would sometimes fail. ([\#397](https://github.com/matrix-org/matrix-appservice-bridge/issues/397))
+
+
 4.0.0 (2022-03-31)
 ==================
 

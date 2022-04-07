@@ -105,7 +105,17 @@ export class MatrixHostResolver {
         if (wellKnown.status !== 200) {
             throw Error('Well known request returned non-200');
         }
-        const mServer = wellKnown.data["m.server"];
+        let data: MatrixServerWellKnown;
+        if (typeof wellKnown.data === "object") {
+            data = wellKnown.data;
+        }
+        else if (typeof wellKnown.data === "string") {
+            data = JSON.parse(wellKnown.data);
+        }
+        else {
+            throw Error('Invalid datatype for well-known response');
+        }
+        const mServer = data["m.server"];
         if (typeof mServer !== "string") {
             throw Error("Missing 'm.server' in well-known response");
         }

@@ -1,0 +1,1 @@
+Fix an issue where the provisioner API's `/v1/exchange_openid` route would sometimes fail.

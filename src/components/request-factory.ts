@@ -33,8 +33,8 @@ export class RequestFactory {
      * @param opts The options to pass to the Request constructor, if any.
      * @return A new request object
      */
-    public newRequest<T>(opts?: RequestOpts<T>) {
-        const req = new Request(opts || {data: null});
+    public newRequest<T, R extends unknown>(opts?: RequestOpts<T>): Request<T, R> {
+        const req = new Request(opts);
         req.getPromise().then((res) => {
             this._resolves.forEach((resolveFn) => {
                 resolveFn(req, res);

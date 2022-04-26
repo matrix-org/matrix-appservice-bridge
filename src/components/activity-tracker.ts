@@ -1,4 +1,4 @@
-import { MatrixClient } from "matrix-bot-sdk";
+import { MatrixClient } from "@rocket.chat/forked-matrix-bot-sdk";
 import * as logging from "./logging";
 const log = logging.get("ActivityTracker");
 

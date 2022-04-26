@@ -21,7 +21,7 @@ import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
 import Logging from "./logging";
 import { ReadStream } from "fs";
-import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
+import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "@rocket.chat/forked-matrix-bot-sdk";
 import { WeakStateEvent } from "./event-types";
 
 const log = Logging.get("Intent");
@@ -1042,7 +1042,7 @@ export class Intent {
         const eventContent: PowerLevelContent = plContent && typeof plContent === "object" ? plContent : {};
         this.opts.backingStore.setPowerLevelContent(roomId, eventContent);
 
-        // Borrowed from https://github.com/turt2live/matrix-bot-sdk/blob/master/src/MatrixClient.ts#L1147
+        // Borrowed from https://github.com/turt2live/@rocket.chat/forked-matrix-bot-sdk/blob/master/src/MatrixClient.ts#L1147
         // We're using our own version for caching.
         let requiredPower: number = isState ? 50 : 0;
         if (isState && typeof eventContent.state_default === "number") {

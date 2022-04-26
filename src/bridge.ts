@@ -53,7 +53,7 @@ import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
 import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
-import * as BotSDK from "matrix-bot-sdk";
+import * as BotSDK from "@rocket.chat/forked-matrix-bot-sdk";
 import { ActivityTracker, ActivityTrackerOpts } from "./components/activity-tracker";
 import { EncryptedIntent, EncryptedIntentOpts } from "./components/encrypted-intent";
 import e = require("express");
@@ -645,7 +645,7 @@ export class Bridge {
                 protocols: rawReg.protocols || undefined,
                 namespaces: {
                     users: [{
-                        // Deliberately greedy regex to fix https://github.com/turt2live/matrix-bot-sdk/issues/159
+                        // Deliberately greedy regex to fix https://github.com/turt2live/@rocket.chat/forked-matrix-bot-sdk/issues/159
                         // Note: We don't use the localpart generating functionality of the bot-sdk,
                         // so this is okay to do.
                         regex: "@.+_.+:.*",

@@ -1,6 +1,6 @@
 import "jasmine";
 import { ActivityTracker } from "../../src/index";
-import { WhoisInfo, PresenceEventContent, MatrixClient } from "matrix-bot-sdk";
+import { WhoisInfo, PresenceEventContent, MatrixClient } from "@rocket.chat/forked-matrix-bot-sdk";
 
 const TEST_USER = "@foobar:example.com";
 

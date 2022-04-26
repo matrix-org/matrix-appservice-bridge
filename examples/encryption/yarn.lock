@@ -1169,7 +1169,7 @@ lru-cache@^6.0.0:
     is-my-json-valid "^2.20.5"
     js-yaml "^4.0.0"
     matrix-appservice "^0.8.0"
-    matrix-bot-sdk "^0.6.0-beta.2"
+    @rocket.chat/forked-matrix-bot-sdk "^0.6.0-beta.2"
     matrix-js-sdk "^9.9.0"
     nedb "^1.8.0"
     nopt "^5.0.0"
@@ -1189,9 +1189,9 @@ matrix-appservice@^0.8.0:
     js-yaml "^3.14.0"
     morgan "^1.10.0"
 
-matrix-bot-sdk@^0.6.0-beta.2:
+@rocket.chat/forked-matrix-bot-sdk@^0.6.0-beta.2:
   version "0.6.0-beta.2"
-  resolved "https://registry.yarnpkg.com/matrix-bot-sdk/-/matrix-bot-sdk-0.6.0-beta.2.tgz#abfddaeaf339da167717a1ca4148fa8f847f36f5"
+  resolved "https://registry.yarnpkg.com/@rocket.chat/forked-matrix-bot-sdk/-/@rocket.chat/forked-matrix-bot-sdk-0.6.0-beta.2.tgz#abfddaeaf339da167717a1ca4148fa8f847f36f5"
   integrity sha512-D9aQ2++1bJIzka2uIz22HkaeyT058QGOh96xdxiDOaezyzLY5BN7ehYg+P0xRzDYDFKx9DbqDYCt97IkfahtPw==
   dependencies:
     "@matrix-org/olm" "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.4.tgz"

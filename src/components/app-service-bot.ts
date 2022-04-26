@@ -17,7 +17,7 @@ limitations under the License.
 import { AppServiceRegistration } from "matrix-appservice";
 import { MembershipCache, UserProfile } from "./membership-cache";
 import { StateLookupEvent } from "..";
-import { MatrixClient } from "matrix-bot-sdk";
+import { MatrixClient } from "@rocket.chat/forked-matrix-bot-sdk";
 
 /**
  * Construct an AS bot user which has various helper methods.
@@ -70,7 +70,7 @@ export class AppServiceBot {
     public async getJoinedMembers(
         // eslint-disable-next-line camelcase
         roomId: string): Promise<Record<string, {display_name?: string, avatar_url?: string}>> {
-        // Until https://github.com/turt2live/matrix-bot-sdk/pull/138 is merged.
+        // Until https://github.com/turt2live/@rocket.chat/forked-matrix-bot-sdk/pull/138 is merged.
         // eslint-disable-next-line camelcase
         const res: Record<string, {display_name?: string, avatar_url?: string}> =
             await this.client.getJoinedRoomMembersWithProfiles(roomId);

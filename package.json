@@ -1,5 +1,5 @@
 {
-  "name": "matrix-appservice-bridge",
+  "name": "@rocket.chat/forked-matrix-appservice-bridge",
   "version": "4.0.1",
   "description": "Bridging infrastructure for Matrix Application Services",
   "main": "lib/index.js",
@@ -39,7 +39,7 @@
     "is-my-json-valid": "^2.20.5",
     "js-yaml": "^4.0.0",
     "matrix-appservice": "^0.10.0",
-    "matrix-bot-sdk": "^0.6.0-beta.2",
+    "@rocket.chat/forked-matrix-bot-sdk": "^0.6.0-beta.2",
     "matrix-js-sdk": "^12.4.1",
     "nedb": "^1.8.0",
     "nopt": "^5.0.0",

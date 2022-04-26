@@ -3,7 +3,7 @@ import { AppServiceBot } from "./app-service-bot";
 import { WeakEvent } from "./event-types";
 import { Intent } from "./intent";
 import Logging from "./logging";
-import { MatrixClient } from "matrix-bot-sdk";
+import { MatrixClient } from "@rocket.chat/forked-matrix-bot-sdk";
 import LRU from "@alloc/quick-lru"
 
 const log = Logging.get("EncryptedEventBroker");

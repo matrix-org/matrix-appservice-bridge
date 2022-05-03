@@ -1,1 +1,0 @@
-Don't check for MSC2666 support on the homeserver, as the library no longer depends on it.

@@ -1681,11 +1681,20 @@ export class Bridge {
 
 
     public async checkHomeserverSupport(): Promise<void> {
-       // Previously this was used to validate that the homeserver
-       // supported nessacery MSCs. There are currently no MSCs
-       // required by this library, so this no-ops.
-       // Min required version
-       return;
+        if (!this.botSdkAS) {
+            throw Error("botSdkAS isn't ready yet");
+        }
+        // Min required version
+        if (this.opts.bridgeEncryption) {
+            // Ensure that we have support for /login
+            const loginFlows: {flows: {type: string}[]} =
+                await this.botSdkAS.botClient.doRequest("GET", "/_matrix/client/r0/login");
+            if (!EncryptedEventBroker.supportsLoginFlow(loginFlows)) {
+                throw Error(
+                    'To enable support for encryption, your homeserver must support m.login.application_service
+                );
+            }
+        }
     }
 
     /**

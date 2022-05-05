@@ -1690,7 +1690,10 @@ export class Bridge {
             const loginFlows: {flows: {type: string}[]} =
                 await this.botSdkAS.botClient.doRequest("GET", "/_matrix/client/r0/login");
             if (!EncryptedEventBroker.supportsLoginFlow(loginFlows)) {
-                throw Error('To enable support for encryption, your homeserver must support MSC2666');
+                throw Error(
+                    'To enable support for encryption, your homeserver must support m.login.application_service.' +
+                    ' This was introduced in Matrix 1.2.'
+                );
             }
         }
     }

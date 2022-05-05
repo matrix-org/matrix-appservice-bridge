@@ -1691,7 +1691,8 @@ export class Bridge {
                 await this.botSdkAS.botClient.doRequest("GET", "/_matrix/client/r0/login");
             if (!EncryptedEventBroker.supportsLoginFlow(loginFlows)) {
                 throw Error(
-                    'To enable support for encryption, your homeserver must support m.login.application_service'
+                    'To enable support for encryption, your homeserver must support m.login.application_service.' +
+                    ' This was introduced in Matrix 1.2.'
                 );
             }
         }

@@ -17,7 +17,6 @@ limitations under the License.
 export * from "./components/request";
 export * from "./components/request-factory";
 
-export * from "./components/client-factory";
 export * from "./components/encryption";
 export * from "./components/encrypted-intent";
 export * from "./components/intent";
@@ -44,8 +43,8 @@ export * from "./models/rooms/remote";
 export * from "./models/users/matrix";
 export * from "./models/users/remote";
 export * from "./models/events/event";
-export * from "./bridge";
 export * from "./components/bridge-context";
+export * from "./bridge";
 
 export * from "matrix-appservice";
 export * from "./components/prometheusmetrics";
@@ -61,17 +60,9 @@ export * from "./components/bridge-blocker";
 
 export * from "./utils/package-info";
 export * from "./utils/matrix-host-resolver";
+export * from "./contentRepo";
 
 export { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
 
 // Provisioning APIs
 export * from "./provisioning";
-
-
-/* eslint-disable @typescript-eslint/no-var-requires */
-const jsSdk = require("matrix-js-sdk");
-
-export const ContentRepo = {
-    getHttpUriForMxc: jsSdk.getHttpUriForMxc,
-    getIdenticonUri: jsSdk.getIdenticonUri,
-}

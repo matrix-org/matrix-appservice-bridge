@@ -19,6 +19,13 @@ import { MembershipCache, UserProfile } from "./membership-cache";
 import { StateLookupEvent } from "..";
 import { MatrixClient } from "matrix-bot-sdk";
 
+export interface RoomInfo {
+    id: string;
+    state: StateLookupEvent[];
+    realJoinedUsers: string[];
+    remoteJoinedUsers: string[];
+}
+
 /**
  * Construct an AS bot user which has various helper methods.
  * @constructor
@@ -45,7 +52,7 @@ export class AppServiceBot {
         }
     }
 
-    public getClient() {
+    public getClient(): MatrixClient {
         return this.client;
     }
 
@@ -89,9 +96,11 @@ export class AppServiceBot {
         return res;
     }
 
-    public async getRoomInfo(roomId: string, joinedRoom: {state?: { events: StateLookupEvent[]}} = {}) {
+    public async getRoomInfo(
+        roomId: string, joinedRoom: {state?: { events: StateLookupEvent[]}} = {}
+    ): Promise<RoomInfo> {
         const stateEvents = joinedRoom.state ? joinedRoom.state.events : [];
-        const roomInfo: {id: string, state: StateLookupEvent[], realJoinedUsers: string[], remoteJoinedUsers: string[]}
+        const roomInfo: RoomInfo
          = {
             id: roomId,
             state: stateEvents,
@@ -120,7 +129,7 @@ export class AppServiceBot {
      * Test a userId to determine if it's a user within the exclusive regexes of the bridge.
      * @return True if it is a remote user, false otherwise.
      */
-    public isRemoteUser(userId: string) {
+    public isRemoteUser(userId: string): boolean {
         return this.exclusiveUserRegexes.some((r) => r.test(userId));
     }
 }

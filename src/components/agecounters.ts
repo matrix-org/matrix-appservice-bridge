@@ -78,7 +78,7 @@ export class AgeCounters {
      *
      * @param {Number} age The age in seconds.
      */
-    bump(age: number) {
+    public bump(age: number): void {
         this.counters.forEach((value, key) => {
             if (key === "all") {
                 this.counters.set("all", value + 1);
@@ -97,7 +97,7 @@ export class AgeCounters {
      * @param {Object} morelabels An object containing more labels to add to the
      * gauge when setting values.
      */
-    setGauge(gauge: Gauge<string>, morelabels?: {[label: string]: string}) {
+    public setGauge(gauge: Gauge<string>, morelabels?: {[label: string]: string}): void {
         const counters = this.counters;
         let i = 0;
         counters.forEach((value) => {

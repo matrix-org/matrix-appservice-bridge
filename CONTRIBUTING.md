@@ -77,7 +77,6 @@ pass CI when reviewing too. If you can't get the CI to pass, please reach out to
 
 When making a pull request, please be aware of these best practises.
 
-- **Importantly**: 
 - Targets `develop` (unless it explicitly depends upon another feature, then depend on that branch and comment to that effect in the PR body).
 - Is updated via rebase mechanisms when `develop` changes, rather than merge commits (reduces noise).
 - Is [signed off](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#sign-off).

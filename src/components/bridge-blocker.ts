@@ -43,7 +43,7 @@ export class BridgeBlocker {
     /**
      * Check `users` param against the limit and block the bridge when it's exceeded.
      */
-    public async checkLimits(users: number) {
+    public async checkLimits(users: number): Promise<void> {
         log.debug(`Bridge now serving ${users} users`);
 
         if (users > this.userLimit) {
@@ -71,11 +71,11 @@ export class BridgeBlocker {
     }
 
     // overload these to implement custom (un)blocking behaviour
-    public async blockBridge() {
+    public async blockBridge(): Promise<void> {
         this._isBlocked = true;
     }
 
-    public async unblockBridge() {
+    public async unblockBridge(): Promise<void> {
         this._isBlocked = false;
     }
 }

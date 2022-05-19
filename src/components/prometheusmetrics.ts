@@ -131,7 +131,7 @@ export class PrometheusMetrics {
 
     /**
     * Registers some exported metrics that relate to operations of the embedded
-    * matrix-js-sdk. In particular, a metric is added that counts the number of
+    * matrix-bot-sdk. In particular, a metric is added that counts the number of
     * calls to client API endpoints made by the client library.
     */
     public registerMatrixSdkMetrics(appservice: BotSdkAppservice): void {

@@ -45,8 +45,6 @@ export interface IntentOpts {
     dontJoin?: boolean;
     enablePresence?: boolean;
     registered?: boolean;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    getJsSdkClient?: () => any,
     onEventSent?: OnEventSentHook,
 }
 
@@ -242,41 +240,6 @@ export class Intent {
         return this.botSdkIntent.underlyingClient;
     }
 
-    /**
-     * Legacy property to access the matrix-js-sdk.
-     * @deprecated Support for the matrix-js-sdk client will be going away in
-     * a future release. Where possible, the intent object functions should be
-     * used. The `botSdkIntent` also provides access to the new client.
-     * @see getClient
-     */
-    public get client() {
-        return this.getClient();
-    }
-
-    /**
-     * Return a matrix-js-sdk client, which is created on demand.
-     * @deprecated Support for the matrix-js-sdk client will be going away in
-     * a future release. Where possible, the intent object functions should be
-     * used. The `botSdkIntent` also provides access to the new client.
-     * @return The client
-     */
-    public getClient() {
-        if (this.legacyClient) {
-            return this.legacyClient;
-        }
-        if (!this.opts.getJsSdkClient) {
-            throw Error('Legacy client not available');
-        }
-        if (!Intent.getClientWarningFired) {
-            console.warn("Support for the matrix-js-sdk will be going away in a future release." +
-                    "Please replace usage of Intent.getClient() and Intent.client with either " +
-                    "Intent functions, or Intent.matrixClient");
-            Intent.getClientWarningFired = true;
-        }
-        this.legacyClient = this.opts.getJsSdkClient();
-        return this.legacyClient;
-    }
-
     public get userId(): string {
         return this.botSdkIntent.userId;
     }
@@ -363,9 +326,9 @@ export class Intent {
      * @param roomId The room to send to.
      * @param isTyping True if typing
      */
-    public async sendTyping(roomId: string, isTyping: boolean) {
+    public async sendTyping(roomId: string, isTyping: boolean): Promise<void> {
         await this._ensureJoined(roomId);
-        return this.botSdkIntent.underlyingClient.setTyping(roomId, isTyping);
+        await this.botSdkIntent.underlyingClient.setTyping(roomId, isTyping);
     }
 
     /**
@@ -376,9 +339,9 @@ export class Intent {
      * @param roomId The room to send to.
      * @param eventId The event ID to set the receipt mark to.
      */
-    public async sendReadReceipt(roomId: string, eventId: string) {
+    public async sendReadReceipt(roomId: string, eventId: string): Promise<void> {
         await this._ensureJoined(roomId);
-        return this.botSdkIntent.underlyingClient.sendReadReceipt(roomId, eventId);
+        await this.botSdkIntent.underlyingClient.sendReadReceipt(roomId, eventId);
     }
 
     /**
@@ -387,7 +350,7 @@ export class Intent {
      * @param target The target user ID
      * @param level The desired level. Undefined will remove the users custom power level.
      */
-    public async setPowerLevel(roomId: string, target: string, level: number|undefined) {
+    public async setPowerLevel(roomId: string, target: string, level: number|undefined): Promise<void> {
         await this._ensureJoined(roomId);
         const powerLevel: PowerLevelContent = await this.getStateEvent(roomId, "m.room.power_levels", "", true);
         if (powerLevel && level && (powerLevel?.users || {})[target] !== level) {
@@ -414,9 +377,10 @@ export class Intent {
      * has sufficient power level to do this.
      * @param roomId The room to send to.
      * @param content The event content
+     * @returns The eventId of the sent message
      */
-    public sendMessage(roomId: string, content: Record<string, unknown>) {
-        return this.sendEvent(roomId, "m.room.message", content);
+    public async sendMessage(roomId: string, content: Record<string, unknown>): Promise<{event_id: string}> {
+        return await this.sendEvent(roomId, "m.room.message", content);
     }
 
     /**
@@ -428,6 +392,7 @@ export class Intent {
      * @param roomId The room to send to.
      * @param type The event type
      * @param content The event content
+     * @returns The event ID wrapped inside an object (for legacy reasons)
      */
     public async sendEvent(roomId: string, type: string, content: Record<string, unknown>)
         // eslint-disable-next-line camelcase
@@ -453,6 +418,7 @@ export class Intent {
      * @param type The event type
      * @param skey The state key
      * @param content The event content
+     * @returns The event ID wrapped inside an object (for legacy reasons)
      */
     public async sendStateEvent(roomId: string, type: string, skey: string, content: Record<string, unknown>
         // eslint-disable-next-line camelcase
@@ -850,10 +816,16 @@ export class Intent {
      * @param visibility Should the room be visible
      */
     public async setRoomDirectoryVisibilityAppService(roomId: string, networkId: string,
-        visibility: "public"|"private") {
+        visibility: "public"|"private"): Promise<void> {
         await this.ensureRegistered();
-        // XXX: No function for this yet.
-        return this.client.setRoomDirectoryVisibilityAppService(roomId, visibility, networkId);
+        await this.matrixClient.doRequest(
+            "PUT",
+        `/_matrix/client/v3/directory/list/appservice/${encodeURIComponent(networkId)}/${encodeURIComponent(roomId)}`,
+        undefined,
+        {
+            visibility
+        }
+        )
     }
 
     /**

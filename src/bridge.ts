@@ -18,12 +18,8 @@ import * as util from "util";
 import yaml from "js-yaml";
 import { Application, Request as ExRequest, Response as ExResponse, NextFunction } from "express";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const MatrixScheduler = require("matrix-js-sdk").MatrixScheduler;
-
 import { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
 import { BridgeContext } from "./components/bridge-context"
-import { ClientFactory } from "./components/client-factory"
 import { AppServiceBot } from "./components/app-service-bot"
 import { RequestFactory } from "./components/request-factory";
 import { Request } from "./components/request";
@@ -56,7 +52,6 @@ import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent
 import * as BotSDK from "matrix-bot-sdk";
 import { ActivityTracker, ActivityTrackerOpts } from "./components/activity-tracker";
 import { EncryptedIntent, EncryptedIntentOpts } from "./components/encrypted-intent";
-import e = require("express");
 
 const log = logging.get("bridge");
 
@@ -155,7 +150,7 @@ export interface BridgeOpts {
     disableStores?: boolean;
     /**
      * The room store instance to use, or the path to the room .db file to load.
-     * A database will be ClientFactoryEncryptionStorecreated if this is not specified. If `disableStores` is set,
+     * A database will be created if this is not specified. If `disableStores` is set,
      * no database will be created or used.
      */
     roomStore?: RoomBridgeStore|string;
@@ -188,10 +183,6 @@ export interface BridgeOpts {
      * for events which were sent by a bridge user. Default: true.
      */
     suppressEcho?: boolean;
-    /**
-     * The client factory instance to use. If not supplied, one will be created.
-     */
-    clientFactory?: ClientFactory;
     /**
      * True to enable SUCCESS/FAILED log lines to be sent to onLog. Default: true.
      */
@@ -345,10 +336,6 @@ interface VettedBridgeOpts {
      */
     suppressEcho: boolean;
     /**
-     * The client factory instance to use. If not supplied, one will be created.
-     */
-    clientFactory?: ClientFactory;
-    /**
      * True to enable SUCCESS/FAILED log lines to be sent to onLog. Default: true.
      */
     logRequestOutcome: boolean;
@@ -448,7 +435,6 @@ export class Bridge {
     private intentLastAccessedTimeout: NodeJS.Timeout|null = null;
     private botIntent?: Intent;
     private appServiceBot?: AppServiceBot;
-    private clientFactory?: ClientFactory;
     private metrics?: PrometheusMetrics;
     private roomLinkValidator?: RoomLinkValidator;
     private roomUpgradeHandler?: RoomUpgradeHandler;
@@ -635,7 +621,7 @@ export class Bridge {
 
         const asToken = this.registration.getAppServiceToken();
         if (!asToken) {
-            throw Error('No AS token provided, cannot create ClientFactory');
+            throw Error('No AS token provided in registration config!');
         }
         const rawReg = this.registration.getOutput();
         this.botSdkAS = new BotSDK.Appservice({
@@ -667,17 +653,6 @@ export class Bridge {
             this.metrics.registerMatrixSdkMetrics(this.botSdkAS);
         }
 
-        this.clientFactory = this.opts.clientFactory || new ClientFactory({
-            url: this.opts.homeserverUrl,
-            token: asToken,
-            appServiceUserId: this.botUserId,
-            clientSchedulerBuilder: function() {
-                return new MatrixScheduler(retryAlgorithm, queueAlgorithm);
-            },
-        });
-        this.clientFactory.setLogFunction((text, isErr) => {
-            this.onLog(text, isErr || false);
-        });
         await this.checkHomeserverSupport();
         this.appServiceBot = new AppServiceBot(
             this.botSdkAS.botClient, this.botUserId, this.registration, this.membershipCache,
@@ -720,17 +695,6 @@ export class Bridge {
         const botIntentOpts: IntentOpts = {
             registered: true,
             backingStore: this.intentBackingStore,
-            getJsSdkClient: () => {
-                if (!this.clientFactory) {
-                    throw Error('clientFactory not ready yet');
-                }
-                return this.clientFactory.getClientAs(
-                    undefined,
-                    undefined,
-                    this.opts.bridgeEncryption?.homeserverUrl,
-                    !!this.opts.bridgeEncryption,
-                )
-            },
             ...this.opts.intentOptions?.bot, // copy across opts, if defined
         };
         this.botIntent = this.opts.onIntentCreate(this.botUserId, botIntentOpts);
@@ -1073,17 +1037,6 @@ export class Bridge {
     }
 
     /**
-     * Retrieve the matrix client factory used when sending matrix requests.
-     * @deprecated The client factory is deprecated.
-     */
-    public getClientFactory(): ClientFactory {
-        if (!this.clientFactory) {
-            throw Error('Bridge is not ready');
-        }
-        return this.clientFactory;
-    }
-
-    /**
      * Get the AS bot instance.
      */
     public getBot(): AppServiceBot {
@@ -1153,21 +1106,6 @@ export class Bridge {
 
         const clientIntentOpts: IntentOpts = {
             backingStore: this.intentBackingStore,
-            /**
-             * We still support creating a JS SDK client if the bridge really needs it,
-             * but for memory/performance reasons we only create them on demand.
-             */
-            getJsSdkClient: () => {
-                if (!this.clientFactory) {
-                    throw Error('clientFactory not ready yet');
-                }
-                return this.clientFactory.getClientAs(
-                    userId,
-                    request,
-                    this.opts.bridgeEncryption?.homeserverUrl,
-                    !!this.opts.bridgeEncryption,
-                )
-            },
             ...this.opts.intentOptions?.clients,
             onEventSent: () => userId && this.opts.controller.userActivityTracker?.updateUserActivity(userId),
         };

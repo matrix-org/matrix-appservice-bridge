@@ -63,7 +63,7 @@ export class BridgeInfoStateSyncer<BridgeMappingInfo> {
      * @param allMappings All bridged room mappings
      * @param concurrency How many rooms to handle at a time, defaults to 3.
      */
-    public async initialSync(allMappings: Record<string, BridgeMappingInfo[]>, concurrency = 3) {
+    public async initialSync(allMappings: Record<string, BridgeMappingInfo[]>, concurrency = 3): Promise<void> {
         log.info("Beginning sync of bridge state events");
         const syncQueue = new PQueue({ concurrency });
         Object.entries(allMappings).forEach(([roomId, mappings]) => {

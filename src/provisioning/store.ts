@@ -1,5 +1,3 @@
-import { ApiError, ErrCode } from ".";
-
 export interface ProvisionSession {
     userId: string;
     token: string;

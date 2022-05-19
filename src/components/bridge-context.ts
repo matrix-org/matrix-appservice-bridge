@@ -75,7 +75,7 @@ export class BridgeContext {
      * @param {UserBridgeStore} userStore
      * @returns {Promise<BridgeContext>}
      */
-    async get(roomStore: RoomBridgeStore, userStore: UserBridgeStore) {
+    async get(roomStore: RoomBridgeStore, userStore: UserBridgeStore): Promise<BridgeContext> {
         try {
             const results = await Promise.all([
                 roomStore.getLinkedRemoteRooms(this.ctx.room),

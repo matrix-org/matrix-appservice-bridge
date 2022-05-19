@@ -33,7 +33,8 @@ class for more information on how to use each component.
 
 ```
 
-The bridge relies on `matrix-appservice` and `matrix-js-sdk` for their
+The bridge relies on [`matrix-appservice`](https://github.com/matrix-org/matrix-appservice-node)
+and [`matrix-bot-sdk`](https://github.com/turt2live/matrix-bot-sdk) for their
 AS API and CS API implementations respectively. The bridge manages state for
 virtual users and provides many useful helper functions bridges may desire.
 
@@ -56,11 +57,6 @@ mapping between different types of rooms.
 
 ### `EventBridgeStore`
 Provides storage for matrix and remote event ids.
-
-### `ClientFactory`
-Provides a method to obtain a JS SDK `MatrixClient` in the context of a
-particular `user_id` and/or `Request`. This is used to send messages as other
-users.
 
 ### `Request` / `RequestFactory`
 An abstraction provided to identify a single request through the bridge.

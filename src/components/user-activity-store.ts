@@ -45,7 +45,7 @@ export class UserActivityStore extends BridgeStore {
         super(db);
     }
 
-    public async storeUserActivity(mxid: string, activity: UserActivity) {
+    public async storeUserActivity(mxid: string, activity: UserActivity): Promise<void> {
         this.upsert({ mxid }, {
             ...activity,
         });

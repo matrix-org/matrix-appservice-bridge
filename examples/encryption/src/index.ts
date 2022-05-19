@@ -16,7 +16,7 @@ limitations under the License.
 // Usage:
 // node index.js -r -u "http://localhost:9000" # remember to add the registration!
 // node index.js -p 9000
-import { Cli, Bridge, AppServiceRegistration, ClientEncryptionSession, ClientEncryptionStore, Logging} from '../../..';
+import { Cli, Bridge, AppServiceRegistration, ClientEncryptionSession, ClientEncryptionStore, Logging} from 'matrix-appservice-bridge';
 
 const log = Logging.get("index");
 

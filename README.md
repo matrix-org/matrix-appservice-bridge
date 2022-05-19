@@ -7,6 +7,8 @@ and provides an API for setting up bridges quickly. Check out the
 
 `matrix-appservice-bridge` requires Node JS 14.x or greater.
 
+If you are looking to contribute to this library, please check out our [CONTRIBUTING](./CONTRIBUTING.md) guide.
+
 # API
 
 A hosted reference can be found on

@@ -40,8 +40,8 @@ Issues will be categorised according to [Synapse's rules](https://github.com/mat
   - **T-Documentation**: Improvements or additions to documentation.
 - You *may* have a severity assigned as an estimate to understand how bad the problem is and how many users are affected.
 
-The assigned labels are at the maintainers' discretion, and we will make every effort to be transparent when triaging. We do
-not, as a rule, assign priority labeling to issues.
+The assigned labels are at the maintainers' discretion, and we will make every effort to be transparent when triaging.
+We do not, as a rule, assign priority labeling to issues.
 
 ## Contributing documentation
 
@@ -60,17 +60,18 @@ First of all, thank you for considering making a change to one of our projects. 
 
 ### 🖌️ Code style
 
-Each repository contains an `eslint` configuration which will dictate the style of the code. All code should be written in TypeScript. At time of
-writing, we target ES2020 (the latest version supported by Node 14). The CI will lint your code automatically, but you can save yourself some time by running (`yarn lint`/`npm lint`) to check locally.
+Each repository contains an `eslint` configuration which will dictate the style of the code. All code should be written in
+TypeScript. At time of writing, we target ES2020 (the latest version supported by Node 14). The CI will lint your code automatically,
+but you can save yourself some time by running (`yarn lint`/`npm lint`) to check locally.
 
 ### 🧪 Tests / CI
 
-To test your changes, you can run the `test` command with either `yarn test` or `npm test`. Some projects may have additional testing constraints
-noted in the project-specific section below.
+To test your changes, you can run the `test` command with either `yarn test` or `npm test`. Some projects may have additional
+testing constraints noted in the project-specific section below.
 
-Please be aware that reviewers will expect CI to be passing before your changes will be approved, and priority will be given to PRs that
-pass CI when reviewing too. If you can't get the CI to pass, please reach out to us either via the PR or in the project Matrix room 
-(and do not assume that it's always your change that caused the test to fail!).
+Please be aware that reviewers will expect CI to be passing before your changes will be approved, and priority will be given to
+PRs that pass CI when reviewing too. If you can't get the CI to pass, please reach out to us either via the PR or in the project
+Matrix room (and do not assume that it's always your change that caused the test to fail!).
 
 **As a rule, code does not get merged onto the `develop` branch without all CI tests passing.**
 
@@ -79,7 +80,8 @@ pass CI when reviewing too. If you can't get the CI to pass, please reach out to
  - When writing new features, remember to document them in the repository's chosen documentation system.
  - PRs should aim to be as constrained as possible: Do not attempt to solve multiple isolated issues in a single PR.
    - A good indication is that your changelog entry contains multiple statements. That usually means you need to consider splitting up your PR :)
- - It's totally okay to submit draft PRs with the intention of getting feedback. Please use the GitHub comments feature to comment on lines you would like assistance with.
+ - It's totally okay to submit draft PRs with the intention of getting feedback. Please use the GitHub comments feature to comment
+  on lines you would like assistance with.
  - Avoid writing TODOs / XXX comments in code. If you must, create an issue first with the details and link to it in the code.
 
 
@@ -91,7 +93,8 @@ When making a pull request, please ensure it [the PR] follows these best practis
 - Is updated via rebase mechanisms when `develop` changes, rather than merge commits (reduces noise).
 - Is [signed off](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#sign-off). Matrix.org projects require that the
    sign off process has been followed in it's entirity.
-- Has a [changelog entry](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#changelog) in `changelog.d`. A changelog filename should be `${GithubPRNumber}.{bugfix|misc|feature|doc|removal}`
+- Has a [changelog entry](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#changelog) in `changelog.d`.
+  A changelog filename should be `${GithubPRNumber}.{bugfix|misc|feature|doc|removal}`.
   The change should include information that is useful to the user rather than the developer.
    
   You can choose to sign your changelog entry to be credited by appending something like "Thanks to @Half-Shot"
@@ -125,6 +128,7 @@ When reviewing a PR, a maintainer will:
 
 ## 🏁 That's it!
 
-This guide aims to cover all bases to get new contributors started, but it won't be able to satisfy every question. If you have any other questions, please seek us out in any of the project rooms and we will be
-happy to assist! Other than that, thanks for taking the time to read this and improving our projects for
+This guide aims to cover all bases to get new contributors started, but it won't be able to satisfy every question. If
+you have any other questions, please seek us out in any of the project rooms and we will be happy to assist! Other than that,
+thanks for taking the time to read this and improving our projects for
 the benefit of all 😄

@@ -5,9 +5,14 @@ if (!version) {
     throw Error('No version given');
 }
 
+output = "";
+
 for (const line of fs.readFileSync('index.html', 'utf-8').split('\n')) {
-    console.log(line);
+    output += line + '\n';
     if (line === "<ul>") {
-        console.log (`    <li><a href=${version}/index.html">${version}</a></li>`);
+        output+= `    <li><a href="${version}/index.html">${version}</a></li>\n`;
     }
 }
+
+console.log(`Updating index.html with new version: ${version}`);
+fs.writeFileSync('index.html', output);

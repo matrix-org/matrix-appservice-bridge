@@ -177,6 +177,10 @@ in the options given to the bridge (simply `{}` (empty object)). By default, use
 will be copied on upgrade. Upgrade events will also be consumed by the bridge, and
 will not be emitted by `onEvent`. For more information, see the docs.
 
+## `ServiceRoom`
+Allows bridges to report status notices to a room for bridge admins to handle or
+admin interfaces to render.
+
 
 ## Data Models
  * `MatrixRoom` - A representation of a matrix room.

@@ -50,9 +50,7 @@ const STATE_KEY_TYPE = "org.matrix.service-notice";
  * The service room component allows bridges to report service issues to an upstream service or user.
  */
 export class ServiceRoom {
-	constructor(private readonly opts: ServiceRoomOpts, private readonly client: MatrixClient) {
-
-	}
+	constructor(private readonly opts: ServiceRoomOpts, private readonly client: MatrixClient) { }
 
 	private getStateKey(noticeId: string) {
 		return `${this.opts.bridgeStateKeyPrefix}_${noticeId}`;

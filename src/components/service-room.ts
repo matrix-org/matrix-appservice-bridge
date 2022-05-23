@@ -44,14 +44,14 @@ export interface ServiceRoomOpts {
 	/**
 	 * Any metadata to be included in all notice events.
 	 */
-	metadata: Record<string, undefined>
+	metadata: Record<string, unknown>
 }
 
 export interface NotificationEventContent {
 	message: string;
 	code: ServiceNotificationNoticeCode|string,
 	notice_id: string,
-	metadata: Record<string, undefined>;
+	metadata: Record<string, unknown>;
 	severity: ServiceNotificationServerity;
 	"org.matrix.msc1767.text": string,
 }

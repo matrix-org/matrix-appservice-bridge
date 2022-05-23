@@ -139,6 +139,7 @@ export class ServiceRoom {
 		if (!serviceNotice || 'resolved' in serviceNotice) {
 			return false;
 		}
+		this.lastNoticeTime.delete(noticeId);
 		await this.client.sendStateEvent(
 			this.opts.roomId,
 			STATE_KEY_TYPE,

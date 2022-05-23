@@ -67,7 +67,16 @@ const DEFAULT_UPDATE_TIME_MS = 1000 * 60 * 60;
  * The service room component allows bridges to report service issues to an upstream service or user.
  */
 export class ServiceRoom {
+
+	/**
+	 * The last time a given noticeId was sent. This is reset when the notice is resolved.
+	 */
 	private readonly lastNoticeTime = new Map<string, number>();
+
+	/**
+	 * A set of noticeIDs which we know are already resolved (and therefore can skip requests to the homeserver)
+	 */
+	private readonly resolvedNotices = new Set<string>();
 	constructor(private readonly opts: ServiceRoomOpts, private readonly client: MatrixClient) { }
 
 	private getStateKey(noticeId: string) {
@@ -119,6 +128,7 @@ export class ServiceRoom {
 			code,
 			"org.matrix.msc1767.text": `Notice (severity: ${severity}): ${message}`
 		};
+		this.resolvedNotices.delete(noticeId);
 		await this.client.sendStateEvent(
 			this.opts.roomId,
 			STATE_KEY_TYPE,
@@ -139,7 +149,6 @@ export class ServiceRoom {
 		if (!serviceNotice || 'resolved' in serviceNotice) {
 			return false;
 		}
-		this.lastNoticeTime.delete(noticeId);
 		await this.client.sendStateEvent(
 			this.opts.roomId,
 			STATE_KEY_TYPE,
@@ -149,6 +158,8 @@ export class ServiceRoom {
 				metadata: this.opts.metadata
 			}
 		);
+		this.lastNoticeTime.delete(noticeId);
+		this.resolvedNotices.add(noticeId);
 		return true;
 	}
 }

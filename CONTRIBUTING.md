@@ -49,7 +49,6 @@ Documentation is important to us, as bridges are complex beasts and rely on good
 administrators and users. There are a couple of things to keep in mind when when writing documentation
 for bridge projects:
  
- - Our documentation is currently English, though eventually we might be able to adopt a multi-lingual documentation system.
  - Use [Plain English](https://en.wikipedia.org/wiki/Plain_English) when documenting. Assume a non-native speaker audience.
  - Please take care to proofread.
  - Documentation should be written for both end users of the bridge, as well as system administrators. It should always be
@@ -70,7 +69,8 @@ To test your changes, you can run the `test` command with either `yarn test` or 
 noted in the project-specific section below.
 
 Please be aware that reviewers will expect CI to be passing before your changes will be approved, and priority will be given to PRs that
-pass CI when reviewing too. If you can't get the CI to pass, please reach out to us (and do not assume that it's always your change that broke it!).
+pass CI when reviewing too. If you can't get the CI to pass, please reach out to us either via the PR or in the project Matrix room 
+(and do not assume that it's always your change that caused the test to fail!).
 
 **As a rule, code does not get merged onto the `develop` branch without all CI tests passing.**
 
@@ -115,12 +115,12 @@ We aim to review all PRs in a timely manner, though be aware that larger PRs wil
 We aim to review all PRs from the community promptly, although we can't offer firm time commitments. If you think
 your PR has been forgotten and it's been a while, do not hesistate to politely ping in the correct project room.
 
-When reviewing a PR, we will:
- - Approve a PR which is ready to merge, or nearly ready with some minor tweaks or optional improvements.
+When reviewing a PR, a maintainer will:
  - Constructively call out areas for improvement. Code reviews are as much about learning as getting code good,
    so conversations always seek to improve *mutual* understanding.
- - Resolve a comment thread when the reviewer is satisifed. The author of the code may 👍 a comment to say
+ - Resolve a comment thread when they are satisifed. The author of the code may 👍 a review comment to say
    they have acknowledged the message and will make the change.
+ - Approve a PR which is ready to merge, or nearly ready with some minor tweaks or optional improvements.
 
 
 ## 🏁 That's it!

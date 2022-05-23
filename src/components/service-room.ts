@@ -2,6 +2,7 @@ import { MatrixClient } from "matrix-bot-sdk";
 
 export enum ServiceNotificationNoticeCode {
 	Unknown = "UNKNOWN",
+	Blocked = "BLOCKED",
 	RemoteServiceOutage = "REMOTE_SERVICE_OUTAGE",
 	MatrixServiceOutage = "MATRIX_SERVICE_OUTAGE",
 }

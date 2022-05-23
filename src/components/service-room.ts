@@ -37,6 +37,7 @@ export interface NotificationEventContent {
 	notice_id: string,
 	metadata: Record<string, undefined>;
 	severity: ServiceNotificationServerity;
+	"org.matrix.msc1767.text": string,
 }
 
 interface ResolvedEventContent {
@@ -96,6 +97,7 @@ export class ServiceRoom {
 			notice_id: noticeId,
 			metadata: this.opts.metadata,
 			code,
+			"org.matrix.msc1767.text": `Notice (severity: ${severity}): ${message}`
 		};
 		await this.client.sendStateEvent(
 			this.opts.roomId,

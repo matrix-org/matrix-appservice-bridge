@@ -23,6 +23,7 @@ import Logging from "./logging";
 import { ReadStream } from "fs";
 import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
 import { WeakStateEvent } from "./event-types";
+import { StateLookupEvent } from "./state-lookup";
 
 const log = Logging.get("Intent");
 export type IntentBackingStore = {
@@ -94,7 +95,7 @@ export class Intent {
 
     private _requestCaches: {
         profile: ClientRequestCache<MatrixProfileInfo, [string, UserProfileKeys]>,
-        roomstate: ClientRequestCache<unknown, []>,
+        roomstate: ClientRequestCache<any[], []>,
         event: ClientRequestCache<unknown, [string, string]>
     }
     protected opts: {
@@ -454,7 +455,7 @@ export class Intent {
      * @param skey The state key
      * @param content The event content
      */
-    public async sendStateEvent(roomId: string, type: string, skey: string, content: Record<string, unknown>
+    public async sendStateEvent(roomId: string, type: string, skey: string, content: object
         // eslint-disable-next-line camelcase
         ): Promise<{event_id: string}> {
         return this._joinGuard(roomId, async() => {
@@ -486,7 +487,7 @@ export class Intent {
      * @param useCache Should the request attempt to lookup
      * state from the cache.
      */
-    public async roomState(roomId: string, useCache=false) {
+    public async roomState(roomId: string, useCache=false): Promise<any[]> {
         await this._ensureJoined(roomId);
         if (useCache) {
             return this._requestCaches.roomstate.get(roomId);

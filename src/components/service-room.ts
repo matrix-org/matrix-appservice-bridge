@@ -25,9 +25,25 @@ export enum ServiceNotificationServerity {
 	Critical = "critical"
 }
 
+
 export interface ServiceRoomOpts {
+	/**
+	 * The roomId to send notices to.
+	 */
 	roomId: string;
+	/**
+	 * The minimum time allowed before
+	 * a new notice with the same ID can be sent (to avoid room spam).
+	 * Defaults to a hour.
+	 */
+	minimumUpdatePeriodMs?: number;
+	/**
+	 * The prefix to use in state keys to uniquely namespace the bridge.
+	 */
 	bridgeStateKeyPrefix: string;
+	/**
+	 * Any metadata to be included in all notice events.
+	 */
 	metadata: Record<string, undefined>
 }
 
@@ -45,11 +61,13 @@ interface ResolvedEventContent {
 }
 
 const STATE_KEY_TYPE = "org.matrix.service-notice";
+const DEFAULT_UPDATE_TIME_MS = 1000 * 60 * 60;
 
 /**
  * The service room component allows bridges to report service issues to an upstream service or user.
  */
 export class ServiceRoom {
+	private readonly lastNoticeTime = new Map<string, number>();
 	constructor(private readonly opts: ServiceRoomOpts, private readonly client: MatrixClient) { }
 
 	private getStateKey(noticeId: string) {
@@ -89,6 +107,10 @@ export class ServiceRoom {
 		severity: ServiceNotificationServerity,
 		noticeId: string,
 		code: ServiceNotificationNoticeCode|string = ServiceNotificationNoticeCode.Unknown) {
+		if (Date.now() - (this.lastNoticeTime.get(noticeId) ?? 0) <=
+			(this.opts.minimumUpdatePeriodMs ?? DEFAULT_UPDATE_TIME_MS)) {
+			return;
+		}
 		const content: NotificationEventContent = {
 			message,
 			severity,
@@ -103,6 +125,7 @@ export class ServiceRoom {
 			this.getStateKey(noticeId),
 			content
 		);
+		this.lastNoticeTime.set(noticeId, Date.now());
 	}
 
 	/**
@@ -120,7 +143,10 @@ export class ServiceRoom {
 			this.opts.roomId,
 			STATE_KEY_TYPE,
 			this.getStateKey(noticeId),
-			{ resolved: true }
+			{
+				resolved: true,
+				metadata: this.opts.metadata
+			}
 		);
 		return true;
 	}

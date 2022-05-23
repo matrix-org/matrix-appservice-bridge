@@ -10,7 +10,8 @@ As a Matrix based project we use chat rooms heavily for coodinating work. When g
 request, feel free to reach out to us in one of the project rooms. The project room for the repository you are working
 on should be visible from the README.md file.
 
-Be aware that by interacting with our Matrix rooms and/or GitHub projects, you are agreeing to abide by the [Matrix.org code of conduct](https://matrix.org/legal/code-of-conduct).
+Be aware that by interacting with our Matrix rooms and/or GitHub repositories, you are agreeing to abide by the
+[Matrix.org code of conduct](https://matrix.org/legal/code-of-conduct).
 
 
 ## ✍️ Filing issues
@@ -24,26 +25,35 @@ painful fixing process. That's why the following guidelines exist:
     For example: `Cannot create a nick with | in it` is a good issue title. `Filter nicks according to RFC 2812`
     is not a good issue title.
   - Give a summary and as much information (along with proposed solutions) as possible in the description of the issue.
-  - Please either mention which version you are using, or the commit hash.
+  - Please either mention which version of the bridge you are using, or the commit hash.
 - If it's a feature:
   - Your title should be a quick summary such as "Add ability to send encrypted files"
-  - Your description should describe the outcome, not the solution. "A function exists which can be used to send encrypted files to Matrix rooms".
+  - Your description should describe the outcome, not the solution.
+    - For instance: "A function exists which can be used to send encrypted files to Matrix rooms".
+    - Not: "There should be a MatrixClient.sendEncryptedFile() so the Foobar bridge can send encrypted images"
 
 Issues will be categorised according to [Synapse's rules](https://github.com/matrix-org/synapse/issues/9460). To summarise:
 
-- Your issue will be catagorised as a T-Defect, T-Enhancement or T-Documentation by the maintainer team.
+- Your issue will be catagorised as one of the following types by the maintainer team:
+  - **T-Defect**: Bugs, crashes, hangs, vulnerabilities, or other reported problems.
+  - **T-Enhancement**: New features, changes in functionality, performance boosts, user-facing improvements.
+  - **T-Documentation**: Improvements or additions to documentation.
 - You *may* have a severity assigned as an estimate to understand how bad the problem is and how many users are affected.
 
-The assigned labels are at the maintainers discretion, and we will make every effort to be transparent when triaging. We do
+The assigned labels are at the maintainers' discretion, and we will make every effort to be transparent when triaging. We do
 not, as a rule, assign priority labeling to issues.
 
 ## Contributing documentation
 
 Documentation is important to us, as bridges are complex beasts and rely on good documentation for both
-administrators and users. When writing documentation improvements, have these
+administrators and users. There are a couple of things to keep in mind when when writing documentation
+for bridge projects:
  
  - Our documentation is currently English, though eventually we might be able to adopt a multi-lingual documentation system.
- - Please take care to proofread your documentation, and where possible avoid fluff.
+ - Use [Plain English](https://en.wikipedia.org/wiki/Plain_English) when documenting. Assume a non-native speaker audience.
+ - Please take care to proofread.
+ - Documentation should be written for both end users of the bridge, as well as system administrators. It should always be
+   made clear in the text which class of user you are targetting.
 
 ## Contributing code
 
@@ -66,7 +76,7 @@ pass CI when reviewing too. If you can't get the CI to pass, please reach out to
 
 ### Tips for good quality submissions
 
- - When writing new features, remember to document this in the repositories chosen documentation system.
+ - When writing new features, remember to document them in the repository's chosen documentation system.
  - PRs should aim to be as constrained as possible: Do not attempt to solve multiple isolated issues in a single PR.
    - A good indication is that your changelog entry contains multiple statements. That usually means you need to consider splitting up your PR :)
  - It's totally okay to submit draft PRs with the intention of getting feedback. Please use the GitHub comments feature to comment on lines you would like assistance with.
@@ -75,16 +85,20 @@ pass CI when reviewing too. If you can't get the CI to pass, please reach out to
 
 ### ⬇️ Pull Requests
 
-When making a pull request, please be aware of these best practises.
+When making a pull request, please ensure it [the PR] follows these best practises:
 
 - Targets `develop` (unless it explicitly depends upon another feature, then depend on that branch and comment to that effect in the PR body).
 - Is updated via rebase mechanisms when `develop` changes, rather than merge commits (reduces noise).
-- Is [signed off](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#sign-off).
- - Has a changelog entry in `changelog.d`. A changelog filename should be `${GithubPRNumber}.{bugfix|misc|feature|doc|removal}`
-   The change should include information that is useful to the user rather than the developer.
+- Is [signed off](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#sign-off). Matrix.org projects require that the
+   sign off process has been followed in it's entirity.
+- Has a [changelog entry](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#changelog) in `changelog.d`. A changelog filename should be `${GithubPRNumber}.{bugfix|misc|feature|doc|removal}`
+  The change should include information that is useful to the user rather than the developer.
    
-   You can choose to sign your changelog entry to be credited by appending something like "Thanks to @Half-Shot"
-   at the end of the file, on the same line.
+  You can choose to sign your changelog entry to be credited by appending something like "Thanks to @Half-Shot"
+  at the end of the file, on the same line.
+
+  You may be wondering how to determine your `GithubPRNumber` number ahead of time. [Synapse offers some useful
+  hints](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#how-do-i-know-what-to-call-the-changelog-file-before-i-create-the-pr) for this.
 
 - Is passing CI. As noted above, please feel free to call out any CI issues you cannot fix.
 - Calls out any issue it may fix with a "Fixes #issue-no" in the body.
@@ -98,7 +112,7 @@ We aim to review all PRs in a timely manner, though be aware that larger PRs wil
 
 ### ✔️ Review process
 
-We aim to review all PRs from the community prompty, although we can't offer firm time commitments. If you think
+We aim to review all PRs from the community promptly, although we can't offer firm time commitments. If you think
 your PR has been forgotten and it's been a while, do not hesistate to politely ping in the correct project room.
 
 When reviewing a PR, we will:

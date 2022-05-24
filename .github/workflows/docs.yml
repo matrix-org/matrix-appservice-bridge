@@ -8,42 +8,42 @@ on:
 jobs:
   docs:
     runs-on: ubuntu-20.04
+    container: node:16
     steps:
-      - name: get-npm-version
+      - uses: actions/checkout@v3
+
+      - name: Get Package Version
         id: package-version
         uses: martinbeentjes/npm-get-version-action@master
-
-      - uses: actions/checkout@v2
-
-      - name: Use Node.js
-        uses: actions/setup-node@v1
-        with:
-          node-version: 16
 
       - run: yarn --frozen-lockfile
 
       - run: yarn gendoc
 
       - name: Deploy v${{ steps.package-version.outputs.current-version }}
+        # This step will copy over generated docs to gh-pages branch, commit and publish
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           keep_files: true
-          publish_dir: ./
-          destination_dir: ./v${{ steps.package-version.outputs.current-version }}
+          publish_dir: ./.typedoc/
+          destination_dir: ./${{ steps.package-version.outputs.current-version }}
+          full_commit_message: Deploy ${{ steps.package-version.outputs.current-version }} to GitHub Pages
 
       - name: Checkout gh-pages
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
-          branch: gh-pages
+          ref: gh-pages
 
-      - run: node insert-new-version.js v${{ steps.package-version.outputs.current-version }} > index.html
+      # update the index file
+      - run: node insert-new-version.js ${{ steps.package-version.outputs.current-version }}
 
-      - uses: github-actions-x/commit@v2.8
+      - name: Commit updated index
+        uses: github-actions-x/commit@v2.9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           push-branch: 'gh-pages'
-          commit-message: publish v${{ steps.package-version.outputs.current-version }}
-          files: v${{ steps.package-version.outputs.current-version }} index.html
-          name: Github Actions
+          commit-message: Publish v${{ steps.package-version.outputs.current-version }}
+          files: index.html
+          name: GitHub Actions
           email: actions@github.com

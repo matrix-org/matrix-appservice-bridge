@@ -23,7 +23,6 @@ import Logging from "./logging";
 import { ReadStream } from "fs";
 import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
 import { WeakStateEvent } from "./event-types";
-import { StateLookupEvent } from "./state-lookup";
 
 const log = Logging.get("Intent");
 export type IntentBackingStore = {
@@ -455,7 +454,7 @@ export class Intent {
      * @param skey The state key
      * @param content The event content
      */
-    public async sendStateEvent(roomId: string, type: string, skey: string, content: object
+    public async sendStateEvent(roomId: string, type: string, skey: string, content: unknown
         // eslint-disable-next-line camelcase
         ): Promise<{event_id: string}> {
         return this._joinGuard(roomId, async() => {

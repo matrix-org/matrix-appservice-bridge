@@ -51,6 +51,7 @@ export interface ServiceRoomOpts {
 export interface NotificationEventContent {
 	message: string;
 	code: ServiceNotificationNoticeCode|string,
+	// eslint-disable-next-line camelcase
 	notice_id: string,
 	metadata: Record<string, unknown>;
 	severity: ServiceNotificationServerity;
@@ -116,7 +117,7 @@ export class ServiceRoom {
 		message: string,
 		severity: ServiceNotificationServerity,
 		noticeId: string,
-		code: ServiceNotificationNoticeCode|string = ServiceNotificationNoticeCode.Unknown) {
+		code: ServiceNotificationNoticeCode|string = ServiceNotificationNoticeCode.Unknown): Promise<void> {
 		if (Date.now() - (this.lastNoticeTime.get(noticeId) ?? 0) <=
 			(this.opts.minimumUpdatePeriodMs ?? DEFAULT_UPDATE_TIME_MS)) {
 			return;

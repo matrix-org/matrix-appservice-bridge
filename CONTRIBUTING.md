@@ -92,7 +92,7 @@ When making a pull request, please ensure it [the PR] follows these best practis
 - Targets `develop` (unless it explicitly depends upon another feature, then depend on that branch and comment to that effect in the PR body).
 - Is updated via rebase mechanisms when `develop` changes, rather than merge commits (reduces noise).
 - Is [signed off](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#sign-off). Matrix.org projects require that the
-   sign off process has been followed in it's entirety.
+   sign off process has been followed in its entirety.
 - Has a [changelog entry](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#changelog) in `changelog.d`.
   A changelog filename should be `${GithubPRNumber}.{bugfix|misc|feature|doc|removal}`.
   The change should include information that is useful to the user rather than the developer.

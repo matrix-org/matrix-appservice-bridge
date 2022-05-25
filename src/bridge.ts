@@ -915,9 +915,6 @@ export class Bridge {
                         return;
                     }
 
-                    // Do not leak access token to function
-                    delete req.query.access_token;
-
                     try {
                         const result = await getUserFunc(protocol, req.query as Record<string, string[]|string>);
                         res.status(200).json(result);
@@ -979,10 +976,7 @@ export class Bridge {
         }
         const app: Application = this.appservice.expressApp;
         opts.checkToken = opts.checkToken ?? true;
-        // TODO(paul): Consider more options:
-        //   opts.versions - automatic version filtering and rejecting of
-        //     unrecognised API versions
-        // Consider automatic "/_matrix/app/:version(v1|unstable)" path prefix
+
         app[opts.method.toLowerCase() as "get"|"put"|"post"|"delete"](opts.path, (req, res, ...args) => {
             if (opts.checkToken && !this.requestCheckToken(req)) {
                 return res.status(403).send({
@@ -990,6 +984,10 @@ export class Bridge {
                     error: "Bad token supplied,"
                 });
             }
+
+            // Do not leak access token to function
+            delete req.query.access_token;
+
             return opts.handler(req, res, ...args);
         });
     }

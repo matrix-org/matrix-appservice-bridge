@@ -1,12 +1,12 @@
 # Contributing
 
-Hello there 👋. This contributing file is used amonst the matrix.org bridge repositories and should be followed when
+Hello there 👋. This contributing file is used amongst the matrix.org bridge repositories and should be followed when
 making any contribution. If you are reading this, that means you are going to be contributing to some free software,
 and that's great! Thank you!
 
 ## 🗨️ Getting in touch
 
-As a Matrix based project we use chat rooms heavily for coodinating work. When getting involved with an issue or pull
+As a Matrix-based project we use chat rooms heavily for coodinating work. When getting involved with an issue or pull
 request, feel free to reach out to us in one of the project rooms. The project room for the repository you are working
 on should be visible from the README.md file.
 
@@ -92,7 +92,7 @@ When making a pull request, please ensure it [the PR] follows these best practis
 - Targets `develop` (unless it explicitly depends upon another feature, then depend on that branch and comment to that effect in the PR body).
 - Is updated via rebase mechanisms when `develop` changes, rather than merge commits (reduces noise).
 - Is [signed off](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#sign-off). Matrix.org projects require that the
-   sign off process has been followed in it's entirity.
+   sign off process has been followed in it's entirety.
 - Has a [changelog entry](https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#changelog) in `changelog.d`.
   A changelog filename should be `${GithubPRNumber}.{bugfix|misc|feature|doc|removal}`.
   The change should include information that is useful to the user rather than the developer.

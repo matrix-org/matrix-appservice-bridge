@@ -253,7 +253,6 @@ export interface BridgeOpts {
     roomLinkValidation?: {
         rules: Rules;
     };
-    authenticateThirdpartyEndpoints?: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
 
     bridgeEncryption?: {
@@ -406,7 +405,6 @@ interface VettedBridgeOpts {
     roomLinkValidation?: {
         rules: Rules;
     };
-    authenticateThirdpartyEndpoints: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
     bridgeEncryption?: {
         homeserverUrl: string;
@@ -499,7 +497,6 @@ export class Bridge {
             ...opts,
             disableContext: opts.disableStores ? true : (opts.disableContext ?? false),
             disableStores: opts.disableStores ?? false,
-            authenticateThirdpartyEndpoints: opts.authenticateThirdpartyEndpoints ?? false,
             userStore: opts.userStore || "user-store.db",
             userActivityStore: opts.userActivityStore || "user-activity-store.db",
             roomStore: opts.roomStore || "room-store.db",
@@ -828,7 +825,7 @@ export class Bridge {
             this.addAppServicePath({
                 method: "GET",
                 path: "/_matrix/app/:version(v1|unstable)/thirdparty/protocol/:protocol",
-                checkToken: this.opts.authenticateThirdpartyEndpoints,
+                checkToken: true,
                 handler: async (req, res) => {
                     const protocol = req.params.protocol;
 
@@ -854,7 +851,6 @@ export class Bridge {
             this.addAppServicePath({
                 method: "GET",
                 path: "/_matrix/app/:version(v1|unstable)/thirdparty/location/:protocol",
-                checkToken: this.opts.authenticateThirdpartyEndpoints,
                 handler: async (req, res) => {
                     const protocol = req.params.protocol;
 
@@ -883,7 +879,6 @@ export class Bridge {
             this.addAppServicePath({
                 method: "GET",
                 path: "/_matrix/app/:version(v1|unstable)/thirdparty/location",
-                checkToken: this.opts.authenticateThirdpartyEndpoints,
                 handler: async (req, res) => {
                     const alias = req.query.alias;
                     if (!alias) {
@@ -912,7 +907,6 @@ export class Bridge {
             this.addAppServicePath({
                 method: "GET",
                 path: "/_matrix/app/:version(v1|unstable)/thirdparty/user/:protocol",
-                checkToken: this.opts.authenticateThirdpartyEndpoints,
                 handler: async (req, res) => {
                     const protocol = req.params.protocol;
 
@@ -941,7 +935,6 @@ export class Bridge {
             this.addAppServicePath({
                 method: "GET",
                 path: "/_matrix/app/:version(v1|unstable)/thirdparty/user",
-                checkToken: this.opts.authenticateThirdpartyEndpoints,
                 handler: async (req, res) => {
                     const userid = req.query.userid;
                     if (!userid) {
@@ -985,7 +978,7 @@ export class Bridge {
             throw Error('Cannot call addAppServicePath before calling .run()');
         }
         const app: Application = this.appservice.expressApp;
-        opts.checkToken = opts.checkToken !== undefined ? opts.checkToken : true;
+        opts.checkToken = opts.checkToken ?? true;
         // TODO(paul): Consider more options:
         //   opts.versions - automatic version filtering and rejecting of
         //     unrecognised API versions

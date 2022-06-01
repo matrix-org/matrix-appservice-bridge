@@ -825,7 +825,6 @@ export class Bridge {
             this.addAppServicePath({
                 method: "GET",
                 path: "/_matrix/app/:version(v1|unstable)/thirdparty/protocol/:protocol",
-                checkToken: true,
                 handler: async (req, res) => {
                     const protocol = req.params.protocol;
 
@@ -967,7 +966,6 @@ export class Bridge {
      */
     public addAppServicePath(opts: {
         method: "GET"|"PUT"|"POST"|"DELETE",
-        checkToken?: boolean,
         path: string,
         handler: (req: ExRequest, respose: ExResponse, next: NextFunction) => void,
     }): void {
@@ -975,10 +973,9 @@ export class Bridge {
             throw Error('Cannot call addAppServicePath before calling .run()');
         }
         const app: Application = this.appservice.expressApp;
-        opts.checkToken = opts.checkToken ?? true;
 
         app[opts.method.toLowerCase() as "get"|"put"|"post"|"delete"](opts.path, (req, res, ...args) => {
-            if (opts.checkToken && !this.requestCheckToken(req)) {
+            if (!this.requestCheckToken(req)) {
                 return res.status(403).send({
                     errcode: "M_FORBIDDEN",
                     error: "Bad token supplied,"

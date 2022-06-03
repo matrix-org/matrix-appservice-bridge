@@ -253,7 +253,6 @@ export interface BridgeOpts {
     roomLinkValidation?: {
         rules: Rules;
     };
-    authenticateThirdpartyEndpoints?: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
 
     bridgeEncryption?: {
@@ -406,7 +405,6 @@ interface VettedBridgeOpts {
     roomLinkValidation?: {
         rules: Rules;
     };
-    authenticateThirdpartyEndpoints: boolean;
     roomUpgradeOpts?: RoomUpgradeHandlerOpts;
     bridgeEncryption?: {
         homeserverUrl: string;
@@ -499,7 +497,6 @@ export class Bridge {
             ...opts,
             disableContext: opts.disableStores ? true : (opts.disableContext ?? false),
             disableStores: opts.disableStores ?? false,
-            authenticateThirdpartyEndpoints: opts.authenticateThirdpartyEndpoints ?? false,
             userStore: opts.userStore || "user-store.db",
             userActivityStore: opts.userActivityStore || "user-activity-store.db",
             roomStore: opts.roomStore || "room-store.db",
@@ -828,7 +825,6 @@ export class Bridge {
             this.addAppServicePath({
                 method: "GET",
                 path: "/_matrix/app/:version(v1|unstable)/thirdparty/protocol/:protocol",
-                checkToken: this.opts.authenticateThirdpartyEndpoints,
                 handler: async (req, res) => {
                     const protocol = req.params.protocol;
 
@@ -854,7 +850,6 @@ export class Bridge {
             this.addAppServicePath({
                 method: "GET",
                 path: "/_matrix/app/:version(v1|unstable)/thirdparty/location/:protocol",
-                checkToken: this.opts.authenticateThirdpartyEndpoints,
                 handler: async (req, res) => {
                     const protocol = req.params.protocol;
 
@@ -883,7 +878,6 @@ export class Bridge {
             this.addAppServicePath({
                 method: "GET",
                 path: "/_matrix/app/:version(v1|unstable)/thirdparty/location",
-                checkToken: this.opts.authenticateThirdpartyEndpoints,
                 handler: async (req, res) => {
                     const alias = req.query.alias;
                     if (!alias) {
@@ -912,7 +906,6 @@ export class Bridge {
             this.addAppServicePath({
                 method: "GET",
                 path: "/_matrix/app/:version(v1|unstable)/thirdparty/user/:protocol",
-                checkToken: this.opts.authenticateThirdpartyEndpoints,
                 handler: async (req, res) => {
                     const protocol = req.params.protocol;
 
@@ -920,9 +913,6 @@ export class Bridge {
                         res.status(404).json({err: "Unknown 3PN protocol " + protocol});
                         return;
                     }
-
-                    // Do not leak access token to function
-                    delete req.query.access_token;
 
                     try {
                         const result = await getUserFunc(protocol, req.query as Record<string, string[]|string>);
@@ -941,7 +931,6 @@ export class Bridge {
             this.addAppServicePath({
                 method: "GET",
                 path: "/_matrix/app/:version(v1|unstable)/thirdparty/user",
-                checkToken: this.opts.authenticateThirdpartyEndpoints,
                 handler: async (req, res) => {
                     const userid = req.query.userid;
                     if (!userid) {
@@ -977,7 +966,6 @@ export class Bridge {
      */
     public addAppServicePath(opts: {
         method: "GET"|"PUT"|"POST"|"DELETE",
-        checkToken?: boolean,
         path: string,
         handler: (req: ExRequest, respose: ExResponse, next: NextFunction) => void,
     }): void {
@@ -985,18 +973,18 @@ export class Bridge {
             throw Error('Cannot call addAppServicePath before calling .run()');
         }
         const app: Application = this.appservice.expressApp;
-        opts.checkToken = opts.checkToken !== undefined ? opts.checkToken : true;
-        // TODO(paul): Consider more options:
-        //   opts.versions - automatic version filtering and rejecting of
-        //     unrecognised API versions
-        // Consider automatic "/_matrix/app/:version(v1|unstable)" path prefix
+
         app[opts.method.toLowerCase() as "get"|"put"|"post"|"delete"](opts.path, (req, res, ...args) => {
-            if (opts.checkToken && !this.requestCheckToken(req)) {
+            if (!this.requestCheckToken(req)) {
                 return res.status(403).send({
                     errcode: "M_FORBIDDEN",
                     error: "Bad token supplied,"
                 });
             }
+
+            // Do not leak access token to function
+            delete req.query.access_token;
+
             return opts.handler(req, res, ...args);
         });
     }

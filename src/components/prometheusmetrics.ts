@@ -399,9 +399,6 @@ export class PrometheusMetrics {
         bridge.addAppServicePath({
             method: "GET",
             path: "/metrics",
-            // TODO: Ideally these metrics would be on a different port.
-            // For now, leave this unauthenticated.
-            checkToken: false,
             handler: async (_req: Request, res: Response) => {
                 try {
                     await this.refresh();

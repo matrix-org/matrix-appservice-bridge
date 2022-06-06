@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Matrix.org Foundation C.I.C.
+Copyright 2022 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,221 +12,205 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-import * as util from "util";
-import winston, { Logger, format, Logform } from "winston";
-import chalk from "chalk";
-import * as Transport from 'winston-transport';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { LogLevel, LogService } from "matrix-bot-sdk";
+import util from "util";
+import winston, { format } from "winston";
 
-type LogLevel = "debug"|"info"|"warn"|"error";
+/**
+ * Tries to filter out noise from the bot-sdk.
+ * @param messageOrObjects A list of values being logged.
+ * @returns True is the message is noise, or false otherwise.
+ */
+function isMessageNoise(messageOrObjects: unknown[]) {
+	return !!messageOrObjects.find(messageOrObject => {
+		if (typeof messageOrObject !== "object") {
+			return false;
+		}
 
-const CHALK_LEVELS: Record<LogLevel, string> = {
-    "debug": "blue",
-    "info": "green",
-    "warn": "yellow",
-    "error": "red",
+		const possibleError = messageOrObject as { error?: string, body?: { error?: string}, errcode?: string}
+
+		const error = possibleError?.error || possibleError?.body?.error;
+		const errcode = possibleError?.errcode;
+
+		if (errcode === "M_NOT_FOUND" && error === "Room account data not found") {
+			return true;
+		}
+
+		if (errcode === "M_NOT_FOUND" && error === "Event not found.") {
+			return true;
+		}
+
+		if (errcode === "M_USER_IN_USE") {
+			return true;
+		}
+
+		return false;
+	});
 }
 
-type MessagePart = unknown;
-interface LoggerConfig {
-    console?: LogLevel|"off",
-    fileDatePattern?: string,
-    timestampFormat?: string,
-    files?: {
-        [filename: string]: LogLevel|"off",
-    }
-    maxFiles?: number,
+export interface CustomLogger {
+    verbose: (message: string, ...metadata: any[]) => void,
+    debug: (message: string, ...metadata: any[]) => void,
+    info: (message: string, ...metadata: any[]) => void,
+    warn: (message: string, ...metadata: any[]) => void,
+    error: (message: string, ...metadata: any[]) => void,
 }
 
-export class LogWrapper {
-    private logger: Logger|null = null;
-    private messages: {type: LogLevel, message: string}[] = [];
-
-    public setLogger(logger: Logger): void {
-        this.logger = logger;
-    }
-
-    public debug(...messageParts: MessagePart[]): void { this.log(messageParts, 'debug') }
-
-    public info(...messageParts: MessagePart[]): void { this.log(messageParts, 'info') }
-
-    public warn(...messageParts: MessagePart[]): void { this.log(messageParts, 'warn') }
-
-    public error(...messageParts: MessagePart[]): void { this.log(messageParts, 'error') }
-
-    public drain(): void {
-        if (!this.logger) { return; }
-        while (this.messages.length > 0) {
-            const msg = this.messages[0];
-            this.logger[msg.type](msg.message);
-            this.messages.splice(0, 1);
-        }
-    }
-
-    private formatParts(messageParts: MessagePart[]): string[] {
-        return messageParts.map((part) => {
-            if (typeof(part) === "object") {
-                return util.inspect(part);
-            }
-            return String(part);
-        });
-    }
-
-    private log(messageParts: MessagePart[], type: LogLevel): void {
-        const formattedParts = this.formatParts(messageParts).join(" ");
-        if (this.logger === null) {
-            this.messages.push({type, message: formattedParts});
-            return;
-        }
-        /* When we first start logging, the transports
-         * won't be configured so we push to a queue.
-         * When the transport becomes ready, the queue
-         * is emptied. */
-        this.drain();
-        this.logger[type](formattedParts);
-    }
+export interface LoggingOpts {
+    level: "debug"|"info"|"warn"|"error"|"trace";
+    json?: boolean;
+    colorize?: boolean;
+    timestampFormat?: string;
 }
 
-class Logging {
-    private loggers: Map<string, LogWrapper> = new Map();
-    private formatterFn: Logform.Format;
-    private colorFn: Logform.FormatWrap;
-    private transports: Transport[];
-    private config: LoggerConfig|null = null;
-    constructor() {
-        this.transports = [];
+export interface CustomLoggingOpts {
+    logger: CustomLogger;
+    level: "debug"|"info"|"warn"|"error"|"trace";
+}
 
-        this.formatterFn = format.printf((info) => {
-            return `${info.timestamp} ${info.level} ${info.label} ${info.message}`;
-        });
+interface LoggingMetadata {
+	requestId?: string;
+}
 
-        this.colorFn = format((info) => {
-            const level = info.level.toUpperCase() as LogLevel;
-            const levelColour = CHALK_LEVELS[info.level as LogLevel];
-            if (levelColour) {
-                info.level = chalk.keyword(levelColour)(level);
-            }
-            return info;
-        })
-    }
+export class Logger {
+	public static log?: winston.Logger|CustomLogger;
 
-    /*
-        console: "error|warn|info|debug|off"
-        fileDatePattern: "YYYY-MM-DD",
-        timestampFormat: "MMM-D HH:mm:ss.SSS"
-        files: {
-            "abc.log" => "error|warn|info|debug|off"
-        }
-        maxFiles: 5
-    */
-    configure(config: LoggerConfig = {}): void {
-        if (!config.fileDatePattern) {
-            config.fileDatePattern = "YYYY-MM-DD";
-        }
-        if (!config.timestampFormat) {
-            config.timestampFormat = "MMM-D HH:mm:ss.SSS";
-        }
-        if (!config.console) {
-            config.console = "info";
-        }
-        if (!config.maxFiles) {
-            config.maxFiles = 0;
-        }
-        this.config = config;
+	public static formatMessageString(messageOrObject: unknown[]): string {
+		return messageOrObject.flat().map(value => {
+			if (typeof(value) === "object") {
+				return util.inspect(value);
+			}
+			return value;
+		}).join(" ");
+	}
 
-        if (this.transports) {
-            for (const transport of this.transports) {
-                if (transport.close) {
-                    transport.close();
-                }
-            }
+    /**
+     * Configure the winston logger.
+     * @param cfg The configuration for the logger.
+     * @returns A winston logger
+     */
+    private static configureWinston(cfg: LoggingOpts): winston.Logger {
+        const formatters = [
+            winston.format.timestamp({
+                format: cfg.timestampFormat || "HH:mm:ss:SSS",
+            }),
+            (format((info) => {
+                info.level = info.level.toUpperCase();
+                return info;
+            }))(),
+        ]
+
+        if (!cfg.json && cfg.colorize) {
+            formatters.push(
+                winston.format.colorize({
+                    level: true,
+                })
+            );
         }
 
-        this.transports = [];
-        if (config.console !== undefined) {
-            this.transports.push(new (winston.transports.Console)({
-                level: config.console,
-                silent: config.console === 'off',
-                format: format.combine(
-                    this.colorFn(),
-                    this.formatterFn
-                )
-            }));
+        if (cfg.json) {
+            formatters.push(winston.format.json());
+        }
+        else {
+            formatters.push(winston.format.printf(
+                (info) => {
+                    return `${info.level} ${info.timestamp} [${info.module}] ${info.reqId} ${info.message}`;
+                },
+            ));
         }
 
-        if (config.files !== undefined) {
-            // `winston-daily-rotate-file` has side-effects so we don't want to mess anyone up
-            // unless they want to use logging
-            require("winston-daily-rotate-file");
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const { DailyRotateFile } = require("winston/lib/winston/transports");
+		if (this.log && 'close' in this.log) {
+			this.log.close();
+		}
 
-            for (const filename of Object.keys(config.files)) {
-                const level = config.files[filename];
-                this.transports.push(new DailyRotateFile({
-                    filename,
-                    datePattern: config.fileDatePattern,
-                    level,
-                    maxFiles: config.maxFiles > 0 ? config.maxFiles : undefined
-                }));
-            }
-        }
-
-        this.loggers.forEach((wrapper, name) => {
-            wrapper.setLogger(this.createLogger(name));
-            wrapper.drain();
-        });
-    }
-
-    public get(name: string): LogWrapper {
-        const existingLogger = this.loggers.get(name);
-        if (existingLogger) {
-            return existingLogger;
-        }
-        const wrapper = new LogWrapper()
-        this.loggers.set(name, wrapper);
-        /* We won't assign create and assign a logger until
-            * the transports are ready */
-        if (this.transports !== null) {
-            wrapper.setLogger(this.createLogger(name));
-        }
-        return wrapper;
-    }
-
-    public createLogger(name: string): Logger {
-        const logger = winston.createLogger({
-            transports: this.transports,
-            format: format.combine(
-                format.timestamp({
-                    format: this.config?.timestampFormat,
+        return winston.createLogger({
+            level: cfg.level,
+            transports: [
+                new winston.transports.Console({
+                    format: winston.format.combine(...formatters),
                 }),
-                format.label({label: name}),
-                this.formatterFn
-            ),
+            ],
         });
-        return logger;
     }
-}
 
-const instance: Logging = new Logging();
-instance.configure({console: "off"});
-let isConfigured = false;
+    /**
+     * (Re)configure the logging service. If Winston was previously configured,
+     * it will be closed and reconfigured.
+     * @param cfg
+     */
+    public static configureLogging(cfg: LoggingOpts|CustomLoggingOpts): void {
+        const log = this.log = 'logger' in cfg ? cfg.logger : this.configureWinston(cfg);
 
-export function get(name: string): LogWrapper {
-    return instance.get(name);
-}
+		// Configure matrix-bot-sdk
+        LogService.setLogger({
+            trace: (module: string, ...messageOrObject: unknown[]) => {
+                log.verbose(Logger.formatMessageString(messageOrObject), { module });
+            },
+            debug: (module: string, ...messageOrObject: unknown[]) => {
+                log.debug(Logger.formatMessageString(messageOrObject), { module });
+            },
+            info: (module: string, ...messageOrObject: unknown[]) => {
+                if (module.startsWith("MatrixLiteClient")) {
+                    log.debug(Logger.formatMessageString(messageOrObject), { module });
+                    return;
+                }
+                log.info(Logger.formatMessageString(messageOrObject), { module });
+            },
+            warn: (module: string, ...messageOrObject: unknown[]) => {
+                if (isMessageNoise(messageOrObject)) {
+                    log.debug(Logger.formatMessageString(messageOrObject), { module });
+                    return;
+                }
+                log.warn(Logger.formatMessageString(messageOrObject), { module });
+            },
+            error: (module: string, ...messageOrObject: unknown[]) => {
+                if (isMessageNoise(messageOrObject)) {
+                    log.debug(Logger.formatMessageString(messageOrObject), { module });
+                    return;
+                }
+                log.error(Logger.formatMessageString(messageOrObject), { module });
+            },
+        });
+        LogService.setLevel(LogLevel.fromString(cfg.level));
+        LogService.debug("LogWrapper", "Reconfigured logging");
+    }
 
-export function configure (config: LoggerConfig): void {
-    instance.configure(config);
-    isConfigured = true;
-}
+	/**
+	 * @param module The module logging the information.
+	 * @param metadata Any additional metadata about this specific logger instance.
+	 */
+    constructor(private module: string, private metadata: LoggingMetadata = {}) { }
 
-export function configured(): boolean {
-    return isConfigured;
-}
+    /**
+     * Logs to the DEBUG channel
+     * @param {*[]} messageOrObject The data to log
+     */
+    public debug(...messageOrObject: unknown[]): void {
+		Logger.log?.debug(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+    }
 
-// Backwards compat
-export default {
-    get,
-    configure,
-    configured,
+    /**
+     * Logs to the INFO channel
+     * @param {*[]} messageOrObject The data to log
+     */
+    public info(...messageOrObject: unknown[]): void {
+		Logger.log?.info(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+    }
+
+    /**
+     * Logs to the WARN channel
+     * @param {*[]} messageOrObject The data to log
+     */
+    public warn(...messageOrObject: unknown[]): void {
+        Logger.log?.warn(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+    }
+
+    /**
+     * Logs to the ERROR channel
+     * @param {*[]} messageOrObject The data to log
+     */
+    public error(...messageOrObject: unknown[]): void {
+		Logger.log?.error(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+    }
 }

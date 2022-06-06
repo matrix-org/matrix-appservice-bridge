@@ -13,9 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+export * from "./components/logging";
 // Requests
-export * from "./components/request";
-export * from "./components/request-factory";
+export * from "./components/requests/matrix-request";
+export * from "./components/requests/request";
+export * from "./components/requests/request-factory";
 
 export * from "./components/encryption";
 export * from "./components/encrypted-intent";
@@ -51,7 +53,6 @@ export * from "./components/prometheusmetrics";
 export * from "./components/agecounters";
 export * from "./components/membership-cache";
 export * from "./components/membership-queue";
-export * as Logging from "./components/logging";
 export { unstable } from "./errors";
 export * from "./components/event-types";
 export * from "./components/bridge-info-state";

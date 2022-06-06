@@ -1,6 +1,6 @@
 import { MatrixClient } from "matrix-bot-sdk";
-import * as logging from "./logging";
-const log = logging.get("ActivityTracker");
+import { Logger } from "..";
+const log = new Logger("bridge.ActivityTracker");
 
 export interface ActivityTrackerOpts {
     /**

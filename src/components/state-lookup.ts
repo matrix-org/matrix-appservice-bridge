@@ -13,8 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import PQueue from "p-queue";
-import { Intent } from "./intent";
-import Logging from "./logging";
+import { Logger, Intent } from "..";
 
 interface StateLookupOpts {
     intent: Intent;
@@ -33,7 +32,7 @@ interface StateLookupRoom {
     };
 }
 
-const log = Logging.get("StateLookup");
+const log = new Logger("bridge.StateLookup");
 export interface StateLookupEvent {
     // eslint-disable-next-line camelcase
     room_id: string;

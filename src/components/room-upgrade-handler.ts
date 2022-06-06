@@ -12,13 +12,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-import logging from "./logging";
 import { MatrixRoom } from "../models/rooms/matrix";
 import { MatrixUser } from "../models/users/matrix";
 import { RoomBridgeStoreEntry } from "./room-bridge-store";
-import { Bridge } from "..";
+import { Bridge, Logger } from "..";
 
-const log = logging.get("RoomUpgradeHandler");
+const log = new Logger("bridge.RoomUpgradeHandler");
 
 export interface RoomUpgradeHandlerOpts {
     /**

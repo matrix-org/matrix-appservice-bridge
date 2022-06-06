@@ -3,7 +3,6 @@ import { ProvisioningStore } from "./store";
 import { Server } from "http";
 import { v4 as uuid } from "uuid";
 import axios from "axios";
-import Logs from "../components/logging";
 import { ErrCode, IApiError, ProvisioningRequest, ApiError } from ".";
 import { URL } from "url";
 import { MatrixHostResolver } from "../utils/matrix-host-resolver";
@@ -12,6 +11,7 @@ import { isIP } from "net";
 import { promises as dns } from "dns";
 import ratelimiter, { RateLimitInfo, Options as RatelimitOptions, AugmentedRequest } from "express-rate-limit";
 import { Methods } from "./request";
+import { Logger } from "../components/logging";
 
 // Borrowed from
 // https://github.com/matrix-org/synapse/blob/91221b696156e9f1f9deecd425ae58af03ebb5d3/docs/sample_config.yaml#L215
@@ -37,7 +37,7 @@ export const DefaultDisallowedIpRanges = [
     'fec0::/10'
 ]
 
-const log = Logs.get("ProvisioningApi");
+const log = new Logger("ProvisioningApi");
 
 interface ExpRequestProvisioner extends Request {
     matrixWidgetToken?: string;
@@ -271,14 +271,14 @@ export class ProvisioningApi {
 
     private async deleteSession(req: ProvisioningRequest, res: Response) {
         if (!req.widgetToken) {
-            req.log.debug("tried to delete non-existent session");
+            req.debug("tried to delete non-existent session");
             throw new ApiError("Session cannot be deleted", ErrCode.UnsupportedOperation);
         }
         try {
             await this.store.deleteSession(req.widgetToken);
         }
         catch (ex) {
-            req.log.error("Failed to delete session", ex);
+            req.error("Failed to delete session", ex);
             throw new ApiError("Session could not be deleted", ErrCode.Unknown);
         }
         res.send({ok: true});
@@ -286,7 +286,7 @@ export class ProvisioningApi {
 
     private async deleteAllSessions(req: ProvisioningRequest, res: Response) {
         if (!req.widgetToken) {
-            req.log.debug("tried to delete non-existent session");
+            req.debug("tried to delete non-existent session");
             throw new ApiError("Session cannot be deleted", ErrCode.UnsupportedOperation);
         }
         if (!req.userId) {
@@ -296,7 +296,7 @@ export class ProvisioningApi {
             await this.store.deleteAllSessions(req.userId);
         }
         catch (ex) {
-            req.log.error("Failed to delete all sessions", ex);
+            req.error("Failed to delete all sessions", ex);
             throw new ApiError("Sessions could not be deleted", ErrCode.Unknown);
         }
         res.send({ok: true});
@@ -389,7 +389,7 @@ export class ProvisioningApi {
         }
         const [error, request] = Array.isArray(err) ? err : [err, undefined];
         if (request instanceof ProvisioningRequest) {
-            request.log.error(error);
+            request.error(error);
         }
         else {
             log.error(error);

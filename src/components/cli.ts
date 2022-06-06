@@ -20,9 +20,9 @@ import * as yaml from "js-yaml";
 import nopt from "nopt";
 import { AppServiceOutput, AppServiceRegistration } from "matrix-appservice";
 import { ConfigValidator } from "./config-validator";
-import * as logging from "./logging";
+import { Logger } from "..";
 
-const log = logging.get("cli");
+const log = new Logger("bridge.Cli");
 
 export interface CliOpts<ConfigType extends Record<string, unknown>> {
     /**

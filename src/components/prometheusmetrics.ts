@@ -17,10 +17,9 @@ import PromClient, { Registry } from "prom-client";
 import { AgeCounters } from "./agecounters";
 import { Request, Response } from "express";
 import { Bridge } from "..";
-import Logger from "./logging";
+import { Logger, getBridgeVersion } from "..";
 import { Appservice as BotSdkAppservice, FunctionCallContext, METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL,
     METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL } from "matrix-bot-sdk";
-import { getBridgeVersion } from "../utils/package-info";
 type CollectorFunction = () => Promise<void>|void;
 
 export interface BridgeGaugesCounts {
@@ -104,7 +103,7 @@ interface GagueOpts extends CounterOpts {
  * @constructor
  */
 
-const log = Logger.get('PrometheusMetrics');
+const log = new Logger('bridge.PrometheusMetrics');
 
 export class PrometheusMetrics {
     public static AgeCounters = AgeCounters;

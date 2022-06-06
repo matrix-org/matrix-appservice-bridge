@@ -2,11 +2,11 @@ import { MembershipCache } from "./membership-cache";
 import { AppServiceBot } from "./app-service-bot";
 import { WeakEvent } from "./event-types";
 import { Intent } from "./intent";
-import Logging from "./logging";
+import { Logger } from "..";
 import { MatrixClient } from "matrix-bot-sdk";
 import LRU from "@alloc/quick-lru"
 
-const log = Logging.get("EncryptedEventBroker");
+const log = new Logger("bridge.EncryptedEventBroker");
 
 export const APPSERVICE_LOGIN_TYPE = "m.login.application_service";
 const EVENT_CACHE_FOR_MS = 5 * 60000; // 5 minutes

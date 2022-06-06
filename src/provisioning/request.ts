@@ -1,7 +1,6 @@
-import Logging, { LogWrapper } from "../components/logging";
+import { Logger, Request } from "..";
 import crypto from "crypto";
-import { ThinRequest } from "..";
-import { Request } from "express";
+import { Request as ExpressRequest } from "express";
 import { ParsedQs } from "qs";
 
 // Methods supported by a express.Router
@@ -40,27 +39,21 @@ export class ProvisioningRequest<
     ResBody = any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ReqBody = any,
-    ReqQuery = ParsedQs> implements ThinRequest {
-    public readonly log: LogWrapper;
-    public readonly id: string;
+    ReqQuery = ParsedQs> extends Request<void> {
 
     constructor(
-        public readonly expressReq: Request<Params, ResBody, ReqBody, ReqQuery>,
+        public readonly expressReq: ExpressRequest<Params, ResBody, ReqBody, ReqQuery>,
         public readonly userId: string|null,
         public readonly requestSource: "widget"|"provisioner",
         public readonly widgetToken?: string,
         public readonly fnName?: string,
     ) {
-        this.id = crypto.randomBytes(4).toString('hex');
+        super({
+            id: [Request.generateRequestId(), fnName].filter(n => !!n).join(" "),
+            data: undefined,
+        }, 'ProvisionRequest');
         this.fnName = fnName || expressReq.path;
-        this.log = Logging.get(
-            `ProvisionRequest ${[this.id, fnName].filter(n => !!n).join(" ")}`
-        );
-        this.log.debug(`Request ${userId} (${requestSource}) ${this.fnName}`);
-    }
-
-    public getId(): string {
-        return this.id;
+        this.debug(`Request ${userId} (${requestSource}) ${this.fnName}`);
     }
 
     get body(): ReqBody {

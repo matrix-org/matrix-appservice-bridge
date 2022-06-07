@@ -106,10 +106,6 @@ export interface CustomLoggingOpts {
      * An object which implements the required functions for log output.
      */
     logger: CustomLogger;
-    /**
-     * The log level used by the console output.
-     */
-    level: LogLevel;
 }
 
 interface LoggingMetadata {

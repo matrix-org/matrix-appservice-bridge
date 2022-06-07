@@ -35,7 +35,7 @@ import { MembershipCache, UserMembership, UserProfile } from "./components/membe
 import { RoomLinkValidator, RoomLinkValidatorStatus, Rules } from "./components/room-link-validator"
 import { RoomUpgradeHandler, RoomUpgradeHandlerOpts } from "./components/room-upgrade-handler";
 import { EventQueue } from "./components/event-queue";
-import * as logging from "./components/logging";
+import { Logger } from "..";
 import { UserActivityTracker } from "./components/user-activity";
 import { Defer, defer as deferPromise } from "./utils/promiseutil";
 import { unstable } from "./errors";
@@ -53,7 +53,7 @@ import * as BotSDK from "matrix-bot-sdk";
 import { ActivityTracker, ActivityTrackerOpts } from "./components/activity-tracker";
 import { EncryptedIntent, EncryptedIntentOpts } from "./components/encrypted-intent";
 
-const log = logging.get("bridge");
+const log = new Logger("bridge");
 
 // The frequency at which we will check the list of accumulated Intent objects.
 const INTENT_CULL_CHECK_PERIOD_MS = 1000 * 60; // once per minute

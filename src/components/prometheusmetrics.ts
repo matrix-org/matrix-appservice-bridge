@@ -16,8 +16,7 @@ limitations under the License.
 import PromClient, { Registry } from "prom-client";
 import { AgeCounters } from "./agecounters";
 import { Request, Response } from "express";
-import { Bridge } from "..";
-import Logger from "./logging";
+import { Bridge, Logger } from "..";
 import { Appservice as BotSdkAppservice, FunctionCallContext, METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL,
     METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL } from "matrix-bot-sdk";
 import { getBridgeVersion } from "../utils/package-info";
@@ -104,7 +103,7 @@ interface GagueOpts extends CounterOpts {
  * @constructor
  */
 
-const log = Logger.get('PrometheusMetrics');
+const log = new Logger('PrometheusMetrics');
 
 export class PrometheusMetrics {
     public static AgeCounters = AgeCounters;

@@ -3,7 +3,7 @@ import { ProvisioningStore } from "./store";
 import { Server } from "http";
 import { v4 as uuid } from "uuid";
 import axios from "axios";
-import Logs from "../components/logging";
+import { Logger } from ".."
 import { ErrCode, IApiError, ProvisioningRequest, ApiError } from ".";
 import { URL } from "url";
 import { MatrixHostResolver } from "../utils/matrix-host-resolver";
@@ -37,7 +37,7 @@ export const DefaultDisallowedIpRanges = [
     'fec0::/10'
 ]
 
-const log = Logs.get("ProvisioningApi");
+const log = new Logger("ProvisioningApi");
 
 interface ExpRequestProvisioner extends Request {
     matrixWidgetToken?: string;

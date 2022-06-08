@@ -28,10 +28,12 @@ function isMessageNoise(messageOrObjects: unknown[]) {
 			return false;
 		}
 
-		const possibleError = messageOrObject as { error?: string, body?: { error?: string}, errcode?: string}
+		const possibleError = messageOrObject as {
+            error?: string, body?: { error?: string, errcode?: string}, errcode?: string
+        }
 
 		const error = possibleError?.error || possibleError?.body?.error;
-		const errcode = possibleError?.errcode;
+		const errcode = possibleError?.errcode || possibleError?.body?.errcode;
 
 		if (errcode === "M_NOT_FOUND" && error === "Room account data not found") {
 			return true;
@@ -113,7 +115,7 @@ interface LoggingMetadata {
 }
 
 export class Logger {
-	public static log?: winston.Logger|CustomLogger;
+	public static innerLog?: winston.Logger|CustomLogger;
 
 	public static formatMessageString(messageOrObject: unknown[]): string {
 		return messageOrObject.flat().map(value => {
@@ -159,8 +161,8 @@ export class Logger {
             ));
         }
 
-		if (this.log && 'close' in this.log) {
-			this.log.close();
+		if (this.innerLog && 'close' in this.innerLog) {
+			this.innerLog.close();
 		}
 
         const transports: winston.transport[] = [];
@@ -205,7 +207,7 @@ export class Logger {
      * @param cfg
      */
     public static configure(cfg: LoggingOpts|LoggingOptsFile|CustomLoggingOpts): void {
-        const log = this.log = 'logger' in cfg ? cfg.logger : this.configureWinston(cfg);
+        const log = this.innerLog = 'logger' in cfg ? cfg.logger : this.configureWinston(cfg);
 
 		// Configure matrix-bot-sdk
         LogService.setLogger({
@@ -217,6 +219,8 @@ export class Logger {
             },
             info: (module: string, ...messageOrObject: unknown[]) => {
                 if (module.startsWith("MatrixLiteClient")) {
+                    // The MatrixLiteClient module is quite noisy about the requests it makes
+                    // send non-errors to debug.
                     log.debug(Logger.formatMessageString(messageOrObject), { module });
                     return;
                 }
@@ -251,7 +255,7 @@ export class Logger {
      * @param {*[]} messageOrObject The data to log
      */
     public debug(...messageOrObject: unknown[]): void {
-		Logger.log?.debug(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+		Logger.innerLog?.debug(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
     }
 
     /**
@@ -259,7 +263,7 @@ export class Logger {
      * @param {*[]} messageOrObject The data to log
      */
     public info(...messageOrObject: unknown[]): void {
-		Logger.log?.info(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+		Logger.innerLog?.info(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
     }
 
     /**
@@ -267,7 +271,7 @@ export class Logger {
      * @param {*[]} messageOrObject The data to log
      */
     public warn(...messageOrObject: unknown[]): void {
-        Logger.log?.warn(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+        Logger.innerLog?.warn(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
     }
 
     /**
@@ -275,6 +279,6 @@ export class Logger {
      * @param {*[]} messageOrObject The data to log
      */
     public error(...messageOrObject: unknown[]): void {
-		Logger.log?.error(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+		Logger.innerLog?.error(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
     }
 }

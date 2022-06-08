@@ -140,6 +140,10 @@ export class Logger {
                 info.level = info.level.toUpperCase();
                 return info;
             }))(),
+            (format((info) => {
+                info.requestId = info.requestId ? info.requestId + " " : "";
+                return info;
+            }))(),
         ]
 
         if (!cfg.json && cfg.colorize) {
@@ -155,8 +159,7 @@ export class Logger {
         }
         else {
             formatters.push(winston.format.printf(
-                (info) =>
-                    `${info.level} ${info.timestamp} [${info.module}] ${info.requestId + " " ?? ""}${info.message}`,
+                (info) => `${info.level} ${info.timestamp} [${info.module}] ${info.requestId}${info.message}`,
             ));
         }
 

@@ -13,6 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+
+export * from "./components/logging";
+
 // Requests
 export * from "./components/request";
 export * from "./components/request-factory";
@@ -51,7 +54,6 @@ export * from "./components/prometheusmetrics";
 export * from "./components/agecounters";
 export * from "./components/membership-cache";
 export * from "./components/membership-queue";
-export * from "./components/logging";
 export { unstable } from "./errors";
 export * from "./components/event-types";
 export * from "./components/bridge-info-state";

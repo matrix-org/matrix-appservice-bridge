@@ -35,7 +35,7 @@ import { MembershipCache, UserMembership, UserProfile } from "./components/membe
 import { RoomLinkValidator, RoomLinkValidatorStatus, Rules } from "./components/room-link-validator"
 import { RoomUpgradeHandler, RoomUpgradeHandlerOpts } from "./components/room-upgrade-handler";
 import { EventQueue } from "./components/event-queue";
-import { Logger } from "..";
+import { Logger } from ".";
 import { UserActivityTracker } from "./components/user-activity";
 import { Defer, defer as deferPromise } from "./utils/promiseutil";
 import { unstable } from "./errors";

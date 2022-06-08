@@ -786,7 +786,14 @@ export class Intent {
             buffer = Buffer.from(content, "utf8");
         }
         else if (content instanceof ReadStream) {
-            buffer = Buffer.from(content);
+            buffer = await new Promise((res, rej) => {
+                const bufs: Buffer[] = [];
+                content.on('data', d => bufs.push(d instanceof Buffer ? d : Buffer.from(d)));
+                content.on('end', () => {
+                    res(Buffer.concat(bufs));
+                });
+                content.on('error', (err) => rej(err));
+            });
         }
         else {
             buffer = content;

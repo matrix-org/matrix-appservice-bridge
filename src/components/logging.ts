@@ -155,9 +155,8 @@ export class Logger {
         }
         else {
             formatters.push(winston.format.printf(
-                (info) => {
-                    return `${info.level} ${info.timestamp} [${info.module}] ${info.reqId} ${info.message}`;
-                },
+                (info) =>
+                    `${info.level} ${info.timestamp} [${info.module}] ${info.requestId + " " ?? ""}${info.message}`,
             ));
         }
 

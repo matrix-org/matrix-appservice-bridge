@@ -1,5 +1,4 @@
-import { Bridge } from "../bridge";
-import { Logger } from "..";
+import { Logger, Bridge } from ".."
 import PQueue from "p-queue";
 import { Counter, Gauge } from "prom-client";
 

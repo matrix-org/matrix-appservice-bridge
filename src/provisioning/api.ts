@@ -3,6 +3,7 @@ import { ProvisioningStore } from "./store";
 import { Server } from "http";
 import { v4 as uuid } from "uuid";
 import axios from "axios";
+import { Logger } from ".."
 import { ErrCode, IApiError, ProvisioningRequest, ApiError } from ".";
 import { URL } from "url";
 import { MatrixHostResolver } from "../utils/matrix-host-resolver";
@@ -11,7 +12,6 @@ import { isIP } from "net";
 import { promises as dns } from "dns";
 import ratelimiter, { RateLimitInfo, Options as RatelimitOptions, AugmentedRequest } from "express-rate-limit";
 import { Methods } from "./request";
-import { Logger } from "../components/logging";
 
 // Borrowed from
 // https://github.com/matrix-org/synapse/blob/91221b696156e9f1f9deecd425ae58af03ebb5d3/docs/sample_config.yaml#L215

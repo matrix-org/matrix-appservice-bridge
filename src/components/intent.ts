@@ -25,6 +25,7 @@ import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-b
 import { WeakStateEvent } from "./event-types";
 
 const log = new Logger("bridge.Intent");
+
 export type IntentBackingStore = {
     getMembership: (roomId: string, userId: string) => UserMembership,
     getMemberProfile: (roomId: string, userid: string) => MatrixProfileInfo,
@@ -786,7 +787,14 @@ export class Intent {
             buffer = Buffer.from(content, "utf8");
         }
         else if (content instanceof ReadStream) {
-            buffer = Buffer.from(content);
+            buffer = await new Promise((res, rej) => {
+                const bufs: Buffer[] = [];
+                content.on('data', d => bufs.push(d instanceof Buffer ? d : Buffer.from(d)));
+                content.on('end', () => {
+                    res(Buffer.concat(bufs));
+                });
+                content.on('error', (err) => rej(err));
+            });
         }
         else {
             buffer = content;

@@ -16,8 +16,7 @@ limitations under the License.
 import PromClient, { Registry } from "prom-client";
 import { AgeCounters } from "./agecounters";
 import { Request, Response } from "express";
-import { Bridge } from "..";
-import { Logger, getBridgeVersion } from "..";
+import { Bridge, Logger, getBridgeVersion } from "..";
 import { Appservice as BotSdkAppservice, FunctionCallContext, METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL,
     METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL } from "matrix-bot-sdk";
 type CollectorFunction = () => Promise<void>|void;

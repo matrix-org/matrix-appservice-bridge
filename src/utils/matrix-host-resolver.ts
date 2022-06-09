@@ -7,6 +7,8 @@ interface MatrixServerWellKnown {
     "m.server": string;
 }
 
+const log = new Logger('bridge.MatrixHostResolver');
+
 const OneMinute = 1000 * 60;
 const OneHour = OneMinute * 60;
 
@@ -17,8 +19,6 @@ const CacheFailureForMS = MinCacheForMs;
 const DefaultMatrixServerPort = 8448;
 const MaxPortNumber = 65535;
 const WellKnownTimeout = 10000;
-
-const log = new Logger('bridge.MatrixHostResolver');
 
 type CachedResult = {timestamp: number, result: HostResolveResult}|{timestamp: number, error: Error};
 

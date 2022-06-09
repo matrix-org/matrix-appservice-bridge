@@ -32,21 +32,20 @@
   "dependencies": {
     "@alloc/quick-lru": "^5.2.0",
     "axios": "^0.23.0",
-    "chalk": "^4.1.0",
     "express-rate-limit": "^6.2.0",
     "extend": "^3.0.2",
     "ip-cidr": "^3.0.4",
     "is-my-json-valid": "^2.20.5",
     "js-yaml": "^4.0.0",
     "matrix-appservice": "^0.10.0",
-    "matrix-bot-sdk": "^0.6.0-beta.2",
+    "matrix-bot-sdk": "^0.6.0-beta.8",
     "nedb": "^1.8.0",
     "nopt": "^5.0.0",
     "p-queue": "^6.6.2",
     "prom-client": "^14.0.0",
     "uuid": "^8.3.2",
-    "winston": "^3.3.3",
-    "winston-daily-rotate-file": "^4.5.1"
+    "winston": "^3.7.2",
+    "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.12",
@@ -55,9 +54,9 @@
     "@types/jasmine": "^3.8.2",
     "@types/js-yaml": "^4.0.0",
     "@types/nedb": "^1.8.11",
-    "@types/node": "^12",
+    "@types/node": "^14",
     "@types/nopt": "^3.0.29",
-    "@types/uuid": "^8.3.1",
+    "@types/uuid": "^8.3.2",
     "@typescript-eslint/eslint-plugin": "^5.25.0",
     "@typescript-eslint/parser": "^5.25.0",
     "eslint": "^8.1.5",
@@ -67,6 +66,6 @@
     "ts-node": "^10.2.1",
     "typedoc": "^0.22.9",
     "typescript": "^4.4.3",
-    "winston-transport": "^4.4.0"
+    "winston-transport": "^4.5.0"
   }
 }

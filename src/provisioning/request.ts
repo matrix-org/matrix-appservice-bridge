@@ -1,5 +1,4 @@
-import { Logger, Request } from "..";
-import crypto from "crypto";
+import { Request } from "..";
 import { Request as ExpressRequest } from "express";
 import { ParsedQs } from "qs";
 

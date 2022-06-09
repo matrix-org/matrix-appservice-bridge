@@ -15,6 +15,7 @@ limitations under the License.
 
 import util from "util";
 import { Logger, AppServiceBot } from "..";
+
 const log = new Logger("bridge.RoomLinkValidator");
 const VALIDATION_CACHE_LIFETIME = 30 * 60 * 1000;
 

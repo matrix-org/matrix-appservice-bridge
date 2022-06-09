@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { LogLevel, LogService } from "matrix-bot-sdk";
+import { ILogger, LogLevel as BotSdkLogLevel, LogService } from "matrix-bot-sdk";
 import util from "util";
 import winston, { format } from "winston";
 
@@ -28,10 +28,12 @@ function isMessageNoise(messageOrObjects: unknown[]) {
 			return false;
 		}
 
-		const possibleError = messageOrObject as { error?: string, body?: { error?: string}, errcode?: string}
+		const possibleError = messageOrObject as {
+            error?: string, body?: { error?: string, errcode?: string}, errcode?: string
+        }
 
 		const error = possibleError?.error || possibleError?.body?.error;
-		const errcode = possibleError?.errcode;
+		const errcode = possibleError?.errcode || possibleError?.body?.errcode;
 
 		if (errcode === "M_NOT_FOUND" && error === "Room account data not found") {
 			return true;
@@ -57,16 +59,55 @@ export interface CustomLogger {
     error: (message: string, ...metadata: any[]) => void,
 }
 
+export type LogLevel = "debug"|"info"|"warn"|"error"|"trace";
+
 export interface LoggingOpts {
-    level: "debug"|"info"|"warn"|"error"|"trace";
+    /**
+     * The log level used by the console output.
+     */
+    console?: "debug"|"info"|"warn"|"error"|"trace"|"off";
+    /**
+     * Should the logs be outputted in JSON format, for consumption by a collector.
+     */
     json?: boolean;
+    /**
+     * Should the logs color-code the level strings in the output.
+     */
     colorize?: boolean;
+    /**
+     * Timestamp format used in the log output.
+     * @default "HH:mm:ss:SSS"
+     */
     timestampFormat?: string;
 }
 
+export interface LoggingOptsFile extends LoggingOpts {
+    /**
+     * An object mapping a file name to a logging level. The file will contain
+     * all logs for that level inclusive up to the highest level. (`info` will contain `warn`, `error` etc)
+     * Use `%DATE%` to set the date of the file within the string.
+     * Use the `fileDatePattern` to set the date format.
+     * @example {"info-%DATE%.log": "info"}
+     */
+    files: {
+        [filename: string]: LogLevel,
+    }
+    /**
+     * The number of files to keep before the last file is rotated.
+     * If not set, no files are deleted.
+     */
+    maxFiles?: number,
+    /**
+     * The moment.js compatible date string to use when naming files.
+     */
+    fileDatePattern?: string,
+}
+
 export interface CustomLoggingOpts {
+    /**
+     * An object which implements the required functions for log output.
+     */
     logger: CustomLogger;
-    level: "debug"|"info"|"warn"|"error"|"trace";
 }
 
 interface LoggingMetadata {
@@ -74,7 +115,7 @@ interface LoggingMetadata {
 }
 
 export class Logger {
-	public static log?: winston.Logger|CustomLogger;
+	public static innerLog?: winston.Logger|CustomLogger;
 
 	public static formatMessageString(messageOrObject: unknown[]): string {
 		return messageOrObject.flat().map(value => {
@@ -90,13 +131,17 @@ export class Logger {
      * @param cfg The configuration for the logger.
      * @returns A winston logger
      */
-    private static configureWinston(cfg: LoggingOpts): winston.Logger {
+    private static configureWinston(cfg: LoggingOpts|LoggingOptsFile): winston.Logger {
         const formatters = [
             winston.format.timestamp({
                 format: cfg.timestampFormat || "HH:mm:ss:SSS",
             }),
             (format((info) => {
                 info.level = info.level.toUpperCase();
+                return info;
+            }))(),
+            (format((info) => {
+                info.requestId = info.requestId ? info.requestId + " " : "";
                 return info;
             }))(),
         ]
@@ -114,36 +159,63 @@ export class Logger {
         }
         else {
             formatters.push(winston.format.printf(
-                (info) => {
-                    return `${info.level} ${info.timestamp} [${info.module}] ${info.reqId} ${info.message}`;
-                },
+                (info) => `${info.level} ${info.timestamp} [${info.module}] ${info.requestId}${info.message}`,
             ));
         }
 
-		if (this.log && 'close' in this.log) {
-			this.log.close();
+		if (this.innerLog && 'close' in this.innerLog) {
+			this.innerLog.close();
 		}
 
+        const transports: winston.transport[] = [];
+
+        if (cfg.console) {
+            transports.push(new winston.transports.Console({
+                format: winston.format.combine(...formatters),
+            }));
+        }
+
+        if ('files' in cfg) {
+            // `winston-daily-rotate-file` has side-effects, so only load if in use.
+            // unless they want to use logging
+            require("winston-daily-rotate-file");
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { DailyRotateFile } = require("winston/lib/winston/transports");
+
+            for (const [filename, level] of Object.entries(cfg.files)) {
+                transports.push(new DailyRotateFile({
+                    filename,
+                    datePattern: cfg.fileDatePattern,
+                    level,
+                    maxFiles: cfg.maxFiles,
+                }));
+            }
+        }
+
         return winston.createLogger({
-            level: cfg.level,
-            transports: [
-                new winston.transports.Console({
-                    format: winston.format.combine(...formatters),
-                }),
-            ],
+            level: cfg.console,
+            transports
         });
     }
 
     /**
-     * (Re)configure the logging service. If Winston was previously configured,
-     * it will be closed and reconfigured.
-     * @param cfg
+     * Logging implementation which can be provided to a bot-sdk LogService
+     * instance to pipe logs through this component. **Note**: This is done automatically
+     * for the `matrix-appservice-bridge`'s instance of the bot-sdk, but if you
+     * use the bot-sdk directly in your bridge you should use the example code below
+     * @example
+     * ```
+     * import { LogService } from "matrix-bot-sdk";
+     * Logger.configure({...})
+     * LogService.setLogger(Logger.logServiceLogger);
+     * ```
      */
-    public static configureLogging(cfg: LoggingOpts|CustomLoggingOpts): void {
-        const log = this.log = 'logger' in cfg ? cfg.logger : this.configureWinston(cfg);
-
-		// Configure matrix-bot-sdk
-        LogService.setLogger({
+    public static get logServiceLogger(): ILogger {
+        const log = this.innerLog;
+        if (!log) {
+            throw Error('Logging is not configured yet');
+        }
+        return {
             trace: (module: string, ...messageOrObject: unknown[]) => {
                 log.verbose(Logger.formatMessageString(messageOrObject), { module });
             },
@@ -152,6 +224,8 @@ export class Logger {
             },
             info: (module: string, ...messageOrObject: unknown[]) => {
                 if (module.startsWith("MatrixLiteClient")) {
+                    // The MatrixLiteClient module is quite noisy about the requests it makes
+                    // send non-errors to debug.
                     log.debug(Logger.formatMessageString(messageOrObject), { module });
                     return;
                 }
@@ -171,8 +245,19 @@ export class Logger {
                 }
                 log.error(Logger.formatMessageString(messageOrObject), { module });
             },
-        });
-        LogService.setLevel(LogLevel.fromString(cfg.level));
+        };
+    }
+
+    /**
+     * (Re)configure the logging service. If Winston was previously configured,
+     * it will be closed and reconfigured.
+     * @param cfg The config for the log service.
+     */
+    public static configure(config: LoggingOpts|LoggingOptsFile|CustomLoggingOpts) {
+        this.innerLog = ('logger' in config ? config.logger : this.configureWinston(config));
+        LogService.setLogger(this.logServiceLogger);
+        // Log everything to our service, so we can filter it here.
+        LogService.setLevel(BotSdkLogLevel.TRACE);
         LogService.debug("LogWrapper", "Reconfigured logging");
     }
 
@@ -187,7 +272,7 @@ export class Logger {
      * @param {*[]} messageOrObject The data to log
      */
     public debug(...messageOrObject: unknown[]): void {
-		Logger.log?.debug(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+		Logger.innerLog?.debug(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
     }
 
     /**
@@ -195,7 +280,7 @@ export class Logger {
      * @param {*[]} messageOrObject The data to log
      */
     public info(...messageOrObject: unknown[]): void {
-		Logger.log?.info(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+		Logger.innerLog?.info(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
     }
 
     /**
@@ -203,7 +288,7 @@ export class Logger {
      * @param {*[]} messageOrObject The data to log
      */
     public warn(...messageOrObject: unknown[]): void {
-        Logger.log?.warn(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+        Logger.innerLog?.warn(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
     }
 
     /**
@@ -211,6 +296,6 @@ export class Logger {
      * @param {*[]} messageOrObject The data to log
      */
     public error(...messageOrObject: unknown[]): void {
-		Logger.log?.error(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
+		Logger.innerLog?.error(Logger.formatMessageString(messageOrObject), { module: this.module, ...this.metadata });
     }
 }

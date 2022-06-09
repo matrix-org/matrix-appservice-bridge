@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { LogService } from "matrix-bot-sdk";
+import { ILogger, LogLevel as BotSdkLogLevel, LogService } from "matrix-bot-sdk";
 import util from "util";
 import winston, { format } from "winston";
 
@@ -192,27 +192,30 @@ export class Logger {
             }
         }
 
-
         return winston.createLogger({
             level: cfg.console,
-            transports: [
-                new winston.transports.Console({
-                    format: winston.format.combine(...formatters),
-                }),
-            ],
+            transports
         });
     }
 
     /**
-     * (Re)configure the logging service. If Winston was previously configured,
-     * it will be closed and reconfigured.
-     * @param cfg
+     * Logging implementation which can be provided to a bot-sdk LogService
+     * instance to pipe logs through this component. **Note**: This is done automatically
+     * for the `matrix-appservice-bridge`'s instance of the bot-sdk, but if you
+     * use the bot-sdk directly in your bridge you should use the example code below
+     * @example
+     * ```
+     * import { LogService } from "matrix-bot-sdk";
+     * Logger.configure({...})
+     * LogService.setLogger(Logger.logServiceLogger);
+     * ```
      */
-    public static configure(cfg: LoggingOpts|LoggingOptsFile|CustomLoggingOpts): void {
-        const log = this.innerLog = 'logger' in cfg ? cfg.logger : this.configureWinston(cfg);
-
-		// Configure matrix-bot-sdk
-        LogService.setLogger({
+    public static get logServiceLogger(): ILogger {
+        const log = this.innerLog;
+        if (!log) {
+            throw Error('Logging is not configured yet');
+        }
+        return {
             trace: (module: string, ...messageOrObject: unknown[]) => {
                 log.verbose(Logger.formatMessageString(messageOrObject), { module });
             },
@@ -242,7 +245,19 @@ export class Logger {
                 }
                 log.error(Logger.formatMessageString(messageOrObject), { module });
             },
-        });
+        };
+    }
+
+    /**
+     * (Re)configure the logging service. If Winston was previously configured,
+     * it will be closed and reconfigured.
+     * @param cfg The config for the log service.
+     */
+    public static configure(config: LoggingOpts|LoggingOptsFile|CustomLoggingOpts) {
+        this.innerLog = ('logger' in config ? config.logger : this.configureWinston(config));
+        LogService.setLogger(this.logServiceLogger);
+        // Log everything to our service, so we can filter it here.
+        LogService.setLevel(BotSdkLogLevel.TRACE);
         LogService.debug("LogWrapper", "Reconfigured logging");
     }
 

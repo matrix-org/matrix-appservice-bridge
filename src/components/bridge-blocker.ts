@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import { Logger } from "..";
-const log = new Logger("BridgeBlocker");
+const log = new Logger('bridge.BridgeBlocker');
 
 /**
  * Monitor the active user limit (or any limit you desire),

@@ -6,7 +6,7 @@ import { Logger } from "..";
 import { MatrixClient } from "matrix-bot-sdk";
 import LRU from "@alloc/quick-lru"
 
-const log = new Logger("EncryptedEventBroker");
+const log = new Logger("bridge.EncryptedEventBroker");
 
 export const APPSERVICE_LOGIN_TYPE = "m.login.application_service";
 const EVENT_CACHE_FOR_MS = 5 * 60000; // 5 minutes

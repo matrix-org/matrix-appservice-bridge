@@ -13,23 +13,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { defer, Defer } from "../utils/promiseutil";
-
-function generateRequestId() {
-    return (Math.random() * 1e20).toString(36);
-}
+import { defer, Defer } from "../../utils/promiseutil";
+import { Logger } from "../..";
 
 export interface RequestOpts<T> {
     id?: string;
     data: T;
 }
 
-export class Request<T> {
+export class Request<T> extends Logger {
+    public static generateRequestId(): string {
+        return (Math.random() * 1e20).toString(36);
+    }
+
     private id: string;
     private data: T;
     private startTs: number;
     private defer: Defer<unknown>;
     private pending: boolean;
+
 
     public get isPending(): boolean {
         return this.pending;
@@ -42,9 +44,11 @@ export class Request<T> {
      * generated if this is not provided.
      * @param opts.data Optional data to associate with this request.
      */
-    constructor(opts: RequestOpts<T>) {
+    constructor(opts: RequestOpts<T>, loggerModule = "Req") {
         opts = opts || {};
-        this.id = opts.id || generateRequestId();
+        const id = opts.id || Request.generateRequestId();
+        super(loggerModule, { requestId: id});
+        this.id = id;
         this.data = opts.data;
         this.startTs = Date.now();
         this.defer = defer();
@@ -56,7 +60,7 @@ export class Request<T> {
      * Get any optional data set on this request.
      * @return The data
      */
-    public getData() {
+    public getData(): T {
         return this.data;
     }
 
@@ -64,7 +68,7 @@ export class Request<T> {
      * Get this request's ID.
      * @return The ID.
      */
-    public getId() {
+    public getId(): string {
         return this.id;
     }
 
@@ -72,7 +76,7 @@ export class Request<T> {
      * Get the number of elapsed milliseconds since this request was created.
      * @return The number of milliseconds since this request was made.
      */
-    public getDuration() {
+    public getDuration(): number {
         return Date.now() - this.startTs;
     }
 
@@ -81,7 +85,7 @@ export class Request<T> {
      * respective methods are called on this Request.
      * @return {Promise} A promise
      */
-    public getPromise() {
+    public getPromise(): Promise<unknown> {
         return this.defer.promise;
     }
 
@@ -91,7 +95,7 @@ export class Request<T> {
      * through, e.g. suppressing AS virtual users' messages is still a success.
      * @param msg The thing to resolve with.
      */
-    public resolve(msg: unknown) {
+    public resolve(msg: unknown): void {
         this.pending = false;
         this.defer.resolve(msg);
     }
@@ -101,7 +105,7 @@ export class Request<T> {
      * processed correctly</i>.
      * @param msg The thing to reject with.
      */
-    public reject(msg: unknown) {
+    public reject(msg: unknown): void {
         this.pending = false;
         this.defer.reject(msg);
     }
@@ -111,7 +115,7 @@ export class Request<T> {
      * @param promise The promise whose resolution determines the outcome of this
      * request.
      */
-    public outcomeFrom(promise: Promise<unknown>) {
+    public outcomeFrom(promise: Promise<unknown>): Promise<unknown> {
         return promise.then(this.resolve.bind(this), this.reject.bind(this));
     }
 }

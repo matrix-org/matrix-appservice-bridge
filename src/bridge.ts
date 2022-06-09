@@ -19,23 +19,20 @@ import yaml from "js-yaml";
 import { Application, Request as ExRequest, Response as ExResponse, NextFunction } from "express";
 
 import { AppServiceRegistration, AppService, AppServiceOutput } from "matrix-appservice";
-import { BridgeContext } from "./components/bridge-context"
-import { AppServiceBot } from "./components/app-service-bot"
-import { RequestFactory } from "./components/request-factory";
-import { Request } from "./components/request";
+import { BridgeContext } from "./components/bridge-context";
+import { AppServiceBot } from "./components/app-service-bot";
 import { Intent, IntentOpts, IntentBackingStore, PowerLevelContent } from "./components/intent";
 import { RoomBridgeStore } from "./components/room-bridge-store";
 import { UserBridgeStore } from "./components/user-bridge-store";
 import { UserActivityStore } from "./components/user-activity-store";
 import { EventBridgeStore } from "./components/event-bridge-store";
-import { MatrixUser } from "./models/users/matrix"
-import { MatrixRoom } from "./models/rooms/matrix"
-import { PrometheusMetrics, BridgeGaugesCounts } from "./components/prometheusmetrics"
-import { MembershipCache, UserMembership, UserProfile } from "./components/membership-cache"
+import { MatrixUser } from "./models/users/matrix";
+import { MatrixRoom } from "./models/rooms/matrix";
+import { PrometheusMetrics, BridgeGaugesCounts } from "./components/prometheusmetrics";
+import { MembershipCache, UserMembership, UserProfile } from "./components/membership-cache";
 import { RoomLinkValidator, RoomLinkValidatorStatus, Rules } from "./components/room-link-validator"
 import { RoomUpgradeHandler, RoomUpgradeHandlerOpts } from "./components/room-upgrade-handler";
 import { EventQueue } from "./components/event-queue";
-import { Logger } from ".";
 import { UserActivityTracker } from "./components/user-activity";
 import { Defer, defer as deferPromise } from "./utils/promiseutil";
 import { unstable } from "./errors";
@@ -48,12 +45,14 @@ import { ThirdpartyProtocolResponse, ThirdpartyLocationResponse, ThirdpartyUserR
 import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
 import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
-import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
+import { EphemeralEvent, WeakEvent } from "./components/event-types";
 import * as BotSDK from "matrix-bot-sdk";
 import { ActivityTracker, ActivityTrackerOpts } from "./components/activity-tracker";
 import { EncryptedIntent, EncryptedIntentOpts } from "./components/encrypted-intent";
+import { Logger, RequestFactory, Request } from ".";
+import { EphemeralMatrixRequest, TimelineMatrixRequest } from "./components/requests/matrix-request";
 
-const log = new Logger("bridge");
+const log = new Logger("bridge.Bridge");
 
 // The frequency at which we will check the list of accumulated Intent objects.
 const INTENT_CULL_CHECK_PERIOD_MS = 1000 * 60; // once per minute
@@ -70,13 +69,13 @@ export interface BridgeController {
     /**
      * The bridge will invoke when an event has been received from the HS.
      */
-    onEvent: (request: Request<WeakEvent>, context?: BridgeContext) => void;
+    onEvent: (request: TimelineMatrixRequest, context?: BridgeContext) => void;
     /**
      * The bridge will invoke this when a typing, read reciept or presence event
      * is received from the HS. **This will only work with the `bridgeEncryption`
      * configuration set.**
      */
-    onEphemeralEvent?: (request: Request<TypingEvent|ReadReceiptEvent|PresenceEvent>) => void;
+    onEphemeralEvent?: (request: EphemeralMatrixRequest) => void;
     /**
      * The bridge will invoke this function when queried via onUserQuery. If
      * not supplied, no users will be provisioned on user queries. Provisioned users
@@ -95,10 +94,6 @@ export interface BridgeController {
      * via onAliasQuery.
      */
     onAliasQueried?: (alias: string, roomId: string) => PossiblePromise<void>;
-    /**
-     * Invoked when logging. Defaults to a function which logs to the console.
-     * */
-    onLog?: (text: string, isError: boolean) => void;
     /**
      * If supplied, the bridge will respond to third-party entity lookups using the
      * contained helper functions.
@@ -338,7 +333,7 @@ interface VettedBridgeOpts {
     /**
      * True to enable SUCCESS/FAILED log lines to be sent to onLog. Default: true.
      */
-    logRequestOutcome: boolean;
+    logRequestOutcome?: boolean;
     /**
      * Escape userIds for non-bot intents with
      * {@link MatrixUser~escapeUserId}
@@ -430,8 +425,6 @@ export class Bridge {
     private queue: EventQueue;
     private intentBackingStore: IntentBackingStore;
     private prevRequestPromise: Promise<unknown>;
-    private readonly onLog: (message: string, isError: boolean) => void;
-
     private intentLastAccessedTimeout: NodeJS.Timeout|null = null;
     private botIntent?: Intent;
     private appServiceBot?: AppServiceBot;
@@ -509,7 +502,6 @@ export class Bridge {
                 type: opts.queue?.type || "single",
                 perRequest: opts.queue?.perRequest ?? false,
             },
-            logRequestOutcome: opts.logRequestOutcome ?? true,
             suppressEcho: opts.suppressEcho ?? true,
             eventValidation: opts.hasOwnProperty("eventValidation") ? opts.eventValidation : {
                 validateEditSender: {
@@ -519,15 +511,6 @@ export class Bridge {
         };
 
         this.queue = EventQueue.create(this.opts.queue, this.onConsume.bind(this));
-
-        // Default: logger -> log to console
-        this.onLog = opts.controller.onLog || function(text, isError) {
-            if (isError) {
-                log.error(text);
-                return;
-            }
-            log.info(text);
-        };
 
         // we'll init these at runtime
         this.requestFactory = new RequestFactory();
@@ -675,17 +658,16 @@ export class Bridge {
             );
         }
 
-        this.requestFactory = new RequestFactory();
         if (this.opts.logRequestOutcome) {
-            this.requestFactory.addDefaultResolveCallback((req) =>
-                this.onLog(
-                    "[" + req.getId() + "] SUCCESS (" + req.getDuration() + "ms)",
+            this.requestFactory.addDefaultResolveCallback(req =>
+                req.info(
+                    `SUCCESS (${req.getDuration()}ms)`,
                     false,
                 )
             );
             this.requestFactory.addDefaultRejectCallback((req, err) =>
-                this.onLog(
-                    "[" + req.getId() + "] FAILED (" + req.getDuration() + "ms) " +
+                req.info(
+                    `FAILED (${req.getDuration()}ms)`,
                     (err ? util.inspect(err) : ""),
                     false,
                 )
@@ -752,9 +734,8 @@ export class Bridge {
         this.appservice.on("ephemeral", async (event) =>
             this.onEphemeralEvent(event as unknown as EphemeralEvent)
         );
-        this.appservice.on("http-log", (line) => {
-            this.onLog(line, false);
-        });
+        const httpLog = new Logger("bridge.HttpLog");
+        this.appservice.on("http-log", line => httpLog.debug(line));
 
         this.customiseAppserviceThirdPartyLookup();
         if (this.metrics) {
@@ -1250,8 +1231,9 @@ export class Bridge {
             log.error(`Failed to handle ephemeral activity`, ex);
         }
         if (this.opts.controller.onEphemeralEvent) {
-            const request = this.requestFactory.newRequest({ data: event });
-            await this.opts.controller.onEphemeralEvent(request as Request<EphemeralEvent>);
+            const request = new EphemeralMatrixRequest(event);
+            this.requestFactory.withRequest(request);
+            await this.opts.controller.onEphemeralEvent(request);
         }
     }
 
@@ -1370,7 +1352,8 @@ export class Bridge {
             }
         }
 
-        const request = this.requestFactory.newRequest({ data: event });
+        const request = new TimelineMatrixRequest(event);
+        this.requestFactory.withRequest(request);
         const contextReady = this.getBridgeContext(event);
         const dataReady = contextReady.then(context => ({ request, context }));
 
@@ -1421,11 +1404,14 @@ export class Bridge {
         return promise;
     }
 
-    private onConsume(err: Error|null, data: { request: Request<WeakEvent>, context?: BridgeContext}) {
+    private onConsume(err: Error|null, data: { request: TimelineMatrixRequest, context?: BridgeContext}|null) {
         if (err) {
             // The data for the event could not be retrieved.
-            this.onLog("onEvent failure: " + err, true);
+            log.info("onEvent failure: " + err, true);
             return;
+        }
+        if (!data) {
+            throw Error('Expected data to be defined if error is null');
         }
 
         this.opts.controller.onEvent(data.request, data.context);
@@ -1738,46 +1724,4 @@ function loadDatabase<T extends BridgeStore>(path: string, Cls: new (db: Datasto
         }
     });
     return defer.promise;
-}
-
-function retryAlgorithm(
-    event: unknown,
-    attempts: number,
-    err: {
-        httpStatus: number,
-        cors?: string,
-        name: string,
-        // eslint-disable-next-line camelcase
-        data?: { retry_after_ms: number },
-    }
-) {
-    if (err.httpStatus === 400 || err.httpStatus === 403 || err.httpStatus === 401) {
-        // client error; no amount of retrying will save you now.
-        return -1;
-    }
-    // we ship with browser-request which returns { cors: rejected } when trying
-    // with no connection, so if we match that, give up since they have no conn.
-    if (err.cors === "rejected") {
-        return -1;
-    }
-
-    if (err.name === "M_LIMIT_EXCEEDED") {
-        const waitTime = err.data?.retry_after_ms;
-        if (waitTime) {
-            return waitTime;
-        }
-    }
-    if (attempts > 4) {
-        return -1; // give up
-    }
-    return 1000 + (1000 * attempts);
-}
-
-function queueAlgorithm(event: {getType: () => string, getRoomId(): string}) {
-    if (event.getType() === "m.room.message") {
-        // use a separate queue for each room ID
-        return "message_" + event.getRoomId();
-    }
-    // allow all other events continue concurrently.
-    return null;
 }

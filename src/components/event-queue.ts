@@ -16,7 +16,7 @@ type DataReady = Promise<Record<string, unknown>>;
 
 // It's an event, which has no type yet.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ConsumeCallback = (error: Error|null, event: any) => void;
+type ConsumeCallback = (error: Error|null, event: any|null) => void;
 
 /**
  * Handles the processing order of incoming Matrix events.
@@ -102,7 +102,7 @@ export class EventQueue {
      *     is consumed.
      * @return {EventQueue} The newly created EventQueue.
      */
-    static create(opts: { type: "none"|"single"|"per_room"}, consumeFn: ConsumeCallback) {
+    static create(opts: { type: "none"|"single"|"per_room"}, consumeFn: ConsumeCallback): EventQueue {
         const type = opts.type;
         /* eslint-disable @typescript-eslint/no-use-before-define */
         if (type == "single") {

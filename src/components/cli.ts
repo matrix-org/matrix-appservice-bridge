@@ -22,7 +22,7 @@ import { AppServiceOutput, AppServiceRegistration } from "matrix-appservice";
 import { ConfigValidator } from "./config-validator";
 import { Logger } from "..";
 
-const log = new Logger("cli");
+const log = new Logger("bridge.Cli");
 
 export interface CliOpts<ConfigType extends Record<string, unknown>> {
     /**

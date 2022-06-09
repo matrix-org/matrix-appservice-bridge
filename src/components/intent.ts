@@ -24,7 +24,8 @@ import { ReadStream } from "fs";
 import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
 import { WeakStateEvent } from "./event-types";
 
-const log = new Logger("Intent");
+const log = new Logger("bridge.Intent");
+
 export type IntentBackingStore = {
     getMembership: (roomId: string, userId: string) => UserMembership,
     getMemberProfile: (roomId: string, userid: string) => MatrixProfileInfo,

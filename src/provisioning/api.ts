@@ -271,14 +271,14 @@ export class ProvisioningApi {
 
     private async deleteSession(req: ProvisioningRequest, res: Response) {
         if (!req.widgetToken) {
-            req.log.debug("tried to delete non-existent session");
+            req.debug("tried to delete non-existent session");
             throw new ApiError("Session cannot be deleted", ErrCode.UnsupportedOperation);
         }
         try {
             await this.store.deleteSession(req.widgetToken);
         }
         catch (ex) {
-            req.log.error("Failed to delete session", ex);
+            req.error("Failed to delete session", ex);
             throw new ApiError("Session could not be deleted", ErrCode.Unknown);
         }
         res.send({ok: true});
@@ -286,7 +286,7 @@ export class ProvisioningApi {
 
     private async deleteAllSessions(req: ProvisioningRequest, res: Response) {
         if (!req.widgetToken) {
-            req.log.debug("tried to delete non-existent session");
+            req.debug("tried to delete non-existent session");
             throw new ApiError("Session cannot be deleted", ErrCode.UnsupportedOperation);
         }
         if (!req.userId) {
@@ -296,7 +296,7 @@ export class ProvisioningApi {
             await this.store.deleteAllSessions(req.userId);
         }
         catch (ex) {
-            req.log.error("Failed to delete all sessions", ex);
+            req.error("Failed to delete all sessions", ex);
             throw new ApiError("Sessions could not be deleted", ErrCode.Unknown);
         }
         res.send({ok: true});
@@ -389,7 +389,7 @@ export class ProvisioningApi {
         }
         const [error, request] = Array.isArray(err) ? err : [err, undefined];
         if (request instanceof ProvisioningRequest) {
-            request.log.error(error);
+            request.error(error);
         }
         else {
             log.error(error);

@@ -33,9 +33,9 @@ export class MatrixUser {
         if (_data && typeof _data !== "object") {
             throw Error("data arg must be an Object");
         }
-        const split = this.userId.split(":");
-        this._localpart = split[0].substring(1);
-        this.host = split.slice(1).join(':');
+        const split = this.userId.indexOf(':');
+        this._localpart = this.userId.substring(1, split);
+        this.host = this.userId.substring(split+1);
         if (escape) {
             this.escapeUserId();
         }

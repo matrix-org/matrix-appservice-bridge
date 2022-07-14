@@ -35,7 +35,7 @@ export class MatrixUser {
         }
         const split = this.userId.split(":");
         this._localpart = split[0].substring(1);
-        this.host = split[1];
+        this.host = split.slice(1).join(':');
         if (escape) {
             this.escapeUserId();
         }

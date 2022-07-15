@@ -33,7 +33,7 @@ export class MatrixUser {
         if (_data && typeof _data !== "object") {
             throw Error("data arg must be an Object");
         }
-        const split = this.userId.split(":");
+        const split = this.userId.split(/:(.*)/); // only split on the first colon.
         this._localpart = split[0].substring(1);
         this.host = split[1];
         if (escape) {

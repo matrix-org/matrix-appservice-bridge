@@ -2404,7 +2404,7 @@ matrix-appservice@^0.10.0:
     js-yaml "^4.1.0"
     morgan "^1.10.0"
 
-matrix-bot-sdk@^0.6.0-beta.2:
+matrix-bot-sdk@0.6.0-beta.2:
   version "0.6.0-beta.2"
   resolved "https://registry.yarnpkg.com/matrix-bot-sdk/-/matrix-bot-sdk-0.6.0-beta.2.tgz#abfddaeaf339da167717a1ca4148fa8f847f36f5"
   integrity sha512-D9aQ2++1bJIzka2uIz22HkaeyT058QGOh96xdxiDOaezyzLY5BN7ehYg+P0xRzDYDFKx9DbqDYCt97IkfahtPw==

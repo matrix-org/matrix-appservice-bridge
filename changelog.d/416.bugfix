@@ -1,0 +1,1 @@
+Pin matrix-bot-sdk version to avoid inadvertently requiring Node 16.

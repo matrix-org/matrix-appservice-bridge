@@ -1,3 +1,12 @@
+4.0.2 (2022-07-15)
+==================
+
+Bugfixes
+--------
+
+- Pin matrix-bot-sdk version to avoid inadvertently requiring Node 16. ([\#416](https://github.com/matrix-org/matrix-appservice-bridge/issues/416))
+
+
 4.0.1 (2022-04-07)
 ==================
 

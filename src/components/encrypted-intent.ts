@@ -46,7 +46,7 @@ export class EncryptedIntent extends Intent {
      * @param opts Additional options for the upload.
      * @returns A MXC URL pointing to the uploaded data.
      */
-    public async uploadContent(content: Buffer|string|ReadStream, opts: FileUploadOpts = {}): Promise<string> {
+    public async uploadContent(content: Buffer|string, opts: FileUploadOpts = {}): Promise<string> {
         await this.ensureRegistered();
         // Media is encrypted, since we don't know the destination room assume this media will be encrypted.
         await this.encryptionOpts.ensureClientSyncingCallback();

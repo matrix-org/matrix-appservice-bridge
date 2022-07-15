@@ -1,0 +1,1 @@
+`Intent.uploadContent` no longer accepts a `ReadStream` `content` parameter. Convert your stream to a buffer before beginning an upload.

@@ -2324,10 +2324,10 @@ marked@^3.0.8:
   resolved "https://registry.yarnpkg.com/marked/-/marked-3.0.8.tgz#2785f0dc79cbdc6034be4bb4f0f0a396bd3f8aeb"
   integrity sha512-0gVrAjo5m0VZSJb4rpL59K1unJAMb/hm8HRXqasD8VeC8m91ytDPMritgFSlKonfdt+rRYYpP/JfLxgIX8yoSw==
 
-matrix-appservice@^0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/matrix-appservice/-/matrix-appservice-0.10.0.tgz#11b96dfda4567c04c8d14cd7b51110a3c6991c29"
-  integrity sha512-bxkvPaFXzuuRfqSQgIBbA6M+nKXeRJEeZlJfzjhP0RBBMl62HQTXqNLSVHhLRCdzKbr1OayrbDKL+BnmoghDDA==
+matrix-appservice@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/matrix-appservice/-/matrix-appservice-1.0.0.tgz#8a1225b248131eb8d37618bd88f76d705c647c28"
+  integrity sha512-SoWTp92xKsKiC6T8147gTxChyp0aNisxLWtX15vGMIeIdV3ZsUzoQsLVhABzuVzW1ExZ5FAoD1HpYz1Du9lk6A==
   dependencies:
     "@types/express" "^4.17.8"
     body-parser "^1.19.0"

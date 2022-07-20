@@ -1,4 +1,4 @@
-examples/encryption
+examples/
 .typedoc
 .nyc_output
 yarn-error.log

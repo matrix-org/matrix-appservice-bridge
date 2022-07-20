@@ -21,7 +21,7 @@
     "matrix-org"
   ],
   "engines": {
-    "node": ">=16"
+    "node": ">=16 <=18"
   },
   "author": "Matrix.org",
   "license": "Apache-2.0",

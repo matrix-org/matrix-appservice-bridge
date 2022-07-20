@@ -1170,17 +1170,12 @@ export class Bridge {
             return;
         }
         const matrixUser = new MatrixUser(userId);
-        try {
-            const provisionedUser = await this.opts.controller.onUserQuery(matrixUser);
-            if (!provisionedUser) {
-                log.warn(`Not provisioning user for ${userId}`);
-                return;
-            }
-            await this.provisionUser(matrixUser, provisionedUser);
+        const provisionedUser = await this.opts.controller.onUserQuery(matrixUser);
+        if (!provisionedUser) {
+            log.warn(`Not provisioning user for ${userId}`);
+            return;
         }
-        catch (ex) {
-            log.error(`Failed _onUserQuery for ${userId}`, ex);
-        }
+        await this.provisionUser(matrixUser, provisionedUser);
     }
 
     private async onAliasQuery(alias: string) {

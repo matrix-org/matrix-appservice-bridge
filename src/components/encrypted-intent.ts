@@ -65,7 +65,7 @@ export class EncryptedIntent extends Intent {
         const userId: string = this.userId;
         const res = await this.botSdkIntent.underlyingClient.doRequest(
             "POST",
-            "/_matrix/client/r0/login",
+            "/_matrix/client/v3/login",
             undefined,
             {
                 type: APPSERVICE_LOGIN_TYPE,

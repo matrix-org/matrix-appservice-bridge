@@ -1614,7 +1614,7 @@ export class Bridge {
         if (this.opts.bridgeEncryption) {
             // Ensure that we have support for /login
             const loginFlows: {flows: {type: string}[]} =
-                await this.botSdkAS.botClient.doRequest("GET", "/_matrix/client/r0/login");
+                await this.botSdkAS.botClient.doRequest("GET", "/_matrix/client/v3/login");
             if (!EncryptedEventBroker.supportsLoginFlow(loginFlows)) {
                 throw Error(
                     'To enable support for encryption, your homeserver must support m.login.application_service.' +

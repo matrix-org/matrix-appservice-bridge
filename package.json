@@ -38,7 +38,7 @@
     "ip-cidr": "^3.0.4",
     "is-my-json-valid": "^2.20.5",
     "js-yaml": "^4.0.0",
-    "matrix-appservice": "^0.10.0",
+    "matrix-appservice": "^1.0.0",
     "matrix-bot-sdk": "0.6.0-beta.2",
     "nedb": "^1.8.0",
     "nopt": "^5.0.0",

@@ -1,18 +1,16 @@
-"use strict";
-var Datastore = require("nedb");
-var fs = require("fs");
+import Datastore from "nedb";
+import * as fs from "fs";
+import { UserBridgeStore, MatrixUser, RemoteUser } from "../../src/index";
 
-var UserBridgeStore = require("../..").UserBridgeStore;
-var MatrixUser = require("../..").MatrixUser;
-var RemoteUser = require("../..").RemoteUser;
-var TEST_DB_PATH = __dirname + "/test.db";
+const TEST_DB_PATH = __dirname + "/test.db";
 
 describe("UserBridgeStore", function() {
-    var store, db;
+    let store: UserBridgeStore;
+    let db: Datastore;
 
     beforeEach(
     /** @this TestCase */
-    async function(done) {
+    function(done) {
         db = new Datastore({
             filename: TEST_DB_PATH,
             autoload: true,
@@ -45,8 +43,8 @@ describe("UserBridgeStore", function() {
             const userFromStore = await store.setMatrixUser(user).then(function() {
                 return store.getMatrixUser(userId);
             });
-            expect(userFromStore.getId()).toEqual(userId);
-            expect(userFromStore.getDisplayName()).toEqual("Foo");
+            expect(userFromStore?.getId()).toEqual(userId);
+            expect(userFromStore?.getDisplayName()).toEqual("Foo");
         });
     });
 
@@ -58,7 +56,7 @@ describe("UserBridgeStore", function() {
             const userFromStore = await store.setRemoteUser(user).then(function() {
                 return store.getRemoteUser(remoteId);
             });
-            expect(userFromStore.getId()).toEqual(remoteId);
+            expect(userFromStore?.getId()).toEqual(remoteId);
         });
 
         it("should fully persist all types of primitive data", async function() {
@@ -76,11 +74,11 @@ describe("UserBridgeStore", function() {
             const userFromStore = await store.setRemoteUser(user).then(function() {
                 return store.getRemoteUser(remoteId);
             });
-            expect(userFromStore.getId()).toEqual(remoteId);
-            expect(userFromStore.get("int")).toEqual(42);
-            expect(userFromStore.get("str")).toEqual("the answer");
-            expect(userFromStore.get("bool")).toEqual(true);
-            expect(userFromStore.get("obj")).toEqual({
+            expect(userFromStore?.getId()).toEqual(remoteId);
+            expect(userFromStore?.get<number>("int")).toEqual(42);
+            expect(userFromStore?.get<string>("str")).toEqual("the answer");
+            expect(userFromStore?.get<boolean>("bool")).toEqual(true);
+            expect(userFromStore?.get<object>("obj")).toEqual({
                 foo: "bar",
                 baz: {
                     buzz: true
@@ -91,14 +89,14 @@ describe("UserBridgeStore", function() {
         it("should not persist functions", async function() {
             var remoteId = "some_unique_id";
             var user = new RemoteUser(remoteId);
-            user.set("fn", function(foo) {
+            user.set("fn", function() {
                 return 42;
             });
             const userFromStore = await store.setRemoteUser(user).then(function() {
                 return store.getRemoteUser(remoteId);
             });
-            expect(userFromStore.getId()).toEqual(remoteId);
-            expect(userFromStore.get("fn")).toBeUndefined();
+            expect(userFromStore?.getId()).toEqual(remoteId);
+            expect(userFromStore?.get("fn")).toBeUndefined();
         });
     });
 
@@ -157,7 +155,7 @@ describe("UserBridgeStore", function() {
 
         it("should throw if the data query isn't an object", function() {
             expect(function() {
-                store.getByRemoteData("nested.key");
+                store.getByRemoteData("nested.key" as any);
             }).toThrow();
         });
     });
@@ -201,7 +199,7 @@ describe("UserBridgeStore", function() {
             const mx = new MatrixUser("@foo:bar");
             await store.setMatrixUser(mx);
             const m = await store.getByMatrixLocalpart("foo");
-            expect(m.getId()).toEqual("@foo:bar");
+            expect(m?.getId()).toEqual("@foo:bar");
         });
     });
 
@@ -262,8 +260,8 @@ describe("UserBridgeStore", function() {
             it("should return a single element list for a single match",
             async function() {
                 const res = await store.getMatrixLinks("a_1");
-                expect(res.length).toEqual(1);
-                expect(res[0]).toEqual("@a:bar");
+                expect(res?.length).toEqual(1);
+                expect(res?.[0]).toEqual("@a:bar");
             });
         });
     });
@@ -317,8 +315,8 @@ describe("UserBridgeStore", function() {
             it("should return a single element list for a single match",
             async function() {
                 const res = await store.getRemoteLinks("@b:bar");
-                expect(res.length).toEqual(1);
-                expect(res[0]).toEqual("b_1");
+                expect(res?.length).toEqual(1);
+                expect(res?.[0]).toEqual("b_1");
             });
         });
     });

@@ -252,7 +252,7 @@ export class EncryptedEventBroker {
                 // eslint-disable-next-line camelcase
                 const { filter_id } = await matrixClient.doRequest(
                     "POST",
-                    `/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`,
+                    `/_matrix/client/v3/user/${encodeURIComponent(userId)}/filter`,
                     null,
                     SYNC_FILTER
                 );

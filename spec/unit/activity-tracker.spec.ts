@@ -13,13 +13,13 @@ function createTracker(canUseWhois: boolean = false, presence?: PresenceEventCon
             }
             throw {statusCode: 403}; // 403 - not an admin
         }
-        if (method === "GET" && path.startsWith("/_matrix/client/r0/presence/")) {
+        if (method === "GET" && path.startsWith("/_matrix/client/v3/presence/")) {
             if (!presence) {
                 throw Error("Presence is disabled");
             }
             return presence;
         }
-        if (method === "GET" && path.startsWith("/_matrix/client/r0/admin/whois")) {
+        if (method === "GET" && path.startsWith("/_matrix/client/v3/admin/whois")) {
             if (!whois) {
                 throw Error("Whois is disabled");
             }

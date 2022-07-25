@@ -779,14 +779,11 @@ export class Intent {
      * @param opts Additional options for the upload.
      * @returns A MXC URL pointing to the uploaded data.
      */
-    public async uploadContent(content: Buffer|string|ReadStream, opts: FileUploadOpts = {}): Promise<string> {
+    public async uploadContent(content: Buffer|string, opts: FileUploadOpts = {}): Promise<string> {
         await this.ensureRegistered();
         let buffer: Buffer;
         if (typeof content === "string") {
             buffer = Buffer.from(content, "utf8");
-        }
-        else if (content instanceof ReadStream) {
-            buffer = Buffer.from(content);
         }
         else {
             buffer = content;

@@ -119,7 +119,7 @@ describe("RoomUpgradeHandler", () => {
                 room_id: "!abc:def",
             })).toEqual(false);
         });
-        it("should handle a expected invite", async (done) => {
+        it("should handle a expected invite", async () => {
             const ruh = new RoomUpgradeHandler({}, {});
             let newRoomId = false;
             ruh.waitingForInvite.set("!new:def", "!abc:def");
@@ -127,13 +127,14 @@ describe("RoomUpgradeHandler", () => {
                 newRoomId = _newRoomId;
                 return Promise.resolve();
             }
-            ruh.onJoinedNewRoom = () => {
+            const p = new Promise(r => ruh.onJoinedNewRoom = () => {
                 expect(newRoomId).toEqual("!new:def");
-                done();
-            }
+                r();
+            });
             expect(await ruh.onInvite({
                 room_id: "!new:def",
             })).toEqual(true);
+            await p;
         });
     });
 });

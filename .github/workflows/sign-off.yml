@@ -16,8 +16,8 @@ jobs:
             const authorAssociation = context.payload.pull_request.author_association;
             if (['OWNER', 'MEMBER'].includes(authorAssociation) ||
                 // GitHub labels users who are part of the parent org as 'CONTRIBUTOR' sometimes, so check that the user
-                // created the PR on the base projet to check they have write access.
-                authorAssociation === 'CONTRIBUTOR' && context.payload.pull_request.head.user.login === context.repo.owner) {
+                // created the PR on the base project to check they have write access.
+                (authorAssociation === 'CONTRIBUTOR' && context.payload.pull_request.head.user.login === context.repo.owner)) {
               core.notice('Pull request does not require sign-off.');
               return;
             }
@@ -40,5 +40,6 @@ jobs:
               return;
             }
 
-            core.setFailed('No sign-off found. Please ensure you have signed off the PR as per https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#sign-off')
+            core.setFailed('No sign-off found. Please ensure you have signed off the PR as per https://matrix-org.github.io/synapse/latest/development/contributing_guide.html#sign-off.')
+            core.notice('If you have signed off privately instead (following the steps in Private Sign off), you can ignore this test.')
           

@@ -7,17 +7,17 @@ on:
 jobs:
   signoff:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Runs a single command using the runners shell
       - name: Check PR for sign-off text
         uses: actions/github-script@v6
         with:
           script: |
             // We don't require owners or members to sign off.
-            console.log(context.payload.pull_request)
-            if (['OWNER', 'MEMBER'].includes(context.payload.pull_request.author_association)) {
+            const authorAssociation = context.payload.pull_request.author_association;
+            if (['OWNER', 'MEMBER'].includes(authorAssociation) ||
+                // GitHub labels users who are part of the parent org as 'CONTRIBUTOR' sometimes, so check that the user
+                // created the PR on the base projet to check they have write access.
+                authorAssociation === 'CONTRIBUTOR' && context.payload.pull_request.head.user.login === context.repo.owner) {
               core.notice('Pull request does not require sign-off.');
               return;
             }

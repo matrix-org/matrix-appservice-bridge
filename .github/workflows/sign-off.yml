@@ -16,6 +16,7 @@ jobs:
         with:
           script: |
             // We don't require owners or members to sign off.
+            console.log(context.payload.pull_request.author_association)
             if (['OWNER', 'MEMBER'].includes(context.payload.pull_request.author_association)) {
               core.notice('Pull request does not require sign-off.');
               return;
@@ -33,6 +34,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
             });
+            console.log(commits);
             const commit = commits.find(c => signOffRegex.test(c.message));
             if (commit) {
               core.notice(`Commit '${commit.id}' contains a sign-off notice`);

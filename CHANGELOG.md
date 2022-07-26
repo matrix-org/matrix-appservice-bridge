@@ -1,3 +1,39 @@
+5.0.0 (2022-07-26)
+==================
+
+This release depends on **Node.JS 16** or greater.
+
+Bugfixes
+--------
+
+- Matrix users on a server that has an explicit port specifier in the server name will now be supported. ([\#414](https://github.com/matrix-org/matrix-appservice-bridge/issues/414))
+
+
+Improved Documentation
+----------------------
+
+- Improve `CONTRIBUTING.md` guide to make it applicable for all of the matrix.org bridge repos. ([\#404](https://github.com/matrix-org/matrix-appservice-bridge/issues/404))
+
+
+Deprecations and Removals
+-------------------------
+
+- **Breaking**: The `matrix-js-sdk` is no longer included in this SDK. This means:
+   - The `ClientFactory` component has been removed.
+   - The `ContentRepo` utility is now deprecated, and supports only `getHttpUriForMxc`
+   - You can no longer get a js-sdk MatrixClient instance from an Intent object. ([\#401](https://github.com/matrix-org/matrix-appservice-bridge/issues/401))
+- The bridge now always authenticates requests made to `/_matrix/app/v1/thirdparty/...`. The `Bridge` options flag `authenticateThirdpartyEndpoints` has been removed. ([\#409](https://github.com/matrix-org/matrix-appservice-bridge/issues/409))
+- Drop support for Node 14. Support Node 16+.
+  `Intent.uploadContent` no longer accepts a `ReadStream` `content` parameter. Convert your stream to a buffer before beginning an upload. ([\#415](https://github.com/matrix-org/matrix-appservice-bridge/issues/415))
+
+
+Internal Changes
+----------------
+
+- Improve error messasge raised when `m.login.application_service` is not provided by the homeserver. ([\#399](https://github.com/matrix-org/matrix-appservice-bridge/issues/399))
+- Update matrix-appservice to 1.0.0. ([\#423](https://github.com/matrix-org/matrix-appservice-bridge/issues/423))
+
+
 4.0.2 (2022-07-15)
 ==================
 

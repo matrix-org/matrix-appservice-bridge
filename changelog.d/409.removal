@@ -1,1 +1,0 @@
-The bridge now always authenticates requests made to `/_matrix/app/v1/thirdparty/...`. The `Bridge` options flag `authenticateThirdpartyEndpoints` has been removed.

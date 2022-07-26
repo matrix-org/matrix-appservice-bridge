@@ -1,4 +1,0 @@
-**Breaking**: The `matrix-js-sdk` is no longer included in this SDK. This means:
- - The `ClientFactory` component has been removed.
- - The `ContentRepo` utility is now deprecated, and supports only `getHttpUriForMxc`
- - You can no longer get a js-sdk MatrixClient instance from an Intent object.

@@ -34,8 +34,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
             });
-            console.log(commits);
-            const commit = commits.find(c => signOffRegex.test(c.message));
+            const commit = commits.data.find(c => signOffRegex.test(c.commit.message));
             if (commit) {
               core.notice(`Commit '${commit.id}' contains a sign-off notice`);
               return;

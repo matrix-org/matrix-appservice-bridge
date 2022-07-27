@@ -1,7 +1,7 @@
 import { Axios } from "axios";
 import { URL } from "url";
 import { isIP } from "net";
-import { promises as dns, SrvRecord, NOTFOUND, BADNAME } from "dns"
+import { promises as dns, SrvRecord } from "dns"
 import Logging from "../components/logging";
 
 interface MatrixServerWellKnown {
@@ -295,11 +295,6 @@ export class MatrixHostResolver {
             };
         }
         catch (error) {
-            // DNS Error
-            if (error.code && (error.code !== NOTFOUND || error.code !== BADNAME)) {
-                // Do not cache potentially network-related failures.
-                throw error;
-            }
             this.resultCache.set(hostname, { error, timestamp: this.currentTime});
             log.debug(`No result cached for ${hostname}, caching error for ${CacheFailureForMS}ms`);
             throw error;

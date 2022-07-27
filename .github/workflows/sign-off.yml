@@ -22,7 +22,7 @@ jobs:
               return;
             }
 
-            const signOffRegex = /Signed[_\- ]off[_\- ]by: [\w ]+ <.+@.+>/i;
+            const signOffRegex = /Signed[_\- ]off[_\- ]by: [\w ]+ <.+(@|at).+>/i;
 
             if (signOffRegex.test(context.payload.pull_request.body ?? "")) {
               core.notice('Pull request body contains a sign-off notice');

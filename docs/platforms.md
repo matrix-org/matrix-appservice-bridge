@@ -28,11 +28,16 @@ advice is always to upgrade as soon as possible.
 
 In terms of installation platforms, we support as a baseline:
 
-- Installation onto a host directly (via git) on Windows, Mac, Linux.
+- Installation onto a host directly (via git) on (x86_64) Windows, Mac, Linux.
+  - Note, some distros will package ancient versions of Node.JS. For these, we recommend you use
+    a solution like [nodesource](https://github.com/nodesource/distributions) or [nvm](https://github.com/nvm-sh/nvm)
 - Docker (x86_64) on Windows, Mac, Linux.
 
+Testing is primarily done on Debian Linux machines, and so should work for distributions based on
+or similar to that. Other distributions, platforms and architectures are considered best-effort. 
+
 Support for other architectures is something we aim to do, for instance ARM but at the moment
-this is best-effort.
+this is best-effort. 
 
 In a few cases, bridges also have a maintained version on npm but this is not universally true.
 

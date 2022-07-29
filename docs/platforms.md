@@ -11,7 +11,10 @@ All bridge application and library projects aim to follow the [Semantic Versioni
 Bridge projects will always support the **Active LTS** release and the **Current** release of Node.JS. When a
 Node.JS version falls from Active to Maintenance, we will migrate projects to the next Active release over time.
 
-At time of writing (July 2022) we support 16.X and 18.X as they are the Active and Current releases of Node.
+For users who are on distributions packaging only Maintenance versions of Node.JS, we'd suggest either using Docker
+or an alternative Node.JS source.
+
+At time of writing (July 2022) we support 16.X and 18.X as they are the Active and Current releases of Node.JS.
 
 Bridge projects do not support odd-versioned Node.JS releases, as these are short lived non-LTS versions and are
 difficult to support since they have a 6 month shelf life.
@@ -28,18 +31,13 @@ advice is always to upgrade as soon as possible.
 
 In terms of installation platforms, we support as a baseline:
 
-- Installation onto a host directly (via git) on (x86_64) Windows, Mac, Linux.
-  - Note, some distros will package ancient versions of Node.JS. For these, we recommend you use
-    a solution like [nodesource](https://github.com/nodesource/distributions) or [nvm](https://github.com/nvm-sh/nvm)
-- Docker (x86_64) on Windows, Mac, Linux.
+  - Installation onto a host directly (via git) on (x86_64) Windows, Mac, Linux.
+    - Note, some distros will package ancient versions of Node.JS. For these, we recommend you use
+      a solution like [nodesource](https://github.com/nodesource/distributions) or [nvm](https://github.com/nvm-sh/nvm)
+  - Docker (x86_64) on Windows, Mac, Linux.
 
 Testing is primarily done on Debian Linux machines, and so should work for distributions based on
 or similar to that. Other distributions, platforms and architectures are considered best-effort. 
-
-Support for other architectures is something we aim to do, for instance ARM but at the moment
-this is best-effort. 
-
-In a few cases, bridges also have a maintained version on npm but this is not universally true.
 
 We do not package our bridges for Linux distributions ourselves, though upstream maintainers
 may choose to do so. If you are a maintainer, feel free to reach out to us via the contact medium

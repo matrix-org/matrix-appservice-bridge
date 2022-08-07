@@ -149,11 +149,11 @@ The format for the file (in YAML) or the object is as follows:
     // with other bridges.
     "userIds": {
         // Anyone in this set will be ALWAYS exempt from the conflicts rule.
-        // Here anyone who's localpart starts with nice is exempt.
-        "exempt": ["@nice+.:example.com"]
+        // Here anyone whose localpart starts with nice is exempt.
+        "exempt": ["@nice.+:example.com"]
         // This is a regex that will exclude anyone who has "guy" at the end of their localpart.
         // evilbloke is also exempt.
-        "conflict": ["@+.guy:example.com", "@evilbloke:example.com"]
+        "conflict": ["@.+guy:example.com", "@evilbloke:example.com"]
     }
 }
 ```

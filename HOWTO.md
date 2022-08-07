@@ -11,13 +11,11 @@ NB: This how-to refers to the binary `node` - this may be `nodejs` depending on 
 
 # Set up a new project
 Create a new directory and run `npm init` to generate a `package.json` file after answering some questions.
-Run `npm install matrix-appservice-bridge` to install the bridge library, `request` to make sending HTTP
-requests easier and `matrix-appservice` to install the AS library. Create a file `index.js` which we'll
-use to write logic for the bridge.
+Install bridge library `matrix-appservice-bridge` and `request` to make sending HTTP
+requests easier. Create a file `index.js` which we'll use to write the logic for the bridge.
 ```
 $ npm init
-$ npm install matrix-appservice-bridge
-$ npm install request
+$ npm install matrix-appservice-bridge request
 $ touch index.js
 ```
 

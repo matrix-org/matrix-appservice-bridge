@@ -34,8 +34,8 @@ Variables to remember:
 ## Printing out outbound slack requests
 Open up `index.js` and write the following:
 ```javascript
-const http = require("http");
-const qs = require("querystring"); // we will use this later
+const http = require("node:http");
+const qs = require("node:querystring"); // we will use this later
 const requestLib = require("request"); // we will use this later
 let bridge; // we will use this later
 
@@ -209,8 +209,8 @@ message will be relayed to the specified slack room. That's it!
 // Usage:
 // node index.js -r -u "http://localhost:9000" # remember to add the registration!
 // node index.js -p 9000
-const http = require("http");
-const qs = require('querystring');
+const http = require("node:http");
+const qs = require("node:querystring");
 const requestLib = require("request");
 let bridge;
 const PORT = 9898; // slack needs to hit this port e.g. use "ngrok 9898"

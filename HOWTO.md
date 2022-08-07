@@ -5,9 +5,9 @@ This How-To will explain how to write a basic **Matrix <--> Slack bridge** in un
 
 You need to have:
  - A working homeserver install
- - `npm` and `nodejs`
+ - `npm` and Node.js
 
-NB: This how-to refers to the binary `node` - this may be `nodejs` depending on your distro.
+Note, this how-to refers to the binary of Node.js as `node` - on some Linux distros this may be called `nodejs`.
 
 # Set up a new project
 Create a new directory and run `npm init` to generate a `package.json` file after answering some questions.
@@ -48,7 +48,7 @@ http.createServer(function(request, response) {
     request.on("end", function() {
         console.log(body);
         response.writeHead(200, {"Content-Type": "application/json"});
-        response.write(JSON.stringify({}));
+        response.write("{}");
         response.end();
     });
 }).listen($PORT);  // replace me with your actual port number!

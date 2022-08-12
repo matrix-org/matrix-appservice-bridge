@@ -1,3 +1,30 @@
+5.1.0 (2022-08-12)
+==================
+
+Features
+--------
+
+- You can now throw `AppserviceHttpError` errors inside the `onUserQuery` controller function to raise a HTTP error. Other exceptions will be treated as a HTTP 500 error. ([\#434](https://github.com/matrix-org/matrix-appservice-bridge/issues/434))
+
+
+Bugfixes
+--------
+
+- Fix bug introduced in 5.0.0 which caused the `/metrics` endpoint to request authentication. The endpoint no longer requires authentication. ([\#435](https://github.com/matrix-org/matrix-appservice-bridge/issues/435))
+
+
+Improved Documentation
+----------------------
+
+- Document supported platforms. ([\#430](https://github.com/matrix-org/matrix-appservice-bridge/issues/430))
+
+
+Internal Changes
+----------------
+
+- Add new CI workflow to check for signoffs. ([\#428](https://github.com/matrix-org/matrix-appservice-bridge/issues/428))
+
+
 5.0.0 (2022-07-26)
 ==================
 

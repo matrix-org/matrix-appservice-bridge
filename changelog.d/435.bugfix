@@ -1,0 +1,1 @@
+Fix bug introduced in 5.0.0 which caused the `/metrics` endpoint to request authentication. The endpoint no longer requires authentication.

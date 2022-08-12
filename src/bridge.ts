@@ -958,10 +958,10 @@ export class Bridge {
      * Install a custom handler for an incoming HTTP API request. This allows
      * callers to add extra functionality, implement new APIs, etc...
      * @param opts Named options
-     * @param opts.method The HTTP method name.
-     * @param opts.path Path to the endpoint.
      * @param opts.authenticate Should the token be automatically checked. Defaults to true.
      * @param opts.handler Function to handle requests
+     * @param opts.method The HTTP method name.
+     * @param opts.path Path to the endpoint.
      * to this endpoint.
      */
     public addAppServicePath(opts: {

@@ -960,23 +960,23 @@ export class Bridge {
      * @param opts Named options
      * @param opts.method The HTTP method name.
      * @param opts.path Path to the endpoint.
-     * @param opts.checkToken Should the token be automatically checked. Defaults to true.
+     * @param opts.authenticate Should the token be automatically checked. Defaults to true.
      * @param opts.handler Function to handle requests
      * to this endpoint.
      */
     public addAppServicePath(opts: {
         method: "GET"|"PUT"|"POST"|"DELETE",
         path: string,
-        checkToken?: boolean,
+        authenticate: boolean,
         handler: (req: ExRequest, respose: ExResponse, next: NextFunction) => void,
     }): void {
         if (!this.appservice) {
             throw Error('Cannot call addAppServicePath before calling .run()');
         }
         const app: Application = this.appservice.expressApp;
-
+        const authenticate = opts.authenticate ?? true;
         app[opts.method.toLowerCase() as "get"|"put"|"post"|"delete"](opts.path, (req, res, ...args) => {
-            if (opts.checkToken === false || !this.requestCheckToken(req)) {
+            if (authenticate && !this.requestCheckToken(req)) {
                 return res.status(403).send({
                     errcode: "M_FORBIDDEN",
                     error: "Bad token supplied,"

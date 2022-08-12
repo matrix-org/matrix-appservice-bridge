@@ -398,6 +398,7 @@ export class PrometheusMetrics {
     public addAppServicePath(bridge: Bridge): void {
         bridge.addAppServicePath({
             method: "GET",
+            checkToken: false,
             path: "/metrics",
             handler: async (_req: Request, res: Response) => {
                 try {

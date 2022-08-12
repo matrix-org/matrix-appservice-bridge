@@ -967,6 +967,7 @@ export class Bridge {
     public addAppServicePath(opts: {
         method: "GET"|"PUT"|"POST"|"DELETE",
         path: string,
+        checkToken?: boolean,
         handler: (req: ExRequest, respose: ExResponse, next: NextFunction) => void,
     }): void {
         if (!this.appservice) {
@@ -975,7 +976,7 @@ export class Bridge {
         const app: Application = this.appservice.expressApp;
 
         app[opts.method.toLowerCase() as "get"|"put"|"post"|"delete"](opts.path, (req, res, ...args) => {
-            if (!this.requestCheckToken(req)) {
+            if (opts.checkToken === false || !this.requestCheckToken(req)) {
                 return res.status(403).send({
                     errcode: "M_FORBIDDEN",
                     error: "Bad token supplied,"

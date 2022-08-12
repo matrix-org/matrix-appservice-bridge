@@ -967,7 +967,7 @@ export class Bridge {
     public addAppServicePath(opts: {
         method: "GET"|"PUT"|"POST"|"DELETE",
         path: string,
-        authenticate: boolean,
+        authenticate?: boolean,
         handler: (req: ExRequest, respose: ExResponse, next: NextFunction) => void,
     }): void {
         if (!this.appservice) {

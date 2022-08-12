@@ -1179,7 +1179,8 @@ export class Bridge {
             await this.provisionUser(matrixUser, provisionedUser);
         }
         catch (ex) {
-            log.error(`Failed _onUserQuery for ${userId}`, ex);
+            log.error(`Failed onUserQuery for ${userId}`, ex);
+            throw ex;
         }
     }
 

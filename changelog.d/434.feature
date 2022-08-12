@@ -1,0 +1,1 @@
+You can now throw `AppserviceHttpError` errors inside the `onUserQuery` controller function to raise a HTTP error. Other exceptions will be treated as a HTTP 500 error.

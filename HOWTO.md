@@ -5,25 +5,23 @@ This How-To will explain how to write a basic **Matrix <--> Slack bridge** in un
 
 You need to have:
  - A working homeserver install
- - `npm` and `nodejs`
+ - Node.js (with NPM)
 
-NB: This how-to refers to the binary `node` - this may be `nodejs` depending on your distro.
+Note, this how-to refers to the binary of Node.js as `node` - on some Linux distros this may be called `nodejs`.
 
-# Setup a new project
+# Set up a new project
 Create a new directory and run `npm init` to generate a `package.json` file after answering some questions.
-Run `npm install matrix-appservice-bridge` to install the bridge library, `request` to make sending HTTP
-requests easier and `matrix-appservice` to install the AS library. Create a file `index.js` which we'll
-use to write logic for the bridge.
+Install bridge library `matrix-appservice-bridge` and `request` to make sending HTTP
+requests easier. Create a file `index.js` which we'll use to write the logic for the bridge.
 ```
 $ npm init
-$ npm install matrix-appservice-bridge
-$ npm install request
+$ npm install matrix-appservice-bridge request
 $ touch index.js
 ```
 
 # Slack-to-Matrix
 First, we need to create an Outgoing WebHook in Slack (via the Integrations section). This will send
-HTTP requests to us whenever a Slack user sends something in a slack channel. We'll monitor the channel
+HTTP requests to us whenever a Slack user sends something in a Slack channel. We'll monitor the channel
 `#matrix` when sending outgoing webhooks rather than trigger words. Set the URL to a publically accessible
 endpoint for your machine, or use something like [ngrok](https://ngrok.com/) if you're developing. We'll use
 ngrok, and forward port `$PORT`.
@@ -31,11 +29,11 @@ ngrok, and forward port `$PORT`.
 Variables to remember:
  - Your monitored channel `$SLACK_CHAN`.
  
-## Printing out outbound slack requests
+## Printing out outbound Slack requests
 Open up `index.js` and write the following:
 ```javascript
-const http = require("http");
-const qs = require("querystring"); // we will use this later
+const http = require("node:http");
+const qs = require("node:querystring"); // we will use this later
 const requestLib = require("request"); // we will use this later
 let bridge; // we will use this later
 
@@ -50,7 +48,7 @@ http.createServer(function(request, response) {
     request.on("end", function() {
         console.log(body);
         response.writeHead(200, {"Content-Type": "application/json"});
-        response.write(JSON.stringify({}));
+        response.write("{}");
         response.end();
     });
 }).listen($PORT);  // replace me with your actual port number!
@@ -137,12 +135,12 @@ run: function(port) {
 
 This configures the bridge to try to communicate with the homeserver at `http://localhost:8008`
 using the information from the registration file `slack-registration.yaml`. We now need to use
-the bridge to send the message we were printing out from slack earlier. Just like how the Slack
+the bridge to send the message we were printing out from Slack earlier. Just like how the Slack
 room is hard-coded to `$SLACK_CHAN`, we'll hard-code the room ID to send to. Create a new public
 room on Matrix, which has the room ID `$ROOM_ID`.
 
-NB: You can do this as an invite-only room on Matrix, but you *MUST* invite the slack AS bridge
-user (`@slackbot:domain`) to the room so it can invite virtual slack users. 
+NB: You can do this as an invite-only room on Matrix, but you *MUST* invite the Slack AS bridge
+user (`@slackbot:domain`) to the room so it can invite virtual Slack users. 
 
 Replace the function `request.on("end", function()`, with the following:
 ```javascript
@@ -160,7 +158,7 @@ request.on("end", function() {
 
 We filter out `USLACKBOT` to avoid showing duplicate messages when we do the reverse (sending to
 slack from an inbound webhook). `qs.parse` is used to convert the POST string into a JSON object.
-The `Intent` object obtained from the bridge is scoped to a slack user ID specified in `getIntent`.
+The `Intent` object obtained from the bridge is scoped to a Slack user ID specified in `getIntent`.
 This means that `sendText` will be sent as the `@slack_<user_name>:localhost` entity.
 
 Note that if your `server_name` is not `localhost` you must change the server part of the user ID
@@ -201,7 +199,7 @@ onEvent: function(request, context) {
 ```
 
 Run the app service with `node index.js -p 9000` and send a message to the Matrix room and that
-message will be relayed to the specified slack room. That's it!
+message will be relayed to the specified Slack channel. That's it!
 
 # Full source
 
@@ -209,11 +207,11 @@ message will be relayed to the specified slack room. That's it!
 // Usage:
 // node index.js -r -u "http://localhost:9000" # remember to add the registration!
 // node index.js -p 9000
-const http = require("http");
-const qs = require('querystring');
+const http = require("node:http");
+const qs = require("node:querystring");
 const requestLib = require("request");
 let bridge;
-const PORT = 9898; // slack needs to hit this port e.g. use "ngrok 9898"
+const PORT = 9898; // Slack needs to hit this port e.g. use "ngrok 9898"
 const ROOM_ID = "!YiuxjYhPLIZGVVkFjT:localhost"; // this room must have join_rules: public
 const SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/AAAA/BBBBB/CCCCC";
 

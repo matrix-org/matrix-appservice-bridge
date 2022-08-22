@@ -5,7 +5,7 @@ This How-To will explain how to write a basic **Matrix <--> Slack bridge** in un
 
 You need to have:
  - A working homeserver install
- - `npm` and Node.js
+ - Node.js (with NPM)
 
 Note, this how-to refers to the binary of Node.js as `node` - on some Linux distros this may be called `nodejs`.
 

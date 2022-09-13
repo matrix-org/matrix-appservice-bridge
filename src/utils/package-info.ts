@@ -5,7 +5,7 @@ import Logging from "../components/logging";
 const log = Logging.get("PackageInfo");
 
 // This may be defined if the script is run via NPM: https://docs.npmjs.com/cli/v8/using-npm/scripts#packagejson-vars
-let BridgeVersion = process.env.npm_package_version;
+let BridgeVersion: string|undefined = process.env.npm_package_version;
 
 /**
  * Forcibly set the version of the bridge, for use by other components.
@@ -59,11 +59,12 @@ export function getBridgeVersion(packageJsonPath?: string): string {
         try {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const nodePackage = require(packageJsonPath);
-            BridgeVersion = nodePackage.version;
+            BridgeVersion = nodePackage.version ?? "unknown";
         }
         catch (err) {
             log.warn("Could not determine package version:", err);
         }
     }
-    return BridgeVersion;
+    // Need to be explicit here due to the type of the static BridgeVersion
+    return BridgeVersion as string;
 }

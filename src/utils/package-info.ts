@@ -1,5 +1,11 @@
-import { join, resolve } from "path";
-let BridgeVersion: string;
+import { join, dirname } from "path";
+import { statSync } from "fs";
+import Logging from "../components/logging";
+
+const log = Logging.get("PackageInfo");
+
+// This may be defined if the script is run via NPM: https://docs.npmjs.com/cli/v8/using-npm/scripts#packagejson-vars
+let BridgeVersion = process.env.npm_package_version;
 
 /**
  * Forcibly set the version of the bridge, for use by other components.
@@ -12,22 +18,52 @@ export function setBridgeVersion(version: string): void {
 }
 
 /**
+ * Try to determine the path of the `package.json` file for the current
+ * running module. Iterates through parent directories of `require.main.filename`
+ * until it finds a package.json. This **may** result in false positives.
+ * @returns The path to a package.json file, or undefined if one could not be found.
+ */
+export function identifyPackageFile(): string|undefined {
+    // Find the main module path first
+    let mainModulePath = require.main?.filename;
+    if (!mainModulePath) {
+        return undefined;
+    }
+    do {
+        mainModulePath = dirname(mainModulePath);
+        try {
+            const packagePath = join(mainModulePath, 'package.json');
+            statSync(packagePath);
+            return packagePath;
+        }
+        catch (ex) {
+            continue;
+        }
+    } while (mainModulePath !== '/')
+    return undefined;
+}
+
+/**
  * Get the current version of the bridge from the package.json file.
+ * By default this uses `identifyPackageFile` to determine the file.
  * @param packageJsonPath The path to the package.json of the bridge.
  * @returns Either the version number, or unknown.
  */
-export function getBridgeVersion(packageJsonPath = "./package.json"): string {
+export function getBridgeVersion(packageJsonPath?: string): string {
     if (BridgeVersion) {
         return BridgeVersion;
     }
-    packageJsonPath = join(resolve(packageJsonPath));
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const nodePackage = require(packageJsonPath);
-        BridgeVersion = nodePackage.version;
-    }
-    catch (err) {
-        BridgeVersion = "unknown";
+    packageJsonPath = packageJsonPath || identifyPackageFile();
+    BridgeVersion = "unknown";
+    if (packageJsonPath) {
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const nodePackage = require(packageJsonPath);
+            BridgeVersion = nodePackage.version;
+        }
+        catch (err) {
+            log.warn("Could not determine package version:", err);
+        }
     }
     return BridgeVersion;
 }

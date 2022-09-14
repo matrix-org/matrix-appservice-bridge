@@ -1,6 +1,5 @@
-import Logging, { LogWrapper } from "../components/logging";
 import crypto from "crypto";
-import { ThinRequest } from "..";
+import { ThinRequest, Logger } from "..";
 import { Request } from "express";
 import { ParsedQs } from "qs";
 
@@ -41,7 +40,7 @@ export class ProvisioningRequest<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ReqBody = any,
     ReqQuery = ParsedQs> implements ThinRequest {
-    public readonly log: LogWrapper;
+    public readonly log: Logger;
     public readonly id: string;
 
     constructor(
@@ -53,9 +52,7 @@ export class ProvisioningRequest<
     ) {
         this.id = crypto.randomBytes(4).toString('hex');
         this.fnName = fnName || expressReq.path;
-        this.log = Logging.get(
-            `ProvisionRequest ${[this.id, fnName].filter(n => !!n).join(" ")}`
-        );
+        this.log = new Logger('ProvisionRequest', { requestId: [this.id, fnName].filter(n => !!n).join(" ") });
         this.log.debug(`Request ${userId} (${requestSource}) ${this.fnName}`);
     }
 

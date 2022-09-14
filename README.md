@@ -47,6 +47,11 @@ components you use, though some components depend upon other components.
 All components operate on data models defined in the bridge. You can directly
 construct components: the bridge exposes the class constructor.
 
+### `Bridge`
+The component which orchestrates other components: a "glue" component. Provides
+a way to start the bridge. This is the component most examples use. Has
+dependencies on most of the components listed above.
+
 ### `BridgeStore`
 Provides basic document store (key-value) CRUD operations.
 
@@ -92,50 +97,26 @@ A wrapper around the JS SDK `MatrixClient` designed for use by the application
 service *itself*. Contains helper methods to get all rooms the AS is in, how
 many virtual / real users are in each, etc.
 
-### `Bridge`
-The component which orchestrates other components: a "glue" component. Provides
-a way to start the bridge. This is the component most examples use. Has
-dependencies on most of the components listed above.
-
 ## `Logging`
-This component exposes access to the bridges log reporter. To use, you should
-install the optional packages `winston@3`, `winston-daily-rotate-file@2` and
-`chalk@2` to get nice formatted log lines, otherwise it will default to the JS
-console. To use the component, use `Logging.configure(configObject)` to setup
-the logger, which takes the following options:
-```javascript
-{
-    // A level to set the console reporter to.
-    console: "error|warn|info|debug|off",
 
-    // Format to append to log files.
-    fileDatePattern: "YYYY-MM-DD",
+This component exposes access to the bridges log reporter.
+To use the component, use `Logging.configure` to setup 
+the logger.
 
-    // Format of the timestamp in log files.
-    timestampFormat: "MMM-D HH:mm:ss.SSS",
+```js
+// Configure the logger by providing these options
+Logger.configure({ level: "info" });
 
-    // Log files to emit to, keyed of the minimum level they report.
-    // You can leave this out, or set it to false to disable files.
-    files: {
-        // File paths can be relative or absolute, the date is appended onto the end.
-        "abc.log" => "error|warn|info|debug|off",
-    },
+// In each module, instantiate the Logger class with a module name.
+const log = new Logger('MyModule');
 
-    // The maximum number of files per level before old files get cleaned
-    // up. Use 0 to disable.
-    maxFiles: 5,
-}
+// Then log away!
+log.info('Hello, this is a log from my module');
+log.debug('Some debug info');
+log.error('Oh no, something went wrong!', new Error('an error'));
 ```
 
-
 You **MUST** configure the logger before anything will be emitted to the console.
-
-You can then use `const log = Logging.Get(ModuleName)` to start logging to the reporter,
-using the `log.error`, `log.warn`, `log.info` or `log.debug` functions. Arguments to these functions will
-automatically be seralized if they aren't strings.
-
-NOTE: ``opts.controller.onLog`` will override this, but if not set then the logging
-transport is used.
 
 ## `RoomLinkValidator`
 This component validates if a room can be linked to a remote channel based on

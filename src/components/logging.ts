@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Matrix.org Foundation C.I.C.
+Copyright 2022 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,221 +12,372 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-import * as util from "util";
-import winston, { Logger, format, Logform } from "winston";
-import chalk from "chalk";
-import * as Transport from 'winston-transport';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { ILogger, LogLevel as BotSdkLogLevel, LogService } from "matrix-bot-sdk";
+import util from "util";
+import winston, { format } from "winston";
 
-type LogLevel = "debug"|"info"|"warn"|"error";
+type MsgType = string|Error|any|{error?: string};
 
-const CHALK_LEVELS: Record<LogLevel, string> = {
-    "debug": "blue",
-    "info": "green",
-    "warn": "yellow",
-    "error": "red",
+/**
+ * Tries to filter out noise from the bot-sdk.
+ * @param messageOrObjects A list of values being logged.
+ * @returns True is the message is noise, or false otherwise.
+ */
+function isMessageNoise(messageOrObjects: MsgType[]) {
+	return !!messageOrObjects.find(messageOrObject => {
+		if (typeof messageOrObject !== "object") {
+			return false;
+		}
+
+		const possibleError = messageOrObject as {
+            error?: string, body?: { error?: string, errcode?: string}, errcode?: string
+        }
+
+		const error = possibleError?.error || possibleError?.body?.error;
+		const errcode = possibleError?.errcode || possibleError?.body?.errcode;
+
+		if (errcode === "M_NOT_FOUND" && error === "Room account data not found") {
+			return true;
+		}
+
+		if (errcode === "M_NOT_FOUND" && error === "Event not found.") {
+			return true;
+		}
+
+		if (errcode === "M_USER_IN_USE") {
+			return true;
+		}
+
+		return false;
+	});
 }
 
-type MessagePart = unknown;
-interface LoggerConfig {
-    console?: LogLevel|"off",
-    fileDatePattern?: string,
-    timestampFormat?: string,
-    files?: {
-        [filename: string]: LogLevel|"off",
+interface LogEntry extends winston.Logform.TransformableInfo {
+    data: MsgType[];
+    requestId: string;
+    module: string;
+}
+
+
+export interface CustomLogger {
+    verbose: (message: string, ...metadata: any[]) => void,
+    debug: (message: string, ...metadata: any[]) => void,
+    info: (message: string, ...metadata: any[]) => void,
+    warn: (message: string, ...metadata: any[]) => void,
+    error: (message: string, ...metadata: any[]) => void,
+}
+
+export type LogLevel = "debug"|"info"|"warn"|"error"|"trace";
+
+export interface LoggingOpts {
+    /**
+     * The log level used by the console output.
+     */
+    console?: "debug"|"info"|"warn"|"error"|"trace"|"off";
+    /**
+     * Should the logs be outputted in JSON format, for consumption by a collector.
+     */
+    json?: boolean;
+    /**
+     * Should the logs color-code the level strings in the output.
+     */
+    colorize?: boolean;
+    /**
+     * Timestamp format used in the log output.
+     * @default "HH:mm:ss:SSS"
+     */
+    timestampFormat?: string;
+}
+
+export interface LoggingOptsFile extends LoggingOpts {
+    /**
+     * An object mapping a file name to a logging level. The file will contain
+     * all logs for that level inclusive up to the highest level. (`info` will contain `warn`, `error` etc)
+     * Use `%DATE%` to set the date of the file within the string.
+     * Use the `fileDatePattern` to set the date format.
+     * @example {"info-%DATE%.log": "info"}
+     */
+    files: {
+        [filename: string]: LogLevel,
     }
+    /**
+     * The number of files to keep before the last file is rotated.
+     * If not set, no files are deleted.
+     */
     maxFiles?: number,
+    /**
+     * The moment.js compatible date string to use when naming files.
+     */
+    fileDatePattern?: string,
 }
 
-export class LogWrapper {
-    private logger: Logger|null = null;
-    private messages: {type: LogLevel, message: string}[] = [];
-
-    public setLogger(logger: Logger): void {
-        this.logger = logger;
-    }
-
-    public debug(...messageParts: MessagePart[]): void { this.log(messageParts, 'debug') }
-
-    public info(...messageParts: MessagePart[]): void { this.log(messageParts, 'info') }
-
-    public warn(...messageParts: MessagePart[]): void { this.log(messageParts, 'warn') }
-
-    public error(...messageParts: MessagePart[]): void { this.log(messageParts, 'error') }
-
-    public drain(): void {
-        if (!this.logger) { return; }
-        while (this.messages.length > 0) {
-            const msg = this.messages[0];
-            this.logger[msg.type](msg.message);
-            this.messages.splice(0, 1);
-        }
-    }
-
-    private formatParts(messageParts: MessagePart[]): string[] {
-        return messageParts.map((part) => {
-            if (typeof(part) === "object") {
-                return util.inspect(part);
-            }
-            return String(part);
-        });
-    }
-
-    private log(messageParts: MessagePart[], type: LogLevel): void {
-        const formattedParts = this.formatParts(messageParts).join(" ");
-        if (this.logger === null) {
-            this.messages.push({type, message: formattedParts});
-            return;
-        }
-        /* When we first start logging, the transports
-         * won't be configured so we push to a queue.
-         * When the transport becomes ready, the queue
-         * is emptied. */
-        this.drain();
-        this.logger[type](formattedParts);
-    }
+export interface CustomLoggingOpts {
+    /**
+     * An object which implements the required functions for log output.
+     */
+    logger: CustomLogger;
 }
 
-class Logging {
-    private loggers: Map<string, LogWrapper> = new Map();
-    private formatterFn: Logform.Format;
-    private colorFn: Logform.FormatWrap;
-    private transports: Transport[];
-    private config: LoggerConfig|null = null;
-    constructor() {
-        this.transports = [];
+export class GlobalLogger {
+    private isConfigured = false;
 
-        this.formatterFn = format.printf((info) => {
-            return `${info.timestamp} ${info.level} ${info.label} ${info.message}`;
-        });
-
-        this.colorFn = format((info) => {
-            const level = info.level.toUpperCase() as LogLevel;
-            const levelColour = CHALK_LEVELS[info.level as LogLevel];
-            if (levelColour) {
-                info.level = chalk.keyword(levelColour)(level);
-            }
-            return info;
-        })
+    public get configured() {
+        return this.isConfigured;
     }
 
-    /*
-        console: "error|warn|info|debug|off"
-        fileDatePattern: "YYYY-MM-DD",
-        timestampFormat: "MMM-D HH:mm:ss.SSS"
-        files: {
-            "abc.log" => "error|warn|info|debug|off"
-        }
-        maxFiles: 5
-    */
-    configure(config: LoggerConfig = {}): void {
-        if (!config.fileDatePattern) {
-            config.fileDatePattern = "YYYY-MM-DD";
-        }
-        if (!config.timestampFormat) {
-            config.timestampFormat = "MMM-D HH:mm:ss.SSS";
-        }
-        if (!config.console) {
-            config.console = "info";
-        }
-        if (!config.maxFiles) {
-            config.maxFiles = 0;
-        }
-        this.config = config;
+    private winstonLog?: winston.Logger;
 
-        if (this.transports) {
-            for (const transport of this.transports) {
-                if (transport.close) {
-                    transport.close();
+    public get winston() {
+        return this.winstonLog;
+    }
+
+    public configureLogging(cfg: LoggingOpts|LoggingOptsFile, debugStream?: NodeJS.WritableStream) {
+        this.winstonLog?.close();
+
+        const formatters = [
+            winston.format.timestamp({
+                format: cfg.timestampFormat || "HH:mm:ss:SSS",
+            }),
+            (format((info) => {
+                info.level = info.level.toUpperCase();
+                return info;
+            }))(),
+        ]
+
+        if (!cfg.json && cfg.colorize) {
+            formatters.push(
+                winston.format.colorize({
+                    level: true,
+                })
+            );
+        }
+
+        if (cfg.json) {
+            const formatter = format((info) => {
+                const logEntry = info as LogEntry;
+                const hsData = [...logEntry.data];
+                const firstArg = hsData.shift() ?? 'undefined';
+                const result: winston.Logform.TransformableInfo = {
+                    level: logEntry.level,
+                    module: logEntry.module,
+                    timestamp: logEntry.timestamp,
+                    requestId: logEntry.requestId,
+                    // Find the first instance of an error, subsequent errors are treated as args.
+                    error: hsData.find(d => d instanceof Error)?.message,
+                    message: "", // Always filled out
+                    args: hsData.length ? hsData : undefined,
+                };
+
+                if (typeof firstArg === "string") {
+                    result.message = firstArg;
                 }
-            }
+                else if (firstArg instanceof Error) {
+                    result.message = firstArg.message;
+                }
+                else {
+                    result.message = util.inspect(firstArg);
+                }
+
+                return result;
+            });
+            formatters.push(formatter(), winston.format.json());
+        }
+        else {
+            formatters.push(winston.format.printf(i => Logger.messageFormatter(i as LogEntry)));
         }
 
-        this.transports = [];
-        if (config.console !== undefined) {
-            this.transports.push(new (winston.transports.Console)({
-                level: config.console,
-                silent: config.console === 'off',
-                format: format.combine(
-                    this.colorFn(),
-                    this.formatterFn
-                )
+        const formatter = winston.format.combine(...formatters);
+
+        const transports: winston.transport[] = [];
+
+        if (debugStream) {
+            transports.push(new winston.transports.Stream({
+                stream: debugStream,
+                format: formatter,
+                level: 'debug',
             }));
         }
 
-        if (config.files !== undefined) {
-            // `winston-daily-rotate-file` has side-effects so we don't want to mess anyone up
+        if (cfg.console) {
+            transports.push(
+                new winston.transports.Console({
+                    format: formatter,
+                    level: cfg.console,
+                })
+            )
+        }
+
+        if ('files' in cfg) {
+            // `winston-daily-rotate-file` has side-effects, so only load if in use.
             // unless they want to use logging
             require("winston-daily-rotate-file");
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const { DailyRotateFile } = require("winston/lib/winston/transports");
 
-            for (const filename of Object.keys(config.files)) {
-                const level = config.files[filename];
-                this.transports.push(new DailyRotateFile({
+            for (const [filename, level] of Object.entries(cfg.files)) {
+                transports.push(new DailyRotateFile({
                     filename,
-                    datePattern: config.fileDatePattern,
+                    datePattern: cfg.fileDatePattern,
                     level,
-                    maxFiles: config.maxFiles > 0 ? config.maxFiles : undefined
+                    maxFiles: cfg.maxFiles,
                 }));
             }
         }
 
-        this.loggers.forEach((wrapper, name) => {
-            wrapper.setLogger(this.createLogger(name));
-            wrapper.drain();
+        this.winstonLog = winston.createLogger({
+            transports: transports,
         });
+
+        LogService.setLogger(this.botSdkLogger);
+
+        // We filter the logging out in winston.
+        LogService.setLevel(BotSdkLogLevel.DEBUG);
+        LogService.debug("LogWrapper", "Reconfigured logging");
+        this.isConfigured = true;
     }
 
-    public get(name: string): LogWrapper {
-        const existingLogger = this.loggers.get(name);
-        if (existingLogger) {
-            return existingLogger;
+    /**
+     * Logging implementation which can be provided to a bot-sdk LogService
+     * instance to pipe logs through this component. **Note**: This is done automatically
+     * for the `matrix-appservice-bridge`'s instance of the bot-sdk, but if you
+     * use the bot-sdk directly in your bridge you should use the example code below
+     * @example
+     * ```
+     * import { LogService } from "matrix-bot-sdk";
+     * Logger.configure({...})
+     * LogService.setLogger(Logger.logServiceLogger);
+     * ```
+     */
+    public get botSdkLogger(): ILogger {
+        const log = this.winstonLog;
+        if (!log) {
+            throw Error('Logging is not configured yet');
         }
-        const wrapper = new LogWrapper()
-        this.loggers.set(name, wrapper);
-        /* We won't assign create and assign a logger until
-            * the transports are ready */
-        if (this.transports !== null) {
-            wrapper.setLogger(this.createLogger(name));
+
+        function formatBotSdkMessage(module: string, ...messageOrObject: MsgType[]) {
+            return {
+                module,
+                data: [Logger.formatMsgTypeArray(messageOrObject)]
+            };
         }
-        return wrapper;
+
+        return {
+            info: (module: string, ...messageOrObject: MsgType[]) => {
+                // These are noisy, redirect to debug.
+                if (module.startsWith("MatrixLiteClient") || module.startsWith("MatrixHttpClient")) {
+                    log.log("debug", formatBotSdkMessage(module, ...messageOrObject));
+                    return;
+                }
+                log.log("info", formatBotSdkMessage(module, ...messageOrObject));
+            },
+            warn: (module: string, ...messageOrObject: MsgType[]) => {
+                if (isMessageNoise(messageOrObject)) {
+                    log.log("debug", formatBotSdkMessage(module, ...messageOrObject));
+                    return;
+                }
+                log.log("warn", formatBotSdkMessage(module, ...messageOrObject));
+            },
+            error: (module: string, ...messageOrObject: MsgType[]) => {
+                if (isMessageNoise(messageOrObject)) {
+                    log.log("debug", formatBotSdkMessage(module, ...messageOrObject));
+                    return;
+                }
+                log.log("error", formatBotSdkMessage(module, ...messageOrObject));
+            },
+            debug: (module: string, ...messageOrObject: MsgType[]) => {
+                log.log("debug", formatBotSdkMessage(module, ...messageOrObject));
+            },
+            trace: (module: string, ...messageOrObject: MsgType[]) => {
+                log.log("verbose", formatBotSdkMessage(module, ...messageOrObject));
+            },
+        }
+    }
+}
+
+interface LoggerMetadata {
+    requestId?: string;
+}
+
+export class Logger {
+    static readonly root = new GlobalLogger();
+
+    static formatMsgTypeArray(...data: MsgType[]): string {
+        data = data.flat();
+        return data.map(obj => {
+            if (typeof obj === "string") {
+                return obj;
+            }
+            return util.inspect(obj);
+        }).join(" ");
     }
 
-    public createLogger(name: string): Logger {
-        const logger = winston.createLogger({
-            transports: this.transports,
-            format: format.combine(
-                format.timestamp({
-                    format: this.config?.timestampFormat,
-                }),
-                format.label({label: name}),
-                this.formatterFn
-            ),
-        });
-        return logger;
+    static messageFormatter(info: LogEntry): string {
+        const logPrefix = [
+            info.level,
+            info.timestamp,
+            `[${info.module}]`,
+            info.requestId,
+        ].join('');
+        return logPrefix + this.formatMsgTypeArray(info.data ?? []);
     }
-}
 
-const instance: Logging = new Logging();
-instance.configure({console: "off"});
-let isConfigured = false;
+    /**
+     * Configure the root logger instance.
+     * @param cfg The configuration parameters
+     */
+    public static configure(cfg: LoggingOpts|LoggingOptsFile) {
+        this.root.configureLogging(cfg);
+    }
 
-export function get(name: string): LogWrapper {
-    return instance.get(name);
-}
+    public static get botSdkLogger() { return this.root.botSdkLogger; }
 
-export function configure (config: LoggerConfig): void {
-    instance.configure(config);
-    isConfigured = true;
-}
+    constructor(
+        private readonly module: string,
+        private readonly additionalMeta: LoggerMetadata = {},
+        private readonly logger: GlobalLogger = Logger.root) {
+    }
 
-export function configured(): boolean {
-    return isConfigured;
-}
+    private get logMeta() {
+        return {
+            module: this.module,
+            requestId: this.additionalMeta.requestId,
+        }
+    }
 
-// Backwards compat
-export default {
-    get,
-    configure,
-    configured,
+    /**
+     * Logs to the DEBUG channel
+     * @param msg The message or data to log.
+     * @param additionalData Additional context.
+     */
+    public debug(msg: MsgType, ...additionalData: MsgType[]) {
+        this.logger.winston?.log("debug", {...this.logMeta, data: [msg, ...additionalData]});
+    }
+
+    /**
+     * Logs to the ERROR channel
+     * @param msg The message or data to log.
+     * @param additionalData Additional context.
+     */
+    public error(msg: MsgType, ...additionalData: MsgType[]) {
+        this.logger.winston?.log("error", { ...this.logMeta, data: [msg, ...additionalData] });
+    }
+
+    /**
+     * Logs to the INFO channel
+     * @param msg The message or data to log.
+     * @param additionalData Additional context.
+     */
+    public info(msg: MsgType, ...additionalData: MsgType[]) {
+        this.logger.winston?.log("info", {...this.logMeta, data: [msg, ...additionalData] });
+    }
+
+    /**
+     * Logs to the WARN channel
+     * @param msg The message or data to log.
+     * @param additionalData Additional context.
+     */
+    public warn(msg: MsgType, ...additionalData: MsgType[]) {
+        this.logger.winston?.log("warn", {...this.logMeta, data: [msg, ...additionalData] });
+    }
 }

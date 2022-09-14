@@ -1,9 +1,9 @@
 import { Bridge } from "../bridge";
-import { get as getLogger } from "./logging";
+import { Logger } from ".."
 import PQueue from "p-queue";
 import { Counter, Gauge } from "prom-client";
 
-const log = getLogger("MembershipQueue");
+const log = new Logger("MembershipQueue");
 
 export interface ThinRequest {
     getId(): string;

@@ -14,7 +14,7 @@ limitations under the License.
 */
 import PQueue from "p-queue";
 import { Intent } from "./intent";
-import Logging from "./logging";
+import { Logger } from "..";
 
 interface StateLookupOpts {
     intent: Intent;
@@ -33,7 +33,7 @@ interface StateLookupRoom {
     };
 }
 
-const log = Logging.get("StateLookup");
+const log = new Logger("StateLookup");
 export interface StateLookupEvent {
     // eslint-disable-next-line camelcase
     room_id: string;

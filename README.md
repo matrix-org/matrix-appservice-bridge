@@ -100,7 +100,7 @@ many virtual / real users are in each, etc.
 ## `Logging`
 
 This component exposes access to the bridges log reporter.
-To use the component, use `Logging.configure` to setup 
+To use the component, use `Logger.configure` to setup 
 the logger.
 
 ```js

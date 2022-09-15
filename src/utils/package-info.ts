@@ -1,5 +1,6 @@
 import { join, dirname } from "path";
 import { statSync } from "fs";
+import pkginfo from "pkginfo";
 import Logging from "../components/logging";
 
 const log = Logging.get("PackageInfo");
@@ -53,18 +54,11 @@ export function getBridgeVersion(packageJsonPath?: string): string {
     if (BridgeVersion) {
         return BridgeVersion;
     }
-    packageJsonPath = packageJsonPath || identifyPackageFile();
-    BridgeVersion = "unknown";
-    if (packageJsonPath) {
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const nodePackage = require(packageJsonPath);
-            BridgeVersion = nodePackage.version ?? "unknown";
-        }
-        catch (err) {
-            log.warn("Could not determine package version:", err);
-        }
-    }
+    BridgeVersion = require.main && pkginfo.read(
+        require.main,
+        packageJsonPath && dirname(packageJsonPath)
+    )?.package.version || "unknown";
+
     // Need to be explicit here due to the type of the static BridgeVersion
     return BridgeVersion as string;
 }

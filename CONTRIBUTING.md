@@ -6,7 +6,7 @@ and that's great! Thank you!
 
 ## 🗨️ Getting in touch
 
-As a Matrix-based project we use chat rooms heavily for coodinating work. When getting involved with an issue or pull
+As a Matrix-based project we use chat rooms heavily for coordinating work. When getting involved with an issue or pull
 request, feel free to reach out to us in one of the project rooms. The project room for the repository you are working
 on should be visible from the README.md file.
 
@@ -52,7 +52,7 @@ for bridge projects:
  - Use [Plain English](https://en.wikipedia.org/wiki/Plain_English) when documenting. Assume a non-native speaker audience.
  - Please take care to proofread.
  - Documentation should be written for both end users of the bridge, as well as system administrators. It should always be
-   made clear in the text which class of user you are targetting.
+   made clear in the text which class of user you are targeting.
 
 ## Contributing code
 
@@ -97,7 +97,7 @@ When making a pull request, please ensure it [the PR] follows these best practis
   A changelog filename should be `${GithubPRNumber}.{bugfix|misc|feature|doc|removal}`.
   The change should include information that is useful to the user rather than the developer.
    
-  You can choose to sign your changelog entry to be credited by appending something like "Thanks to @Half-Shot"
+  You can choose to sign your changelog entry to be credited by appending something like "Thanks to @Half-Shot!"
   at the end of the file, on the same line.
 
   You may be wondering how to determine your `GithubPRNumber` number ahead of time. [Synapse offers some useful
@@ -116,12 +116,12 @@ We aim to review all PRs in a timely manner, though be aware that larger PRs wil
 ### ✔️ Review process
 
 We aim to review all PRs from the community promptly, although we can't offer firm time commitments. If you think
-your PR has been forgotten and it's been a while, do not hesistate to politely ping in the correct project room.
+your PR has been forgotten and it's been a while, do not hesitate to politely ping in the correct project room.
 
 When reviewing a PR, a maintainer will:
  - Constructively call out areas for improvement. Code reviews are as much about learning as getting code good,
    so conversations always seek to improve *mutual* understanding.
- - Resolve a comment thread when they are satisifed. The author of the code may 👍 a review comment to say
+ - Resolve a comment thread when they are satisfied. The author of the code may 👍 a review comment to say
    they have acknowledged the message and will make the change.
  - Approve a PR which is ready to merge, or nearly ready with some minor tweaks or optional improvements.
 

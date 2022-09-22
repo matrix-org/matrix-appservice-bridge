@@ -258,7 +258,7 @@ describe("Intent", function() {
     describe("sending message events", function() {
         const content = {
             body: "hello world",
-            LogEntryPart: "m.text",
+            msgtype: "m.text",
         };
 
         beforeEach(function() {

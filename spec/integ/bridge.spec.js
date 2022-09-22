@@ -310,7 +310,7 @@ describe("Bridge", function() {
             const event = {
                 content: {
                     body: "oh noes!",
-                    LogEntryPart: "m.text"
+                    msgtype: "m.text"
                 },
                 sender: "@virtual_foo:bar",
                 room_id: "!flibble:bar",
@@ -351,12 +351,12 @@ describe("Bridge", function() {
                 const event = {
                     content: {
                         body: ' * my message edit',
-                        'm.new_content': { body: 'my message edit', LogEntryPart: 'm.text' },
+                        'm.new_content': { body: 'my message edit', msgtype: 'm.text' },
                         'm.relates_to': { 
                             event_id: '$ZrXenSQt4TbtHnMclrWNJdiP7SrRCSdl3tAYS81H2bs',
                             rel_type: 'm.replace' 
                         },
-                    LogEntryPart: 'm.text'
+                    msgtype: 'm.text'
                     },
                     event_id: '$tagvjsXZqBOBWtHijq2qg0Un-uqVunrFLxiJyOIVGQ8',
                     room_id: '!dtJaPyDtsoOLTgJVmy:my.matrix.host',
@@ -446,7 +446,7 @@ describe("Bridge", function() {
             const event = {
                 content: {
                     body: "oh noes!",
-                    LogEntryPart: "m.text"
+                    msgtype: "m.text"
                 },
                 sender: "@foo:bar",
                 room_id: "!flibble:bar",
@@ -472,7 +472,7 @@ describe("Bridge", function() {
             const event = {
                 content: {
                     body: "oh noes!",
-                    LogEntryPart: "m.text"
+                    msgtype: "m.text"
                 },
                 sender: "@alice:bar",
                 room_id: "!flibble:bar",
@@ -555,7 +555,7 @@ describe("Bridge", function() {
             const event = {
                 content: {
                     body: "oh noes!",
-                    LogEntryPart: "m.text"
+                    msgtype: "m.text"
                 },
                 sender: "@alice:bar",
                 room_id: "!flibble:bar",

@@ -17,44 +17,47 @@ import { ILogger, LogLevel as BotSdkLogLevel, LogService } from "matrix-bot-sdk"
 import util from "util";
 import winston, { format } from "winston";
 
-type MsgType = string|Error|any|{error?: string};
+/**
+ * Acceptable values for a log line entry.
+ */
+type LogEntryPart = string|Error|any|{error?: string};
 
 /**
  * Tries to filter out noise from the bot-sdk.
- * @param messageOrObjects A list of values being logged.
+ * @param LogEntryPart A list of values being logged.
  * @returns True is the message is noise, or false otherwise.
  */
-function isMessageNoise(messageOrObjects: MsgType[]) {
-	return !!messageOrObjects.find(messageOrObject => {
-		if (typeof messageOrObject !== "object") {
-			return false;
-		}
+function isMessageNoise(LogEntryPart: LogEntryPart[]) {
+    return LogEntryPart.some(messageOrObject => {
+        if (typeof messageOrObject !== "object") {
+            return false;
+        }
 
-		const possibleError = messageOrObject as {
+        const possibleError = messageOrObject as {
             error?: string, body?: { error?: string, errcode?: string}, errcode?: string
         }
 
-		const error = possibleError?.error || possibleError?.body?.error;
-		const errcode = possibleError?.errcode || possibleError?.body?.errcode;
+        const error = possibleError?.error || possibleError?.body?.error;
+        const errcode = possibleError?.errcode || possibleError?.body?.errcode;
 
-		if (errcode === "M_NOT_FOUND" && error === "Room account data not found") {
-			return true;
-		}
+        if (errcode === "M_NOT_FOUND" && error === "Room account data not found") {
+            return true;
+        }
 
-		if (errcode === "M_NOT_FOUND" && error === "Event not found.") {
-			return true;
-		}
+        if (errcode === "M_NOT_FOUND" && error === "Event not found.") {
+            return true;
+        }
 
-		if (errcode === "M_USER_IN_USE") {
-			return true;
-		}
+        if (errcode === "M_USER_IN_USE") {
+            return true;
+        }
 
-		return false;
-	});
+        return false;
+    });
 }
 
 interface LogEntry extends winston.Logform.TransformableInfo {
-    data: MsgType[];
+    data: LogEntryPart[];
     requestId: string;
     module: string;
 }
@@ -208,14 +211,16 @@ export class GlobalLogger {
             )
         }
 
-        if ('files' in cfg) {
+        const files = 'files' in cfg && new Map(Object.entries(cfg.files));
+
+        if (files) {
             // `winston-daily-rotate-file` has side-effects, so only load if in use.
             // unless they want to use logging
             require("winston-daily-rotate-file");
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const { DailyRotateFile } = require("winston/lib/winston/transports");
 
-            for (const [filename, level] of Object.entries(cfg.files)) {
+            for (const [filename, level] of files) {
                 transports.push(new DailyRotateFile({
                     filename,
                     datePattern: cfg.fileDatePattern,
@@ -255,15 +260,15 @@ export class GlobalLogger {
             throw Error('Logging is not configured yet');
         }
 
-        function formatBotSdkMessage(module: string, ...messageOrObject: MsgType[]) {
+        function formatBotSdkMessage(module: string, ...messageOrObject: LogEntryPart[]) {
             return {
                 module,
-                data: [Logger.formatMsgTypeArray(messageOrObject)]
+                data: [Logger.formatLogEntryPartArray(messageOrObject)]
             };
         }
 
         return {
-            info: (module: string, ...messageOrObject: MsgType[]) => {
+            info: (module: string, ...messageOrObject: LogEntryPart[]) => {
                 // These are noisy, redirect to debug.
                 if (module.startsWith("MatrixLiteClient") || module.startsWith("MatrixHttpClient")) {
                     log.log("debug", formatBotSdkMessage(module, ...messageOrObject));
@@ -271,24 +276,24 @@ export class GlobalLogger {
                 }
                 log.log("info", formatBotSdkMessage(module, ...messageOrObject));
             },
-            warn: (module: string, ...messageOrObject: MsgType[]) => {
+            warn: (module: string, ...messageOrObject: LogEntryPart[]) => {
                 if (isMessageNoise(messageOrObject)) {
                     log.log("debug", formatBotSdkMessage(module, ...messageOrObject));
                     return;
                 }
                 log.log("warn", formatBotSdkMessage(module, ...messageOrObject));
             },
-            error: (module: string, ...messageOrObject: MsgType[]) => {
+            error: (module: string, ...messageOrObject: LogEntryPart[]) => {
                 if (isMessageNoise(messageOrObject)) {
                     log.log("debug", formatBotSdkMessage(module, ...messageOrObject));
                     return;
                 }
                 log.log("error", formatBotSdkMessage(module, ...messageOrObject));
             },
-            debug: (module: string, ...messageOrObject: MsgType[]) => {
+            debug: (module: string, ...messageOrObject: LogEntryPart[]) => {
                 log.log("debug", formatBotSdkMessage(module, ...messageOrObject));
             },
-            trace: (module: string, ...messageOrObject: MsgType[]) => {
+            trace: (module: string, ...messageOrObject: LogEntryPart[]) => {
                 log.log("verbose", formatBotSdkMessage(module, ...messageOrObject));
             },
         }
@@ -302,7 +307,7 @@ interface LoggerMetadata {
 export class Logger {
     static readonly root = new GlobalLogger();
 
-    static formatMsgTypeArray(...data: MsgType[]): string {
+    static formatLogEntryPartArray(...data: LogEntryPart[]): string {
         data = data.flat();
         return data.map(obj => {
             if (typeof obj === "string") {
@@ -319,7 +324,7 @@ export class Logger {
             `[${info.module}]`,
             info.requestId,
         ].join('');
-        return logPrefix + this.formatMsgTypeArray(info.data ?? []);
+        return logPrefix + this.formatLogEntryPartArray(info.data ?? []);
     }
 
     /**
@@ -350,7 +355,7 @@ export class Logger {
      * @param msg The message or data to log.
      * @param additionalData Additional context.
      */
-    public debug(msg: MsgType, ...additionalData: MsgType[]) {
+    public debug(msg: LogEntryPart, ...additionalData: LogEntryPart[]) {
         this.logger.winston?.log("debug", {...this.logMeta, data: [msg, ...additionalData]});
     }
 
@@ -359,7 +364,7 @@ export class Logger {
      * @param msg The message or data to log.
      * @param additionalData Additional context.
      */
-    public error(msg: MsgType, ...additionalData: MsgType[]) {
+    public error(msg: LogEntryPart, ...additionalData: LogEntryPart[]) {
         this.logger.winston?.log("error", { ...this.logMeta, data: [msg, ...additionalData] });
     }
 
@@ -368,7 +373,7 @@ export class Logger {
      * @param msg The message or data to log.
      * @param additionalData Additional context.
      */
-    public info(msg: MsgType, ...additionalData: MsgType[]) {
+    public info(msg: LogEntryPart, ...additionalData: LogEntryPart[]) {
         this.logger.winston?.log("info", {...this.logMeta, data: [msg, ...additionalData] });
     }
 
@@ -377,7 +382,7 @@ export class Logger {
      * @param msg The message or data to log.
      * @param additionalData Additional context.
      */
-    public warn(msg: MsgType, ...additionalData: MsgType[]) {
+    public warn(msg: LogEntryPart, ...additionalData: LogEntryPart[]) {
         this.logger.winston?.log("warn", {...this.logMeta, data: [msg, ...additionalData] });
     }
 }

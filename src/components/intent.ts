@@ -265,7 +265,7 @@ export class Intent {
     public sendText(roomId: string, text: string): Promise<{event_id: string}> {
         return this.sendMessage(roomId, {
             body: text,
-            msgtype: "m.text"
+            LogEntryPart: "m.text"
         });
     }
 

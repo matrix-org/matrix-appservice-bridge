@@ -27,13 +27,13 @@ type LogEntryPart = string|Error|any|{error?: string};
  * @param LogEntryPart A list of values being logged.
  * @returns True is the message is noise, or false otherwise.
  */
-function isMessageNoise(LogEntryPart: LogEntryPart[]) {
-    return LogEntryPart.some(messageOrObject => {
-        if (typeof messageOrObject !== "object") {
+function isMessageNoise(logEntryParts: LogEntryPart[]) {
+    return logEntryParts.some(part => {
+        if (typeof part !== "object") {
             return false;
         }
 
-        const possibleError = messageOrObject as {
+        const possibleError = part as {
             error?: string, body?: { error?: string, errcode?: string}, errcode?: string
         }
 

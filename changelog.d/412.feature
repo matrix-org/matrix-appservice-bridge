@@ -1,2 +1,0 @@
-Port the Logger class from `matrix-hookshot` to this SDK, granting JSON logging support and less noisy logs.
-**Note**: This change is breaking. `Logging.get(...)` becomes `new Logger(...)` and `Logging.configure` becomes `Logger.configure`.

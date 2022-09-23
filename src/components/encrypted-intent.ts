@@ -1,12 +1,10 @@
-import { UserMembership } from "./membership-cache";
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
-import Logging from "./logging";
-import { ReadStream } from "fs";
+import { Logger } from "..";
 import BotSdk, { MatrixClient } from "matrix-bot-sdk";
 import { FileUploadOpts, Intent, IntentOpts } from "./intent";
 import { WeakStateEvent } from "./event-types";
 
-const log = Logging.get("EncryptedIntent");
+const log = new Logger("EncryptedIntent");
 
 export interface EncryptedIntentOpts {
     sessionPromise: Promise<ClientEncryptionSession|null>;

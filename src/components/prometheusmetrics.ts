@@ -16,8 +16,7 @@ limitations under the License.
 import PromClient, { Registry } from "prom-client";
 import { AgeCounters } from "./agecounters";
 import { Request, Response } from "express";
-import { Bridge } from "..";
-import Logger from "./logging";
+import { Bridge, Logger } from "..";
 import { Appservice as BotSdkAppservice, FunctionCallContext, METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL,
     METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL } from "matrix-bot-sdk";
 import { getBridgeVersion } from "../utils/package-info";
@@ -45,7 +44,7 @@ interface HistogramOpts extends CounterOpts {
     buckets?: number[];
 }
 
-interface GagueOpts extends CounterOpts {
+interface GaugeOpts extends CounterOpts {
     refresh?: (gauge: PromClient.Gauge<string>) => void;
 }
 
@@ -104,7 +103,7 @@ interface GagueOpts extends CounterOpts {
  * @constructor
  */
 
-const log = Logger.get('PrometheusMetrics');
+const log = new Logger('PrometheusMetrics');
 
 export class PrometheusMetrics {
     public static AgeCounters = AgeCounters;
@@ -290,7 +289,7 @@ export class PrometheusMetrics {
      * gauge in order to provide a new value for it.
      * @return {Gauge} A gauge metric.
      */
-    public addGauge (opts: GagueOpts): PromClient.Gauge<string> {
+    public addGauge (opts: GaugeOpts): PromClient.Gauge<string> {
         const refresh = opts.refresh;
         const name = [opts.namespace || "bridge", opts.name].join("_");
 

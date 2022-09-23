@@ -19,12 +19,11 @@ import { defer } from "../utils/promiseutil";
 import { UserMembership } from "./membership-cache";
 import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
-import Logging from "./logging";
-import { ReadStream } from "fs";
 import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
 import { WeakStateEvent } from "./event-types";
+import { Logger } from '..';
 
-const log = Logging.get("Intent");
+const log = new Logger("Intent");
 export type IntentBackingStore = {
     getMembership: (roomId: string, userId: string) => UserMembership,
     getMemberProfile: (roomId: string, userid: string) => MatrixProfileInfo,

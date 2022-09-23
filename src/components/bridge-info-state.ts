@@ -1,8 +1,8 @@
 import { Bridge } from "../bridge";
-import logger from "./logging";
+import { Logger } from "..";
 import PQueue from "p-queue";
 
-const log = logger.get("BridgeStateSyncer");
+const log = new Logger("BridgeStateSyncer");
 export interface MappingInfo {
     creator?: string;
     protocol: {

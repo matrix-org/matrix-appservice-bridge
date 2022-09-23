@@ -2,7 +2,7 @@ import { Axios } from "axios";
 import { URL } from "url";
 import { isIP } from "net";
 import { promises as dns, SrvRecord } from "dns"
-import Logging from "../components/logging";
+import { Logger } from "..";
 
 interface MatrixServerWellKnown {
     "m.server": string;
@@ -19,7 +19,7 @@ const DefaultMatrixServerPort = 8448;
 const MaxPortNumber = 65535;
 const WellKnownTimeout = 10000;
 
-const log = Logging.get('MatrixHostResolver');
+const log = new Logger('MatrixHostResolver');
 
 type CachedResult = {timestamp: number, result: HostResolveResult}|{timestamp: number, error: Error};
 

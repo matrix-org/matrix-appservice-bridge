@@ -15,8 +15,8 @@ limitations under the License.
 
 import util from "util";
 import { AppServiceBot } from "./app-service-bot";
-import logging from "./logging";
-const log = logging.get("room-link-validator");
+import { Logger } from "..";
+const log = new Logger("room-link-validator");
 const VALIDATION_CACHE_LIFETIME = 30 * 60 * 1000;
 
 export interface Rules {

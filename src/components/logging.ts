@@ -323,7 +323,7 @@ export class Logger {
             info.timestamp,
             `[${info.module}]`,
             info.requestId,
-        ].join('');
+        ].join(' ');
         return logPrefix + this.formatLogEntryPartArray(info.data ?? []);
     }
 

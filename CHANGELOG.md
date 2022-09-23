@@ -1,3 +1,27 @@
+6.0.0 (2022-09-23)
+==================
+
+**Note** The logging interface has changed in this release. Please see the notes below on how to upgrade.
+
+Features
+--------
+
+- Port the Logger class from `matrix-hookshot` to this SDK, granting JSON logging support and less noisy logs.
+  **Note**: This change is breaking. `Logging.get(...)` becomes `new Logger(...)` and `Logging.configure` becomes `Logger.configure`. ([\#412](https://github.com/matrix-org/matrix-appservice-bridge/issues/412))
+
+
+Bugfixes
+--------
+
+- Fix `getBridgeVersion` sometimes reporting "unknown" when the package.json is accessible. ([\#437](https://github.com/matrix-org/matrix-appservice-bridge/issues/437))
+
+
+Improved Documentation
+----------------------
+
+- How-To guide: Remove advise to install matrix-appservice and other small improvements. ([\#432](https://github.com/matrix-org/matrix-appservice-bridge/issues/432))
+
+
 5.1.0 (2022-08-12)
 ==================
 

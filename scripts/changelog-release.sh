@@ -2,4 +2,4 @@
 # This script will run towncrier to generate a changelog entry.
 
 VERSION=`python3 -c "import json; f = open('./package.json', 'r'); v = json.loads(f.read())['version']; f.close(); print(v)"`
-towncrier --version $VERSION $1
+towncrier build --version $VERSION $1

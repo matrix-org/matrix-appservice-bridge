@@ -1,9 +1,9 @@
 import { join, dirname } from "path";
 import { statSync } from "fs";
 import pkginfo from "pkginfo";
-import Logging from "../components/logging";
+import { Logger } from "../components/logging";
 
-const log = Logging.get("PackageInfo");
+const log = new Logger("PackageInfo");
 
 // This may be defined if the script is run via NPM: https://docs.npmjs.com/cli/v8/using-npm/scripts#packagejson-vars
 let BridgeVersion: string|undefined = process.env.npm_package_version;

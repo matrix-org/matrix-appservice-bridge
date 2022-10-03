@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { clearTimeout } from "timers";
 import { Request, RequestOpts } from "./request";
 
 type HandlerFunction = (req: Request<unknown>, value: unknown) => Promise<unknown>|unknown;

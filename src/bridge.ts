@@ -1400,7 +1400,7 @@ export class Bridge {
                     // We don't care about the results
                     await this.prevRequestPromise;
                 }
- finally {
+                finally {
                     return promise;
                 }
             })();
@@ -1605,6 +1605,11 @@ export class Bridge {
         if (this.eeEventBroker) {
             this.eeEventBroker.close();
         }
+        if (this.selfPingDeferred?.timeout) {
+            clearInterval(this.selfPingDeferred.timeout);
+            this.selfPingDeferred = undefined;
+        }
+        this.requestFactory.close();
     }
 
 

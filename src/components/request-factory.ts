@@ -26,6 +26,7 @@ export class RequestFactory {
     private _resolves: HandlerFunction[] = [];
     private _rejects: HandlerFunction[] = [];
     private _timeouts: {fn: TimeoutFunction, timeout: number}[] = [];
+    private timeoutHandles = new Set<NodeJS.Timer>();
 
 
     /**
@@ -45,13 +46,15 @@ export class RequestFactory {
             });
         });
 
-        this._timeouts.forEach(function(timeoutObj) {
-            setTimeout(function() {
+        this._timeouts.forEach((timeoutObj) => {
+            const timer = setTimeout(() => {
+                this.timeoutHandles.delete(timer);
                 if (!req.isPending) {
                     return;
                 }
                 timeoutObj.fn(req);
             }, timeoutObj.timeout);
+            this.timeoutHandles.add(timer);
         });
         return req;
     }
@@ -87,5 +90,9 @@ export class RequestFactory {
             fn: fn,
             timeout: durationMs
         });
+    }
+
+    public close() {
+        this.timeoutHandles.forEach(t => clearTimeout(t));
     }
 }

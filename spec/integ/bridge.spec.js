@@ -749,7 +749,7 @@ describe("Bridge", function() {
 
         beforeEach(() => {
             userIsRegistered = false;
-            return bridge.initalise();
+            return bridge.initialise();
         });
 
         afterAll(() => {

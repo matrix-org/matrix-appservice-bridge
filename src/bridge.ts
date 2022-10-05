@@ -596,11 +596,11 @@ export class Bridge {
     }
 
     /**
-     * Load registration, databases and initalise bridge components.
+     * Load registration, databases and initialise bridge components.
      *
      * **This must be called before `listen()`**
      */
-    public async initalise(): Promise<void> {
+    public async initialise(): Promise<void> {
         if (typeof this.opts.registration === "string") {
             const regObj = yaml.load(await fs.readFile(this.opts.registration, 'utf8'));
             if (typeof regObj !== "object") {
@@ -713,7 +713,7 @@ export class Bridge {
 
     /**
      * Setup a HTTP listener to handle appservice traffic.
-     * ** This must be called after .initalise() **
+     * ** This must be called after .initialise() **
      * @param port The port to listen on.
      * @param appServiceInstance The AppService instance to attach to.
      * If not provided, one will be created.
@@ -722,7 +722,7 @@ export class Bridge {
     public async listen(
         port: number, hostname = "0.0.0.0", backlog = 10, appServiceInstance?: AppService): Promise<void> {
         if (!this.registration) {
-            throw Error('initalise() not called, cannot listen');
+            throw Error('initialise() not called, cannot listen');
         }
 
         const homeserverToken = this.registration.getHomeserverToken();
@@ -761,7 +761,7 @@ export class Bridge {
     }
 
     /**
-     * Run the bridge (start listening). This calls `initalise()` and `listen()`.
+     * Run the bridge (start listening). This calls `initialise()` and `listen()`.
      * @param port The port to listen on.
      * @param appServiceInstance The AppService instance to attach to.
      * If not provided, one will be created.
@@ -769,7 +769,7 @@ export class Bridge {
      * @return A promise resolving when the bridge is ready.
      */
     public async run(port: number, appServiceInstance?: AppService, hostname = "0.0.0.0", backlog = 10): Promise<void> {
-        await this.initalise();
+        await this.initialise();
         await this.listen(port, hostname, backlog, appServiceInstance);
     }
 
@@ -1065,19 +1065,19 @@ export class Bridge {
      */
     public getIntent(userId?: string, request?: Request<unknown>): Intent|EncryptedIntent {
         if (!this.appServiceBot || !this.botSdkAS) {
-            throw Error('Cannot call getIntent before calling .initalise()');
+            throw Error('Cannot call getIntent before calling .initialise()');
         }
         if (!userId) {
             if (!this.botIntent) {
                 // This will be defined when .run is called.
-                throw Error('Cannot call getIntent before calling .initalise()');
+                throw Error('Cannot call getIntent before calling .initialise()');
             }
             return this.botIntent;
         }
         else if (userId === this.botUserId) {
             if (!this.botIntent) {
                 // This will be defined when .run is called.
-                throw Error('Cannot call getIntent before calling .initalise()');
+                throw Error('Cannot call getIntent before calling .initialise()');
             }
             return this.botIntent;
         }
@@ -1528,7 +1528,7 @@ export class Bridge {
 
         if (this.botSdkAS) {
             metrics.registerMatrixSdkMetrics(this.botSdkAS);
-        } // Else, we will set this up in initalise()
+        } // Else, we will set this up in initialise()
         if (registerEndpoint && this.appservice) {
             metrics.addAppServicePath(this);
         } // Else, we will add the path in listen()

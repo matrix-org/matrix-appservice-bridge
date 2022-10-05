@@ -2,6 +2,7 @@ import { Bridge } from "../bridge";
 import { Logger } from ".."
 import PQueue from "p-queue";
 import { Counter, Gauge } from "prom-client";
+import { MatrixError } from "matrix-bot-sdk";
 
 const log = new Logger("MembershipQueue");
 
@@ -247,10 +248,10 @@ export class MembershipQueue {
             });
         }
         catch (ex) {
-            if (ex.body.errcode || ex.statusCode) {
+            if (ex instanceof MatrixError) {
                 this.failureReasonCounter?.inc({
                     type: kickUser ? "kick" : type,
-                    errcode: ex.body.errcode || "none",
+                    errcode: ex.errcode || "none",
                     http_status: ex.statusCode || "none"
                 });
             }
@@ -279,15 +280,17 @@ export class MembershipQueue {
         }
     }
 
-    private shouldRetry(ex: {body: {code: string; errcode: string;}, statusCode: number}, attempts: number): boolean {
-        const { errcode } = ex.body;
-        return !(
-            attempts === this.opts.maxAttempts ||
-            // Forbidden
-            errcode === "M_FORBIDDEN" ||
-            ex.statusCode === 403 ||
-            // Not found
-            ex.statusCode === 404
-        );
+    private shouldRetry(ex: Error, attempts: number): boolean {
+        if (ex instanceof MatrixError) {
+            return !(
+                attempts === this.opts.maxAttempts ||
+                // Forbidden
+                ex.errcode === "M_FORBIDDEN" ||
+                ex.statusCode === 403 ||
+                // Not found
+                ex.statusCode === 404
+            )
+        }
+        return false;
     }
 }

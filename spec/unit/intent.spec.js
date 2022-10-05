@@ -1,6 +1,6 @@
 const { Intent } = require("../..");
-
-const matrixError = (errcode, error) => Promise.reject({body: {errcode, error}});
+const { MatrixError } = require('matrix-bot-sdk');
+const matrixError = async (errcode, error) => { throw new MatrixError({errcode, error}, 500)};
 
 describe("Intent", function() {
     let intent, botIntent, client, botClient, underlyingClient;

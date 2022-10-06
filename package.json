@@ -47,7 +47,7 @@
     "p-queue": "^6.6.2",
     "pkginfo": "^0.4.1",
     "postgres": "^3.3.1",
-    "prom-client": "^14.0.0",
+    "prom-client": "^14.1.0",
     "uuid": "^8.3.2",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.5.1"

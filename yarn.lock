@@ -2636,10 +2636,10 @@ process-on-spawn@^1.0.0:
   dependencies:
     fromentries "^1.2.0"
 
-prom-client@^14.0.0:
-  version "14.0.1"
-  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-14.0.1.tgz#bdd9583e02ec95429677c0e013712d42ef1f86a8"
-  integrity sha512-HxTArb6fkOntQHoRGvv4qd/BkorjliiuO2uSWC2KC17MUTKYttWdDoXX/vxOhQdkoECEM9BBH0pj2l8G8kev6w==
+prom-client@^14.1.0:
+  version "14.1.0"
+  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-14.1.0.tgz#049609859483d900844924df740722c76ed1fdbb"
+  integrity sha512-iFWCchQmi4170omLpFXbzz62SQTmPhtBL35v0qGEVRHKcqIeiexaoYeP0vfZTujxEq3tA87iqOdRbC9svS1B9A==
   dependencies:
     tdigest "^0.1.1"
 

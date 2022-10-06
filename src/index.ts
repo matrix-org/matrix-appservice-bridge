@@ -39,7 +39,7 @@ export * from "./components/user-bridge-store";
 export * from "./components/user-activity-store";
 export * from "./components/room-bridge-store";
 export * from "./components/event-bridge-store";
-export * from "./components/stores/PostgresStore";
+export * from "./components/stores/postgres-store";
 
 // Models
 export * from "./models/rooms/matrix";

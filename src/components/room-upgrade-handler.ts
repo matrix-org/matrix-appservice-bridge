@@ -108,7 +108,6 @@ export class RoomUpgradeHandler {
             return true;
         }
         catch (ex) {
-            console.log("THE EX", ex);
             if (ex instanceof MatrixError && ex.errcode === "M_FORBIDDEN") {
                 return false;
             }

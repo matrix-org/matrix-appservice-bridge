@@ -1,14 +1,13 @@
 import { PostgresStore } from "../../src";
 import { getPgDatabase, initPostgres, isPostgresTestingEnabled } from "../helpers/postgres-helper";
 
-/**
- * So we can use the abstraction.
- */
-class TestPostgresStore extends PostgresStore {
 
-}
+// Only run the tests if we've enabled postgres testing.
+let descr = isPostgresTestingEnabled() ? describe : xdescribe;
 
-describe('PostgresStore', () => {
+class TestPostgresStore extends PostgresStore { }
+
+descr('PostgresStore', () => {
     let store: TestPostgresStore|undefined;
     beforeAll(() => {
         initPostgres();

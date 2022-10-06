@@ -46,6 +46,7 @@
     "nopt": "^5.0.0",
     "p-queue": "^6.6.2",
     "pkginfo": "^0.4.1",
+    "postgres": "^3.3.1",
     "prom-client": "^14.0.0",
     "uuid": "^8.3.2",
     "winston": "^3.3.3",

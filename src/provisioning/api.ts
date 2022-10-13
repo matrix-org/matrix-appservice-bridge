@@ -61,6 +61,16 @@ export interface ProvisioningApiOpts {
      */
     openIdOverride?: {[serverName: string]: URL},
     /**
+     * Allow these IP ranges to be hit when handling OpenID requests even if they are within
+     * `disallowedIpRanges`. This allows specific sub-ranges of `disallowedIpRanges` to be
+     * used without having to carefully construct the ranges that still should be disallowed.
+     *
+     * If the IP the OpenID request would be made to isn't in either list it is implicitly allowed.
+     *
+     * Defaults to the empty list.
+     */
+    allowedIpRanges?: string[];
+    /**
      * Disallow these IP ranges from being hit when handling OpenID requests. By default, a number of
      * intenal ranges are blocked.
      * @see DefaultDisallowedIpRanges
@@ -118,6 +128,7 @@ export class ProvisioningApi {
     private readonly widgetTokenPrefix: string;
     private readonly widgetTokenLifetimeMs: number;
     private readonly wellknown = new MatrixHostResolver();
+    private readonly allowedIpRanges: IPCIDR[];
     private readonly disallowedIpRanges: IPCIDR[];
     constructor(protected store: ProvisioningStore, private opts: ProvisioningApiOpts = {}) {
         this.app = express();
@@ -129,6 +140,7 @@ export class ProvisioningApi {
         this.widgetTokenPrefix = opts.widgetTokenPrefix || DEFAULT_WIDGET_TOKEN_PREFIX;
         this.widgetTokenLifetimeMs = opts.widgetTokenLifetimeMs || DEFAULT_WIDGET_TOKEN_LIFETIME_MS;
         this.opts.apiPrefix = opts.apiPrefix || "/provisioning";
+        this.allowedIpRanges = (opts.allowedIpRanges || []).map(ip => new IPCIDR(ip));
         this.disallowedIpRanges = (opts.disallowedIpRanges || DefaultDisallowedIpRanges).map(ip => new IPCIDR(ip));
         this.app.get('/health', this.getHealth.bind(this));
 
@@ -311,6 +323,10 @@ export class ProvisioningApi {
         else {
             const record = await dns.lookup(host);
             ip = record.address;
+        }
+
+        if (this.allowedIpRanges.find(d => d.contains(ip))) {
+            return;
         }
 
         if (this.disallowedIpRanges.find(d => d.contains(ip))) {

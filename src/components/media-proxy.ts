@@ -8,9 +8,7 @@ const log = new Logger('MediaProxy');
 
 interface MediaMetadata {
     endDt?: number;
-    eventId: string;
-    id: string;
-    roomId: string;
+    mxc: string;
 }
 
 interface Opts {
@@ -18,14 +16,6 @@ interface Opts {
     ttl?: number;
     signingKey: webcrypto.CryptoKey;
     signingAlgorithm: webcrypto.AlgorithmIdentifier;
-}
-
-/**
- * https://github.com/matrix-org/matrix-spec-proposals/blob/rav/propsal/content_tokens_for_media/proposals/3910-content-tokens-for-media.md
- */
-interface MSC3910Content {
-    content_token?: string;
-    url?: string;
 }
 
 /**
@@ -112,27 +102,16 @@ export class MediaProxy {
     }
 
 
-    public async generateMediaUrl(roomId: string, eventId: string, id: string): Promise<URL> {
+    public async generateMediaUrl(roomId: string, eventId: string, mxc: string): Promise<URL> {
         const endDt = this.opts.ttl ? Date.now() + this.opts.ttl : undefined;
-        const token = await this.getMediaToken({ endDt, eventId, id, roomId });
+        // Remove cruft
+        const token = await this.getMediaToken({ endDt, mxc: mxc.replace('mxc://', '') });
         const slash = this.opts.publicUrl.pathname.endsWith('/') ? '' : '/';
         const path = new URL(
             `${this.opts.publicUrl.pathname}${slash}/v1/media/download/${token}`,
             this.opts.publicUrl.origin
         );
         return path;
-    }
-
-    private extractParametersFromEvent(event: MSC3910Content): {url: string, contentToken?: string} {
-        // TODO: Support more kinds of media.
-        if (!event.url) {
-            throw new ApiError('No `url` in event, cannot find media', ErrCode.NotFound);
-        }
-        const url = this.matrixClient.mxcToHttp(event.url);
-        return {
-            url,
-            contentToken: event.content_token,
-        }
     }
 
     public async onMediaRequest(req: Request, res: Response) {
@@ -144,20 +123,12 @@ export class MediaProxy {
         if (metadata.endDt && metadata.endDt < Date.now()) {
             throw new ApiError('Access to the media you requested has now expired.', ErrCode.NotFound);
         }
-        let event;
-        try {
-            event = await this.matrixClient.getEvent(metadata.roomId, metadata.eventId);
-        }
-        catch (ex) {
-            throw new ApiError('Media could not be found. It may no longer exist', ErrCode.NotFound);
-        }
         // Cache from this point onwards.
         // Extract the media from the event.
-        const {url, contentToken} = this.extractParametersFromEvent(event);
+        const url = this.matrixClient.mxcToHttp('mxc://' + metadata.mxc);
         get(url, {
             headers: {
                 'Authorization': `Bearer ${this.matrixClient.accessToken}`,
-                ...( contentToken && { 'X-Matrix-Content-Token': contentToken }),
             },
         }, (getRes) => {
             const { statusCode } = res;

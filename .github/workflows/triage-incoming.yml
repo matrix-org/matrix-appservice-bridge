@@ -11,5 +11,5 @@ jobs:
       project_id: 'PVT_kwDOAIB0Bs4AG0bY'
       content_id: ${{ github.event.issue.node_id }}
     secrets: 
-      github_access_token: ${{ secrets.ELEMENT_BOT_TOKEN }}
+      github_access_token: ${{ secrets.GITHUB_TOKEN }}
           

@@ -6,10 +6,10 @@ on:
 
 jobs:
   triage:
-    uses: matrix-org/backend-meta/.github/workflows/triage-incoming.yml@7941f24643b8c17dab450bca434c2706b30622fd
+    uses: matrix-org/backend-meta/.github/workflows/triage-incoming.yml@f2b5c63893bbc1ca00442ea7d256411b6549fff6
     with: 
       project_id: 'PVT_kwDOAIB0Bs4AG0bY'
       content_id: ${{ github.event.issue.node_id }}
     secrets: 
-      GITHUB_TOKEN: ${{ secrets.ELEMENT_BOT_TOKEN }}
+      github_access_token: ${{ secrets.ELEMENT_BOT_TOKEN }}
           

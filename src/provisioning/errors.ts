@@ -27,10 +27,18 @@ export enum ErrCode {
      */
     BadOpenID = "M_AS_BAD_OPENID",
 
-    Ratelimited = "M_AS_LIMIT_EXCEEDED"
+    /**
+     * The request was denied due to ratelimiting rules.
+     */
+    Ratelimited = "M_AS_LIMIT_EXCEEDED",
+    /**
+     * The item that was requested could not be found.
+     */
+    NotFound = "M_NOT_FOUND",
 }
 
 const ErrCodeToStatusCode: Record<ErrCode, number> = {
+    M_NOT_FOUND: 404,
     M_AS_UNKNOWN: 500,
     M_AS_UNSUPPORTED_OPERATION: 400,
     M_AS_BAD_VALUE: 400,

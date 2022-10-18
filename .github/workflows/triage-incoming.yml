@@ -1,0 +1,15 @@
+name: Contribution requirements
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  triage:
+    uses: matrix-org/backend-meta/.github/workflows/triage-incoming.yml@7941f24643b8c17dab450bca434c2706b30622fd
+    with: 
+      project_id: 'PVT_kwDOAIB0Bs4AG0bY'
+      content_id: ${{ github.event.issue.node_id }}
+    secrets: 
+      GITHUB_TOKEN: ${{ secrets.ELEMENT_BOT_TOKEN }}
+          

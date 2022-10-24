@@ -15,8 +15,13 @@ interface Opts {
     publicUrl: URL;
     ttl?: number;
     signingKey: webcrypto.CryptoKey;
-    signingAlgorithm: webcrypto.AlgorithmIdentifier;
 }
+
+const ALGORITHM: webcrypto.HmacKeyAlgorithm = { name: 'hmac', hash: {
+        name: 'SHA-512'
+    },
+    length: 512,
+};
 
 /**
  * A media proxy class intended for bridges which share media to the
@@ -71,8 +76,8 @@ export class MediaProxy {
     async getMediaToken(metadata: MediaMetadata) {
         const data = Buffer.from(JSON.stringify(metadata));
         const sig = Buffer.from(
-            await subtleCrypto.sign(this.opts.signingAlgorithm, this.opts.signingKey, data)
-        ).toString('base64');
+            await subtleCrypto.sign(ALGORITHM, this.opts.signingKey, data)
+        ).toString('base64url');
         return Buffer.from(JSON.stringify({...metadata, signature: sig})).toString('base64url');
     }
 
@@ -84,14 +89,14 @@ export class MediaProxy {
         catch (ex) {
             throw new ApiError("Media token is invalid", ErrCode.BadValue);
         }
-        const signature = Buffer.from(data.signature, 'base64');
+        const signature = Buffer.from(data.signature, 'base64url');
         if (!signature) {
             throw new ApiError("Signature missing from metadata", ErrCode.BadValue);
         }
         const signedJson = {...data, signature: undefined};
         const signedData = Buffer.from(JSON.stringify(signedJson));
         try {
-            if (!subtleCrypto.verify(this.opts.signingAlgorithm, this.opts.signingKey, signedData, signature)) {
+            if (!subtleCrypto.verify(ALGORITHM, this.opts.signingKey, signedData, signature)) {
                 throw new Error('Signature did not match');
             }
         }
@@ -102,14 +107,15 @@ export class MediaProxy {
     }
 
 
-    public async generateMediaUrl(roomId: string, eventId: string, mxc: string): Promise<URL> {
+    public async generateMediaUrl(mxc: string): Promise<URL> {
         const endDt = this.opts.ttl ? Date.now() + this.opts.ttl : undefined;
         // Remove cruft
         const token = await this.getMediaToken({ endDt, mxc: mxc.replace('mxc://', '') });
-        const slash = this.opts.publicUrl.pathname.endsWith('/') ? '' : '/';
+        const { pathname, origin } = this.opts.publicUrl;
+        const slash = pathname.endsWith('/') ? '' : '/';
         const path = new URL(
-            `${this.opts.publicUrl.pathname}${slash}/v1/media/download/${token}`,
-            this.opts.publicUrl.origin
+            `${pathname}${slash}v1/media/download/${token}`,
+            origin
         );
         return path;
     }

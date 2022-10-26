@@ -1,0 +1,1 @@
+Use MatrixError and enforce type-checking on error values.

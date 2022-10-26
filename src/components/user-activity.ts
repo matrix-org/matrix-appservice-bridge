@@ -45,6 +45,7 @@ export interface UserActivity {
 export interface UserActivityTrackerConfig {
     inactiveAfterDays: number;
     minUserActiveDays: number;
+    debounceTimeMs:    number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-namespace,no-redeclare
@@ -52,6 +53,7 @@ export namespace UserActivityTrackerConfig {
     export const DEFAULT: UserActivityTrackerConfig = {
         inactiveAfterDays: 31,
         minUserActiveDays: 3,
+        debounceTimeMs:    0,
     };
 }
 
@@ -78,6 +80,8 @@ const ONE_DAY = 24 * 60 * 60 * 1000;
  * to not interfere with UserActivityTracker's operations.
  */
 export class UserActivityTracker {
+    private debounceTimer: NodeJS.Timeout|undefined;
+
     constructor(
         private readonly config: UserActivityTrackerConfig,
         private readonly dataSet: UserActivitySet,
@@ -116,14 +120,17 @@ export class UserActivityTracker {
         }
 
         this.dataSet.users[userId] = userObject;
-        setImmediate(() => {
-            log.debug("Notifying the listener of RMAU changes");
-            this.onChanges?.({
-                changed: [userId],
-                dataSet: this.dataSet,
-                activeUsers: this.countActiveUsers().allUsers,
-            });
-        });
+        if (!this.debounceTimer) {
+            this.debounceTimer = setTimeout(() => {
+                log.debug("Notifying the listener of RMAU changes");
+                this.onChanges?.({
+                    changed: [userId],
+                    dataSet: this.dataSet,
+                    activeUsers: this.countActiveUsers().allUsers,
+                });
+                this.debounceTimer = undefined;
+            }, this.config.debounceTimeMs);
+        }
     }
 
     /**

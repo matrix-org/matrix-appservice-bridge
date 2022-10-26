@@ -199,4 +199,22 @@ describe("userActivity", () => {
             });
         });
     })
+    describe("debouncing", () => {
+        it("should only send one update in a specified period", async () => {
+            let updates = 0;
+            const tracker = new UserActivityTracker(
+                {
+                    ...UserActivityTrackerConfig.DEFAULT,
+                    debounceTimeMs: 100,
+                },
+                emptyDataSet(),
+                () => updates++,
+            );
+            tracker.updateUserActivity(USER_ONE, undefined, DATE_NOW);
+            tracker.updateUserActivity(USER_ONE, undefined, DATE_NOW);
+            tracker.updateUserActivity(USER_ONE, undefined, DATE_NOW);
+            await new Promise(resolve => setTimeout(resolve, 200));
+            expect(updates).toEqual(1);
+        });
+    });
 })

@@ -9,8 +9,6 @@
     "outDir": "./lib",
     "composite": false,
     "strictNullChecks": true,
-    /* We don't support this yet */
-    "useUnknownInCatchVariables": false,
   },
   "include": [
     "src/**/*"

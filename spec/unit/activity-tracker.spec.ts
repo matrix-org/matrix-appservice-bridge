@@ -1,6 +1,10 @@
 import "jasmine";
 import { ActivityTracker } from "../../src/index";
-import { WhoisInfo, PresenceEventContent, MatrixClient } from "matrix-bot-sdk";
+import { WhoisInfo, PresenceEventContent, MatrixClient, MatrixError } from "matrix-bot-sdk";
+
+function throwMatrixError(statusCode: number) {
+    throw new MatrixError({errcode: "M_UNKNOWN", error: ""}, statusCode);
+}
 
 const TEST_USER = "@foobar:example.com";
 
@@ -9,9 +13,9 @@ function createTracker(canUseWhois: boolean = false, presence?: PresenceEventCon
     client.doRequest = async function (method: string, path: string) {
         if (method === "GET" && path === "/_synapse/admin/v1/users/@foo:bar/admin") {
             if (canUseWhois) {
-                throw {statusCode: 400}
+                throwMatrixError(400);
             }
-            throw {statusCode: 403}; // 403 - not an admin
+            throwMatrixError(403); // 403 - not an admin
         }
         if (method === "GET" && path.startsWith("/_matrix/client/v3/presence/")) {
             if (!presence) {

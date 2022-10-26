@@ -103,7 +103,9 @@ export class BridgeInfoStateSyncer<BridgeMappingInfo> {
                 );
             }
             catch (ex) {
-                log.error(`Failed to update room with new state content: ${ex.message}`);
+                log.error(
+                    `Failed to update room with new state content: ${ex instanceof Error ? ex.message : ex}`
+                );
             }
         }
     }

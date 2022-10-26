@@ -1,4 +1,4 @@
-import { MatrixClient } from "matrix-bot-sdk";
+import { MatrixClient, MatrixError } from "matrix-bot-sdk";
 import { Logger } from ".."
 const log = new Logger("ActivityTracker");
 
@@ -77,7 +77,7 @@ export class ActivityTracker {
             }
             catch (ex) {
                 // We expect this to fail
-                this.canUseWhois = (ex.statusCode === 200 || ex.statusCode === 400);
+                this.canUseWhois = ex instanceof MatrixError && (ex.statusCode === 200 || ex.statusCode === 400);
             }
         }
 

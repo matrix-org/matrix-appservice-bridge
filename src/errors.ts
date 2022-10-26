@@ -26,7 +26,7 @@ export namespace unstable {
      *     throw wrapError(e, HighLevelError, "This error is more specific");
      */
     export function wrapError<T extends EventNotHandledError>(
-        oldError: Error|string,
+        oldError: unknown,
         newErrorType: { new (message: string): T },
         message = "",
     ): EventNotHandledError {
@@ -37,7 +37,7 @@ export namespace unstable {
             newError.stack = oldError.stack;
         }
         else {
-            appendMsg = oldError.toString();
+            appendMsg = String(oldError);
         }
         newError.message += ":\n" + appendMsg;
         return newError;

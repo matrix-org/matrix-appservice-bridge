@@ -185,7 +185,7 @@ export class MatrixHostResolver {
         }
         catch (ex) {
             // Fall through to step 4.
-            log.debug(`No well-known found for ${hostname}: ${ex.message}`);
+            log.debug(`No well-known found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
         }
 
         if (wellKnownResponse) {
@@ -213,7 +213,7 @@ export class MatrixHostResolver {
                 };
             }
             catch (ex) {
-                log.debug(`No well-known SRV found for ${hostname}: ${ex.message}`);
+                log.debug(`No well-known SRV found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
             }
             // 3.4
             return {
@@ -237,7 +237,7 @@ export class MatrixHostResolver {
             };
         }
         catch (ex) {
-            log.debug(`No SRV found for ${hostname}: ${ex.message}`);
+            log.debug(`No SRV found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
         }
 
         // Step 5 - Normal resolve
@@ -295,7 +295,10 @@ export class MatrixHostResolver {
             };
         }
         catch (error) {
-            this.resultCache.set(hostname, { error, timestamp: this.currentTime});
+            this.resultCache.set(hostname, {
+                timestamp: this.currentTime,
+                error: error instanceof Error ? error : Error(String(error)),
+            });
             log.debug(`No result cached for ${hostname}, caching error for ${CacheFailureForMS}ms`);
             throw error;
         }

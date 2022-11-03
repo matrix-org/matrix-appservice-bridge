@@ -2,6 +2,7 @@ import { Bridge } from "../bridge";
 import { Logger } from ".."
 import PQueue from "p-queue";
 import { Counter, Gauge } from "prom-client";
+import { MatrixError } from "matrix-bot-sdk";
 
 const log = new Logger("MembershipQueue");
 
@@ -247,10 +248,10 @@ export class MembershipQueue {
             });
         }
         catch (ex) {
-            if (ex.body.errcode || ex.statusCode) {
+            if (ex instanceof MatrixError) {
                 this.failureReasonCounter?.inc({
                     type: kickUser ? "kick" : type,
-                    errcode: ex.body.errcode || "none",
+                    errcode: ex.errcode || "none",
                     http_status: ex.statusCode || "none"
                 });
             }
@@ -266,7 +267,11 @@ export class MembershipQueue {
                 this.opts.actionDelayMs
             );
             log.warn(`${reqIdStr} Failed to ${type} ${roomId}, delaying for ${delay}ms`);
-            log.debug(`${reqIdStr} Failed with: ${ex.body.errcode} ${ex.message}`);
+            log.debug(`${reqIdStr} Failed with${
+                ex instanceof MatrixError
+                ? `: ${ex.errcode} ${ex.message}`
+                : ` unknown error (${ex})`
+            }`);
             await new Promise((r) => setTimeout(r, delay));
             this.queueMembership({...item, attempts: attempts + 1}).catch((innerEx) => {
                 log.error(`Failed to handle membership change:`, innerEx);
@@ -279,15 +284,16 @@ export class MembershipQueue {
         }
     }
 
-    private shouldRetry(ex: {body: {code: string; errcode: string;}, statusCode: number}, attempts: number): boolean {
-        const { errcode } = ex.body;
+    private shouldRetry(ex: unknown, attempts: number): boolean {
         return !(
             attempts === this.opts.maxAttempts ||
-            // Forbidden
-            errcode === "M_FORBIDDEN" ||
-            ex.statusCode === 403 ||
-            // Not found
-            ex.statusCode === 404
-        );
+            ex instanceof MatrixError && (
+                // Forbidden
+                ex.errcode === "M_FORBIDDEN" ||
+                ex.statusCode === 403 ||
+                // Not found
+                ex.statusCode === 404
+            )
+        )
     }
 }

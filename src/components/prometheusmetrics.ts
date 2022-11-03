@@ -410,7 +410,7 @@ export class PrometheusMetrics {
                 catch (e) {
                     res.status(500);
                     res.set("Content-Type", "text/plain");
-                    res.send(e.toString());
+                    res.send(String(e));
                 }
             },
         });

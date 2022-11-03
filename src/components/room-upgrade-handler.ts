@@ -17,6 +17,7 @@ import { MatrixRoom } from "../models/rooms/matrix";
 import { MatrixUser } from "../models/users/matrix";
 import { RoomBridgeStoreEntry } from "./room-bridge-store";
 import { Bridge } from "..";
+import { MatrixError } from "matrix-bot-sdk";
 
 const log = new Logger("RoomUpgradeHandler");
 
@@ -107,7 +108,7 @@ export class RoomUpgradeHandler {
             return true;
         }
         catch (ex) {
-            if (ex.body?.errcode === "M_FORBIDDEN") {
+            if (ex instanceof MatrixError && ex.errcode === "M_FORBIDDEN") {
                 return false;
             }
             throw Error("Failed to handle upgrade");

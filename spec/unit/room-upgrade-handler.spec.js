@@ -1,3 +1,4 @@
+const { MatrixError } = require("matrix-bot-sdk/lib/models/MatrixError");
 const { RoomUpgradeHandler } = require("../../lib/components/room-upgrade-handler")
 
 describe("RoomUpgradeHandler", () => {
@@ -14,7 +15,7 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomId) => { joined = roomId; return Promise.resolve(); },
+                    join: async (roomId) => { joined = roomId; return; },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -35,7 +36,7 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomId) => { joined = roomId; return Promise.reject({body: {errcode: "M_FORBIDDEN"}}); },
+                    join: async (roomId) => { joined = roomId; throw new MatrixError({errcode: "M_FORBIDDEN"}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -55,7 +56,7 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomId) => { joined = roomId; return Promise.reject({}); },
+                    join: async (roomId) => { joined = roomId; throw Error('Test failure'); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -78,7 +79,7 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomId) => { joined = roomId; return Promise.resolve({}); },
+                    join: async (roomId) => { joined = roomId; return {}; },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -91,7 +92,7 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: (roomId) => { joined = roomId; return Promise.reject({body: {errcode: "M_FORBIDDEN"}}); },
+                    join: async (roomId) => { joined = roomId; throw new MatrixError({errcode: "M_FORBIDDEN"}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);

@@ -810,13 +810,15 @@ export class Bridge {
         }
         const protocols = lookupController.protocols || [];
 
-        const respondErr = function(e: {code?: number, err?: string}, res: ExResponse) {
-            if (e.code && e.err) {
-                res.status(e.code).json({error: e.err});
+        const respondErr = function(e: unknown, res: ExResponse) {
+            if (e instanceof Object) {
+                const r = e as {code?: number, err?: string};
+                if (r.code && r.err) {
+                    res.status(r.code).json({error: r.err});
+                    return;
+                }
             }
-            else {
-                res.status(500).send("Failed: " + e);
-            }
+            res.status(500).send(`Failed: ${e}`);
         }
 
         if (lookupController.getProtocol) {

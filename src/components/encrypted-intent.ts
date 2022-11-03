@@ -1,6 +1,6 @@
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import { Logger } from "..";
-import BotSdk, { MatrixClient } from "matrix-bot-sdk";
+import BotSdk, { MatrixClient, MatrixError } from "matrix-bot-sdk";
 import { FileUploadOpts, Intent, IntentOpts } from "./intent";
 import { WeakStateEvent } from "./event-types";
 
@@ -218,7 +218,7 @@ export class EncryptedIntent extends Intent {
             return false;
         }
         catch (ex) {
-            if (ex.statusCode == 404) {
+            if (ex instanceof MatrixError && ex.statusCode === 404) {
                 this.encryptedRooms.set(roomId, false);
                 return false;
             }

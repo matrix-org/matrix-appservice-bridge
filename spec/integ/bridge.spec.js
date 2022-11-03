@@ -6,6 +6,7 @@ const HS_URL = "http://example.com";
 const HS_DOMAIN = "example.com";
 const BOT_LOCALPART = "the_bridge";
 const BOT_USER_ID = `@${BOT_LOCALPART}:${HS_DOMAIN}`;
+const { MatrixError } = require("matrix-bot-sdk");
 
 const TEST_USER_DB_PATH = __dirname + "/test-users.db";
 const TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
@@ -826,8 +827,8 @@ describe("Bridge", function() {
             const mxUser = new MatrixUser("@foo:example.com");
             const intent = bridge.getIntent(mxUser.getId());
             const botClient = intent.botSdkIntent;
-            const err =  { errcode: "M_FORBIDDEN" };
-            const errorPromise = Promise.reject({ errcode: "M_FORBIDDEN" })
+            const err = new MatrixError({ errcode: "M_FORBIDDEN" });
+            const errorPromise = Promise.reject(err);
             // This complains otherwise.
             errorPromise.catch((ex) => {});
             botClient.ensureRegistered.and.returnValue(errorPromise);

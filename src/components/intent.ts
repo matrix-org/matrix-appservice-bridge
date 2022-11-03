@@ -19,7 +19,7 @@ import { defer } from "../utils/promiseutil";
 import { UserMembership } from "./membership-cache";
 import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
-import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState } from "matrix-bot-sdk";
+import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState, MatrixError } from "matrix-bot-sdk";
 import { WeakStateEvent } from "./event-types";
 import { Logger } from '..';
 
@@ -430,7 +430,7 @@ export class Intent {
                 }
             }
             catch (ex) {
-                if (ex.body.errcode !== "M_FORBIDDEN") {
+                if (ex instanceof MatrixError && ex.errcode !== "M_FORBIDDEN") {
                     throw ex;
                 }
             }
@@ -765,7 +765,7 @@ export class Intent {
             return await this.botSdkIntent.underlyingClient.getRoomStateEvent(roomId, eventType, stateKey);
         }
         catch (ex) {
-            if (ex.body.errcode !== "M_NOT_FOUND" || !returnNull) {
+            if (ex instanceof MatrixError && ex.errcode !== "M_NOT_FOUND" || !returnNull) {
                 throw ex;
             }
         }
@@ -907,7 +907,7 @@ export class Intent {
             return await promiseFn();
         }
         catch (err) {
-            if (err.body?.errcode !== "M_FORBIDDEN") {
+            if (err instanceof MatrixError && err.errcode !== "M_FORBIDDEN") {
                 // not a guardable error
                 throw err;
             }
@@ -968,7 +968,7 @@ export class Intent {
                 mark(roomId, "join");
             }
             catch (ex) {
-                if (ex.body.errcode !== "M_FORBIDDEN") {
+                if (ex instanceof MatrixError && ex.errcode !== "M_FORBIDDEN") {
                     throw ex;
                 }
                 try {
@@ -1081,11 +1081,13 @@ export class Intent {
                 return "registered=true";
             }
             catch (err) {
-                if (err.body?.errcode === "M_EXCLUSIVE" && this.botClient === this.botSdkIntent.underlyingClient) {
+                if (
+                    (err instanceof MatrixError && err.errcode === "M_EXCLUSIVE") &&
+                    this.botClient === this.botSdkIntent.underlyingClient) {
                     // Registering the bot will leave it
                     this.opts.registered = true;
                 }
-                else if (err.body?.errcode === "M_USER_IN_USE") {
+                else if (err instanceof MatrixError && err.errcode === "M_USER_IN_USE") {
                     this.opts.registered = true;
                 }
                 else {

@@ -26,15 +26,11 @@ interface UserActivityMetadata {
     active?: true;
 }
 
-export interface UserActivitySet {
-    users: {[userId: string]: UserActivity};
-}
+export type UserActivitySet = Map<string, UserActivity>;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace,no-redeclare
 export namespace UserActivitySet {
-    export const DEFAULT: UserActivitySet = {
-        users: {}
-    };
+    export const DEFAULT: UserActivitySet = new Map();
 }
 
 export interface UserActivity {
@@ -89,7 +85,7 @@ export class UserActivityTracker {
     ) { }
 
     public updateUserActivity(userId: string, metadata?: UserActivityMetadata, dateOverride?: Date): void {
-        let userObject = this.dataSet.users[userId];
+        let userObject = this.dataSet.get(userId);
         if (!userObject) {
             userObject = {
                 ts: [],
@@ -119,10 +115,10 @@ export class UserActivityTracker {
             }
         }
 
-        this.dataSet.users[userId] = userObject;
+        this.dataSet.set(userId, userObject);
         if (!this.debounceTimer) {
             this.debounceTimer = setTimeout(() => {
-                log.debug("Notifying the listener of RMAU changes");
+                log.debug(`Notifying the listener of RMAU changes`);
                 this.onChanges?.({
                     changed: [userId],
                     dataSet: this.dataSet,
@@ -143,7 +139,7 @@ export class UserActivityTracker {
         let allUsers = 0;
         let privateUsers = 0;
         const activeSince = ((dateNow?.getTime() || Date.now()) - this.config.inactiveAfterDays * ONE_DAY) / 1000;
-        for (const user of Object.values(this.dataSet.users)) {
+        for (const user of this.dataSet.values()) {
             if (!user.metadata.active) {
                 continue;
             }
@@ -158,7 +154,7 @@ export class UserActivityTracker {
         return {allUsers, privateUsers};
     }
 
-    public getUserData(userId: string): UserActivity {
-        return this.dataSet.users[userId];
+    public getUserData(userId: string): UserActivity|undefined {
+        return this.dataSet.get(userId);
     }
 }

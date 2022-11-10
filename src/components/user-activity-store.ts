@@ -53,14 +53,14 @@ export class UserActivityStore extends BridgeStore {
 
     public async getActivitySet(): Promise<UserActivitySet> {
         return this.select({}).then((records: any[]) => {
-            const users: {[mxid: string]: any} = {};
+            const userActivity: UserActivitySet = new Map();
             for (const record of records) {
-                users[record.mxid] = {
+                userActivity.set(record.mxid, {
                     ts:       record.ts,
                     metadata: record.metadata,
-                };
+                });
             }
-            return { users } as UserActivitySet;
+            return userActivity;
         });
     }
 }

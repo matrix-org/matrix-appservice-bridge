@@ -72,6 +72,7 @@ const ONE_DAY = 24 * 60 * 60 * 1000;
  */
 export class UserActivityTracker {
     private debounceTimer: NodeJS.Timeout|undefined;
+    private debouncedChangedSet = new Set<string>();
 
     constructor(
         private readonly config: UserActivityTrackerConfig,
@@ -111,15 +112,17 @@ export class UserActivityTracker {
         }
 
         this.dataSet.set(userId, userObject);
+        this.debouncedChangedSet.add(userId);
         if (!this.debounceTimer) {
             this.debounceTimer = setTimeout(() => {
                 log.debug(`Notifying the listener of RMAU changes`);
                 this.onChanges?.({
-                    changed: [userId],
+                    changed: Array.from(this.debouncedChangedSet),
                     dataSet: this.dataSet,
                     activeUsers: this.countActiveUsers().allUsers,
                 });
                 this.debounceTimer = undefined;
+                this.debouncedChangedSet.clear();
             }, this.config.debounceTimeMs);
         }
     }

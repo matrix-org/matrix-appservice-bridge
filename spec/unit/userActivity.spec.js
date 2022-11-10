@@ -197,20 +197,26 @@ describe("userActivity", () => {
     })
     describe("debouncing", () => {
         it("should only send one update in a specified period", async () => {
-            let updates = 0;
+            const updates = [];
             const tracker = new UserActivityTracker(
                 {
                     ...UserActivityTrackerConfig.DEFAULT,
                     debounceTimeMs: 100,
                 },
                 emptyDataSet(),
-                () => updates++,
+                (changes) => updates.push(changes),
             );
-            tracker.updateUserActivity(USER_ONE, undefined, DATE_NOW);
-            tracker.updateUserActivity(USER_ONE, undefined, DATE_NOW);
+            tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_ONE);
+            tracker.updateUserActivity(USER_TWO, undefined, DATE_MINUS_ONE);
+            tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_ONE);
+            await new Promise(resolve => setTimeout(resolve, 200));
+            expect(updates.length).toEqual(1);
+            expect(updates[0].changed.sort()).toEqual([USER_ONE, USER_TWO]);
+
             tracker.updateUserActivity(USER_ONE, undefined, DATE_NOW);
             await new Promise(resolve => setTimeout(resolve, 200));
-            expect(updates).toEqual(1);
+            expect(updates.length).toEqual(2);
+            expect(updates[1].changed.length).toEqual(1);
         });
     });
 })

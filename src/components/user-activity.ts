@@ -28,11 +28,6 @@ interface UserActivityMetadata {
 
 export type UserActivitySet = Map<string, UserActivity>;
 
-// eslint-disable-next-line @typescript-eslint/no-namespace,no-redeclare
-export namespace UserActivitySet {
-    export const DEFAULT: UserActivitySet = new Map();
-}
-
 export interface UserActivity {
     ts: number[];
     metadata: UserActivityMetadata;

@@ -9,7 +9,7 @@ const USER_THREE = "@charlie:example.com";
 const ONE_DAY = 24 * 60 * 60 * 1000;
 
 describe("userActivity", () => {
-    const emptyDataSet = () => { return { users: {} } };
+    const emptyDataSet = () => { return new Map() };
     describe("updateUserActivity", () => {
         it("can update a user's activity", async () => {
             let userData;
@@ -28,9 +28,9 @@ describe("userActivity", () => {
             });
             // This data is comitted asyncronously.
             const data = await trackerPromise;
-            expect(data).toEqual({
-                users: {[USER_ONE]: userData}
-            });
+            expect(data).toEqual(new Map([
+                [USER_ONE, userData],
+            ]));
         });
         it("can update a user's activity with metadata", () => {
             const tracker = new UserActivityTracker(
@@ -132,16 +132,14 @@ describe("userActivity", () => {
             const DATE_MINUS_THIRTY_TWO = new Date(Date.UTC(2020, 11, 30, 0));
             const tracker = new UserActivityTracker(
                 UserActivityTrackerConfig.DEFAULT,
-                {
-                    users: {
-                        [USER_ONE]: {
-                            ts: [DATE_MINUS_THIRTY_TWO.getTime() / 1000],
-                            metadata: {
-                                active: true,
-                            }
+                new Map([
+                    [USER_ONE, {
+                        ts: [DATE_MINUS_THIRTY_TWO.getTime() / 1000],
+                        metadata: {
+                            active: true,
                         }
-                    }
-                },
+                    }]
+                ]),
             );
             expect(tracker.countActiveUsers(DATE_NOW)).toEqual({
                 allUsers: 0,
@@ -152,16 +150,14 @@ describe("userActivity", () => {
             const DATE_MINUS_THIRTY_ONE = new Date(Date.UTC(2020, 12, 1, 0));
             const tracker = new UserActivityTracker(
                 UserActivityTrackerConfig.DEFAULT,
-                {
-                    users: {
-                        [USER_ONE]: {
-                            ts: [DATE_MINUS_THIRTY_ONE.getTime() / 1000],
-                            metadata: {
-                                active: true,
-                            }
+                new Map([
+                    [USER_ONE, {
+                        ts: [DATE_MINUS_THIRTY_ONE.getTime() / 1000],
+                        metadata: {
+                            active: true,
                         }
-                    }
-                },
+                    }]
+                ]),
             );
             expect(tracker.countActiveUsers(DATE_NOW)).toEqual({
                 allUsers: 1,

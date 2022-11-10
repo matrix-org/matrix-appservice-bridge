@@ -58,5 +58,5 @@ jobs:
       - run: yarn --frozen-lockfile
       - run: yarn test
         env:
-          BRIDGE_TEST_PGDB: "ircbridge_integtest"
+          BRIDGE_TEST_PGDB: "bridge_integtest"
           BRIDGE_TEST_PGURL: "postgresql://postgres_user:postgres_password@postgres"

@@ -7,11 +7,11 @@ export function isPostgresTestingEnabled() {
 }
 
 export function initPostgres() {
-        // Setup postgres for the whole process.
-        pgClient = postgres(`${process.env.BRIDGE_TEST_PGURL}/postgres`);
-        process.on("beforeExit", async () => {
-            pgClient.end();
-        })
+    // Setup postgres for the whole process.
+    pgClient = postgres(`${process.env.BRIDGE_TEST_PGURL}/postgres`);
+    process.on("beforeExit", async () => {
+        pgClient.end();
+    })
 }
 
 export async function getPgDatabase() {

@@ -1,4 +1,7 @@
 {
-  "strict": "off",
-  "no-var": "off"
+  "rules": {
+    "strict": "off",
+    "no-var": "off",
+    "eol-last": "off"
+  }
 }

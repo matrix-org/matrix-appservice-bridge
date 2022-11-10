@@ -16,15 +16,16 @@ export interface PostgresStoreOpts extends postgres.Options<Record<string, Postg
      */
     url?: string;
     /**
-     * Should the schema table be automatically created (the v0 schema effectively)
+     * Should the schema table be automatically created (the v0 schema effectively).
+     * Defaults to `true`.
      */
     autocreateSchemaTable?: boolean;
 }
 
-export type SchemaUpdateFunction = (sql: postgres.Sql) => void;
+export type SchemaUpdateFunction = (sql: postgres.Sql) => Promise<void>|void;
 
 /**
- * PostgreSQL datastore abstraction which can be inherited by a specalised bridge class.
+ * PostgreSQL datastore abstraction which can be inherited by a specialised bridge class.
  *
  * @example
  * class MyBridgeStore extends PostgresStore {
@@ -43,7 +44,6 @@ export type SchemaUpdateFunction = (sql: postgres.Sql) => void;
  * const data = await store.getData();
  */
 export abstract class PostgresStore {
-    public static readonly LATEST_SCHEMA = 9;
     private hasEnded = false;
     public readonly sql: postgres.Sql;
 
@@ -139,14 +139,14 @@ export abstract class PostgresStore {
     protected async getSchemaVersion(): Promise<number> {
         try {
             const result = await this.sql<{version: number}[]>`SELECT version FROM SCHEMA;`;
-            return result?.[0]?.version;
+            return result[0].version;
         }
         catch (ex) {
             if (ex instanceof PostgresError && ex.code === "42P01") { // undefined_table
                 log.warn("Schema table could not be found");
                 return -1;
             }
-            log.error("Failed to get schema version: %s", ex);
+            log.error("Failed to get schema version", ex);
         }
         throw Error("Couldn't fetch schema version");
     }

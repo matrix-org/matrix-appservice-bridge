@@ -43,7 +43,7 @@ export class DebugAPI {
             return;
         }
         inspector.open(this.opts.inspector.port, this.opts.inspector.host || this.opts.host);
-        res.status(200).send({})
+        res.status(200).send({});
     }
 
     private onInspectorStop(_: Request, res: Response) {
@@ -52,6 +52,6 @@ export class DebugAPI {
             return;
         }
         inspector.close();
-        res.status(200).send({})
+        res.status(200).send({});
     }
 }

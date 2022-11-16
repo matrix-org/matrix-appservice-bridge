@@ -31,3 +31,32 @@ jobs:
           node-version: "${{ matrix.node-version }}"
       - run: yarn --frozen-lockfile
       - run: yarn build && yarn test
+  test-postgres:
+    runs-on: ubuntu-20.04
+    container: node:18
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres_password
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres_user
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 18
+      - run: yarn --frozen-lockfile
+      - run: yarn test
+        env:
+          BRIDGE_TEST_PGDB: "bridge_integtest"
+          BRIDGE_TEST_PGURL: "postgresql://postgres_user:postgres_password@postgres"

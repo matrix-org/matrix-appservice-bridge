@@ -5,13 +5,13 @@ Features
 --------
 
 - Enable allow-listing of specific IP ranges for OpenAPI requests (when using the Provisioner API) without having to edit disallowedIpRanges. This is done via the new `allowedIpRanges` flag. ([\#443](https://github.com/matrix-org/matrix-appservice-bridge/issues/443))
+- Add implementation of a PostgreSQL datastore for use by other bridges. ([\#442](https://github.com/matrix-org/matrix-appservice-bridge/issues/442))
 
 
 Bugfixes
 --------
 
 - Cleanup any outstanding Timer handles after running `Bridge.close`, which may prevent the process from closing. ([\#439](https://github.com/matrix-org/matrix-appservice-bridge/issues/439))
-- Add implementation of a PostgreSQL datastore for use by other bridges. ([\#442](https://github.com/matrix-org/matrix-appservice-bridge/issues/442))
 
 
 Improved Documentation

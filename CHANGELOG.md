@@ -1,3 +1,37 @@
+7.0.0 (2022-11-24)
+==================
+
+Features
+--------
+
+- Enable allow-listing of specific IP ranges for OpenAPI requests (when using the Provisioner API) without having to edit disallowedIpRanges. This is done via the new `allowedIpRanges` flag. ([\#443](https://github.com/matrix-org/matrix-appservice-bridge/issues/443))
+
+
+Bugfixes
+--------
+
+- Cleanup any outstanding Timer handles after running `Bridge.close`, which may prevent the process from closing. ([\#439](https://github.com/matrix-org/matrix-appservice-bridge/issues/439))
+- Add implementation of a PostgreSQL datastore for use by other bridges. ([\#442](https://github.com/matrix-org/matrix-appservice-bridge/issues/442))
+
+
+Improved Documentation
+----------------------
+
+- How-To guide: Remove advise to install matrix-appservice and other small improvements. ([\#432](https://github.com/matrix-org/matrix-appservice-bridge/issues/432))
+
+
+Deprecations and Removals
+-------------------------
+
+- Fix typo'd function name `Bridge.initalise` -> `Bridge.initialise`. ([\#440](https://github.com/matrix-org/matrix-appservice-bridge/issues/440))
+
+
+Internal Changes
+----------------
+
+- Use MatrixError and enforce type-checking on error values. ([\#441](https://github.com/matrix-org/matrix-appservice-bridge/issues/441))
+
+
 6.0.0 (2022-09-23)
 ==================
 

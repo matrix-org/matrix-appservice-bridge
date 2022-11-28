@@ -44,7 +44,7 @@ export namespace UserActivityTrackerConfig {
     export const DEFAULT: UserActivityTrackerConfig = {
         inactiveAfterDays: 31,
         minUserActiveDays: 3,
-        debounceTimeMs:    0,
+        debounceTimeMs:    60 * 1000, // 1 minute
     };
 }
 

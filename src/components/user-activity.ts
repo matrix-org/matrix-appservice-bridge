@@ -36,7 +36,7 @@ export interface UserActivity {
 export interface UserActivityTrackerConfig {
     inactiveAfterDays: number;
     minUserActiveDays: number;
-    debounceTimeMs:    number;
+    debounceTimeMs: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-namespace,no-redeclare

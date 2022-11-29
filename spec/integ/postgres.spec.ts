@@ -33,6 +33,8 @@ descr('PostgresStore', () => {
             url: await getPgDatabase(),
         });
         await store.ensureSchema();
+        // it should not overwrite the existing schema if we run `ensureSchema` again...
+        await store.ensureSchema();
     });
 
     afterEach(async () => {

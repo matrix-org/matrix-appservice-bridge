@@ -84,11 +84,10 @@ export abstract class PostgresStore {
                 log.info(`Applying v0 schema (schema table)`);
                 await v0Schema(this.sql);
                 currentVersion = 0;
+            } else {
+                // We aren't autocreating the schema table, so assume schema 0.
+                currentVersion = 0;
             }
-        }
-        else {
-            // We aren't autocreating the schema table, so assume schema 0.
-            currentVersion = 0;
         }
 
         // Zero-indexed, so schema 1 would be in slot 0.

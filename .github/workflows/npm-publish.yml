@@ -1,6 +1,6 @@
 on:
-  push:
-    tags: ["testing-[0-9].[0-9].[0-9]"]
+  release:
+    types: [published]
 
 jobs:
   publish-to-npm:
@@ -13,6 +13,6 @@ jobs:
           node-version: 18
       - run: yarn --strict-semver --frozen-lockfile
       - run: yarn build
-      - run: npm publish --dry-run # TODO: Remove dry
+      - run: yarn publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

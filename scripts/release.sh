@@ -4,8 +4,13 @@
 VERSION=`python3 -c "import json; f = open('./package.json', 'r'); v = json.loads(f.read())['version']; f.close(); print(v)"`
 TAG="$VERSION"
 
+if [[ "`git branch --show-current`" != "develop" ]]; then
+    echo "You must be on the develop branch to run this command."
+    exit 1
+fi
+
 if [ $(git tag -l "$TAG") ]; then
-    echo "Tag $TAG exists, not overwriting"
+    echo "Tag $TAG already exists, not continuing."
     exit 1
 fi
 
@@ -30,5 +35,7 @@ echo "Generated tag $TAG"
 
 echo "Pushing to origin"
 git push origin $TAG
+# Push develop too
+git push
 
 echo "The CI to generate a release is now running. Check https://github.com/matrix-org/matrix-appservice-bridge/releases and publish the release when it's ready."

@@ -1,0 +1,18 @@
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-to-npm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: yarn --strict-semver --frozen-lockfile
+      - run: yarn build
+      - run: npm publish --dry-run # TODO: Remove dry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

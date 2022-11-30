@@ -8,6 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 5
       # This currently fails.
       # - name: Check tag is signed
       #  run: git verify-tag ${{ github.ref_name }}
@@ -20,11 +22,10 @@ jobs:
           echo "RELEASE_BODY=$RELEASE_BODY" >> $GITHUB_OUTPUT
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_OUTPUT
       - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref }}
-          release_name: ${{ steps.extract-changelog.outputs.RELEASE_NAME }}
+          name: ${{ steps.extract-changelog.outputs.RELEASE_NAME }}
           body: ${{ steps.extract-changelog.outputs.RELEASE_BODY }}
           draft: true # Draft it
+          token: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token

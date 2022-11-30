@@ -12,7 +12,6 @@ jobs:
         id: extract-changelog
         run: |
           git fetch --tags --force
-          RELEASE_BODY=`git diff --minimal --no-color HEAD~ CHANGELOG.md | tail -n +6 | sed -r "s/^([^-+ ]*)[-+ ]/\\1/" | head -n -3`
           RELEASE_NAME="${{ github.ref_name }} $(date +'%Y-%m-%d')"
           RELEASE_BODY=`git tag -l --format='%(contents:body)' ${{ github.ref_name }}`
           echo "RELEASE_BODY=$RELEASE_BODY" >> $GITHUB_OUTPUT

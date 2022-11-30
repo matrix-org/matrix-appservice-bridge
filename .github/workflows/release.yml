@@ -10,13 +10,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      # This currently fails.
-      # - name: Check tag is signed
-      #  run: git verify-tag ${{ github.ref_name }}
       - name: Get changelog
         id: extract-changelog
         run: |
-          git fetch --tags
+          git fetch --tags --force
+          git verify-tag ${{ github.ref_name }}
           git cat-file tag ${{ github.ref_name }}
       # - name: Create Release
       #   uses: softprops/action-gh-release@v1

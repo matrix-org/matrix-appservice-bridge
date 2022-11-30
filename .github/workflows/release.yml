@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Check tag is signed
-        run: git tag -v ${{ github.ref }}
+        run: git tag -v ${{ github.ref_name }}
       - name: Get changelog
         id: extract-changelog
         run: |

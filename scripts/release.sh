@@ -2,7 +2,7 @@
 # This script will run towncrier to generate a changelog entry.
 
 VERSION=`python3 -c "import json; f = open('./package.json', 'r'); v = json.loads(f.read())['version']; f.close(); print(v)"`
-TAG="testing-$VERSION"
+TAG="$VERSION"
 
 if [ $(git tag -l "$TAG") ]; then
     echo "Tag $TAG exists, not overwriting"
@@ -10,7 +10,7 @@ if [ $(git tag -l "$TAG") ]; then
 fi
 
 echo "Drafting a new release"
-towncrier build --draft --version $VERSION $1 > draft-release.txt
+towncrier build --draft --version $VERSION> draft-release.txt
 cat draft-release.txt
 
 read -p "Happy with the changelog? <y/N> " prompt
@@ -18,6 +18,10 @@ if [[ $prompt != "y" && $prompt != "Y" && $prompt != "yes" && $prompt != "Yes" ]
 then
   exit 0
 fi
+
+echo "Committing version"
+towncrier build --version $VERSION
+git commit CHANGELOG.md changelog.d/ package.json -m $TAG
 
 echo "Proceeding to generate tags"
 cat draft-release.txt | git tag --force -m - -s $TAG

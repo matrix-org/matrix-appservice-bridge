@@ -20,6 +20,6 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           name: ${{ steps.extract-changelog.outputs.RELEASE_NAME }}
-          body_file: next-changelog.txt
+          body_path: next-changelog.txt
           draft: true # Draft it
           token: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token

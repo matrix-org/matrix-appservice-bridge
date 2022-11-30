@@ -1,13 +1,15 @@
 
 on:
   push:
-    tags: ["[0-9].[0-9].[0-9]"]
+    tags: ["testing-[0-9].[0-9].[0-9]"]
 
 jobs:
-  do-release:
+  draft-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Check tag is signed
+        run: git tag -v ${{ github.ref }}
       - name: Get changelog
         id: extract-changelog
         run: |

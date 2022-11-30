@@ -1,3 +1,20 @@
+testing-9.9.9.9 (2022-11-30)
+==================
+
+**Note**: The API for `UserActivityTracker` has changed. Please see [\#448](https://github.com/matrix-org/matrix-appservice-bridge/issues/448) for more details.
+
+Features
+--------
+
+- Add debouncing support to UserActivityTracker (defaults to 60 seconds). ([\#448](https://github.com/matrix-org/matrix-appservice-bridge/issues/448))
+
+
+Bugfixes
+--------
+
+- Fix postgres-store attempting to overwrite existing schema whenever `ensureSchema` is called. ([\#451](https://github.com/matrix-org/matrix-appservice-bridge/issues/451))
+
+
 8.0.0 (2022-11-30)
 ==================
 

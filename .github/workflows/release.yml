@@ -1,0 +1,28 @@
+
+on:
+  push:
+    tags: ["[0-9].[0-9].[0-9]"]
+
+jobs:
+  do-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get changelog
+        id: extract-changelog
+        run: |
+          RELEASE_BODY=`git diff --minimal --no-color HEAD~ CHANGELOG.md | tail -n +6 | sed -r "s/^([^-+ ]*)[-+ ]/\\1/" | head -n -3`
+          RELEASE_NAME=`echo $RELEASE_BODY | head -n 1`
+          RELEASE_BODY=`echo $RELEASE_BODY | tail -n +3`
+          echo "RELEASE_BODY=$RELEASE_BODY" >> $GITHUB_OUTPUT
+          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_OUTPUT
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ steps.extract-changelog.outputs.RELEASE_NAME }}
+          body: ${{ steps.extract-changelog.outputs.RELEASE_BODY }}
+          draft: true # Draft it

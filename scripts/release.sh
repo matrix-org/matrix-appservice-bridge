@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script will run towncrier to generate a changelog entry.
+# This script will run towncrier to and generate a release commit, tag and push to the origin.
 
 VERSION=`python3 -c "import json; f = open('./package.json', 'r'); v = json.loads(f.read())['version']; f.close(); print(v)"`
 TAG="$VERSION"

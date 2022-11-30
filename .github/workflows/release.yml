@@ -16,7 +16,7 @@ jobs:
       - name: Get changelog
         id: extract-changelog
         run: |
-          git fetch origin ${{ github.ref_name }}
+          git fetch --tags
           git cat-file tag ${{ github.ref_name }}
       # - name: Create Release
       #   uses: softprops/action-gh-release@v1

@@ -1,7 +1,6 @@
-
 on:
-  release:
-    types: [published]
+  push:
+    tags: ["testing-[0-9].[0-9].[0-9]"]
 
 jobs:
   publish-to-npm:

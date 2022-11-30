@@ -16,16 +16,12 @@ jobs:
       - name: Get changelog
         id: extract-changelog
         run: |
-          RELEASE_BODY=`git diff --minimal --no-color HEAD~ CHANGELOG.md | tail -n +6 | sed -r "s/^([^-+ ]*)[-+ ]/\\1/" | head -n -3`
-          RELEASE_NAME=`echo $RELEASE_BODY | head -n 1`
-          RELEASE_BODY=`echo $RELEASE_BODY | tail -n +3`
-          echo "RELEASE_BODY=$RELEASE_BODY" >> $GITHUB_OUTPUT
-          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_OUTPUT
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          name: ${{ steps.extract-changelog.outputs.RELEASE_NAME }}
-          body: ${{ steps.extract-changelog.outputs.RELEASE_BODY }}
-          draft: true # Draft it
-          token: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+          git cat-file tag ${{ github.ref_name }}
+      # - name: Create Release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     tag_name: ${{ github.ref }}
+      #     name: ${{ steps.extract-changelog.outputs.RELEASE_NAME }}
+      #     body: ${{ steps.extract-changelog.outputs.RELEASE_BODY }}
+      #     draft: true # Draft it
+      #     token: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token

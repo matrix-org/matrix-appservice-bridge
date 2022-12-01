@@ -1,0 +1,1 @@
+The PostgresStore had a beforeExit hook that would itself prevent the process from exiting.

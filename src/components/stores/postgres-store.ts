@@ -60,7 +60,7 @@ export abstract class PostgresStore {
     constructor(private readonly schemas: SchemaUpdateFunction[], private readonly opts: PostgresStoreOpts) {
         opts.autocreateSchemaTable = opts.autocreateSchemaTable ?? true;
         this.sql = opts.url ? postgres(opts.url, opts) : postgres(opts);
-        process.on("beforeExit", () => {
+        process.once("beforeExit", () => {
             // Ensure we clean up on exit
             this.destroy().catch(ex => {
                 log.warn('Failed to cleanly exit', ex);

@@ -1,7 +1,13 @@
 #!/bin/bash
 # This script will run towncrier to and generate a release commit, tag and push to the origin.
 
-VERSION=`python3 -c "import json; f = open('./package.json', 'r'); v = json.loads(f.read())['version']; f.close(); print(v)"`
+if ! command -v jq &> /dev/null
+then
+    echo "You must install jq to use this script"
+    exit
+fi
+
+VERSION=`jq -r .version package.json`
 TAG="$VERSION"
 
 if [[ "`git branch --show-current`" != "develop" ]]; then

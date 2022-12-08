@@ -1,3 +1,12 @@
+8.0.1 (2022-12-08)
+==================
+
+Bugfixes
+--------
+
+- The PostgresStore had a beforeExit hook that would itself prevent the process from exiting. ([\#453](https://github.com/matrix-org/matrix-appservice-bridge/issues/453))
+
+
 8.0.0 (2022-11-30)
 ==================
 

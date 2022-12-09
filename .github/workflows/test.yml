@@ -3,7 +3,6 @@ name: Tests
 on:
   push:
   workflow_dispatch:
-  pull_request:
 
 jobs:
   lint:
@@ -12,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: 16
       - run: yarn --strict-semver --frozen-lockfile
@@ -23,7 +22,6 @@ jobs:
       matrix:
         node-version: [16, 18]
     runs-on: ubuntu-20.04
-    container: node:14
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
@@ -53,7 +51,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: 18
       - run: yarn --frozen-lockfile

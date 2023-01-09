@@ -390,7 +390,7 @@ export class ProvisioningApi {
             res.send({ token, userId });
         }
         catch (ex) {
-            log.warn(`Failed to exchnage the token for ${server}`, ex);
+            log.warn(`Failed to exchange the token for ${server}`, ex);
             throw new ApiError("Failed to exchange token", ErrCode.BadOpenID);
         }
     }

@@ -149,7 +149,7 @@ export class ProvisioningApi {
                 next(new ApiError("Too many requests", ErrCode.Ratelimited, 429));
             },
             windowMs: 1 * 60 * 1000, // 1 minute
-            max: 20, // Limit per window
+            max: 30, // Limit per window
             standardHeaders: true,
             legacyHeaders: false,
             ...(typeof this.opts.ratelimit === "object" ? this.opts.ratelimit : {})

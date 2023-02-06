@@ -9,7 +9,7 @@ import { MatrixHostResolver } from "../utils/matrix-host-resolver";
 import IPCIDR from "ip-cidr";
 import { isIP } from "net";
 import { promises as dns } from "dns";
-import ratelimiter, { RateLimitInfo, Options as RatelimitOptions, AugmentedRequest } from "express-rate-limit";
+import ratelimiter, { Options as RatelimitOptions } from "express-rate-limit";
 import { Methods } from "./request";
 import { Logger } from "..";
 
@@ -109,7 +109,7 @@ export interface ProvisioningApiOpts {
      * Options for ratelimiting requests to the api server. Does not affect
      * static content loading.
      */
-    ratelimit?: boolean|RatelimitOptions;
+    ratelimit?: boolean|Partial<RatelimitOptions>;
 }
 
 
@@ -146,13 +146,13 @@ export class ProvisioningApi {
 
         const limiter = this.opts.ratelimit && ratelimiter({
             handler: (req, _res, next) => {
-                const info = (req as AugmentedRequest).ratelimit as RateLimitInfo;
-                const retryAfterMs = info?.resetTime ? info.resetTime.getTime() - Date.now() : null;
-                next(new ApiError("Too many requests", ErrCode.Ratelimited, 429, { retry_after_ms: retryAfterMs }));
+                next(new ApiError("Too many requests", ErrCode.Ratelimited, 429));
             },
-            windowMs: 6 * 60 * 1000, // 5 minutes
-            max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
-            ...(typeof this.opts.ratelimit === "object" ? this.opts.ratelimit : undefined)
+            windowMs: 1 * 60 * 1000, // 1 minute
+            max: 20, // Limit per window
+            standardHeaders: true,
+            legacyHeaders: false,
+            ...(typeof this.opts.ratelimit === "object" ? this.opts.ratelimit : {})
         });
 
         this.baseRoute = router();

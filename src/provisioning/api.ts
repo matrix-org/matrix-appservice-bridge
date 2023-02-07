@@ -145,8 +145,15 @@ export class ProvisioningApi {
         this.app.get('/health', this.getHealth.bind(this));
 
         const limiter = this.opts.ratelimit && ratelimiter({
-            handler: (req, _res, next) => {
-                next(new ApiError("Too many requests", ErrCode.Ratelimited, 429));
+            handler: (req, _res, next, options) => {
+                next(new ApiError(
+                    "Too many requests",
+                    ErrCode.Ratelimited,
+                    429,
+                    {
+                        retry_after_ms: options.windowMs,
+                    }
+                ));
             },
             windowMs: 1 * 60 * 1000, // 1 minute
             max: 30, // Limit per window

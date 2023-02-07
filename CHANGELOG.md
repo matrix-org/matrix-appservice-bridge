@@ -1,3 +1,21 @@
+8.1.0 (2023-02-07)
+==================
+
+Bugfixes
+--------
+
+- Fix vulnerability in JSON5 parser: https://github.com/json5/json5/issues/295. ([\#457](https://github.com/matrix-org/matrix-appservice-bridge/issues/457))
+
+
+Internal Changes
+----------------
+
+- Add `release.sh` script to automate the release process. ([\#452](https://github.com/matrix-org/matrix-appservice-bridge/issues/452))
+- Use environment variables for version and ref_name in GitHub Actions. ([\#455](https://github.com/matrix-org/matrix-appservice-bridge/issues/455))
+- Fix typo in warning message: "Failed to exchnage the token". ([\#456](https://github.com/matrix-org/matrix-appservice-bridge/issues/456))
+- Improve Provisioning API rate limiting and fix response headers. ([\#458](https://github.com/matrix-org/matrix-appservice-bridge/issues/458))
+
+
 8.0.1 (2022-12-08)
 ==================
 

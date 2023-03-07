@@ -249,7 +249,7 @@ export class ProvisioningApi {
         }
         const token = authHeader.startsWith("bearer ") && authHeader.substring("bearer ".length);
         if (!token) {
-            return;
+            throw new ApiError('Invalid Authorization header format', ErrCode.BadToken);
         }
         const requestProv = (req as ExpRequestProvisioner);
         if (!this.opts.provisioningToken && req.body.userId) {

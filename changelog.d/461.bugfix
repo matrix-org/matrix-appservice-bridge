@@ -1,0 +1,1 @@
+Fix provisioner requests failing to signal an error when your `Authorization` header lacks a `Bearer`.

@@ -243,11 +243,11 @@ export class ProvisioningApi {
         // Historically, user_id has been used. The bridge library supports either.
         // eslint-disable-next-line camelcase
         req: Request<unknown, unknown, {userId?: string, user_id?: string}>, res: Response, next: NextFunction) {
-        const authHeader = req.header("Authorization")?.toLowerCase();
+        const authHeader = req.header("Authorization");
         if (!authHeader) {
             throw new ApiError('No Authorization header', ErrCode.BadToken);
         }
-        const token = authHeader.startsWith("bearer ") && authHeader.substring("bearer ".length);
+        const token = authHeader.replace("Bearer ", "").replace("bearer ", "");
         if (!token) {
             throw new ApiError('Invalid Authorization header format', ErrCode.BadToken);
         }

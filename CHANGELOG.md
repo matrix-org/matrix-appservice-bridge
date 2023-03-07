@@ -1,3 +1,18 @@
+8.1.1 (2023-03-07)
+==================
+
+Bugfixes
+--------
+
+- Fix provisioner requests failing to signal an error when your `Authorization` header lacks a `Bearer`. ([\#461](https://github.com/matrix-org/matrix-appservice-bridge/issues/461))
+
+
+Internal Changes
+----------------
+
+- Fix provisioning token parsing. ([\#462](https://github.com/matrix-org/matrix-appservice-bridge/issues/462))
+
+
 8.1.0 (2023-02-07)
 ==================
 

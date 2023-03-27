@@ -404,7 +404,7 @@ export class ProvisioningApi {
     }
 
     // Needed so that _next can be defined in order to preserve signature.
-    private onError(
+    protected onError(
         err: [IApiError|Error, ProvisioningRequest|Request]|IApiError|Error,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         _req: Request, res: Response, _next: NextFunction) {

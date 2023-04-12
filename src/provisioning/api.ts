@@ -220,7 +220,7 @@ export class ProvisioningApi {
         path: string,
         handler: (req: ProvisioningRequest, res: Response, next?: NextFunction) => void|Promise<void>,
         fnName?: string): void {
-        this.baseRoute[method](path, async (req, res, next) => {
+        this.baseRoute[method](path, async (req: Express.Request, res: Response, next: NextFunction) => {
             const expRequest = req as ExpRequestProvisioner;
             const provisioningRequest = new ProvisioningRequest(
                 expRequest,
@@ -236,7 +236,8 @@ export class ProvisioningApi {
                 // Pass to error handler.
                 next([ex, provisioningRequest]);
             }
-        });
+            // Always add an error handler
+        }, this.onError);
     }
 
     private async authenticateRequest(
@@ -403,7 +404,7 @@ export class ProvisioningApi {
     }
 
     // Needed so that _next can be defined in order to preserve signature.
-    private onError(
+    protected onError(
         err: [IApiError|Error, ProvisioningRequest|Request]|IApiError|Error,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         _req: Request, res: Response, _next: NextFunction) {

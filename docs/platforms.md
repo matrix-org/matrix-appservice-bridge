@@ -14,7 +14,7 @@ Node.JS version falls from Active to Maintenance, we will migrate projects to th
 For users who are on distributions packaging only Maintenance versions of Node.JS, we'd suggest either using Docker
 or an alternative Node.JS source.
 
-At time of writing (July 2022) we support 16.X and 18.X as they are the Active and Current releases of Node.JS.
+At time of writing (April 2023) we support 18.X and 20.X as they are the Active and Current releases of Node.JS.
 
 Bridge projects do not support odd-versioned Node.JS releases, as these are short lived non-LTS versions and are
 difficult to support since they have a 6 month shelf life.

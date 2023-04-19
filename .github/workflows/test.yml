@@ -7,20 +7,16 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-20.04
-    container: node:16
+    container: node:18
     steps:
       - uses: actions/checkout@v2
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
       - run: yarn --strict-semver --frozen-lockfile
       - run: yarn lint
 
   test:
     strategy:
       matrix:
-        node-version: [16, 18]
+        node-version: [18, 20]
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -50,10 +46,6 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v2
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
       - run: yarn --frozen-lockfile
       - run: yarn test
         env:

@@ -65,12 +65,6 @@ enum RegistrationStatus {
 const AuthTypeRecaptcha = 'm.login.recaptcha';
 const AuthTypeEmail = 'm.login.email.identity';
 
-export class MatrixBanSyncError extends Error {
-    constructor(message: string, private readonly cause?: Error) {
-        super(message);
-    }
-}
-
 /**
  * Synchronises Matrix `m.policy.rule` events with the bridge to filter specific
  * users from using the service.
@@ -154,7 +148,8 @@ export class MatrixBanSync {
      * applied to it.
      * @param serverName The homeserver name.
      * @returns A set of properties.
-     * @throws
+     * @throws This will fail if the client does not provide a well-known. Callers should
+     * make their own assumptions about the state of the host in this case.
      */
     public async getHomeserverProperties(serverName: string) {
         const hsData = this.homeserverPropertiesCache.get(serverName);
@@ -173,6 +168,11 @@ export class MatrixBanSync {
         return hsProps;
     }
 
+    /**
+     * Perform joins against all the configured ban list rooms, and pull all ban state.
+     * This can be quite expensive to run if there is lots of state to pull.
+     * @param intent The client intent to pull the state via.
+     */
     public async syncRules(intent: Intent) {
         this.bannedEntites.clear();
         this.subscribedRooms.clear();

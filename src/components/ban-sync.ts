@@ -10,9 +10,7 @@ const CACHE_HOMESERVER_PROPERTIES_FOR_MS = 1000 * 60 * 30; // 30 minutes
 
 export interface MatrixBanSyncConfig {
     rooms?: string[];
-    blockOpenRegistration?: {
-        allowUnknown?: boolean;
-    };
+    blockByRegistrationStatus: RegistrationStatus[];
 }
 
 enum BanEntityType {
@@ -67,12 +65,20 @@ enum RegistrationStatus {
 const AuthTypeRecaptcha = 'm.login.recaptcha';
 const AuthTypeEmail = 'm.login.email.identity';
 
+export class MatrixBanSyncError extends Error {
+    constructor(message: string, private readonly cause?: Error) {
+        super(message);
+    }
+}
+
 /**
  * Synchronises Matrix `m.policy.rule` events with the bridge to filter specific
  * users from using the service.
  */
 export class MatrixBanSync {
-    private readonly homeserverPropertiesCache = new Map<string, {openRegistration: RegistrationStatus; ts: number;}>();
+    private readonly homeserverPropertiesCache = new Map<string, {
+        registrationStatus: RegistrationStatus; ts: number;
+    }>();
     private readonly bannedEntites = new Map<string, BanEntity>();
     private readonly subscribedRooms = new Set<string>();
     private readonly hostResolver = new MatrixHostResolver();
@@ -80,27 +86,28 @@ export class MatrixBanSync {
 
     }
 
-    public async getHomeserverProperties(serverName: string) {
-        const hsData = this.homeserverPropertiesCache.get(serverName);
-        // Slightly fuzz the ttl.
-        const ttl = CACHE_HOMESERVER_PROPERTIES_FOR_MS + (Math.random()*60000);
-        if (hsData && hsData.ts < ttl) {
-            return hsData;
+    /**
+     * Determine the state of the homeservers user registration system.
+     *
+     * @param url The base URL for the C-S API of the homeserver.
+     * @returns A status enum.
+     */
+    private static async getRegistrationStatus(url: URL): Promise<RegistrationStatus> {
+        let registrationResponse = await axios.post(new URL('/_matrix/client/v3/register', url).toString(), { });
+        if (registrationResponse.status === 404) {
+            // Fallback to old APIs
+            registrationResponse = await axios.post(new URL('/_matrix/client/r0/register', url).toString(), { });
         }
 
-        const { url } = await this.hostResolver.resolveMatrixServer(serverName);
-        const registrationResponse = await axios.post(new URL('/_matrix/client/v3/register', url).toString(), { }, { });
-
-        let openReg = RegistrationStatus.Unknown;
 
         if (registrationResponse.status === 403 && registrationResponse.data.errcode === 'M_FORBIDDEN') {
             // Explicitly forbidden private server -> great!
-            openReg = RegistrationStatus.Closed;
+            return RegistrationStatus.Closed;
         }
 
         if (registrationResponse.status === 404) {
             // Endpoint is not connected, probably also great!
-            openReg = RegistrationStatus.Closed;
+            return RegistrationStatus.Closed;
         }
 
         if (registrationResponse.status === 401) {
@@ -108,37 +115,58 @@ export class MatrixBanSync {
             const { flows } = registrationResponse.data as MatrixRegistrationResponse;
             if (!flows) {
                 // Invalid response
-                openReg = RegistrationStatus.Unknown;
+                return RegistrationStatus.Unknown;
             }
-            else if (flows.length === 0) {
+
+            if (flows.length === 0) {
                 // No available flows, so closed.
-                openReg = RegistrationStatus.Closed;
+                return RegistrationStatus.Closed;
             }
-            else {
-                // Check the flows
-                for (const flow of flows) {
-                    // A flow with recaptcha
-                    if (openReg > RegistrationStatus.ProtectedCaptcha && flow.stages.includes(AuthTypeRecaptcha)) {
-                        openReg = RegistrationStatus.ProtectedCaptcha;
-                    }
-                    // A flow without any recaptcha stages
-                    if (openReg > RegistrationStatus.ProtectedEmail &&
-                        flow.stages.includes(AuthTypeEmail) && !flow.stages.includes(AuthTypeRecaptcha)) {
-                        openReg = RegistrationStatus.ProtectedEmail;
-                    }
-                    // A flow without any email or recaptcha stages
-                    if (openReg > RegistrationStatus.Open &&
-                        !flow.stages.includes(AuthTypeEmail) && !flow.stages.includes(AuthTypeRecaptcha)) {
-                        openReg = RegistrationStatus.Open;
-                        // Already as bad as it gets
-                        break;
-                    }
+
+            let openReg = RegistrationStatus.Unknown;
+            // Check the flows
+            for (const flow of flows) {
+                // A flow with recaptcha
+                if (openReg > RegistrationStatus.ProtectedCaptcha && flow.stages.includes(AuthTypeRecaptcha)) {
+                    openReg = RegistrationStatus.ProtectedCaptcha;
+                }
+                // A flow without any recaptcha stages
+                if (openReg > RegistrationStatus.ProtectedEmail &&
+                    flow.stages.includes(AuthTypeEmail) && !flow.stages.includes(AuthTypeRecaptcha)) {
+                    openReg = RegistrationStatus.ProtectedEmail;
+                }
+                // A flow without any email or recaptcha stages
+                if (openReg > RegistrationStatus.Open &&
+                    !flow.stages.includes(AuthTypeEmail) && !flow.stages.includes(AuthTypeRecaptcha)) {
+                    openReg = RegistrationStatus.Open;
+                    // Already as bad as it gets
+                    break;
                 }
             }
+            return openReg;
         }
 
+        return RegistrationStatus.Unknown;
+    }
+
+    /**
+     * Get properties about a given homeserver that may influence the rules
+     * applied to it.
+     * @param serverName The homeserver name.
+     * @returns A set of properties.
+     * @throws
+     */
+    public async getHomeserverProperties(serverName: string) {
+        const hsData = this.homeserverPropertiesCache.get(serverName);
+        // Slightly fuzz the ttl.
+        const ttl = Date.now() + CACHE_HOMESERVER_PROPERTIES_FOR_MS + (Math.random()*60000);
+        if (hsData && hsData.ts < ttl) {
+            return hsData;
+        }
+        const url = await this.hostResolver.resolveMatrixClient(serverName, true);
+
         const hsProps = {
-            openRegistration: openReg,
+            registrationStatus: await MatrixBanSync.getRegistrationStatus(url),
             ts: Date.now(),
         };
         this.homeserverPropertiesCache.set(serverName, hsProps);
@@ -222,16 +250,12 @@ export class MatrixBanSync {
             }
         }
 
-        if (this.config.blockOpenRegistration) {
+        if (this.config.blockByRegistrationStatus) {
             // Check the user's homeserver.
-            const hsProps = await this.getHomeserverProperties(matrixUser.host);
-            if (hsProps.openRegistration === RegistrationStatus.Open) {
-                return `${matrixUser.host} has open registration, and this bridge is configured to block open hosts.`
-            }
-            if (this.config.blockOpenRegistration.allowUnknown
-                && hsProps.openRegistration === RegistrationStatus.Unknown) {
-                return `${matrixUser.host} may have open registration, ` +
-                    "and this bridge is configured to block unknown hosts";
+            const { registrationStatus } = await this.getHomeserverProperties(matrixUser.host);
+            if (this.config.blockByRegistrationStatus.includes(registrationStatus)) {
+                const statusName = RegistrationStatus[registrationStatus];
+                return `${matrixUser.host} has ${statusName} registration, which is blocked by this bridge.`
             }
         }
         return false;

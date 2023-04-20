@@ -1,6 +1,6 @@
 {
   "name": "matrix-appservice-bridge",
-  "version": "8.0.1",
+  "version": "8.1.1",
   "description": "Bridging infrastructure for Matrix Application Services",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -35,7 +35,7 @@
     "axios": "^0.27.2",
     "chalk": "^4.1.0",
     "express": "^4.18.1",
-    "express-rate-limit": "^6.2.0",
+    "express-rate-limit": "^6.7.0",
     "extend": "^3.0.2",
     "ip-cidr": "^3.0.4",
     "is-my-json-valid": "^2.20.5",

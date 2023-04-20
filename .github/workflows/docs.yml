@@ -36,7 +36,9 @@ jobs:
           ref: gh-pages
 
       # update the index file
-      - run: node insert-new-version.js ${{ steps.package-version.outputs.current-version }}
+      - env:
+          CURRENT_VERSION: ${{ steps.package-version.outputs.current-version }}
+        run: node insert-new-version.js "${CURRENT_VERSION}"
 
       - name: Commit updated index
         uses: github-actions-x/commit@v2.9

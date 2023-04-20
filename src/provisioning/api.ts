@@ -9,7 +9,7 @@ import { MatrixHostResolver } from "../utils/matrix-host-resolver";
 import IPCIDR from "ip-cidr";
 import { isIP } from "net";
 import { promises as dns } from "dns";
-import ratelimiter, { RateLimitInfo, Options as RatelimitOptions, AugmentedRequest } from "express-rate-limit";
+import ratelimiter, { Options as RatelimitOptions } from "express-rate-limit";
 import { Methods } from "./request";
 import { Logger } from "..";
 
@@ -109,7 +109,7 @@ export interface ProvisioningApiOpts {
      * Options for ratelimiting requests to the api server. Does not affect
      * static content loading.
      */
-    ratelimit?: boolean|RatelimitOptions;
+    ratelimit?: boolean|Partial<RatelimitOptions>;
 }
 
 
@@ -145,14 +145,21 @@ export class ProvisioningApi {
         this.app.get('/health', this.getHealth.bind(this));
 
         const limiter = this.opts.ratelimit && ratelimiter({
-            handler: (req, _res, next) => {
-                const info = (req as AugmentedRequest).ratelimit as RateLimitInfo;
-                const retryAfterMs = info?.resetTime ? info.resetTime.getTime() - Date.now() : null;
-                next(new ApiError("Too many requests", ErrCode.Ratelimited, 429, { retry_after_ms: retryAfterMs }));
+            handler: (req, _res, next, options) => {
+                next(new ApiError(
+                    "Too many requests",
+                    ErrCode.Ratelimited,
+                    429,
+                    {
+                        retry_after_ms: options.windowMs,
+                    }
+                ));
             },
-            windowMs: 6 * 60 * 1000, // 5 minutes
-            max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
-            ...(typeof this.opts.ratelimit === "object" ? this.opts.ratelimit : undefined)
+            windowMs: 1 * 60 * 1000, // 1 minute
+            max: 30, // Limit per window
+            standardHeaders: true,
+            legacyHeaders: false,
+            ...(typeof this.opts.ratelimit === "object" ? this.opts.ratelimit : {})
         });
 
         this.baseRoute = router();
@@ -213,7 +220,7 @@ export class ProvisioningApi {
         path: string,
         handler: (req: ProvisioningRequest, res: Response, next?: NextFunction) => void|Promise<void>,
         fnName?: string): void {
-        this.baseRoute[method](path, async (req, res, next) => {
+        this.baseRoute[method](path, async (req: Express.Request, res: Response, next: NextFunction) => {
             const expRequest = req as ExpRequestProvisioner;
             const provisioningRequest = new ProvisioningRequest(
                 expRequest,
@@ -229,20 +236,21 @@ export class ProvisioningApi {
                 // Pass to error handler.
                 next([ex, provisioningRequest]);
             }
-        });
+            // Always add an error handler
+        }, this.onError);
     }
 
     private async authenticateRequest(
         // Historically, user_id has been used. The bridge library supports either.
         // eslint-disable-next-line camelcase
         req: Request<unknown, unknown, {userId?: string, user_id?: string}>, res: Response, next: NextFunction) {
-        const authHeader = req.header("Authorization")?.toLowerCase();
+        const authHeader = req.header("Authorization");
         if (!authHeader) {
             throw new ApiError('No Authorization header', ErrCode.BadToken);
         }
-        const token = authHeader.startsWith("bearer ") && authHeader.substring("bearer ".length);
+        const token = authHeader.replace("Bearer ", "").replace("bearer ", "");
         if (!token) {
-            return;
+            throw new ApiError('Invalid Authorization header format', ErrCode.BadToken);
         }
         const requestProv = (req as ExpRequestProvisioner);
         if (!this.opts.provisioningToken && req.body.userId) {
@@ -390,13 +398,13 @@ export class ProvisioningApi {
             res.send({ token, userId });
         }
         catch (ex) {
-            log.warn(`Failed to exchnage the token for ${server}`, ex);
+            log.warn(`Failed to exchange the token for ${server}`, ex);
             throw new ApiError("Failed to exchange token", ErrCode.BadOpenID);
         }
     }
 
     // Needed so that _next can be defined in order to preserve signature.
-    private onError(
+    protected onError(
         err: [IApiError|Error, ProvisioningRequest|Request]|IApiError|Error,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         _req: Request, res: Response, _next: NextFunction) {

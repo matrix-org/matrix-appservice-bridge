@@ -12,11 +12,11 @@
   "author": "Matrix.org",
   "license": "Apache-2.0",
   "dependencies": {
-    "@types/express": "^4.17.13",
-    "@types/node": "^14",
     "matrix-appservice-bridge": "file:../.."
   },
   "devDependencies": {
-    "typescript": "^4.4.4"
+    "@types/express": "^4.17.13",
+    "@types/node": "^18",
+    "typescript": "^5.0.4"
   }
 }

@@ -1,13 +1,14 @@
 {
     "compilerOptions": {
         "target": "ES2020",
-        "module": "system",
+        "module": "commonjs",
         "noImplicitAny": true,
         "removeComments": true,
         "preserveConstEnums": true,
-        "outFile": "./lib/index.js",
+        "outDir": "./lib",
         "sourceMap": true,
-        "moduleResolution": "Node"
+        "moduleResolution": "Node",
+        "esModuleInterop": true,
     },
     "include": [
         "src/**/*"

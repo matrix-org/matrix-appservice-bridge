@@ -1,3 +1,18 @@
+9.0.0 (2023-04-27)
+==================
+
+Bugfixes
+--------
+
+- Ensure all routes added to ProvisioningApi are caught by onError. ([\#465](https://github.com/matrix-org/matrix-appservice-bridge/issues/465))
+
+
+Deprecations and Removals
+-------------------------
+
+- Add support for Node 20, and drop support for Node 16. ([\#466](https://github.com/matrix-org/matrix-appservice-bridge/issues/466))
+
+
 8.1.1 (2023-03-07)
 ==================
 

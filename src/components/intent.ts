@@ -586,7 +586,7 @@ export class Intent {
      */
     public async leave(roomId: string, reason?: string) {
         await this.botSdkIntent.ensureRegistered();
-        return this.botSdkIntent.leaveRoom(roomId);
+        return this.botSdkIntent.leaveRoom(roomId, reason);
     }
 
     /**

@@ -107,7 +107,7 @@ export class ActivityTracker {
             // Failed to get presence, going to fallback to admin api.
         }
 
-        const canUseWhois = this.canUseWhois && userId.split(":")[1] === this.opts.serverName;
+        const canUseWhois = this.canUseWhois && userId.split(":", 2)[1] === this.opts.serverName;
         if (canUseWhois) {
             try {
                 const whois = await this.client.adminApis.whoisUser(userId);

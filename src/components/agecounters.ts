@@ -40,7 +40,7 @@ const PERIOD_UNIT_KEYS = Object.keys(PERIOD_UNITS);
  */
 
 export class AgeCounters {
-    private counters: Map<string|number, number> = new Map();
+    private counters: Map<"all"|number, number> = new Map();
     private counterPeriods: string[];
     /***
      * @param {String[]} counterPeriods A set of strings denoting the bucket periods

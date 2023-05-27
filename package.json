@@ -1,6 +1,6 @@
 {
   "name": "matrix-appservice-bridge",
-  "version": "8.1.0",
+  "version": "9.0.0",
   "description": "Bridging infrastructure for Matrix Application Services",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -21,7 +21,7 @@
     "matrix-org"
   ],
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "author": "Matrix.org",
   "license": "Apache-2.0",
@@ -31,7 +31,6 @@
   "homepage": "https://github.com/matrix-org/matrix-appservice-bridge#readme",
   "dependencies": {
     "@alloc/quick-lru": "^5.2.0",
-    "@types/pkginfo": "^0.4.0",
     "axios": "^0.27.2",
     "chalk": "^4.1.0",
     "express": "^4.18.1",
@@ -40,8 +39,8 @@
     "ip-cidr": "^3.0.4",
     "is-my-json-valid": "^2.20.5",
     "js-yaml": "^4.0.0",
-    "matrix-appservice": "^1.1.0",
-    "matrix-bot-sdk": "^0.6.2",
+    "matrix-appservice": "^2.0.0",
+    "matrix-bot-sdk": "npm:@vector-im/matrix-bot-sdk@^0.6.6-element.1",
     "nedb": "^1.8.0",
     "nopt": "^5.0.0",
     "p-queue": "^6.6.2",
@@ -53,24 +52,26 @@
     "winston-daily-rotate-file": "^4.5.1"
   },
   "devDependencies": {
+    "@tsconfig/node18": "^2.0.0",
     "@types/cors": "^2.8.12",
     "@types/express": "^4.17.14",
     "@types/extend": "^3.0.1",
     "@types/jasmine": "^4.0.3",
     "@types/js-yaml": "^4.0.0",
     "@types/nedb": "^1.8.11",
-    "@types/node": "^16",
+    "@types/node": "^18",
     "@types/nopt": "^3.0.29",
+    "@types/pkginfo": "^0.4.0",
     "@types/uuid": "^8.3.1",
-    "@typescript-eslint/eslint-plugin": "^5.25.0",
-    "@typescript-eslint/parser": "^5.25.0",
-    "eslint": "^8.1.5",
+    "@typescript-eslint/eslint-plugin": "^5.59.1",
+    "@typescript-eslint/parser": "^5.59.1",
+    "eslint": "^8.39.0",
     "jasmine": "^4.2.1",
     "jasmine-spec-reporter": "^7.0.0",
     "nyc": "^15.1.0",
     "ts-node": "^10.2.1",
-    "typedoc": "^0.23.7",
-    "typescript": "^4.4.3",
+    "typedoc": "^0.23.28",
+    "typescript": "^5.0.4",
     "winston-transport": "^4.4.0"
   }
 }

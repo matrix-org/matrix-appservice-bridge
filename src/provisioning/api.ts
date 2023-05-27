@@ -220,7 +220,7 @@ export class ProvisioningApi {
         path: string,
         handler: (req: ProvisioningRequest, res: Response, next?: NextFunction) => void|Promise<void>,
         fnName?: string): void {
-        this.baseRoute[method](path, async (req, res, next) => {
+        this.baseRoute[method](path, async (req: Express.Request, res: Response, next: NextFunction) => {
             const expRequest = req as ExpRequestProvisioner;
             const provisioningRequest = new ProvisioningRequest(
                 expRequest,
@@ -236,20 +236,21 @@ export class ProvisioningApi {
                 // Pass to error handler.
                 next([ex, provisioningRequest]);
             }
-        });
+            // Always add an error handler
+        }, this.onError);
     }
 
     private async authenticateRequest(
         // Historically, user_id has been used. The bridge library supports either.
         // eslint-disable-next-line camelcase
         req: Request<unknown, unknown, {userId?: string, user_id?: string}>, res: Response, next: NextFunction) {
-        const authHeader = req.header("Authorization")?.toLowerCase();
+        const authHeader = req.header("Authorization");
         if (!authHeader) {
             throw new ApiError('No Authorization header', ErrCode.BadToken);
         }
-        const token = authHeader.startsWith("bearer ") && authHeader.substring("bearer ".length);
+        const token = authHeader.replace("Bearer ", "").replace("bearer ", "");
         if (!token) {
-            return;
+            throw new ApiError('Invalid Authorization header format', ErrCode.BadToken);
         }
         const requestProv = (req as ExpRequestProvisioner);
         if (!this.opts.provisioningToken && req.body.userId) {
@@ -403,7 +404,7 @@ export class ProvisioningApi {
     }
 
     // Needed so that _next can be defined in order to preserve signature.
-    private onError(
+    protected onError(
         err: [IApiError|Error, ProvisioningRequest|Request]|IApiError|Error,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         _req: Request, res: Response, _next: NextFunction) {

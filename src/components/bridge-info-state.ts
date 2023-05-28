@@ -100,7 +100,7 @@ export class BridgeInfoStateSyncer<BridgeMappingInfo> {
             const realMapping = await this.opts.getMapping(roomId, mappingInfo);
             const key = this.createStateKey(realMapping);
             const bridgeInfoContent = this.createBridgeInfoContent(realMapping);
-            const eventFeaturesContent = this.createEventFeaturesContent(realMapping);
+            const eventFeaturesContent = this.getEventFeaturesContent(realMapping);
             if (!await this.syncRoomStateEvent(
                 intent,
                 roomId,
@@ -173,7 +173,7 @@ export class BridgeInfoStateSyncer<BridgeMappingInfo> {
             },
         ];
 
-        const eventFeaturesContent = this.createEventFeaturesContent(mapping)
+        const eventFeaturesContent = this.getEventFeaturesContent(mapping)
         if (eventFeaturesContent) {
             events.push({
                 type: BridgeInfoStateSyncer.EventFeaturesEventType,
@@ -207,11 +207,8 @@ export class BridgeInfoStateSyncer<BridgeMappingInfo> {
         return content;
     }
 
-    public createEventFeaturesContent(mapping: MappingInfo)
+    public getEventFeaturesContent(mapping: MappingInfo)
     : MSC3968Content|null {
-        if (!mapping.eventFeatures) {
-            return null;
-        }
-        return mapping.eventFeatures;
+        return mapping?.eventFeatures ?? null;
     }
 }

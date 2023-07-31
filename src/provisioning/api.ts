@@ -387,6 +387,16 @@ export class ProvisioningApi {
                 throw new ApiError("Server did not respond with the correct sub information", ErrCode.BadOpenID);
             }
             const userId = response.data.sub;
+
+            const mxidMatch = userId.match(/([^:]+):(.+)/);
+            if (!mxidMatch) {
+                throw new ApiError("Server did not respond with a valid MXID", ErrCode.BadOpenID);
+            }
+            const [, _localpart, serverName] = mxidMatch;
+            if (serverName !== server) {
+                throw new ApiError("Server returned a MXID belonging to another homeserver", ErrCode.BadOpenID);
+            }
+
             const token = this.widgetTokenPrefix + uuid().replace(/-/g, "");
             const expiresTs = Date.now() + this.widgetTokenLifetimeMs;
             await this.store.createSession({

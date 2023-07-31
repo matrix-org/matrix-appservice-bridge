@@ -1,3 +1,10 @@
+8.1.2 (2023-07-31)
+
+### Bugfixes
+
+- Refuse to accept foreign users in OpenID responses ([\#GHSA-vc7j-h8xg-fv5x](https://github.com/matrix-org/matrix-appservice-bridge/issues/GHSA-vc7j-h8xg-fv5x))
+
+
 8.1.1 (2023-03-07)
 ==================
 

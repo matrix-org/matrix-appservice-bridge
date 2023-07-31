@@ -1,3 +1,19 @@
+9.0.1 (2023-07-31)
+
+### Bugfixes
+
+- Refuse to accept foreign users in OpenID responses ([\#GHSA-vc7j-h8xg-fv5x](https://github.com/matrix-org/matrix-appservice-bridge/issues/GHSA-vc7j-h8xg-fv5x))
+
+### Improved Documentation
+
+- Update required Node version (from 16 to 18) in README.md. ([\#470](https://github.com/matrix-org/matrix-appservice-bridge/issues/470))
+
+### Internal Changes
+
+- Update semver from 6.3.0 to 6.3.1. ([\#474](https://github.com/matrix-org/matrix-appservice-bridge/issues/474))
+- Update word-wrap from 1.2.3 to 1.2.4. ([\#475](https://github.com/matrix-org/matrix-appservice-bridge/issues/475))
+
+
 9.0.0 (2023-04-27)
 ==================
 

@@ -49,7 +49,7 @@ import { RemoteRoom } from "./models/rooms/remote";
 import { Registry } from "prom-client";
 import { ClientEncryptionStore, EncryptedEventBroker } from "./components/encryption";
 import { EphemeralEvent, PresenceEvent, ReadReceiptEvent, TypingEvent, WeakEvent } from "./components/event-types";
-import * as BotSDK from "matrix-bot-sdk";
+import * as BotSDK from "@vector-im/matrix-bot-sdk";
 import { ActivityTracker, ActivityTrackerOpts } from "./components/activity-tracker";
 import { EncryptedIntent, EncryptedIntentOpts } from "./components/encrypted-intent";
 

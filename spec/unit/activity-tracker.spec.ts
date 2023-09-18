@@ -1,6 +1,6 @@
 import "jasmine";
 import { ActivityTracker } from "../../src/index";
-import { WhoisInfo, PresenceEventContent, MatrixClient, MatrixError } from "matrix-bot-sdk";
+import { WhoisInfo, PresenceEventContent, MatrixClient, MatrixError } from "@vector-im/matrix-bot-sdk";
 
 function throwMatrixError(statusCode: number) {
     throw new MatrixError({errcode: "M_UNKNOWN", error: ""}, statusCode);

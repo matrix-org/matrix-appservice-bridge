@@ -1,4 +1,4 @@
-const { MatrixError } = require("matrix-bot-sdk/lib/models/MatrixError");
+const { MatrixError } = require("@vector-im/matrix-bot-sdk");
 const { RoomUpgradeHandler } = require("../../lib/components/room-upgrade-handler")
 
 describe("RoomUpgradeHandler", () => {

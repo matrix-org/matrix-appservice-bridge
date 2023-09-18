@@ -1,4 +1,4 @@
-import { MatrixClient, MatrixError } from "matrix-bot-sdk";
+import { MatrixClient, MatrixError } from "@vector-im/matrix-bot-sdk";
 import { Logger } from ".."
 const log = new Logger("ActivityTracker");
 

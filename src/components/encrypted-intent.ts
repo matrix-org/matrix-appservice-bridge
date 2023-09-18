@@ -1,6 +1,6 @@
 import { APPSERVICE_LOGIN_TYPE, ClientEncryptionSession } from "./encryption";
 import { Logger } from "..";
-import BotSdk, { MatrixClient, MatrixError } from "matrix-bot-sdk";
+import BotSdk, { MatrixClient, MatrixError } from "@vector-im/matrix-bot-sdk";
 import { FileUploadOpts, Intent, IntentOpts } from "./intent";
 import { WeakStateEvent } from "./event-types";
 

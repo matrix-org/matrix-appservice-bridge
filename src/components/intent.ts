@@ -19,7 +19,7 @@ import { defer } from "../utils/promiseutil";
 import { UserMembership } from "./membership-cache";
 import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
-import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState, MatrixError } from "matrix-bot-sdk";
+import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState, MatrixError } from "@vector-im/matrix-bot-sdk";
 import { WeakStateEvent } from "./event-types";
 import { Logger } from '..';
 

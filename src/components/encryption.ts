@@ -3,7 +3,7 @@ import { AppServiceBot } from "./app-service-bot";
 import { WeakEvent } from "./event-types";
 import { Intent } from "./intent";
 import { Logger } from "..";
-import { MatrixClient } from "matrix-bot-sdk";
+import { MatrixClient } from "@vector-im/matrix-bot-sdk";
 import LRU from "@alloc/quick-lru"
 
 export const APPSERVICE_LOGIN_TYPE = "m.login.application_service";

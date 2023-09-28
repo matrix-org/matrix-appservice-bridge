@@ -2,6 +2,8 @@ name: Tests
 
 on:
   push:
+    branches:
+      - fork-for-tmp-release
   workflow_dispatch:
 
 jobs:
@@ -40,3 +42,23 @@ jobs:
           node-version: 16
       - run: yarn --frozen-lockfile
       - run: yarn build && yarn test
+  publish:
+    name: Publish to registry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14
+          check-latest: true
+
+      - shell: bash
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
+          yarn build
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          npm publish --access public

@@ -36,7 +36,7 @@ class for more information on how to use each component.
 ```
 
 The bridge relies on [`matrix-appservice`](https://github.com/matrix-org/matrix-appservice-node)
-and [`matrix-bot-sdk`](https://github.com/turt2live/matrix-bot-sdk) for their of the [Application
+and [`matrix-bot-sdk`](https://github.com/vector-im/matrix-bot-sdk) for their of the [Application
 Service API](https://spec.matrix.org/latest/application-service-api/) (AS API) and [Client-Server
 API](https://spec.matrix.org/latest/client-server-api/) (CS API) respectively. The bridge manages
 state for virtual users and provides many useful helper functions bridges may desire.

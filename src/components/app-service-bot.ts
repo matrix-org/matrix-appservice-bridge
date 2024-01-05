@@ -17,7 +17,7 @@ limitations under the License.
 import { AppServiceRegistration } from "matrix-appservice";
 import { MembershipCache, UserProfile } from "./membership-cache";
 import { StateLookupEvent } from "..";
-import { MatrixClient } from "matrix-bot-sdk";
+import { MatrixClient } from "@vector-im/matrix-bot-sdk";
 
 export interface RoomInfo {
     id: string;

@@ -1,4 +1,4 @@
-import { MatrixClient } from "matrix-bot-sdk";
+import { MatrixClient } from "@vector-im/matrix-bot-sdk";
 
 /**
  * Get the HTTP URL for an MXC URI.

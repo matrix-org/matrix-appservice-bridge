@@ -2,7 +2,7 @@ import { Bridge } from "../bridge";
 import { Logger } from ".."
 import PQueue from "p-queue";
 import { Counter, Gauge } from "prom-client";
-import { MatrixError } from "matrix-bot-sdk";
+import { MatrixError } from "@vector-im/matrix-bot-sdk";
 
 const log = new Logger("MembershipQueue");
 

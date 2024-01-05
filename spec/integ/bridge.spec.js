@@ -6,7 +6,7 @@ const HS_URL = "http://example.com";
 const HS_DOMAIN = "example.com";
 const BOT_LOCALPART = "the_bridge";
 const BOT_USER_ID = `@${BOT_LOCALPART}:${HS_DOMAIN}`;
-const { MatrixError } = require("matrix-bot-sdk");
+const { MatrixError } = require("@vector-im/matrix-bot-sdk");
 
 const TEST_USER_DB_PATH = __dirname + "/test-users.db";
 const TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";

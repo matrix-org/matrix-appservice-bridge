@@ -17,7 +17,7 @@ import { MatrixRoom } from "../models/rooms/matrix";
 import { MatrixUser } from "../models/users/matrix";
 import { RoomBridgeStoreEntry } from "./room-bridge-store";
 import { Bridge } from "..";
-import { MatrixError } from "matrix-bot-sdk";
+import { MatrixError } from "@vector-im/matrix-bot-sdk";
 
 const log = new Logger("RoomUpgradeHandler");
 

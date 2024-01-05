@@ -12,7 +12,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-import Datastore from "nedb";
+import type Datastore from "nedb";
+const nedb = import("nedb");
 import {promises as fs} from "fs";
 import * as util from "util";
 import yaml from "js-yaml";
@@ -1720,61 +1721,23 @@ export class Bridge {
 
 }
 
-function loadDatabase<T extends BridgeStore>(path: string, Cls: new (db: Datastore) => T) {
-    const defer = deferPromise<T>();
-    const db = new Datastore({
-        filename: path,
-        autoload: true,
-        onload: function(err) {
-            if (err) {
-                defer.reject(err);
+async function loadDatabase<T extends BridgeStore>(path: string, Cls: new (db: Datastore) => T) {
+    try {
+        const datastoreFn = (await nedb).default;
+        return new Promise<T>((resolve, reject) => {
+            const dbInstance = new datastoreFn({
+            filename: path,
+            autoload: true,
+            onload: function(err) {
+                if (err) {
+                    reject(err);
+                }
+                else {
+                    resolve(new Cls(dbInstance));
+                }
             }
-            else {
-                defer.resolve(new Cls(db));
-            }
-        }
-    });
-    return defer.promise;
-}
-
-function retryAlgorithm(
-    event: unknown,
-    attempts: number,
-    err: {
-        httpStatus: number,
-        cors?: string,
-        name: string,
-        // eslint-disable-next-line camelcase
-        data?: { retry_after_ms: number },
+        })});
+    } catch (ex) {
+        throw Error('nedb could not be imported. You will need to add this package as a peer dependency.');
     }
-) {
-    if (err.httpStatus === 400 || err.httpStatus === 403 || err.httpStatus === 401) {
-        // client error; no amount of retrying will save you now.
-        return -1;
-    }
-    // we ship with browser-request which returns { cors: rejected } when trying
-    // with no connection, so if we match that, give up since they have no conn.
-    if (err.cors === "rejected") {
-        return -1;
-    }
-
-    if (err.name === "M_LIMIT_EXCEEDED") {
-        const waitTime = err.data?.retry_after_ms;
-        if (waitTime) {
-            return waitTime;
-        }
-    }
-    if (attempts > 4) {
-        return -1; // give up
-    }
-    return 1000 + (1000 * attempts);
-}
-
-function queueAlgorithm(event: {getType: () => string, getRoomId(): string}) {
-    if (event.getType() === "m.room.message") {
-        // use a separate queue for each room ID
-        return "message_" + event.getRoomId();
-    }
-    // allow all other events continue concurrently.
-    return null;
 }

@@ -28,6 +28,7 @@ jobs:
         with:
           node-version: "${{ matrix.node-version }}"
       - run: yarn --frozen-lockfile
+      - run: yarn add nedb --peer
       - run: yarn build && yarn test
   test-postgres:
     runs-on: ubuntu-22.04
@@ -50,6 +51,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: yarn --frozen-lockfile
+      - run: yarn add nedb --peer
       - run: yarn test
         env:
           BRIDGE_TEST_PGDB: "bridge_integtest"

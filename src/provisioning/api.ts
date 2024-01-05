@@ -396,7 +396,7 @@ export class ProvisioningApi {
             if (!mxidMatch) {
                 throw new ApiError("Server did not respond with a valid MXID", ErrCode.BadOpenID);
             }
-            const [, _localpart, serverName] = mxidMatch;
+            const [,, serverName] = mxidMatch;
             if (serverName !== server) {
                 throw new ApiError("Server returned a MXID belonging to another homeserver", ErrCode.BadOpenID);
             }
@@ -414,7 +414,8 @@ export class ProvisioningApi {
             log.warn(`Failed to exchange the token for ${server}`, ex);
             if (ex instanceof ApiError) {
                 throw ex;
-            } else {
+            }
+            else {
                 throw new ApiError("Failed to exchange token", ErrCode.BadOpenID);
             }
         }

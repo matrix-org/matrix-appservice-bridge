@@ -100,7 +100,7 @@ export class MatrixHostResolver {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), WellKnownTimeout);
         // Will throw on timeout.
-        const wellKnown = await this.fetch(url, { signal: controller.signal });
+        const wellKnown = await this.fetch(url, {signal: controller.signal });
         clearTimeout(timeout);
         if (wellKnown.status !== 200) {
             throw Error('Well known request returned non-200');
@@ -108,7 +108,8 @@ export class MatrixHostResolver {
         let wellKnownData: MatrixServerWellKnown;
         try {
             wellKnownData = await wellKnown.json() as MatrixServerWellKnown;
-        } catch (ex) {
+        }
+        catch (ex) {
             throw Error('Invalid datatype for well-known response');
         }
         const mServer = wellKnownData["m.server"];

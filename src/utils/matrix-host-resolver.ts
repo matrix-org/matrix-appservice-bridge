@@ -1,4 +1,3 @@
-import { Axios } from "axios";
 import { URL } from "url";
 import { isIP } from "net";
 import { promises as dns, SrvRecord } from "dns"
@@ -40,13 +39,13 @@ interface DnsInterface {
  * [server discovery section of the spec](https://spec.matrix.org/v1.1/server-server-api/#server-discovery).
  */
 export class MatrixHostResolver {
-    private axios: Axios;
+    private fetch: typeof fetch;
     private dns: DnsInterface;
     private resultCache = new Map<string, CachedResult>();
 
-    constructor(private readonly opts: {axios?: Axios, dns?: DnsInterface, currentTimeMs?: number} = {}) {
+    constructor(private readonly opts: {fetch?: typeof fetch, dns?: DnsInterface, currentTimeMs?: number} = {}) {
         // To allow for easier mocking.
-        this.axios = opts.axios || new Axios({ timeout: WellKnownTimeout });
+        this.fetch = opts.fetch ?? fetch;
         this.dns = opts.dns || dns;
     }
 
@@ -98,24 +97,17 @@ export class MatrixHostResolver {
 
     private async getWellKnown(serverName: string): Promise<{mServer: string, cacheFor: number}> {
         const url = `https://${serverName}/.well-known/matrix/server`;
-        const wellKnown = await this.axios.get<MatrixServerWellKnown>(
-            url, {
-            validateStatus: null,
-        });
+        const wellKnown = await this.fetch(url);
         if (wellKnown.status !== 200) {
             throw Error('Well known request returned non-200');
         }
-        let data: MatrixServerWellKnown;
-        if (typeof wellKnown.data === "object") {
-            data = wellKnown.data;
-        }
-        else if (typeof wellKnown.data === "string") {
-            data = JSON.parse(wellKnown.data);
-        }
-        else {
+        let wellKnownData: MatrixServerWellKnown;
+        try {
+            wellKnownData = await wellKnown.json() as MatrixServerWellKnown;
+        } catch (ex) {
             throw Error('Invalid datatype for well-known response');
         }
-        const mServer = data["m.server"];
+        const mServer = wellKnownData["m.server"];
         if (typeof mServer !== "string") {
             throw Error("Missing 'm.server' in well-known response");
         }
@@ -127,9 +119,10 @@ export class MatrixHostResolver {
         }
 
         let cacheFor = DefaultCacheForMs;
-        if (wellKnown.headers['Expires']) {
+        const expiresHeader = wellKnown.headers.get('Expires');
+        if (expiresHeader) {
             try {
-                cacheFor = new Date(wellKnown.headers['Expires']).getTime() - this.currentTime;
+                cacheFor = new Date(expiresHeader).getTime() - this.currentTime;
             }
             catch (ex) {
                 log.warn(`Expires header provided by ${url} could not be parsed`, ex);
@@ -137,7 +130,7 @@ export class MatrixHostResolver {
         }
 
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
-        const cacheControlHeader = wellKnown.headers['Cache-Control']?.toLowerCase()
+        const cacheControlHeader: string[] = wellKnown.headers.get('Cache-Control')?.toLowerCase()
             .split(',')
             .map(s => s.trim()) || [];
 

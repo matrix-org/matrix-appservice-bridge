@@ -1,17 +1,16 @@
 import { Application, default as express, NextFunction, Request, Response, Router, Router as router } from "express";
 import { ProvisioningStore } from "./store";
 import { Server } from "http";
-import axios from "axios";
 import { ErrCode, IApiError, ProvisioningRequest, ApiError } from ".";
 import { URL } from "url";
 import { MatrixHostResolver } from "../utils/matrix-host-resolver";
-import IPCIDR from "ip-cidr";
 import { isIP } from "net";
 import { promises as dns } from "dns";
 import ratelimiter, { Options as RatelimitOptions } from "express-rate-limit";
 import { Methods } from "./request";
 import { Logger } from "..";
 import { randomUUID } from "crypto";
+import IPCIDR from "ip-cidr";
 
 // Borrowed from
 // https://github.com/matrix-org/synapse/blob/91221b696156e9f1f9deecd425ae58af03ebb5d3/docs/sample_config.yaml#L215
@@ -375,19 +374,23 @@ export class ProvisioningApi {
         // Now do the token exchange
         try {
             const requestUrl = new URL("/_matrix/federation/v1/openid/userinfo", url);
-            const response = await axios.get<{sub: string}>(requestUrl.toString(), {
-                params: {
-                    access_token: openIdToken,
-                },
+            requestUrl.searchParams.set('access_token', openIdToken);
+            const response = await fetch(requestUrl, {
                 headers: {
                     'Host': hostHeader,
                 }
             });
-            if (!response.data.sub) {
-                log.warn(`Server responded with invalid sub information for ${server}`, response.data);
+            if (!response.ok) {
+                log.warn(`Server responded with a status of ${response.status}`);
+                log.debug(`Server response:`, await response.text());
+                throw new ApiError("Server did not respond positively to request", ErrCode.BadOpenID);
+            }
+            const data = await response.json() as { sub: string };
+            if (!data.sub) {
+                log.warn(`Server responded with invalid sub information for ${server}`, data);
                 throw new ApiError("Server did not respond with the correct sub information", ErrCode.BadOpenID);
             }
-            const userId = response.data.sub;
+            const userId = data.sub;
 
             const mxidMatch = userId.match(/([^:]+):(.+)/);
             if (!mxidMatch) {
@@ -409,7 +412,11 @@ export class ProvisioningApi {
         }
         catch (ex) {
             log.warn(`Failed to exchange the token for ${server}`, ex);
-            throw new ApiError("Failed to exchange token", ErrCode.BadOpenID);
+            if (ex instanceof ApiError) {
+                throw ex;
+            } else {
+                throw new ApiError("Failed to exchange token", ErrCode.BadOpenID);
+            }
         }
     }
 

@@ -97,7 +97,11 @@ export class MatrixHostResolver {
 
     private async getWellKnown(serverName: string): Promise<{mServer: string, cacheFor: number}> {
         const url = `https://${serverName}/.well-known/matrix/server`;
-        const wellKnown = await this.fetch(url);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), WellKnownTimeout);
+        // Will throw on timeout.
+        const wellKnown = await this.fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
         if (wellKnown.status !== 200) {
             throw Error('Well known request returned non-200');
         }

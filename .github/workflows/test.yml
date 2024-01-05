@@ -28,6 +28,7 @@ jobs:
         with:
           node-version: "${{ matrix.node-version }}"
       - run: yarn --frozen-lockfile
+      - run: yarn add nedb --peer
       - run: yarn build && yarn test
   test-postgres:
     runs-on: ubuntu-22.04

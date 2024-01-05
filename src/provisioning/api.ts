@@ -1,7 +1,6 @@
 import { Application, default as express, NextFunction, Request, Response, Router, Router as router } from "express";
 import { ProvisioningStore } from "./store";
 import { Server } from "http";
-import { v4 as uuid } from "uuid";
 import axios from "axios";
 import { ErrCode, IApiError, ProvisioningRequest, ApiError } from ".";
 import { URL } from "url";
@@ -12,6 +11,7 @@ import { promises as dns } from "dns";
 import ratelimiter, { Options as RatelimitOptions } from "express-rate-limit";
 import { Methods } from "./request";
 import { Logger } from "..";
+import { randomUUID } from "crypto";
 
 // Borrowed from
 // https://github.com/matrix-org/synapse/blob/91221b696156e9f1f9deecd425ae58af03ebb5d3/docs/sample_config.yaml#L215
@@ -398,7 +398,7 @@ export class ProvisioningApi {
                 throw new ApiError("Server returned a MXID belonging to another homeserver", ErrCode.BadOpenID);
             }
 
-            const token = this.widgetTokenPrefix + uuid().replace(/-/g, "");
+            const token = this.widgetTokenPrefix + randomUUID().replace(/-/g, "");
             const expiresTs = Date.now() + this.widgetTokenLifetimeMs;
             await this.store.createSession({
                 userId,

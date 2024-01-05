@@ -51,7 +51,7 @@ limitations under the License.
  *   matrix_id: "@foo:bar"
  * }
  */
-import Datastore from "nedb";
+import type Datastore from "nedb";
 import { BridgeStore } from "./bridge-store";
 import { MatrixUser } from "../models/users/matrix";
 import { RemoteUser } from "../models/users/remote";

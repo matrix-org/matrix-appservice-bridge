@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /*
 Copyright 2019 The Matrix.org Foundation C.I.C.
 

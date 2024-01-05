@@ -1,0 +1,1 @@
+NeDB-based stores are now deprecated. You may still use them by adding "nedb" as a dependency to your project, but no new features or bugfixes are planned.

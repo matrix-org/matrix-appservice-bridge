@@ -6,6 +6,7 @@
     "checkJs": false,
     "declaration": true,
     "sourceMap": true,
+    "skipLibCheck": false,
     "outDir": "./lib",
     "composite": false,
     "strictNullChecks": true,

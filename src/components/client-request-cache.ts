@@ -63,7 +63,7 @@ export class ClientRequestCache<T, P extends Array<unknown>> {
         this.requestContent.delete(key);
         return new Promise<T>((resolve) => {
             // TypeScript doesn't understand that `args :P` will satisfy this.requestFunc
-            resolve((this.requestFunc as any).apply(null, [key, ...args]))
+            resolve((this.requestFunc).apply(null, [key, ...args]))
         }).then((result) => {
             if (result !== undefined) {
                 this.requestContent.set(key, {

@@ -9,8 +9,8 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-20.04
-    container: node:18
+    runs-on: ubuntu-22.04
+    container: node:20
     steps:
       - uses: actions/checkout@v2
       - run: yarn --strict-semver --frozen-lockfile
@@ -19,8 +19,8 @@ jobs:
   test:
     strategy:
       matrix:
-        node-version: [18, 20]
-    runs-on: ubuntu-20.04
+        node-version: [20, 21]
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
@@ -28,10 +28,11 @@ jobs:
         with:
           node-version: "${{ matrix.node-version }}"
       - run: yarn --frozen-lockfile
+      - run: yarn add nedb --peer
       - run: yarn build && yarn test
   test-postgres:
-    runs-on: ubuntu-20.04
-    container: node:18
+    runs-on: ubuntu-22.04
+    container: node:20
     services:
       postgres:
         image: postgres:latest
@@ -50,6 +51,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: yarn --frozen-lockfile
+      - run: yarn add nedb --peer
       - run: yarn test
         env:
           BRIDGE_TEST_PGDB: "bridge_integtest"

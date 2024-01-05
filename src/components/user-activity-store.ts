@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /*
 Copyright 2021 The Matrix.org Foundation C.I.C.
 
@@ -32,7 +33,7 @@ limitations under the License.
  *   }
  * }
  */
-import Datastore from "nedb";
+import type Datastore from "nedb";
 import { BridgeStore } from "./bridge-store";
 import { UserActivity, UserActivitySet } from "./user-activity";
 

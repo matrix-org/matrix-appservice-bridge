@@ -1,3 +1,16 @@
+10.0.0 (2024-01-05)
+
+### Deprecations and Removals
+
+- Don't use a package alias for @vector-im/matrix-bot-sdk. ([\#480](https://github.com/matrix-org/matrix-appservice-bridge/issues/480))
+- Drop support for Node 18, add support for Node 20, 21. ([\#487](https://github.com/matrix-org/matrix-appservice-bridge/issues/487))
+- NeDB-based stores are now deprecated. You may still use them by adding "nedb" as a dependency to your project, but no new features or bugfixes are planned. ([\#488](https://github.com/matrix-org/matrix-appservice-bridge/issues/488))
+
+### Internal Changes
+
+- Refactor membership cache. ([\#477](https://github.com/matrix-org/matrix-appservice-bridge/issues/477))
+
+
 9.0.1 (2023-07-31)
 
 ### Bugfixes

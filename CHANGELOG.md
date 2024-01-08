@@ -1,3 +1,25 @@
+10.1.0 (2024-01-08)
+===================
+
+Features
+--------
+
+- Support MSC4040 a.ka. _matrix-fed.<hostname> SRV records in the host resolver. ([\#492](https://github.com/matrix-org/matrix-appservice-bridge/issues/492))
+
+
+Bugfixes
+--------
+
+- Start checking types on dependencies to avoid publishing broken type releases. ([\#490](https://github.com/matrix-org/matrix-appservice-bridge/issues/490))
+- Fix NeDB errors if you haven't installed the nedb packages. ([\#491](https://github.com/matrix-org/matrix-appservice-bridge/issues/491))
+
+
+Internal Changes
+----------------
+
+- Update typedoc to 0.25.6 ([\#489](https://github.com/matrix-org/matrix-appservice-bridge/issues/489))
+
+
 10.0.0 (2024-01-05)
 ===================
 

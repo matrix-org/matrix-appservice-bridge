@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import type Datastore from "nedb";
-const nedb = import("nedb");
 import {promises as fs} from "fs";
 import * as util from "util";
 import yaml from "js-yaml";
@@ -1723,7 +1722,7 @@ export class Bridge {
 
 async function loadDatabase<T extends BridgeStore>(path: string, Cls: new (db: Datastore) => T) {
     try {
-        const datastoreFn = (await nedb).default;
+        const datastoreFn = (await import("nedb")).default;
         return new Promise<T>((resolve, reject) => {
             const dbInstance = new datastoreFn({
             filename: path,

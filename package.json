@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/matrix-org/matrix-appservice-bridge#readme",
   "dependencies": {
+    "@types/nedb": "^1.8.16",
     "@alloc/quick-lru": "^5.2.0",
     "@vector-im/matrix-bot-sdk": "^0.6.7-element.1",
     "chalk": "^4.1.0",
@@ -55,7 +56,6 @@
     "@types/extend": "^3.0.4",
     "@types/jasmine": "^4.0.3",
     "@types/js-yaml": "^4.0.9",
-    "@types/nedb": "^1.8.16",
     "@types/node": "^20",
     "@types/nopt": "^3.0.32",
     "@types/jsbn": "^1.2.33",

@@ -199,8 +199,27 @@ export class MatrixHostResolver {
                     cacheFor,
                 }
             }
+
             // 3.3
             try {
+                const [srvResult] = (await this.dns.resolveSrv(`_matrix-fed._tcp.${hostname}`))
+                    .sort(MatrixHostResolver.sortSrvRecords);
+                return {
+                    host: srvResult.name,
+                    port: srvResult.port,
+                    hostname: mServer,
+                    cacheFor,
+                };
+            }
+            catch (ex) {
+                log.debug(
+                    `No well-known SRV (_matrix-fed) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`
+                );
+            }
+
+            // 3.4
+            try {
+                // legacy
                 const [srvResult] = (await this.dns.resolveSrv(`_matrix._tcp.${hostname}`))
                     .sort(MatrixHostResolver.sortSrvRecords);
                 return {
@@ -211,9 +230,12 @@ export class MatrixHostResolver {
                 };
             }
             catch (ex) {
-                log.debug(`No well-known SRV found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
+                log.debug(
+                    `No well-known SRV (_matrix) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`
+                );
             }
-            // 3.4
+
+            // 3.5
             return {
                 host: wkHost.host,
                 port: wkHost.port || DefaultMatrixServerPort,
@@ -225,6 +247,21 @@ export class MatrixHostResolver {
 
         // Step 4 - SRV
         try {
+            const [srvResult] = (await this.dns.resolveSrv(`_matrix-fed._tcp.${hostname}`))
+                .sort(MatrixHostResolver.sortSrvRecords);
+            return {
+                host: srvResult.name,
+                port: srvResult.port,
+                hostname: hostname,
+                cacheFor: DefaultCacheForMs,
+            };
+        }
+        catch (ex) {
+            log.debug(`No SRV (_matrix-fed) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
+        }
+
+        try {
+            // legacy
             const [srvResult] = (await this.dns.resolveSrv(`_matrix._tcp.${hostname}`))
                 .sort(MatrixHostResolver.sortSrvRecords);
             return {
@@ -235,7 +272,7 @@ export class MatrixHostResolver {
             };
         }
         catch (ex) {
-            log.debug(`No SRV found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
+            log.debug(`No SRV (_matrix) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
         }
 
         // Step 5 - Normal resolve

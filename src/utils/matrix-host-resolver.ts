@@ -212,7 +212,9 @@ export class MatrixHostResolver {
                 };
             }
             catch (ex) {
-                log.debug(`No well-known SRV (_matrix-fed) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
+                log.debug(
+                    `No well-known SRV (_matrix-fed) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`
+                );
             }
 
             // 3.4
@@ -228,7 +230,9 @@ export class MatrixHostResolver {
                 };
             }
             catch (ex) {
-                log.debug(`No well-known SRV (_matrix) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
+                log.debug(
+                    `No well-known SRV (_matrix) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`
+                );
             }
 
             // 3.5

@@ -91,7 +91,7 @@ export class Intent {
 
     private _requestCaches: {
         profile: ClientRequestCache<MatrixProfileInfo, [string, UserProfileKeys]>,
-        roomstate: ClientRequestCache<unknown, []>,
+        roomstate: ClientRequestCache<any[], []>,
         event: ClientRequestCache<unknown, [string, string]>
     }
     protected opts: {
@@ -419,7 +419,7 @@ export class Intent {
      * @param content The event content
      * @returns The event ID wrapped inside an object (for legacy reasons)
      */
-    public async sendStateEvent(roomId: string, type: string, skey: string, content: Record<string, unknown>
+    public async sendStateEvent(roomId: string, type: string, skey: string, content: unknown
         // eslint-disable-next-line camelcase
         ): Promise<{event_id: string}> {
         return this._joinGuard(roomId, async() => {
@@ -451,7 +451,7 @@ export class Intent {
      * @param useCache Should the request attempt to lookup
      * state from the cache.
      */
-    public async roomState(roomId: string, useCache=false) {
+    public async roomState(roomId: string, useCache=false): Promise<any[]> {
         await this._ensureJoined(roomId);
         if (useCache) {
             return this._requestCaches.roomstate.get(roomId);

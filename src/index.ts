@@ -41,6 +41,7 @@ export * from "./components/room-bridge-store";
 export * from "./components/event-bridge-store";
 export * from "./components/stores/postgres-store";
 
+
 // Models
 export * from "./models/rooms/matrix";
 export * from "./models/rooms/remote";
@@ -60,6 +61,7 @@ export * from "./components/event-types";
 export * from "./components/bridge-info-state";
 export * from "./components/user-activity";
 export * from "./components/bridge-blocker";
+export * from "./components/service-room";
 
 export * from "./utils/package-info";
 export * from "./utils/matrix-host-resolver";

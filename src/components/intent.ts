@@ -585,11 +585,8 @@ export class Intent {
      * @param reason An optional string to explain why the user left the room.
      */
     public async leave(roomId: string, reason?: string) {
-        if (reason) {
-            await this.botSdkIntent.ensureRegistered();
-            return this.botSdkIntent.underlyingClient.kickUser(this.userId, roomId, reason);
-        }
-        return this.botSdkIntent.leaveRoom(roomId);
+        await this.botSdkIntent.ensureRegistered();
+        return this.botSdkIntent.leaveRoom(roomId, reason);
     }
 
     /**

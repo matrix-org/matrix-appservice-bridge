@@ -74,36 +74,55 @@ export class MediaProxy {
     }
 
     async getMediaToken(metadata: MediaMetadata) {
-        const data = Buffer.from(JSON.stringify(metadata));
-        const sig = Buffer.from(
-            await subtleCrypto.sign(ALGORITHM, this.opts.signingKey, data)
-        ).toString('base64url');
-        return Buffer.from(JSON.stringify({...metadata, signature: sig})).toString('base64url');
+        // V1 token format:
+        // - At offset zero: a single byte, numeric int, indicating a token version.
+        //   Version 0 is reserved for future use, for the remote possibility we run out of versions in an int8 :)
+        // - At offset 1: the SHA-512 HMAC signature of the payload (64 bytes)
+        // - At offset 65: MediaMetadata.endDt, encoded as a Big-Endian double (matching JS' `number` type).
+        //   An undefined endDt is encoded as a -1. 8 bytes.
+        // - At offset 73: the MXC of the media content, until the end of the buffer.
+        // The payload, for the purpose of generating the signature, is the byte-encoded endDt concatenated with the byte-encoded MXC.
+        const version = Buffer.allocUnsafe(1);
+        version.writeInt8(1);
+
+        const dt = Buffer.allocUnsafe(8);
+        dt.writeDoubleBE(metadata.endDt ?? -1);
+
+        const mxcBuf = Buffer.from(metadata.mxc);
+
+        const payload = Buffer.concat([dt, mxcBuf]);
+        const sig = Buffer.from(await subtleCrypto.sign(ALGORITHM, this.opts.signingKey, payload));
+
+        const token = Buffer.concat([version, sig, dt, mxcBuf]);
+        return token.toString('base64url');
     }
 
-    async verifyMediaToken(token: string ): Promise<MediaMetadata> {
-        let data: MediaMetadata&{signature: string};
+    async verifyMediaToken(token: string): Promise<MediaMetadata> {
+        const buf = Buffer.from(token, 'base64url');
+        let cursor = 0;
+        const version = buf.readInt8(cursor++);
+        if (version !== 1) {
+            throw new ApiError(`Unrecognized version of media token (${version})`, ErrCode.BadValue);
+        }
+
+        const sig = buf.subarray(cursor, cursor += 64);
+        const dtBuf = buf.subarray(cursor, cursor += 8);
+        const mxcBuf = buf.subarray(cursor);
+
         try {
-            data = JSON.parse(Buffer.from(token, 'base64url').toString('utf-8'));
-        }
-        catch (ex) {
-            throw new ApiError("Media token is invalid", ErrCode.BadValue);
-        }
-        const signature = Buffer.from(data.signature, 'base64url');
-        if (!signature) {
-            throw new ApiError("Signature missing from metadata", ErrCode.BadValue);
-        }
-        const signedJson = {...data, signature: undefined};
-        const signedData = Buffer.from(JSON.stringify(signedJson));
-        try {
-            if (!subtleCrypto.verify(ALGORITHM, this.opts.signingKey, signedData, signature)) {
+            if (!subtleCrypto.verify(ALGORITHM, this.opts.signingKey, Buffer.concat([dtBuf, mxcBuf]), sig)) {
                 throw new Error('Signature did not match');
             }
         }
         catch (ex) {
             throw new ApiError('Media token signature is invalid', ErrCode.BadValue)
         }
-        return signedJson;
+
+        const dt = dtBuf.readDoubleBE();
+        return {
+            mxc: mxcBuf.toString(),
+            endDt: dt === -1 ? undefined : dt,
+        };
     }
 
 

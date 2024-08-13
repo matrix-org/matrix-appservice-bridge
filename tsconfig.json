@@ -1,16 +1,15 @@
 {
-  "extends": "@tsconfig/node14/tsconfig.json",
+  "extends": "@tsconfig/node20/tsconfig.json",
   "compilerOptions": {
     "incremental": true,
     "allowJs": true,
     "checkJs": false,
     "declaration": true,
     "sourceMap": true,
+    "skipLibCheck": false,
     "outDir": "./lib",
     "composite": false,
     "strictNullChecks": true,
-    /* We don't support this yet */
-    "useUnknownInCatchVariables": false,
   },
   "include": [
     "src/**/*"

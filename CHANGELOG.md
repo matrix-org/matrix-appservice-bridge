@@ -1,3 +1,164 @@
+10.1.0 (2024-01-08)
+===================
+
+Features
+--------
+
+- Support MSC4040 a.ka. _matrix-fed.<hostname> SRV records in the host resolver. ([\#492](https://github.com/matrix-org/matrix-appservice-bridge/issues/492))
+
+
+Bugfixes
+--------
+
+- Start checking types on dependencies to avoid publishing broken type releases. ([\#490](https://github.com/matrix-org/matrix-appservice-bridge/issues/490))
+- Fix NeDB errors if you haven't installed the nedb packages. ([\#491](https://github.com/matrix-org/matrix-appservice-bridge/issues/491))
+
+
+Internal Changes
+----------------
+
+- Update typedoc to 0.25.6 ([\#489](https://github.com/matrix-org/matrix-appservice-bridge/issues/489))
+
+
+10.0.0 (2024-01-05)
+===================
+
+### Deprecations and Removals
+
+- Don't use a package alias for @vector-im/matrix-bot-sdk. ([\#480](https://github.com/matrix-org/matrix-appservice-bridge/issues/480))
+- Drop support for Node 18, add support for Node 20, 21. ([\#487](https://github.com/matrix-org/matrix-appservice-bridge/issues/487))
+- NeDB-based stores are now deprecated. You may still use them by adding "nedb" as a dependency to your project, but no new features or bugfixes are planned. ([\#488](https://github.com/matrix-org/matrix-appservice-bridge/issues/488))
+
+### Internal Changes
+
+- Refactor membership cache. ([\#477](https://github.com/matrix-org/matrix-appservice-bridge/issues/477))
+
+
+9.0.1 (2023-07-31)
+==================
+
+### Bugfixes
+
+- Refuse to accept foreign users in OpenID responses ([\#GHSA-vc7j-h8xg-fv5x](https://github.com/matrix-org/matrix-appservice-bridge/issues/GHSA-vc7j-h8xg-fv5x))
+
+### Improved Documentation
+
+- Update required Node version (from 16 to 18) in README.md. ([\#470](https://github.com/matrix-org/matrix-appservice-bridge/issues/470))
+
+### Internal Changes
+
+- Update semver from 6.3.0 to 6.3.1. ([\#474](https://github.com/matrix-org/matrix-appservice-bridge/issues/474))
+- Update word-wrap from 1.2.3 to 1.2.4. ([\#475](https://github.com/matrix-org/matrix-appservice-bridge/issues/475))
+
+
+9.0.0 (2023-04-27)
+==================
+
+Bugfixes
+--------
+
+- Ensure all routes added to ProvisioningApi are caught by onError. ([\#465](https://github.com/matrix-org/matrix-appservice-bridge/issues/465))
+
+
+Deprecations and Removals
+-------------------------
+
+- Add support for Node 20, and drop support for Node 16. ([\#466](https://github.com/matrix-org/matrix-appservice-bridge/issues/466))
+
+
+8.1.1 (2023-03-07)
+==================
+
+Bugfixes
+--------
+
+- Fix provisioner requests failing to signal an error when your `Authorization` header lacks a `Bearer`. ([\#461](https://github.com/matrix-org/matrix-appservice-bridge/issues/461))
+
+
+Internal Changes
+----------------
+
+- Fix provisioning token parsing. ([\#462](https://github.com/matrix-org/matrix-appservice-bridge/issues/462))
+
+
+8.1.0 (2023-02-07)
+==================
+
+Bugfixes
+--------
+
+- Fix vulnerability in JSON5 parser: https://github.com/json5/json5/issues/295. ([\#457](https://github.com/matrix-org/matrix-appservice-bridge/issues/457))
+
+
+Internal Changes
+----------------
+
+- Add `release.sh` script to automate the release process. ([\#452](https://github.com/matrix-org/matrix-appservice-bridge/issues/452))
+- Use environment variables for version and ref_name in GitHub Actions. ([\#455](https://github.com/matrix-org/matrix-appservice-bridge/issues/455))
+- Fix typo in warning message: "Failed to exchnage the token". ([\#456](https://github.com/matrix-org/matrix-appservice-bridge/issues/456))
+- Improve Provisioning API rate limiting and fix response headers. ([\#458](https://github.com/matrix-org/matrix-appservice-bridge/issues/458))
+
+
+8.0.1 (2022-12-08)
+==================
+
+Bugfixes
+--------
+
+- The PostgresStore had a beforeExit hook that would itself prevent the process from exiting. ([\#453](https://github.com/matrix-org/matrix-appservice-bridge/issues/453))
+
+
+8.0.0 (2022-11-30)
+==================
+
+**Note**: The API for `UserActivityTracker` has changed. Please see [\#448](https://github.com/matrix-org/matrix-appservice-bridge/issues/448) for more details.
+
+Features
+--------
+
+- Add debouncing support to UserActivityTracker (defaults to 60 seconds). ([\#448](https://github.com/matrix-org/matrix-appservice-bridge/issues/448))
+
+
+Bugfixes
+--------
+
+- Fix postgres-store attempting to overwrite existing schema whenever `ensureSchema` is called. ([\#451](https://github.com/matrix-org/matrix-appservice-bridge/issues/451))
+
+
+7.0.0 (2022-11-24)
+==================
+
+Features
+--------
+
+- Enable allow-listing of specific IP ranges for OpenAPI requests (when using the Provisioner API) without having to edit disallowedIpRanges. This is done via the new `allowedIpRanges` flag. ([\#443](https://github.com/matrix-org/matrix-appservice-bridge/issues/443))
+- Add implementation of a PostgreSQL datastore for use by other bridges. ([\#442](https://github.com/matrix-org/matrix-appservice-bridge/issues/442))
+
+
+Bugfixes
+--------
+
+- Cleanup any outstanding Timer handles after running `Bridge.close`, which may prevent the process from closing. ([\#439](https://github.com/matrix-org/matrix-appservice-bridge/issues/439))
+
+
+Improved Documentation
+----------------------
+
+- How-To guide: Remove advise to install matrix-appservice and other small improvements. ([\#432](https://github.com/matrix-org/matrix-appservice-bridge/issues/432))
+
+
+Deprecations and Removals
+-------------------------
+
+- Fix typo'd function name `Bridge.initalise` -> `Bridge.initialise`. ([\#440](https://github.com/matrix-org/matrix-appservice-bridge/issues/440))
+
+
+Internal Changes
+----------------
+
+- Use MatrixError and enforce type-checking on error values. ([\#441](https://github.com/matrix-org/matrix-appservice-bridge/issues/441))
+
+
 6.0.0 (2022-09-23)
 ==================
 

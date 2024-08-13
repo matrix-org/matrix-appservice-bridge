@@ -26,7 +26,7 @@ export class RequestFactory {
     private _resolves: HandlerFunction[] = [];
     private _rejects: HandlerFunction[] = [];
     private _timeouts: {fn: TimeoutFunction, timeout: number}[] = [];
-    private timeoutHandles = new Set<NodeJS.Timer>();
+    private timeoutHandles = new Set<NodeJS.Timeout>();
 
 
     /**

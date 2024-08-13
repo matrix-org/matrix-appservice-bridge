@@ -1,6 +1,6 @@
 import { MediaProxy } from "../../src";
 import { webcrypto } from 'node:crypto';
-import { MatrixClient } from "matrix-bot-sdk";
+import { MatrixClient } from "@vector-im/matrix-bot-sdk";
 
 const signingKey = webcrypto.subtle.generateKey({
     name: 'HMAC',

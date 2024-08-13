@@ -26,16 +26,7 @@ interface UserActivityMetadata {
     active?: true;
 }
 
-export interface UserActivitySet {
-    users: {[userId: string]: UserActivity};
-}
-
-// eslint-disable-next-line @typescript-eslint/no-namespace,no-redeclare
-export namespace UserActivitySet {
-    export const DEFAULT: UserActivitySet = {
-        users: {}
-    };
-}
+export type UserActivitySet = Map<string, UserActivity>;
 
 export interface UserActivity {
     ts: number[];
@@ -45,6 +36,7 @@ export interface UserActivity {
 export interface UserActivityTrackerConfig {
     inactiveAfterDays: number;
     minUserActiveDays: number;
+    debounceTimeMs: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-namespace,no-redeclare
@@ -52,6 +44,7 @@ export namespace UserActivityTrackerConfig {
     export const DEFAULT: UserActivityTrackerConfig = {
         inactiveAfterDays: 31,
         minUserActiveDays: 3,
+        debounceTimeMs:    60 * 1000, // 1 minute
     };
 }
 
@@ -78,6 +71,9 @@ const ONE_DAY = 24 * 60 * 60 * 1000;
  * to not interfere with UserActivityTracker's operations.
  */
 export class UserActivityTracker {
+    private debounceTimer: NodeJS.Timeout|undefined;
+    private debouncedChangedSet = new Set<string>();
+
     constructor(
         private readonly config: UserActivityTrackerConfig,
         private readonly dataSet: UserActivitySet,
@@ -85,7 +81,7 @@ export class UserActivityTracker {
     ) { }
 
     public updateUserActivity(userId: string, metadata?: UserActivityMetadata, dateOverride?: Date): void {
-        let userObject = this.dataSet.users[userId];
+        let userObject = this.dataSet.get(userId);
         if (!userObject) {
             userObject = {
                 ts: [],
@@ -115,15 +111,20 @@ export class UserActivityTracker {
             }
         }
 
-        this.dataSet.users[userId] = userObject;
-        setImmediate(() => {
-            log.debug("Notifying the listener of RMAU changes");
-            this.onChanges?.({
-                changed: [userId],
-                dataSet: this.dataSet,
-                activeUsers: this.countActiveUsers().allUsers,
-            });
-        });
+        this.dataSet.set(userId, userObject);
+        this.debouncedChangedSet.add(userId);
+        if (!this.debounceTimer) {
+            this.debounceTimer = setTimeout(() => {
+                log.debug(`Notifying the listener of RMAU changes`);
+                this.onChanges?.({
+                    changed: Array.from(this.debouncedChangedSet),
+                    dataSet: this.dataSet,
+                    activeUsers: this.countActiveUsers().allUsers,
+                });
+                this.debounceTimer = undefined;
+                this.debouncedChangedSet.clear();
+            }, this.config.debounceTimeMs);
+        }
     }
 
     /**
@@ -136,7 +137,7 @@ export class UserActivityTracker {
         let allUsers = 0;
         let privateUsers = 0;
         const activeSince = ((dateNow?.getTime() || Date.now()) - this.config.inactiveAfterDays * ONE_DAY) / 1000;
-        for (const user of Object.values(this.dataSet.users)) {
+        for (const user of this.dataSet.values()) {
             if (!user.metadata.active) {
                 continue;
             }
@@ -151,7 +152,7 @@ export class UserActivityTracker {
         return {allUsers, privateUsers};
     }
 
-    public getUserData(userId: string): UserActivity {
-        return this.dataSet.users[userId];
+    public getUserData(userId: string): UserActivity|undefined {
+        return this.dataSet.get(userId);
     }
 }

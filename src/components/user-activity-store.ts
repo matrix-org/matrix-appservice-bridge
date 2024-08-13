@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /*
 Copyright 2021 The Matrix.org Foundation C.I.C.
 
@@ -32,7 +33,7 @@ limitations under the License.
  *   }
  * }
  */
-import Datastore from "nedb";
+import type Datastore from "nedb";
 import { BridgeStore } from "./bridge-store";
 import { UserActivity, UserActivitySet } from "./user-activity";
 
@@ -53,14 +54,14 @@ export class UserActivityStore extends BridgeStore {
 
     public async getActivitySet(): Promise<UserActivitySet> {
         return this.select({}).then((records: any[]) => {
-            const users: {[mxid: string]: any} = {};
+            const userActivity: UserActivitySet = new Map();
             for (const record of records) {
-                users[record.mxid] = {
+                userActivity.set(record.mxid, {
                     ts:       record.ts,
                     metadata: record.metadata,
-                };
+                });
             }
-            return { users } as UserActivitySet;
+            return userActivity;
         });
     }
 }

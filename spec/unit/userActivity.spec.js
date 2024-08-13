@@ -9,13 +9,17 @@ const USER_THREE = "@charlie:example.com";
 const ONE_DAY = 24 * 60 * 60 * 1000;
 
 describe("userActivity", () => {
-    const emptyDataSet = () => { return { users: {} } };
+    const emptyDataSet = () => { return new Map() };
+    const instantConfig = {
+        ...UserActivityTrackerConfig.DEFAULT,
+        debounceTimeMs: 0,
+    };
     describe("updateUserActivity", () => {
         it("can update a user's activity", async () => {
             let userData;
             const trackerPromise = new Promise((resolve, _) => {
                 const tracker = new UserActivityTracker(
-                    UserActivityTrackerConfig.DEFAULT,
+                    instantConfig,
                     emptyDataSet(),
                     (data) => resolve(data.dataSet),
                 );
@@ -28,13 +32,13 @@ describe("userActivity", () => {
             });
             // This data is comitted asyncronously.
             const data = await trackerPromise;
-            expect(data).toEqual({
-                users: {[USER_ONE]: userData}
-            });
+            expect(data).toEqual(new Map([
+                [USER_ONE, userData],
+            ]));
         });
         it("can update a user's activity with metadata", () => {
             const tracker = new UserActivityTracker(
-                UserActivityTrackerConfig.DEFAULT,
+                instantConfig,
                 emptyDataSet(),
             );
             tracker.updateUserActivity(USER_ONE, { private: true }, DATE_NOW);
@@ -47,7 +51,7 @@ describe("userActivity", () => {
         });
         it("can update a user's activity twice", () => {
             const tracker = new UserActivityTracker(
-                UserActivityTrackerConfig.DEFAULT,
+                instantConfig,
                 emptyDataSet(),
             );
             tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_ONE);
@@ -62,7 +66,7 @@ describe("userActivity", () => {
         });
         it("will not remove metadata from a user", () => {
             const tracker = new UserActivityTracker(
-                UserActivityTrackerConfig.DEFAULT,
+                instantConfig,
                 emptyDataSet(),
             );
             tracker.updateUserActivity(USER_ONE, { private: true}, DATE_MINUS_ONE);
@@ -79,7 +83,7 @@ describe("userActivity", () => {
         });
         it("will cut off a users activity after 31 days", () => {
             const tracker = new UserActivityTracker(
-                UserActivityTrackerConfig.DEFAULT,
+                instantConfig,
                 emptyDataSet(),
             );
             const LAST_EXPECTED_DATE = (DATE_NOW.getTime() - (ONE_DAY * 30)) / 1000;
@@ -95,7 +99,7 @@ describe("userActivity", () => {
     describe("countActiveUsers", () => {
         it("should have no users when the dataset is blank", () => {
             const tracker = new UserActivityTracker(
-                UserActivityTrackerConfig.DEFAULT,
+                instantConfig,
                 emptyDataSet(),
             );
             expect(tracker.countActiveUsers(DATE_NOW)).toEqual({
@@ -105,7 +109,7 @@ describe("userActivity", () => {
         });
         it("should have no users when the user hasn't been active for 3 days", () => {
             const tracker = new UserActivityTracker(
-                UserActivityTrackerConfig.DEFAULT,
+                instantConfig,
                 emptyDataSet(),
             );
             tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_ONE);
@@ -117,7 +121,7 @@ describe("userActivity", () => {
         });
         it("should have users when the user has been active for at least 3 days", () => {
             const tracker = new UserActivityTracker(
-                UserActivityTrackerConfig.DEFAULT,
+                instantConfig,
                 emptyDataSet(),
             );
             tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_TWO);
@@ -131,17 +135,15 @@ describe("userActivity", () => {
         it("should not include 'active' users who have not talked in 32 days", () => {
             const DATE_MINUS_THIRTY_TWO = new Date(Date.UTC(2020, 11, 30, 0));
             const tracker = new UserActivityTracker(
-                UserActivityTrackerConfig.DEFAULT,
-                {
-                    users: {
-                        [USER_ONE]: {
-                            ts: [DATE_MINUS_THIRTY_TWO.getTime() / 1000],
-                            metadata: {
-                                active: true,
-                            }
+                instantConfig,
+                new Map([
+                    [USER_ONE, {
+                        ts: [DATE_MINUS_THIRTY_TWO.getTime() / 1000],
+                        metadata: {
+                            active: true,
                         }
-                    }
-                },
+                    }]
+                ]),
             );
             expect(tracker.countActiveUsers(DATE_NOW)).toEqual({
                 allUsers: 0,
@@ -151,17 +153,15 @@ describe("userActivity", () => {
         it("should include 'active' users who have talked in 31 days", () => {
             const DATE_MINUS_THIRTY_ONE = new Date(Date.UTC(2020, 12, 1, 0));
             const tracker = new UserActivityTracker(
-                UserActivityTrackerConfig.DEFAULT,
-                {
-                    users: {
-                        [USER_ONE]: {
-                            ts: [DATE_MINUS_THIRTY_ONE.getTime() / 1000],
-                            metadata: {
-                                active: true,
-                            }
+                instantConfig,
+                new Map([
+                    [USER_ONE, {
+                        ts: [DATE_MINUS_THIRTY_ONE.getTime() / 1000],
+                        metadata: {
+                            active: true,
                         }
-                    }
-                },
+                    }]
+                ]),
             );
             expect(tracker.countActiveUsers(DATE_NOW)).toEqual({
                 allUsers: 1,
@@ -170,7 +170,7 @@ describe("userActivity", () => {
         });
         it("should mark user as private if metadata specifies it", () => {
             const tracker = new UserActivityTracker(
-                UserActivityTrackerConfig.DEFAULT,
+                instantConfig,
                 emptyDataSet(),
             );
             tracker.updateUserActivity(USER_ONE, { private: true}, DATE_MINUS_TWO);
@@ -183,7 +183,7 @@ describe("userActivity", () => {
         });
         it("should handle multiple users", () => {
             const tracker = new UserActivityTracker(
-                UserActivityTrackerConfig.DEFAULT,
+                instantConfig,
                 emptyDataSet(),
             );
             tracker.updateUserActivity(USER_ONE, { private: true }, DATE_MINUS_TWO);
@@ -199,4 +199,28 @@ describe("userActivity", () => {
             });
         });
     })
+    describe("debouncing", () => {
+        it("should only send one update in a specified period", async () => {
+            const updates = [];
+            const tracker = new UserActivityTracker(
+                {
+                    ...UserActivityTrackerConfig.DEFAULT,
+                    debounceTimeMs: 100,
+                },
+                emptyDataSet(),
+                (changes) => updates.push(changes),
+            );
+            tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_ONE);
+            tracker.updateUserActivity(USER_TWO, undefined, DATE_MINUS_ONE);
+            tracker.updateUserActivity(USER_ONE, undefined, DATE_MINUS_ONE);
+            await new Promise(resolve => setTimeout(resolve, 200));
+            expect(updates.length).toEqual(1);
+            expect(updates[0].changed.sort()).toEqual([USER_ONE, USER_TWO]);
+
+            tracker.updateUserActivity(USER_ONE, undefined, DATE_NOW);
+            await new Promise(resolve => setTimeout(resolve, 200));
+            expect(updates.length).toEqual(2);
+            expect(updates[1].changed.length).toEqual(1);
+        });
+    });
 })

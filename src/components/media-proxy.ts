@@ -2,7 +2,7 @@ import { webcrypto } from 'node:crypto';
 import { Request, Response, default as express, Application, NextFunction, Router } from 'express';
 import { ApiError, IApiError, Logger, ErrCode } from '..';
 import { Server, get } from 'http';
-import { MatrixClient } from 'matrix-bot-sdk';
+import { MatrixClient } from '@vector-im/matrix-bot-sdk';
 const subtleCrypto = webcrypto.subtle;
 const log = new Logger('MediaProxy');
 

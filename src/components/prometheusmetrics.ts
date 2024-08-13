@@ -18,7 +18,7 @@ import { AgeCounters } from "./agecounters";
 import { Request, Response } from "express";
 import { Bridge, Logger } from "..";
 import { Appservice as BotSdkAppservice, FunctionCallContext, METRIC_MATRIX_CLIENT_FAILED_FUNCTION_CALL,
-    METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL } from "matrix-bot-sdk";
+    METRIC_MATRIX_CLIENT_SUCCESSFUL_FUNCTION_CALL } from "@vector-im/matrix-bot-sdk";
 import { getBridgeVersion } from "../utils/package-info";
 type CollectorFunction = () => Promise<void>|void;
 
@@ -410,7 +410,7 @@ export class PrometheusMetrics {
                 catch (e) {
                     res.status(500);
                     res.set("Content-Type", "text/plain");
-                    res.send(e.toString());
+                    res.send(String(e));
                 }
             },
         });

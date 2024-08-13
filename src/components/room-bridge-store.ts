@@ -56,7 +56,7 @@ limitations under the License.
  *
  */
 
-import Datastore from "nedb";
+import type Datastore from "nedb";
 import { BridgeStore } from "./bridge-store";
 import { MatrixRoom, MatrixRoomData } from "../models/rooms/matrix";
 import { RemoteRoom } from "../models/rooms/remote";

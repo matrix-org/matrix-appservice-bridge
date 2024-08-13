@@ -18,6 +18,7 @@ import yaml from "js-yaml";
 import validator from "is-my-json-valid";
 import extend from "extend";
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 type Schema = any;
 
 interface ValidationError extends Error {

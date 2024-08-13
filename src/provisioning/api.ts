@@ -1,17 +1,16 @@
 import { Application, default as express, NextFunction, Request, Response, Router, Router as router } from "express";
 import { ProvisioningStore } from "./store";
 import { Server } from "http";
-import { v4 as uuid } from "uuid";
-import axios from "axios";
 import { ErrCode, IApiError, ProvisioningRequest, ApiError } from ".";
 import { URL } from "url";
 import { MatrixHostResolver } from "../utils/matrix-host-resolver";
-import IPCIDR from "ip-cidr";
 import { isIP } from "net";
 import { promises as dns } from "dns";
-import ratelimiter, { RateLimitInfo, Options as RatelimitOptions, AugmentedRequest } from "express-rate-limit";
+import ratelimiter, { Options as RatelimitOptions } from "express-rate-limit";
 import { Methods } from "./request";
 import { Logger } from "..";
+import { randomUUID } from "crypto";
+import IPCIDR from "ip-cidr";
 
 // Borrowed from
 // https://github.com/matrix-org/synapse/blob/91221b696156e9f1f9deecd425ae58af03ebb5d3/docs/sample_config.yaml#L215
@@ -109,7 +108,7 @@ export interface ProvisioningApiOpts {
      * Options for ratelimiting requests to the api server. Does not affect
      * static content loading.
      */
-    ratelimit?: boolean|RatelimitOptions;
+    ratelimit?: boolean|Partial<RatelimitOptions>;
 }
 
 
@@ -145,14 +144,21 @@ export class ProvisioningApi {
         this.app.get('/health', this.getHealth.bind(this));
 
         const limiter = this.opts.ratelimit && ratelimiter({
-            handler: (req, _res, next) => {
-                const info = (req as AugmentedRequest).ratelimit as RateLimitInfo;
-                const retryAfterMs = info?.resetTime ? info.resetTime.getTime() - Date.now() : null;
-                next(new ApiError("Too many requests", ErrCode.Ratelimited, 429, { retry_after_ms: retryAfterMs }));
+            handler: (req, _res, next, options) => {
+                next(new ApiError(
+                    "Too many requests",
+                    ErrCode.Ratelimited,
+                    429,
+                    {
+                        retry_after_ms: options.windowMs,
+                    }
+                ));
             },
-            windowMs: 6 * 60 * 1000, // 5 minutes
-            max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
-            ...(typeof this.opts.ratelimit === "object" ? this.opts.ratelimit : undefined)
+            windowMs: 1 * 60 * 1000, // 1 minute
+            max: 30, // Limit per window
+            standardHeaders: true,
+            legacyHeaders: false,
+            ...(typeof this.opts.ratelimit === "object" ? this.opts.ratelimit : {})
         });
 
         this.baseRoute = router();
@@ -213,7 +219,7 @@ export class ProvisioningApi {
         path: string,
         handler: (req: ProvisioningRequest, res: Response, next?: NextFunction) => void|Promise<void>,
         fnName?: string): void {
-        this.baseRoute[method](path, async (req, res, next) => {
+        this.baseRoute[method](path, async (req: Express.Request, res: Response, next: NextFunction) => {
             const expRequest = req as ExpRequestProvisioner;
             const provisioningRequest = new ProvisioningRequest(
                 expRequest,
@@ -229,20 +235,21 @@ export class ProvisioningApi {
                 // Pass to error handler.
                 next([ex, provisioningRequest]);
             }
-        });
+            // Always add an error handler
+        }, this.onError);
     }
 
     private async authenticateRequest(
         // Historically, user_id has been used. The bridge library supports either.
         // eslint-disable-next-line camelcase
         req: Request<unknown, unknown, {userId?: string, user_id?: string}>, res: Response, next: NextFunction) {
-        const authHeader = req.header("Authorization")?.toLowerCase();
+        const authHeader = req.header("Authorization");
         if (!authHeader) {
             throw new ApiError('No Authorization header', ErrCode.BadToken);
         }
-        const token = authHeader.startsWith("bearer ") && authHeader.substring("bearer ".length);
+        const token = authHeader.replace("Bearer ", "").replace("bearer ", "");
         if (!token) {
-            return;
+            throw new ApiError('Invalid Authorization header format', ErrCode.BadToken);
         }
         const requestProv = (req as ExpRequestProvisioner);
         if (!this.opts.provisioningToken && req.body.userId) {
@@ -367,20 +374,34 @@ export class ProvisioningApi {
         // Now do the token exchange
         try {
             const requestUrl = new URL("/_matrix/federation/v1/openid/userinfo", url);
-            const response = await axios.get<{sub: string}>(requestUrl.toString(), {
-                params: {
-                    access_token: openIdToken,
-                },
+            requestUrl.searchParams.set('access_token', openIdToken);
+            const response = await fetch(requestUrl, {
                 headers: {
                     'Host': hostHeader,
                 }
             });
-            if (!response.data.sub) {
-                log.warn(`Server responded with invalid sub information for ${server}`, response.data);
+            if (!response.ok) {
+                log.warn(`Server responded with a status of ${response.status}`);
+                log.debug(`Server response:`, await response.text());
+                throw new ApiError("Server did not respond positively to request", ErrCode.BadOpenID);
+            }
+            const data = await response.json() as { sub: string };
+            if (!data.sub) {
+                log.warn(`Server responded with invalid sub information for ${server}`, data);
                 throw new ApiError("Server did not respond with the correct sub information", ErrCode.BadOpenID);
             }
-            const userId = response.data.sub;
-            const token = this.widgetTokenPrefix + uuid().replace(/-/g, "");
+            const userId = data.sub;
+
+            const mxidMatch = userId.match(/([^:]+):(.+)/);
+            if (!mxidMatch) {
+                throw new ApiError("Server did not respond with a valid MXID", ErrCode.BadOpenID);
+            }
+            const [,, serverName] = mxidMatch;
+            if (serverName !== server) {
+                throw new ApiError("Server returned a MXID belonging to another homeserver", ErrCode.BadOpenID);
+            }
+
+            const token = this.widgetTokenPrefix + randomUUID().replace(/-/g, "");
             const expiresTs = Date.now() + this.widgetTokenLifetimeMs;
             await this.store.createSession({
                 userId,
@@ -390,13 +411,18 @@ export class ProvisioningApi {
             res.send({ token, userId });
         }
         catch (ex) {
-            log.warn(`Failed to exchnage the token for ${server}`, ex);
-            throw new ApiError("Failed to exchange token", ErrCode.BadOpenID);
+            log.warn(`Failed to exchange the token for ${server}`, ex);
+            if (ex instanceof ApiError) {
+                throw ex;
+            }
+            else {
+                throw new ApiError("Failed to exchange token", ErrCode.BadOpenID);
+            }
         }
     }
 
     // Needed so that _next can be defined in order to preserve signature.
-    private onError(
+    protected onError(
         err: [IApiError|Error, ProvisioningRequest|Request]|IApiError|Error,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         _req: Request, res: Response, _next: NextFunction) {

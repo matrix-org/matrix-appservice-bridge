@@ -3,17 +3,12 @@ import "jasmine";
 import { MatrixHostResolver, DefaultCacheForMs, MaxCacheForMs, MinCacheForMs } from "../../../src/index";
 
 function createMHR(wellKnownServerName?: string, wellKnownHeaders: {[key: string]: string} = {}, srvRecords?: SrvRecord[], currentTimeMs?: number) {
-    const axios: any = {
-        get: () => {
-            const response: any = {};
-            if (wellKnownServerName) {
-                response.data = {'m.server': wellKnownServerName};
-            }
-            response.headers = wellKnownHeaders || {};
-            response.status = wellKnownServerName ? 200 : 404;
-            return response;
-        }
-    };
+    const fetchFn = async () => ({
+            ok: !!wellKnownServerName,
+            headers: new Headers(wellKnownHeaders),
+            status: wellKnownServerName ? 200 : 404,
+            json: async () => ( wellKnownServerName ? {'m.server': wellKnownServerName} : {"error": "Test failure"})
+    } satisfies Partial<Response>) as unknown ;
     const dns = {
         resolveSrv: async () => {
             if (srvRecords) {
@@ -23,7 +18,7 @@ function createMHR(wellKnownServerName?: string, wellKnownHeaders: {[key: string
             }
         }
     }
-    return new MatrixHostResolver({axios, dns, currentTimeMs});
+    return new MatrixHostResolver({fetch: fetchFn as (typeof fetch), dns, currentTimeMs});
 }
 
 describe("MatrixHostResolver", () => {

@@ -22,8 +22,15 @@ export type UserProfile = {
     displayname?: string;
     avatar_url?: string; // eslint-disable-line camelcase
 }
+
+interface CacheEntry {
+    membership: UserMembership;
+    profile: UserProfile;
+}
+
 export class MembershipCache {
-    private membershipMap: {[roomId: string]: { [userId: string]: [UserMembership, UserProfile] }} = {};
+    // Map of room ID, to map of user ID to cache entry.
+    private membershipCache = new Map<string, Map<string, CacheEntry>>();
     private registeredUsers = new Set<string>();
 
     /**
@@ -38,10 +45,13 @@ export class MembershipCache {
      * @returns The membership state of the user, e.g. "joined"
      */
     public getMemberEntry(roomId: string, userId: string): UserMembership {
-        if (this.membershipMap[roomId] === undefined || this.membershipMap[roomId][userId] === undefined) {
+        const entry = this.membershipCache.get(roomId)?.get(userId);
+
+        if (!entry) {
             return null;
         }
-        return this.membershipMap[roomId][userId][0];
+
+        return entry.membership;
     }
 
     /**
@@ -56,10 +66,13 @@ export class MembershipCache {
      * @returns The member's profile information.
      */
     public getMemberProfile(roomId: string, userId: string): UserProfile {
-        if (this.membershipMap[roomId] === undefined || this.membershipMap[roomId][userId] === undefined) {
+        const entry = this.membershipCache.get(roomId)?.get(userId);
+
+        if (!entry) {
             return {};
         }
-        return this.membershipMap[roomId][userId][1];
+
+        return entry.profile;
     }
 
     /**
@@ -75,8 +88,10 @@ export class MembershipCache {
      *                       e.g joined.
      */
     public setMemberEntry(roomId: string, userId: string, membership: UserMembership, profile: UserProfile): void {
-        if (this.membershipMap[roomId] === undefined) {
-            this.membershipMap[roomId] = {};
+        let roomCache = this.membershipCache.get(roomId);
+        if (!roomCache) {
+            roomCache = new Map();
+            this.membershipCache.set(roomId, roomCache);
         }
 
         // Bans and invites do not mean the user exists.
@@ -84,7 +99,10 @@ export class MembershipCache {
             this.registeredUsers.add(userId);
         }
 
-        this.membershipMap[roomId][userId] = [membership, profile];
+        roomCache.set(userId, {
+            membership,
+            profile,
+        });
     }
 
     /**
@@ -96,18 +114,17 @@ export class MembershipCache {
     }
 
     public getMembersForRoom(roomId: string, filterFor?: UserMembership): string[]|null {
-        if (!this.membershipMap[roomId]) {
+        const roomCache = this.membershipCache.get(roomId);
+        if (!roomCache) {
             return null;
         }
+
         if (!filterFor) {
-            return Object.keys(this.membershipMap[roomId]);
+            return Array.from(roomCache.keys());
         }
-        const members = [];
-        for (const [userId, [membership]] of Object.entries(this.membershipMap[roomId])) {
-            if (membership === filterFor) {
-                members.push(userId);
-            }
-        }
-        return members;
+
+        return Array.from(roomCache.entries())
+            .filter(([, entry]) => entry.membership === filterFor)
+            .map(([userId]) => userId);
     }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /*
 Copyright 2020 The Matrix.org Foundation C.I.C.
 
@@ -15,7 +16,7 @@ limitations under the License.
 */
 
 import { promisify } from "util";
-import Datastore from "nedb";
+import type Datastore from "nedb";
 
 type Query = Record<string, unknown>;
 

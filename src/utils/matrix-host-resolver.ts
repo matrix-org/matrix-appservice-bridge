@@ -1,4 +1,3 @@
-import { Axios } from "axios";
 import { URL } from "url";
 import { isIP } from "net";
 import { promises as dns, SrvRecord } from "dns"
@@ -40,13 +39,13 @@ interface DnsInterface {
  * [server discovery section of the spec](https://spec.matrix.org/v1.1/server-server-api/#server-discovery).
  */
 export class MatrixHostResolver {
-    private axios: Axios;
+    private fetch: typeof fetch;
     private dns: DnsInterface;
     private resultCache = new Map<string, CachedResult>();
 
-    constructor(private readonly opts: {axios?: Axios, dns?: DnsInterface, currentTimeMs?: number} = {}) {
+    constructor(private readonly opts: {fetch?: typeof fetch, dns?: DnsInterface, currentTimeMs?: number} = {}) {
         // To allow for easier mocking.
-        this.axios = opts.axios || new Axios({ timeout: WellKnownTimeout });
+        this.fetch = opts.fetch ?? fetch;
         this.dns = opts.dns || dns;
     }
 
@@ -98,24 +97,22 @@ export class MatrixHostResolver {
 
     private async getWellKnown(serverName: string): Promise<{mServer: string, cacheFor: number}> {
         const url = `https://${serverName}/.well-known/matrix/server`;
-        const wellKnown = await this.axios.get<MatrixServerWellKnown>(
-            url, {
-            validateStatus: null,
-        });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), WellKnownTimeout);
+        // Will throw on timeout.
+        const wellKnown = await this.fetch(url, {signal: controller.signal });
+        clearTimeout(timeout);
         if (wellKnown.status !== 200) {
             throw Error('Well known request returned non-200');
         }
-        let data: MatrixServerWellKnown;
-        if (typeof wellKnown.data === "object") {
-            data = wellKnown.data;
+        let wellKnownData: MatrixServerWellKnown;
+        try {
+            wellKnownData = await wellKnown.json() as MatrixServerWellKnown;
         }
-        else if (typeof wellKnown.data === "string") {
-            data = JSON.parse(wellKnown.data);
-        }
-        else {
+        catch (ex) {
             throw Error('Invalid datatype for well-known response');
         }
-        const mServer = data["m.server"];
+        const mServer = wellKnownData["m.server"];
         if (typeof mServer !== "string") {
             throw Error("Missing 'm.server' in well-known response");
         }
@@ -127,9 +124,10 @@ export class MatrixHostResolver {
         }
 
         let cacheFor = DefaultCacheForMs;
-        if (wellKnown.headers['Expires']) {
+        const expiresHeader = wellKnown.headers.get('Expires');
+        if (expiresHeader) {
             try {
-                cacheFor = new Date(wellKnown.headers['Expires']).getTime() - this.currentTime;
+                cacheFor = new Date(expiresHeader).getTime() - this.currentTime;
             }
             catch (ex) {
                 log.warn(`Expires header provided by ${url} could not be parsed`, ex);
@@ -137,7 +135,7 @@ export class MatrixHostResolver {
         }
 
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
-        const cacheControlHeader = wellKnown.headers['Cache-Control']?.toLowerCase()
+        const cacheControlHeader: string[] = wellKnown.headers.get('Cache-Control')?.toLowerCase()
             .split(',')
             .map(s => s.trim()) || [];
 
@@ -185,7 +183,7 @@ export class MatrixHostResolver {
         }
         catch (ex) {
             // Fall through to step 4.
-            log.debug(`No well-known found for ${hostname}: ${ex.message}`);
+            log.debug(`No well-known found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
         }
 
         if (wellKnownResponse) {
@@ -201,8 +199,27 @@ export class MatrixHostResolver {
                     cacheFor,
                 }
             }
+
             // 3.3
             try {
+                const [srvResult] = (await this.dns.resolveSrv(`_matrix-fed._tcp.${hostname}`))
+                    .sort(MatrixHostResolver.sortSrvRecords);
+                return {
+                    host: srvResult.name,
+                    port: srvResult.port,
+                    hostname: mServer,
+                    cacheFor,
+                };
+            }
+            catch (ex) {
+                log.debug(
+                    `No well-known SRV (_matrix-fed) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`
+                );
+            }
+
+            // 3.4
+            try {
+                // legacy
                 const [srvResult] = (await this.dns.resolveSrv(`_matrix._tcp.${hostname}`))
                     .sort(MatrixHostResolver.sortSrvRecords);
                 return {
@@ -213,9 +230,12 @@ export class MatrixHostResolver {
                 };
             }
             catch (ex) {
-                log.debug(`No well-known SRV found for ${hostname}: ${ex.message}`);
+                log.debug(
+                    `No well-known SRV (_matrix) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`
+                );
             }
-            // 3.4
+
+            // 3.5
             return {
                 host: wkHost.host,
                 port: wkHost.port || DefaultMatrixServerPort,
@@ -227,6 +247,21 @@ export class MatrixHostResolver {
 
         // Step 4 - SRV
         try {
+            const [srvResult] = (await this.dns.resolveSrv(`_matrix-fed._tcp.${hostname}`))
+                .sort(MatrixHostResolver.sortSrvRecords);
+            return {
+                host: srvResult.name,
+                port: srvResult.port,
+                hostname: hostname,
+                cacheFor: DefaultCacheForMs,
+            };
+        }
+        catch (ex) {
+            log.debug(`No SRV (_matrix-fed) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
+        }
+
+        try {
+            // legacy
             const [srvResult] = (await this.dns.resolveSrv(`_matrix._tcp.${hostname}`))
                 .sort(MatrixHostResolver.sortSrvRecords);
             return {
@@ -237,7 +272,7 @@ export class MatrixHostResolver {
             };
         }
         catch (ex) {
-            log.debug(`No SRV found for ${hostname}: ${ex.message}`);
+            log.debug(`No SRV (_matrix) found for ${hostname}: ${ex instanceof Error ? ex.message : ex}`);
         }
 
         // Step 5 - Normal resolve
@@ -295,7 +330,10 @@ export class MatrixHostResolver {
             };
         }
         catch (error) {
-            this.resultCache.set(hostname, { error, timestamp: this.currentTime});
+            this.resultCache.set(hostname, {
+                timestamp: this.currentTime,
+                error: error instanceof Error ? error : Error(String(error)),
+            });
             log.debug(`No result cached for ${hostname}, caching error for ${CacheFailureForMS}ms`);
             throw error;
         }

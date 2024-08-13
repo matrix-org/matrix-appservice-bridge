@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /*
 Copyright 2019 The Matrix.org Foundation C.I.C.
 
@@ -13,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import Datastore from "nedb";
+import type Datastore from "nedb";
 import { BridgeStore } from "./bridge-store";
 import { StoredEvent, StoredEventDoc } from "../models/events/event";
 

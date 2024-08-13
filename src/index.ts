@@ -28,6 +28,7 @@ export * from "./components/room-upgrade-handler";
 export * from "./components/app-service-bot";
 export * from "./components/state-lookup";
 export * from "./components/activity-tracker";
+export * from "./components/media-proxy";
 
 // Config and CLI
 export * from "./components/cli";

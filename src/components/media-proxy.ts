@@ -51,7 +51,6 @@ export class MediaProxy {
             next();
         });
         this.internalRouter.get('/health', this.getHealth.bind(this));
-        // TODO "/v1/media/thumbnail/xyz"
         this.internalRouter.get('/v1/media/download/:mediaToken',
             (req, res, next) => this.onMediaRequest(req, res).catch(ex => next(ex))
         );

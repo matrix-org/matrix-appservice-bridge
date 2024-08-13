@@ -13,7 +13,7 @@ describe("MediaProxy", function() {
     beforeEach(async function () {
         mediaProxy = new MediaProxy({
             publicUrl,
-            ttl: 60,
+            ttl: 60 * 1000,
             signingKey: await signingKey,
         }, new MatrixClient('https://example.com', 'test_access_token'));
     })
@@ -27,10 +27,13 @@ describe("MediaProxy", function() {
     });
 
     it('can decode a media url', async () => {
-        const url = await mediaProxy.generateMediaUrl('mxc://example.com/some_media');
-        const token = url.pathname.slice('/my-cs-path/v1/media/download'.length);
-        console.log(token);
+        const now = Date.now();
+        const mxc = 'mxc://example.com/some_media';
+        const url = await mediaProxy.generateMediaUrl(mxc);
+        const token = url.pathname.slice('/my-cs-path/v1/media/download/'.length);
         const data = await mediaProxy.verifyMediaToken(token);
-        console.log(data);
+        expect('mxc://' + data.mxc).toBe(mxc);
+        expect(data.endDt).toBeGreaterThanOrEqual(now + 60 * 1000);
+        expect(data.endDt).toBeLessThanOrEqual(now + 61 * 1000);
     });
 });

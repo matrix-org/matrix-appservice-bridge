@@ -60,7 +60,6 @@
     "@types/nopt": "^3.0.32",
     "@types/jsbn": "^1.2.33",
     "@types/pkginfo": "^0.4.3",
-    "@types/uuid": "^8.3.1",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
     "eslint": "^8.56.0",

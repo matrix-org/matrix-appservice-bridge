@@ -81,7 +81,8 @@ export class MediaProxy {
         // - At offset 65: MediaMetadata.endDt, encoded as a Big-Endian double (matching JS' `number` type).
         //   An undefined endDt is encoded as a -1. 8 bytes.
         // - At offset 73: the MXC of the media content, until the end of the buffer.
-        // The payload, for the purpose of generating the signature, is the byte-encoded endDt concatenated with the byte-encoded MXC.
+        // The payload, for the purpose of generating the signature,
+        // is the byte-encoded endDt concatenated with the byte-encoded MXC.
         const version = Buffer.allocUnsafe(1);
         version.writeInt8(1);
 

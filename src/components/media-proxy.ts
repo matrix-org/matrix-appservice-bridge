@@ -1,5 +1,5 @@
 import { webcrypto } from 'node:crypto';
-import { Request, Response, default as express, Application, NextFunction, Router } from 'express';
+import { Request, Response, default as express, NextFunction, Router } from 'express';
 import { ApiError, IApiError, Logger, ErrCode } from '..';
 import { Server, get } from 'http';
 import { MatrixClient } from '@vector-im/matrix-bot-sdk';
@@ -34,7 +34,6 @@ export class MediaProxy {
     /**
      * Only used if start() is called.
      */
-    private readonly app?: Application;
     private server?: Server;
     /**
      * Get the express router used for handling calls.
@@ -61,10 +60,8 @@ export class MediaProxy {
         const app = express();
         app.use(this.internalRouter);
         return new Promise<void>((res) => {
-            if (this.app) {
-                this.server = this.app.listen(port, hostname, backlog, () => res());
-                log.info(`Media proxy API listening on port ${port}`);
-            }
+            this.server = app.listen(port, hostname, backlog, () => res());
+            log.info(`Media proxy API listening on port ${port}`);
         });
     }
 

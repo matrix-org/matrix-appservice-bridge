@@ -1,5 +1,5 @@
 import { webcrypto } from 'node:crypto';
-import { Request, Response, default as express, Application, NextFunction, Router } from 'express';
+import { Request, Response, default as express, NextFunction, Router } from 'express';
 import { ApiError, IApiError, Logger, ErrCode } from '..';
 import { Server, get } from 'http';
 import { MatrixClient } from '@vector-im/matrix-bot-sdk';

@@ -1,3 +1,10 @@
+# 10.2.0 (2024-08-21)
+
+### Features
+
+- Add a MediaProxy component for MSC3910 compliance. ([\#444](https://github.com/matrix-org/matrix-appservice-bridge/issues/444))
+
+
 10.1.0 (2024-01-08)
 ===================
 

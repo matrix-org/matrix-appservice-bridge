@@ -162,7 +162,8 @@ export class MediaProxy {
                     res.status(statusCode);
                     getRes.pipe(res);
                     resolve();
-                } catch (err: unknown) {
+                }
+                catch (err: unknown) {
                     log.error('Failed to handle authenticated media request:', err);
                     reject(new ApiError('Failed to handle authenticated media request', ErrCode.Unknown));
                 }

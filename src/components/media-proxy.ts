@@ -153,17 +153,32 @@ export class MediaProxy {
         }
         const [, serverName, mediaId] = mxcMatch;
         const url = `${this.matrixClient.homeserverUrl}/_matrix/client/v1/media/download/${serverName}/${mediaId}`;
-        get(url, {
-            headers: {
-                'Authorization': `Bearer ${this.matrixClient.accessToken}`,
-            },
-        }, (getRes) => {
-            const { statusCode } = res;
-            res.setHeader('content-disposition', getRes.headers['content-disposition'] as string);
-            res.setHeader('content-type', getRes.headers['content-type'] as string);
-            res.setHeader('content-length', getRes.headers['content-length'] as string);
-            res.status(statusCode);
-            getRes.pipe(res);
+        return new Promise<void>((resolve, reject) => {
+            get(url, {
+                headers: {
+                    'Authorization': `Bearer ${this.matrixClient.accessToken}`,
+                },
+            }, (getRes) => {
+                try {
+                    const { statusCode } = res;
+                    if (getRes.headers['content-disposition']) {
+                        res.setHeader('content-disposition', getRes.headers['content-disposition']);
+                    }
+                    if (getRes.headers['content-type']) {
+                        res.setHeader('content-type', getRes.headers['content-type']);
+                    }
+                    if (getRes.headers['content-length']) {
+                        res.setHeader('content-length', getRes.headers['content-length']);
+                    }
+                    res.status(statusCode);
+                    getRes.pipe(res);
+                    resolve();
+                }
+                catch (err: unknown) {
+                    log.error('Failed to handle authenticated media request:', err);
+                    reject(new ApiError('Failed to handle authenticated media request', ErrCode.Unknown));
+                }
+            });
         });
     }
 

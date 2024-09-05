@@ -1,3 +1,11 @@
+# 10.2.1 (2024-09-05)
+
+### Bugfixes
+
+- Make sure we handle failures in mediaproxied requests gracefully. ([\#505](https://github.com/matrix-org/matrix-appservice-bridge/issues/505))
+- Use the new authenticated endpoints in MediaProxy. ([\#506](https://github.com/matrix-org/matrix-appservice-bridge/issues/506))
+
+
 # 10.2.0 (2024-08-21)
 
 ### Features

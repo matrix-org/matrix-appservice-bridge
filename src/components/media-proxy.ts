@@ -148,17 +148,25 @@ export class MediaProxy {
         // Cache from this point onwards.
         // Extract the media from the event.
         const url = this.matrixClient.mxcToHttp('mxc://' + metadata.mxc);
-        get(url, {
-            headers: {
-                'Authorization': `Bearer ${this.matrixClient.accessToken}`,
-            },
-        }, (getRes) => {
-            const { statusCode } = res;
-            res.setHeader('content-disposition', getRes.headers['content-disposition'] as string);
-            res.setHeader('content-type', getRes.headers['content-type'] as string);
-            res.setHeader('content-length', getRes.headers['content-length'] as string);
-            res.status(statusCode);
-            getRes.pipe(res);
+        return new Promise<void>((resolve, reject) => {
+            get(url, {
+                headers: {
+                    'Authorization': `Bearer ${this.matrixClient.accessToken}`,
+                },
+            }, (getRes) => {
+                try {
+                    const { statusCode } = res;
+                    res.setHeader('content-disposition', getRes.headers['content-disposition'] as string);
+                    res.setHeader('content-type', getRes.headers['content-type'] as string);
+                    res.setHeader('content-length', getRes.headers['content-length'] as string);
+                    res.status(statusCode);
+                    getRes.pipe(res);
+                    resolve();
+                } catch (err: unknown) {
+                    log.error('Failed to handle authenticated media request:', err);
+                    reject(new ApiError('Failed to handle authenticated media request', ErrCode.Unknown));
+                }
+            });
         });
     }
 

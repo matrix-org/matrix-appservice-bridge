@@ -156,9 +156,15 @@ export class MediaProxy {
             }, (getRes) => {
                 try {
                     const { statusCode } = res;
-                    res.setHeader('content-disposition', getRes.headers['content-disposition'] as string);
-                    res.setHeader('content-type', getRes.headers['content-type'] as string);
-                    res.setHeader('content-length', getRes.headers['content-length'] as string);
+                    if (getRes.headers['content-disposition']) {
+                        res.setHeader('content-disposition', getRes.headers['content-disposition']);
+                    }
+                    if (getRes.headers['content-type']) {
+                        res.setHeader('content-type', getRes.headers['content-type']);
+                    }
+                    if (getRes.headers['content-length']) {
+                        res.setHeader('content-length', getRes.headers['content-length']);
+                    }
                     res.status(statusCode);
                     getRes.pipe(res);
                     resolve();

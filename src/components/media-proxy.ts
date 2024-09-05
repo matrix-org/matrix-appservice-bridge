@@ -151,7 +151,7 @@ export class MediaProxy {
         if (!mxcMatch) {
             throw new ApiError('Invalid MXC URI', ErrCode.BadValue);
         }
-        const [, serverName, mediaId ] = mxcMatch;
+        const [, serverName, mediaId] = mxcMatch;
         const url = `${this.matrixClient.homeserverUrl}/_matrix/client/v1/media/download/${serverName}/${mediaId}`;
         get(url, {
             headers: {

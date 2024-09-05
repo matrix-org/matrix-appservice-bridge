@@ -147,7 +147,12 @@ export class MediaProxy {
         }
         // Cache from this point onwards.
         // Extract the media from the event.
-        const url = this.matrixClient.mxcToHttp('mxc://' + metadata.mxc);
+        const mxcMatch = metadata.mxc.match(new RegExp('^([^/]+)/(.+)$'));
+        if (!mxcMatch) {
+            throw new ApiError('Invalid MXC URI', ErrCode.BadValue);
+        }
+        const [, serverName, mediaId ] = mxcMatch;
+        const url = `${this.matrixClient.homeserverUrl}/_matrix/client/v1/media/download/${serverName}/${mediaId}`;
         get(url, {
             headers: {
                 'Authorization': `Bearer ${this.matrixClient.accessToken}`,

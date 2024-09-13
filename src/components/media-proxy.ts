@@ -1,7 +1,8 @@
 import { webcrypto } from 'node:crypto';
 import { Request, Response, default as express, NextFunction, Router } from 'express';
 import { ApiError, IApiError, Logger, ErrCode } from '..';
-import { Server, get } from 'http';
+import { Server, get as httpGet } from 'http';
+import { get as httpsGet } from "https";
 import { MatrixClient } from '@vector-im/matrix-bot-sdk';
 const subtleCrypto = webcrypto.subtle;
 const log = new Logger('MediaProxy');
@@ -153,6 +154,7 @@ export class MediaProxy {
         }
         const [, serverName, mediaId] = mxcMatch;
         const url = `${this.matrixClient.homeserverUrl}/_matrix/client/v1/media/download/${serverName}/${mediaId}`;
+        const get = url.startsWith("https:") ? httpsGet : httpGet;
         return new Promise<void>((resolve, reject) => {
             get(url, {
                 headers: {

@@ -1,3 +1,10 @@
+# 10.2.2 (2024-09-18)
+
+### Bugfixes
+
+- Support secure connections to the homeserver in MediaProxy. ([\#508](https://github.com/matrix-org/matrix-appservice-bridge/issues/508))
+
+
 # 10.2.1 (2024-09-05)
 
 ### Bugfixes

@@ -1,0 +1,1 @@
+Add support for authenticated media. The `contentRepo.getHttpUriForMxc` function is now async to support feature detection.

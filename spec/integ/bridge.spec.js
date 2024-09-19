@@ -827,7 +827,7 @@ describe("Bridge", function() {
             const mxUser = new MatrixUser("@foo:example.com");
             const intent = bridge.getIntent(mxUser.getId());
             const botClient = intent.botSdkIntent;
-            const err = new MatrixError({ errcode: "M_FORBIDDEN" });
+            const err = new MatrixError({ errcode: "M_FORBIDDEN" }, 401, {});
             const errorPromise = Promise.reject(err);
             // This complains otherwise.
             errorPromise.catch((ex) => {});

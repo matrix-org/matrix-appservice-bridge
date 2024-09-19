@@ -36,7 +36,7 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: async (roomId) => { joined = roomId; throw new MatrixError({errcode: "M_FORBIDDEN"}); },
+                    join: async (roomId) => { joined = roomId; throw new MatrixError({errcode: "M_FORBIDDEN"}, 401, {}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);
@@ -92,7 +92,7 @@ describe("RoomUpgradeHandler", () => {
             let joined;
             const bridge = {
                 getIntent: () => ({
-                    join: async (roomId) => { joined = roomId; throw new MatrixError({errcode: "M_FORBIDDEN"}); },
+                    join: async (roomId) => { joined = roomId; throw new MatrixError({errcode: "M_FORBIDDEN"}, 401, {}); },
                 }),
             };
             const ruh = new RoomUpgradeHandler({}, bridge);

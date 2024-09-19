@@ -14,8 +14,8 @@ import { MatrixClient } from "@vector-im/matrix-bot-sdk";
  * for such URLs.
  * @return The complete URL to the content. May be empty string if mxc is not a string.
  */
-function getHttpUriForMxc(baseUrl: string, mxc: string, width?: number, height?: number,
-    resizeMethod?: "crop"|"scale", allowDirectLinks?: boolean): string {
+async function getHttpUriForMxc(baseUrl: string, mxc: string, width?: number, height?: number,
+    resizeMethod?: "crop"|"scale", allowDirectLinks?: boolean): Promise<string> {
     console.warn("Deprecated call to ContentRepo.getHttpUriForMxc, prefer to use Intent.matrixClient.mxcToHttp");
     if (typeof mxc !== "string" || !mxc) {
         return "";

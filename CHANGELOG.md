@@ -1,7 +1,12 @@
+# 10.3.1 (2024-09-19)
+
+### Bugfixes
+
+- Fix media uploads using the wrong endpoints.
+
 # 10.3.0 (2024-09-19)
 
 ### Internal Changes
-
 - Add support for authenticated media. The `contentRepo.getHttpUriForMxc` function is now async to support feature detection. ([\#509](https://github.com/matrix-org/matrix-appservice-bridge/issues/509))
 
 

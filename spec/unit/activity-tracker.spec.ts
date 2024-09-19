@@ -3,7 +3,7 @@ import { ActivityTracker } from "../../src/index";
 import { WhoisInfo, PresenceEventContent, MatrixClient, MatrixError } from "@vector-im/matrix-bot-sdk";
 
 function throwMatrixError(statusCode: number) {
-    throw new MatrixError({errcode: "M_UNKNOWN", error: ""}, statusCode);
+    throw new MatrixError({errcode: "M_UNKNOWN", error: ""}, statusCode, {});
 }
 
 const TEST_USER = "@foobar:example.com";

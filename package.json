@@ -1,6 +1,6 @@
 {
   "name": "matrix-appservice-bridge",
-  "version": "10.3.1",
+  "version": "10.3.2",
   "description": "Bridging infrastructure for Matrix Application Services",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

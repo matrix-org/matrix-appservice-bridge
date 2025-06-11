@@ -1,3 +1,10 @@
+# 10.3.3 (2025-06-11)
+
+### Internal Changes
+
+- Update matrix-bot-sdk to `0.7.1-element.11`. ([\#518](https://github.com/matrix-org/matrix-appservice-bridge/issues/518))
+
+
 # 10.3.2 (2025-06-10)
 
 ### Internal Changes

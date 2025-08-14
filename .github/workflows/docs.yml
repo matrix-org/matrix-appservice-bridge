@@ -8,7 +8,7 @@ on:
 jobs:
   docs:
     runs-on: ubuntu-22.04
-    container: node:20
+    container: node:22
     steps:
       - uses: actions/checkout@v3
 

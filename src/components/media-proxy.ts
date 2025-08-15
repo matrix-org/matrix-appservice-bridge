@@ -112,7 +112,7 @@ export class MediaProxy {
                 throw new Error('Signature did not match');
             }
         }
-        catch (ex) {
+        catch {
             throw new ApiError('Media token signature is invalid', ErrCode.BadValue)
         }
 

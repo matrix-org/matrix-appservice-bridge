@@ -109,7 +109,7 @@ export class MatrixHostResolver {
         try {
             wellKnownData = await wellKnown.json() as MatrixServerWellKnown;
         }
-        catch (ex) {
+        catch {
             throw Error('Invalid datatype for well-known response');
         }
         const mServer = wellKnownData["m.server"];

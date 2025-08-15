@@ -984,7 +984,7 @@ export class Intent {
                     await this.botClient.joinRoom(roomId, opts.viaServers);
                     mark(roomId, "join");
                 }
-                catch (_ex) {
+                catch {
                     // Try bot joining
                     await this.botClient.joinRoom(roomId, opts.viaServers);
                     await this.botClient.inviteUser(this.userId, roomId);

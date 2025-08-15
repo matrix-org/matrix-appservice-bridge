@@ -34,7 +34,7 @@ export function identifyPackageFile(): string|undefined {
             statSync(packagePath);
             return packagePath;
         }
-        catch (ex) {
+        catch {
             continue;
         }
     } while (mainModulePath !== '/')

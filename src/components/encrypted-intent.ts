@@ -118,7 +118,7 @@ export class EncryptedIntent extends Intent {
                 // Check that the access token works, any failures should be treated as a no.
                 await tempClient.getWhoAmI();
             }
-            catch (ex) {
+            catch {
                 log.warn(`Session was invalid for ${this.userId}, generating a new session`);
                 session = null;
             }

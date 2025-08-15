@@ -1,3 +1,19 @@
+11.0.0 (2025-08-15)
+===================
+
+Deprecations and Removals
+-------------------------
+
+- Drop support for Node 20 & 21, add support for Node 22 & 24. ([\#519](https://github.com/matrix-org/matrix-appservice-bridge/issues/519))
+
+
+Internal Changes
+----------------
+
+- Update matrix-bot-sdk to `0.7.1-element.14`. ([\#519](https://github.com/matrix-org/matrix-appservice-bridge/issues/519))
+- Update matrix-appservice to `3.0.0`. ([\#520](https://github.com/matrix-org/matrix-appservice-bridge/issues/520))
+
+
 # 10.3.3 (2025-06-11)
 
 ### Internal Changes

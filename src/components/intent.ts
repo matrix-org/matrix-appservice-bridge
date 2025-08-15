@@ -19,7 +19,14 @@ import { defer } from "../utils/promiseutil";
 import { UserMembership } from "./membership-cache";
 import { unstable } from "../errors";
 import BridgeErrorReason = unstable.BridgeErrorReason;
-import BotSdk, { MatrixClient, MatrixProfileInfo, PresenceState, MatrixError } from "@vector-im/matrix-bot-sdk";
+import BotSdk, {
+    MatrixClient,
+    MatrixProfileInfo,
+    PresenceState,
+    MatrixError,
+    RoomEvent,
+} from "@vector-im/matrix-bot-sdk";
+import { IJsonType } from "@vector-im/matrix-bot-sdk/lib/helpers/Types";
 import { WeakStateEvent } from "./event-types";
 import { Logger } from '..';
 
@@ -92,7 +99,7 @@ export class Intent {
     private _requestCaches: {
         profile: ClientRequestCache<MatrixProfileInfo, [string, UserProfileKeys]>,
         roomstate: ClientRequestCache<unknown, []>,
-        event: ClientRequestCache<unknown, [string, string]>
+        event: ClientRequestCache<RoomEvent<IJsonType>, [string, string]>
     }
     protected opts: {
         backingStore: IntentBackingStore,
@@ -977,7 +984,7 @@ export class Intent {
                     await this.botClient.joinRoom(roomId, opts.viaServers);
                     mark(roomId, "join");
                 }
-                catch (_ex) {
+                catch {
                     // Try bot joining
                     await this.botClient.joinRoom(roomId, opts.viaServers);
                     await this.botClient.inviteUser(this.userId, roomId);

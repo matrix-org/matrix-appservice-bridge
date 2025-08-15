@@ -72,7 +72,9 @@ export class ClientRequestCache<T, P extends Array<unknown>> {
                 });
                 if (this.requestContent.size > this.maxSize) {
                     const oldKey = this.requestContent.keys().next().value;
-                    this.requestContent.delete(oldKey);
+                    if (oldKey !== undefined) {
+                        this.requestContent.delete(oldKey);
+                    }
                 }
             }
             return result;

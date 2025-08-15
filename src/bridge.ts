@@ -624,7 +624,7 @@ export class Bridge {
         this.botSdkAS = new BotSDK.Appservice({
             registration: {
                 ...rawReg,
-                url: rawReg.url || undefined,
+                url: rawReg.url,
                 protocols: rawReg.protocols || undefined,
                 namespaces: {
                     users: [{

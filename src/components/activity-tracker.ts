@@ -119,7 +119,7 @@ export class ActivityTracker {
                     online: (now - bestConnection.last_seen) < maxTimeMs, inactiveMs: now - bestConnection.last_seen
                 };
             }
-            catch (ex) {
+            catch {
                 // Failed to use whois, fall back.
             }
         }

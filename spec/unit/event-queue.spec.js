@@ -65,7 +65,7 @@ describe("EventQueue", function() {
 
     function eventQueueCallback(err, data) {
         if (err) {
-            errorCallback(err);
+            errorCallback?.(err);
             return;
         }
         callbackData.push([new Date().getTime(), data]);
@@ -147,7 +147,7 @@ describe("EventQueue", function() {
             queue.consume();
         });
 
-        it("should show head of line blocking per room", function(done) {
+        it("should show head of line blocking per room", function() {
             addedDataCallback = () => {
                 if (callbackData.length != 5) {
                     return;

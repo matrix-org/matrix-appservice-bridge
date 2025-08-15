@@ -2,6 +2,11 @@
 const Datastore = require("nedb");
 const fs = require("fs");
 
+// required fix for nedb being incredibly outdated
+const util = require("node:util");
+util.isDate = util.types.isDate;
+util.isRegExp = util.types.isRegExp;
+
 const HS_URL = "http://example.com";
 const HS_DOMAIN = "example.com";
 const BOT_LOCALPART = "the_bridge";

@@ -216,8 +216,9 @@ export class GlobalLogger {
         if (files) {
             // `winston-daily-rotate-file` has side-effects, so only load if in use.
             // unless they want to use logging
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             require("winston-daily-rotate-file");
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             const { DailyRotateFile } = require("winston/lib/winston/transports");
 
             for (const [filename, level] of files) {

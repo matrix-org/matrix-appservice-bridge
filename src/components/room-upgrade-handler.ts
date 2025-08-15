@@ -221,7 +221,7 @@ export class RoomUpgradeHandler {
                 await roomStore.upsertEntry(newEntry);
                 success = true;
             }
-            catch (ex) {
+            catch {
                 log.error(`Failed to migrate room entry ${entry.id}.`);
             }
         }

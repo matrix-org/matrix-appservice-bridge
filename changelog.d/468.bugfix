@@ -1,0 +1,1 @@
+Fixed error when user leaves an IRC channel that made Matrix user kick itself instead of leaving when a reason was set.

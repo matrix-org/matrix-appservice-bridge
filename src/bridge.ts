@@ -1723,6 +1723,13 @@ export class Bridge {
 async function loadDatabase<T extends BridgeStore>(path: string, Cls: new (db: Datastore) => T) {
     try {
         const datastoreFn = (await import("nedb")).default;
+        // required fix for nedb being incredibly outdated
+        if (parseInt(process.versions.node.split(".")[0]) >= 24) {
+            const util = require("node:util");
+            util.isDate = util.types.isDate;
+            util.isRegExp = util.types.isRegExp;
+        }
+
         return new Promise<T>((resolve, reject) => {
             const dbInstance = new datastoreFn({
             filename: path,

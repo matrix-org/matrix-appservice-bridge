@@ -1721,6 +1721,7 @@ export class Bridge {
 }
 
 async function loadDatabase<T extends BridgeStore>(path: string, Cls: new (db: Datastore) => T) {
+    log.warn("NeDB-based stores are now deprecated.");
     try {
         const datastoreFn = (await import("nedb")).default;
         // required fix for nedb being incredibly outdated

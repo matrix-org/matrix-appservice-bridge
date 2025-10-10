@@ -1,3 +1,10 @@
+# 11.1.0 (2025-10-10)
+
+### Bugfixes
+
+- Fix a bug where users may fail to be registered with a `IO.ELEMENT.MSC4190.M_APPSERVICE_LOGIN_UNSUPPORTED` error when `MSC4190` is enabled on the homeserver. ([\#522](https://github.com/matrix-org/matrix-appservice-bridge/issues/522))
+
+
 11.0.0 (2025-08-15)
 ===================
 

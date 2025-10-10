@@ -805,10 +805,10 @@
   resolved "https://registry.yarnpkg.com/@ungap/structured-clone/-/structured-clone-1.2.0.tgz#756641adb587851b5ccb3e095daf27ae581c8406"
   integrity sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==
 
-"@vector-im/matrix-bot-sdk@0.7.1-element.14":
-  version "0.7.1-element.14"
-  resolved "https://registry.yarnpkg.com/@vector-im/matrix-bot-sdk/-/matrix-bot-sdk-0.7.1-element.14.tgz#369ca2bd8f5da1c7950500e32e364bc05675f0dd"
-  integrity sha512-iuuFc6ruVwFFAiizkYtvHo+yyUekjcoCP+/NhxKw1ko/LyVkUezT63FbFAYv5NNNdT690R/jOdImWCeKQkV/BQ==
+"@vector-im/matrix-bot-sdk@0.7.1-element.15":
+  version "0.7.1-element.15"
+  resolved "https://registry.yarnpkg.com/@vector-im/matrix-bot-sdk/-/matrix-bot-sdk-0.7.1-element.15.tgz#328b53bc994710a01258290f0c45ee72a5df9982"
+  integrity sha512-tuHAL6kiO6R9V2IaGz+C/g1R+ptJ9At+zZjnod+DQdyLRjFaZeDzuH0f6fij7Zq3idUzLJ5jS3JBxMmTblsiZw==
   dependencies:
     "@matrix-org/matrix-sdk-crypto-nodejs" "0.4.0-beta.1"
     "@types/express" "^4.17.21"

@@ -1582,13 +1582,23 @@ export class Bridge {
             // Bridge isn't ready yet
             return false;
         }
-        if (
-            req.query.access_token !== this.registration.getHomeserverToken() &&
-            req.get("authorization") !== `Bearer ${this.registration.getHomeserverToken()}`
-        ) {
-            return false;
+
+        const tokenFromQuery = req.query.access_token;
+
+        const tokenFromHeader = req.get("authorization").substring(7); // "Bearer ".length === 7
+
+        const tokenFromRegistration = this.registration.getHomeserverToken();
+
+        // https://github.com/matrix-org/matrix-spec/blob/7935a0728a12e768283dba0145fb95154d2f7f6b/content/application-service-api.md?plain=1#L149
+        // "Application services should ensure both match if both are provided."
+        if (tokenFromQuery && tokenFromHeader) {
+            return tokenFromQuery === tokenFromRegistration && tokenFromHeader === tokenFromRegistration;
         }
-        return true;
+
+        // prefer header then query
+        // https://github.com/matrix-org/matrix-spec/blob/7935a0728a12e768283dba0145fb95154d2f7f6b/content/application-service-api.md?plain=1#L146-L147
+        // Spec does not enforce both to be sent. "encouraged" being the key word.
+        return tokenFromHeader === tokenFromRegistration || tokenFromQuery === tokenFromRegistration;
     }
 
     /**
@@ -1740,3 +1750,5 @@ async function loadDatabase<T extends BridgeStore>(path: string, Cls: new (db: D
         throw Error('nedb could not be imported. You will need to add this package as a peer dependency.');
     }
 }
+
+// vi: et sw=4 ts=4

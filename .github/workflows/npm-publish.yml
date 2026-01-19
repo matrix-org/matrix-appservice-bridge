@@ -5,14 +5,23 @@ on:
 jobs:
   publish-to-npm:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
           node-version-file: .node-version
+          registry-url: https://registry.npmjs.org/
+          scope: '@matrix-org'
+      - name: Upgrade npm for Trusted Publishing
+        run: npm i -g npm@latest
       - run: yarn --strict-semver --frozen-lockfile
       - run: yarn build
       - uses: JS-DevTools/npm-publish@v1
         with:
           token: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npmjs.com
+        run: npm publish --access public --provenance

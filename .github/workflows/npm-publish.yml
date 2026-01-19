@@ -20,8 +20,5 @@ jobs:
         run: npm i -g npm@latest
       - run: yarn --strict-semver --frozen-lockfile
       - run: yarn build
-      - uses: JS-DevTools/npm-publish@v1
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
       - name: Publish to npmjs.com
         run: npm publish --access public --provenance

@@ -1,3 +1,10 @@
+# 11.2.0 (2026-01-19)
+
+## Internal Changes
+
+- Update CI to use NPM Trusted Publishing. ([\#523](https://github.com/matrix-org/matrix-appservice-bridge/issues/523))
+
+
 # 11.1.0 (2025-10-10)
 
 ### Bugfixes

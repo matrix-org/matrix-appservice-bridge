@@ -9,7 +9,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container: node:22
     steps:
       - uses: actions/checkout@v2
@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         node-version: [22, 24]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
@@ -31,7 +31,7 @@ jobs:
       - run: yarn add nedb --peer
       - run: yarn build && yarn test
   test-postgres:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container: node:22
     services:
       postgres:

@@ -15,8 +15,8 @@
     "matrix-appservice-bridge": "file:../.."
   },
   "devDependencies": {
-    "@types/node": "^22",
+    "@types/node": "^24",
     "@types/request": "^2.48.5",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   }
 }

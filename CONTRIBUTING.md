@@ -61,7 +61,7 @@ First of all, thank you for considering making a change to one of our projects. 
 ### 🖌️ Code style
 
 Each repository contains an `eslint` configuration which will dictate the style of the code. All code should be written in
-TypeScript. At time of writing, we target ES2022 (supported by Node 22). The CI will lint your code automatically,
+TypeScript. At time of writing, we target ES2024 (supported by Node 24). The CI will lint your code automatically,
 but you can save yourself some time by running (`yarn lint`/`npm lint`) to check locally.
 
 ### 🧪 Tests / CI

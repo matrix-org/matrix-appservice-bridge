@@ -44,7 +44,7 @@
     "nopt": "^5.0.0",
     "p-queue": "^6.6.2",
     "pkginfo": "^0.4.1",
-    "postgres": "^3.4.3",
+    "postgres": "^3.4.9",
     "prom-client": "^15.1.0",
     "winston": "^3.11.0",
     "winston-daily-rotate-file": "^4.5.1"

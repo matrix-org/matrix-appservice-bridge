@@ -1,0 +1,1 @@
+`MediaProxy` no longer serves media whose source event has since been redacted.

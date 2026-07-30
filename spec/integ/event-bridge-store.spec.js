@@ -12,40 +12,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-const Datastore = require("nedb");
-const fs = require("fs");
-
 const EventBridgeStore = require("../..").EventBridgeStore;
 const StoredEvent = require("../..").StoredEvent;
-var TEST_DB_PATH = __dirname + "/test.db";
+const MemoryDatastore = require("../..").MemoryDatastore;
 
 describe("EventBridgeStore", function() {
     var store, db;
 
-    beforeEach(
-    /** @this TestCase */
-    function(done) {
-        db = new Datastore({
-            filename: TEST_DB_PATH,
-            autoload: true,
-            onload: function(err) {
-                if (err) {
-                    console.error(err);
-                    return;
-                }
-                store = new EventBridgeStore(db);
-                done();
-            }
-        });
-    });
-
-    afterEach(function() {
-        try {
-            fs.unlinkSync(TEST_DB_PATH);
-        }
-        catch (e) {
-            // do nothing
-        }
+    beforeEach(function() {
+        db = new MemoryDatastore();
+        store = new EventBridgeStore(db);
     });
 
     describe("upsertEvent", function() {

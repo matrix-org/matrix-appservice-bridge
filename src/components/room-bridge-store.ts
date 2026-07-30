@@ -56,8 +56,7 @@ limitations under the License.
  *
  */
 
-import type Datastore from "nedb";
-import { BridgeStore } from "./bridge-store";
+import { BridgeStore, Datastore } from "./bridge-store";
 import { MatrixRoom, MatrixRoomData } from "../models/rooms/matrix";
 import { RemoteRoom } from "../models/rooms/remote";
 
@@ -86,7 +85,7 @@ export class RoomBridgeStore extends BridgeStore {
      * off the 'id', 'matrix_id' or 'remote_id'. Additional indexes can be added
      * manually.
      * @constructor
-     * @param db The connected NEDB database instance
+     * @param db The connected datastore instance
      * @param opts Options for this store.
      */
     constructor(db: Datastore) {

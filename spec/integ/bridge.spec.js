@@ -1,26 +1,13 @@
 "use strict";
-const Datastore = require("nedb");
-const fs = require("fs");
-
-// required fix for nedb being incredibly outdated
-const util = require("node:util");
-util.isDate = util.types.isDate;
-util.isRegExp = util.types.isRegExp;
-
 const HS_URL = "http://example.com";
 const HS_DOMAIN = "example.com";
 const BOT_LOCALPART = "the_bridge";
 const BOT_USER_ID = `@${BOT_LOCALPART}:${HS_DOMAIN}`;
 const { MatrixError } = require("@vector-im/matrix-bot-sdk");
 
-const TEST_USER_DB_PATH = __dirname + "/test-users.db";
-const TEST_ROOM_DB_PATH = __dirname + "/test-rooms.db";
-const TEST_EVENT_DB_PATH = __dirname + "/test-events.db";
-const { UserBridgeStore, RoomBridgeStore, EventBridgeStore, MatrixUser,
+const { UserBridgeStore, RoomBridgeStore, EventBridgeStore, MemoryDatastore, MatrixUser,
     RemoteUser, MatrixRoom, RemoteRoom, AppServiceRegistration, Bridge,
     BRIDGE_PING_EVENT_TYPE, BRIDGE_PING_TIMEOUT_MS, Intent } = require("../..");
-
-const deferPromise = require("../../lib/utils/promiseutil").defer;
 
 describe("Bridge", function() {
     let bridge, bridgeCtrl, appService, appServiceRegistration, intents, intentCreateFn;
@@ -82,67 +69,24 @@ describe("Bridge", function() {
             }
         });
 
-        function loadDatabase(path, Cls) {
-            const defer = deferPromise();
-            const db = new Datastore({
-                filename: path,
-                autoload: true,
-                onload: function(err) {
-                    if (err) {
-                        defer.reject(err);
-                        return;
-                    }
-                    defer.resolve(new Cls(db));
-                }
-            });
-            return defer.promise;
-        }
-
-        await Promise.all([
-            loadDatabase(TEST_USER_DB_PATH, UserBridgeStore),
-            loadDatabase(TEST_ROOM_DB_PATH, RoomBridgeStore),
-            loadDatabase(TEST_EVENT_DB_PATH, EventBridgeStore)
-        ]).then(([userDb, roomDb, eventDb]) => {
-            userStore = userDb;
-            roomStore = roomDb;
-            eventStore = eventDb;
-            bridge = new Bridge({
-                homeserverUrl: HS_URL,
-                domain: HS_DOMAIN,
-                registration: appServiceRegistration,
-                userStore: userDb,
-                roomStore: roomDb,
-                eventStore: eventDb,
-                controller: bridgeCtrl,
-                onIntentCreate: (...args) => intentCreateFn(...args),
-            });
-            return bridge.loadDatabases();
+        userStore = new UserBridgeStore(new MemoryDatastore());
+        roomStore = new RoomBridgeStore(new MemoryDatastore());
+        eventStore = new EventBridgeStore(new MemoryDatastore());
+        bridge = new Bridge({
+            homeserverUrl: HS_URL,
+            domain: HS_DOMAIN,
+            registration: appServiceRegistration,
+            userStore: userStore,
+            roomStore: roomStore,
+            eventStore: eventStore,
+            controller: bridgeCtrl,
+            onIntentCreate: (...args) => intentCreateFn(...args),
         });
+        await bridge.loadDatabases();
 
         // Mock the BotSdk Intents
         // ---
         intents = bridge.intents;
-    });
-
-    afterEach(function() {
-        try {
-            fs.unlinkSync(TEST_USER_DB_PATH);
-        }
-        catch (e) {
-            // do nothing
-        }
-        try {
-            fs.unlinkSync(TEST_ROOM_DB_PATH);
-        }
-        catch (e) {
-            // do nothing
-        }
-        try {
-            fs.unlinkSync(TEST_EVENT_DB_PATH);
-        }
-        catch (e) {
-            // do nothing
-        }
     });
 
     describe("onUserQuery", function() {

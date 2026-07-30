@@ -1,37 +1,12 @@
-import Datastore from "nedb";
-import * as fs from "fs";
-import { UserBridgeStore, MatrixUser, RemoteUser } from "../../src/index";
-
-const TEST_DB_PATH = __dirname + "/test.db";
+import { UserBridgeStore, MemoryDatastore, MatrixUser, RemoteUser } from "../../src/index";
 
 describe("UserBridgeStore", function() {
     let store: UserBridgeStore;
-    let db: Datastore;
+    let db: MemoryDatastore;
 
-    beforeEach(
-    /** @this TestCase */
-    function(done) {
-        db = new Datastore({
-            filename: TEST_DB_PATH,
-            autoload: true,
-            onload: function(err) {
-                if (err) {
-                    console.error(err);
-                    return;
-                }
-                store = new UserBridgeStore(db);
-                done();
-            }
-        });
-    });
-
-    afterEach(function() {
-        try {
-            fs.unlinkSync(TEST_DB_PATH);
-        }
-        catch (e) {
-            // do nothing
-        }
+    beforeEach(function() {
+        db = new MemoryDatastore();
+        store = new UserBridgeStore(db);
     });
 
     describe("setMatrixUser", function() {

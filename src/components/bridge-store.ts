@@ -21,8 +21,7 @@ type Query = Record<string, unknown>;
 
 /**
  * The subset of the NeDB `Datastore` API that {@link BridgeStore} relies on.
- * Any datastore implementing this shape (including a real `nedb` instance)
- * can be used to back a {@link BridgeStore}.
+ * Any datastore implementing this shape can be used to back a {@link BridgeStore}.
  */
 export interface Datastore {
     insert(newDocs: any[], cb?: (err: Error | null, documents: any[]) => void): void;

@@ -14,15 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import type Datastore from "nedb";
-import { BridgeStore } from "./bridge-store";
+import { BridgeStore, Datastore } from "./bridge-store";
 import { StoredEvent, StoredEventDoc } from "../models/events/event";
 
 /**
  * Construct a store suitable for event mapping information. Data is stored
  * as {@link StoredEvent}s.
  * @constructor
- * @param db The connected NEDB database instance
+ * @param db The connected datastore instance
  */
 export class EventBridgeStore extends BridgeStore {
     constructor(db: Datastore) { super(db) }

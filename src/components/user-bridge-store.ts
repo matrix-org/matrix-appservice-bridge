@@ -51,15 +51,14 @@ limitations under the License.
  *   matrix_id: "@foo:bar"
  * }
  */
-import type Datastore from "nedb";
-import { BridgeStore } from "./bridge-store";
+import { BridgeStore, Datastore } from "./bridge-store";
 import { MatrixUser } from "../models/users/matrix";
 import { RemoteUser } from "../models/users/remote";
 
 export class UserBridgeStore extends BridgeStore {
     /**
      * Construct a store suitable for user bridging information.
-     * @param db The connected NEDB database instance
+     * @param db The connected datastore instance
      */
     constructor (db: Datastore) {
         super(db);

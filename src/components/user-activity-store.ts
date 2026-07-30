@@ -33,14 +33,13 @@ limitations under the License.
  *   }
  * }
  */
-import type Datastore from "nedb";
-import { BridgeStore } from "./bridge-store";
+import { BridgeStore, Datastore } from "./bridge-store";
 import { UserActivity, UserActivitySet } from "./user-activity";
 
 export class UserActivityStore extends BridgeStore {
     /**
      * Construct a store suitable for user bridging information.
-     * @param db The connected NEDB database instance
+     * @param db The connected datastore instance
      */
     constructor (db: Datastore) {
         super(db);

@@ -100,13 +100,6 @@
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-1.3.5.tgz#1ef302e01cf7d2b5a0fa526790c9123bf1d06690"
   integrity sha512-/pyBZWSLD2n0dcHE3hq8s8ZvcETHtEuF+3E7XVt0Ig2nvsVQXdghHVcEkIWjy9A0wKfTn97a/PSDYohKIlnP/w==
 
-"@types/nedb@^1.8.16":
-  version "1.8.16"
-  resolved "https://registry.yarnpkg.com/@types/nedb/-/nedb-1.8.16.tgz#7aed013d0ef46655c6aacf3af7a849a1980b821e"
-  integrity sha512-ND+uzwAZk7ZI9byOvHGOcZe2R9XUcLF698yDJKn00trFvh+GaemkX3gQKCSKtObjDpv8Uuou+k8v4x4scPr4TA==
-  dependencies:
-    "@types/node" "*"
-
 "@types/node@*":
   version "25.9.1"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-25.9.1.tgz#3bda556db500ae4319c08e7fc9ab94f19013ba0b"
@@ -1087,7 +1080,6 @@ math-intrinsics@^1.1.0:
   version "11.2.0"
   dependencies:
     "@alloc/quick-lru" "^5.2.0"
-    "@types/nedb" "^1.8.16"
     "@vector-im/matrix-bot-sdk" "0.9.0-element.1"
     chalk "^4.1.0"
     express "^4.22.1"

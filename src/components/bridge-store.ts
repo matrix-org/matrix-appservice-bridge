@@ -15,40 +15,52 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { promisify } from "util";
-import type Datastore from "nedb";
-
 type Query = Record<string, unknown>;
+
+/**
+ * A minimal document store interface. Any datastore implementing this shape
+ * can be used to back a {@link BridgeStore}.
+ */
+export interface Datastore {
+    insert(newDocs: any[]): Promise<any[]>;
+    update(query: any, updateQuery: any, options?: UpdateOptions): Promise<number>;
+    remove(query: any, options: RemoveOptions): Promise<number>;
+    findOne(query: any): Promise<any>;
+    find(query: any): Promise<any[]>;
+    ensureIndex(options: EnsureIndexOptions): Promise<void>;
+}
+
+export interface UpdateOptions {
+    multi?: boolean;
+    upsert?: boolean;
+}
+export interface RemoveOptions {
+    multi?: boolean;
+}
+export interface EnsureIndexOptions {
+    fieldName: string;
+    unique?: boolean;
+    sparse?: boolean;
+}
 
 /**
  * Base class for bridge stores.
  */
 export class BridgeStore {
-    private dbInsert: (objects: any[]) => Promise<any[]>;
-    private dbUpdate: (query: any, values: any, options: Datastore.UpdateOptions) => Promise<void>;
-    private dbRemove: (query: Query, options: Datastore.RemoveOptions) => Promise<number>;
-    private dbFindOne: (query: Query, projection?: any) => Promise<any>;
-    private dbFind: (query: Query, projection?: any) => Promise<any>;
-    constructor (public readonly db: Datastore) {
-        this.dbInsert = promisify<any[]>(this.db.insert).bind(this.db);
-        this.dbUpdate = promisify<void>(this.db.update).bind(this.db);
-        this.dbRemove = promisify<any>(this.db.remove).bind(this.db);
-        this.dbFindOne = promisify(this.db.findOne).bind(this.db);
-        this.dbFind = promisify(this.db.find).bind(this.db);
-    }
+    constructor (public readonly db: Datastore) { }
 
     /**
      * INSERT a multiple documents.
      */
     public insert(objects: unknown) {
-        return this.dbInsert([objects]);
+        return this.db.insert([objects]);
     }
 
     /**
      * UPSERT a single document
      */
     public upsert<T>(query: Query, updateVals: T) {
-        return this.dbUpdate(query, updateVals, {upsert: true});
+        return this.db.update(query, updateVals, {upsert: true});
     }
 
     /**
@@ -66,21 +78,21 @@ export class BridgeStore {
      * it.
      */
     public update(query: Query, updateVals: Record<string, unknown>) {
-        return this.dbUpdate(query, updateVals, {upsert: false});
+        return this.db.update(query, updateVals, {upsert: false});
     }
 
     /**
      * DELETE multiple documents.
      */
     public delete(query: Query) {
-        return this.dbRemove(query, {multi: true});
+        return this.db.remove(query, {multi: true});
     }
 
     /**
      * SELECT a single document.
      */
     public async selectOne<T, O>(query: Query, transformFn?: (input: T) => O): Promise<O|null> {
-        const doc = await this.dbFindOne(query);
+        const doc = await this.db.findOne(query);
         if (!doc) {
             return null;
         }
@@ -97,7 +109,7 @@ export class BridgeStore {
      * @param defer
      */
     public async select<T, O>(query: Query, transformFn?: (input: T) => O) {
-        const doc = await this.dbFind(query);
+        const doc = await this.db.find(query);
         if (!doc) {
             return [];
         }
@@ -117,7 +129,7 @@ export class BridgeStore {
      * violation).
      */
     public setUnique(fieldName: string, sparse = false) {
-        this.db.ensureIndex({
+        return this.db.ensureIndex({
             fieldName: fieldName,
             unique: true,
             sparse: sparse

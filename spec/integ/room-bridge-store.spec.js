@@ -1,39 +1,15 @@
 "use strict";
-const Datastore = require("nedb");
-const fs = require("fs");
-
 const RoomBridgeStore = require("../..").RoomBridgeStore;
 const MatrixRoom = require("../..").MatrixRoom;
 const RemoteRoom = require("../..").RemoteRoom;
-const TEST_DB_PATH = __dirname + "/test.db";
+const MemoryDatastore = require("../..").MemoryDatastore;
 
 describe("RoomBridgeStore", function () {
     var store, db;
 
-    beforeEach(
-        /** @this */
-        function (done) {
-            db = new Datastore({
-                filename: TEST_DB_PATH,
-                autoload: true,
-                onload: function (err) {
-                    if (err) {
-                        console.error(err);
-                        return;
-                    }
-                    store = new RoomBridgeStore(db);
-                    done();
-                }
-            });
-        });
-
-    afterEach(function () {
-        try {
-            fs.unlinkSync(TEST_DB_PATH);
-        }
-        catch (e) {
-            // do nothing
-        }
+    beforeEach(function () {
+        db = new MemoryDatastore();
+        store = new RoomBridgeStore(db);
     });
 
     describe("upsertEntry", function () {

@@ -12,7 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-import type Datastore from "nedb";
 import {promises as fs} from "fs";
 import * as util from "util";
 import yaml from "js-yaml";
@@ -39,7 +38,6 @@ import { Logger } from ".";
 import { UserActivityTracker } from "./components/user-activity";
 import { Defer, defer as deferPromise } from "./utils/promiseutil";
 import { unstable } from "./errors";
-import { BridgeStore } from "./components/bridge-store";
 import { RemoteUser } from "./models/users/remote";
 import BridgeInternalError = unstable.BridgeInternalError;
 import wrapError = unstable.wrapError;
@@ -149,29 +147,25 @@ export interface BridgeOpts {
      */
     disableStores?: boolean;
     /**
-     * The room store instance to use, or the path to the room .db file to load.
-     * A database will be created if this is not specified. If `disableStores` is set,
-     * no database will be created or used.
+     * The room store instance to use. If `disableStores` is set, or this is not
+     * specified, no room store will be used.
      */
-    roomStore?: RoomBridgeStore|string;
+    roomStore?: RoomBridgeStore;
     /**
-     * The user store instance to use, or the path to the user .db file to load.
-     * A database will be created if this is not specified. If `disableStores` is set,
-     * no database will be created or used.
+     * The user store instance to use. If `disableStores` is set, or this is not
+     * specified, no user store will be used.
      */
-    userStore?: UserBridgeStore|string;
+    userStore?: UserBridgeStore;
     /**
-     * The user activity store instance to use, or the path to the user .db file to load.
-     * A database will be created if this is not specified. If `disableStores` is set,
-     * no database will be created or used.
+     * The user activity store instance to use. If `disableStores` is set, or this is not
+     * specified, no user activity store will be used.
      */
-    userActivityStore?: UserActivityStore|string;
+    userActivityStore?: UserActivityStore;
     /**
-     * The event store instance to use, or the path to the user .db file to load.
-     * A database will NOT be created if this is not specified. If `disableStores` is set,
-     * no database will be created or used.
+     * The event store instance to use. If `disableStores` is set, or this is not
+     * specified, no event store will be used.
      */
-    eventStore?: EventBridgeStore|string;
+    eventStore?: EventBridgeStore;
     /**
      * The membership cache instance
      * to use, which can be manually created by a bridge for greater control over
@@ -306,29 +300,25 @@ interface VettedBridgeOpts {
      */
     disableStores: boolean;
     /**
-     * The room store instance to use, or the path to the room .db file to load.
-     * A database will be created if this is not specified. If `disableStores` is set,
-     * no database will be created or used.
+     * The room store instance to use. If `disableStores` is set, or this is not
+     * specified, no room store will be used.
      */
-    roomStore: RoomBridgeStore | string;
+    roomStore?: RoomBridgeStore;
     /**
-     * The user store instance to use, or the path to the user .db file to load.
-     * A database will be created if this is not specified. If `disableStores` is set,
-     * no database will be created or used.
+     * The user store instance to use. If `disableStores` is set, or this is not
+     * specified, no user store will be used.
      */
-    userStore: UserBridgeStore | string;
+    userStore?: UserBridgeStore;
     /**
-     * The user activity store instance to use, or the path to the user .db file to load.
-     * A database will be created if this is not specified. If `disableStores` is set,
-     * no database will be created or used.
+     * The user activity store instance to use. If `disableStores` is set, or this is not
+     * specified, no user activity store will be used.
      */
-    userActivityStore: UserActivityStore | string;
+    userActivityStore?: UserActivityStore;
     /**
-     * The event store instance to use, or the path to the user .db file to load.
-     * A database will NOT be created if this is not specified. If `disableStores` is set,
-     * no database will be created or used.
+     * The event store instance to use. If `disableStores` is set, or this is not
+     * specified, no event store will be used.
      */
-    eventStore?: EventBridgeStore | string;
+    eventStore?: EventBridgeStore;
     /**
      * True to stop receiving onEvent callbacks
      * for events which were sent by a bridge user. Default: true.
@@ -497,9 +487,6 @@ export class Bridge {
             ...opts,
             disableContext: opts.disableStores ? true : (opts.disableContext ?? false),
             disableStores: opts.disableStores ?? false,
-            userStore: opts.userStore || "user-store.db",
-            userActivityStore: opts.userActivityStore || "user-activity-store.db",
-            roomStore: opts.roomStore || "room-store.db",
             intentOptions: opts.intentOptions || {},
             onIntentCreate: opts.onIntentCreate ?? this.onIntentCreate.bind(this),
             queue: {
@@ -551,48 +538,19 @@ export class Bridge {
     }
 
     /**
-     * Load the user and room databases. Access them via getUserStore() and getRoomStore().
+     * Wire up the user, user activity, room and event stores supplied in the
+     * bridge options. Access them via getUserStore(), getUserActivityStore(),
+     * getRoomStore() and getEventStore().
      */
     public async loadDatabases(): Promise<void> {
         if (this.opts.disableStores) {
             return;
         }
 
-        const storePromises: Promise<BridgeStore>[] = [];
-        // Load up the databases if they provided file paths to them (or defaults)
-        if (typeof this.opts.userStore === "string") {
-            storePromises.push(loadDatabase(this.opts.userStore, UserBridgeStore));
-        }
-        else {
-            storePromises.push(Promise.resolve(this.opts.userStore));
-        }
-        if (typeof this.opts.userActivityStore === "string") {
-            storePromises.push(loadDatabase(this.opts.userActivityStore, UserActivityStore));
-        }
-        else {
-            storePromises.push(Promise.resolve(this.opts.userActivityStore));
-        }
-        if (typeof this.opts.roomStore === "string") {
-            storePromises.push(loadDatabase(this.opts.roomStore, RoomBridgeStore));
-        }
-        else {
-            storePromises.push(Promise.resolve(this.opts.roomStore));
-        }
-        if (typeof this.opts.eventStore === "string") {
-            storePromises.push(loadDatabase(this.opts.eventStore, EventBridgeStore));
-        }
-        else if (this.opts.eventStore) {
-            storePromises.push(Promise.resolve(this.opts.eventStore));
-        }
-
-        // This works because if they provided a string we converted it to a Promise
-        // which will be resolved when we have the db instance. If they provided a
-        // db instance then this will resolve immediately.
-        const [userStore, userActivityStore, roomStore, eventStore] = await Promise.all(storePromises);
-        this.userStore = userStore as UserBridgeStore;
-        this.userActivityStore = userActivityStore as UserActivityStore;
-        this.roomStore = roomStore as RoomBridgeStore;
-        this.eventStore = eventStore as EventBridgeStore;
+        this.userStore = this.opts.userStore;
+        this.userActivityStore = this.opts.userActivityStore;
+        this.roomStore = this.opts.roomStore;
+        this.eventStore = this.opts.eventStore;
     }
 
     /**
@@ -1718,25 +1676,4 @@ export class Bridge {
         }
     }
 
-}
-
-async function loadDatabase<T extends BridgeStore>(path: string, Cls: new (db: Datastore) => T) {
-    try {
-        const datastoreFn = (await import("nedb")).default;
-        return new Promise<T>((resolve, reject) => {
-            const dbInstance = new datastoreFn({
-            filename: path,
-            autoload: true,
-            onload: function(err) {
-                if (err) {
-                    reject(err);
-                }
-                else {
-                    resolve(new Cls(dbInstance));
-                }
-            }
-        })});
-    } catch (ex) {
-        throw Error('nedb could not be imported. You will need to add this package as a peer dependency.');
-    }
 }

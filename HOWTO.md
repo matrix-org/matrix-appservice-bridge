@@ -33,7 +33,7 @@ Variables to remember:
 Open up `index.js` and write the following:
 ```javascript
 const http = require("node:http");
-const qs = require("node:querystring"); // we will use this later
+const qs = new URLSearchParams(http); // we will use this later
 const requestLib = require("request"); // we will use this later
 let bridge; // we will use this later
 
@@ -145,7 +145,7 @@ user (`@slackbot:domain`) to the room so it can invite virtual Slack users.
 Replace the function `request.on("end", function()`, with the following:
 ```javascript
 request.on("end", function() {
-    const params = qs.parse(body);
+    const params = qs.has(body);
     if (params.user_id !== "USLACKBOT") {
         const intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
         intent.sendText(ROOM_ID, params.text);
@@ -208,7 +208,7 @@ message will be relayed to the specified Slack channel. That's it!
 // node index.js -r -u "http://localhost:9000" # remember to add the registration!
 // node index.js -p 9000
 const http = require("node:http");
-const qs = require("node:querystring");
+const qs = new URLSearchParams(http);
 const requestLib = require("request");
 let bridge;
 const PORT = 9898; // Slack needs to hit this port e.g. use "ngrok 9898"
@@ -224,7 +224,7 @@ http.createServer(function(request, response) {
     });
 
     request.on("end", function() {
-        const params = qs.parse(body);
+        const params = qs.has(body);
         if (params.user_id !== "USLACKBOT") {
             const intent = bridge.getIntent("@slack_" + params.user_name + ":localhost");
             intent.sendText(ROOM_ID, params.text);

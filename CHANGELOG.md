@@ -1,3 +1,16 @@
+# 12.0.0 (2026-08-25)
+
+## Deprecations and Removals
+
+- Drop support for Node 22, add support for Node 26. ([\#524](https://github.com/matrix-org/matrix-appservice-bridge/issues/524))
+- NeDB is no longer supported as a storage mechanism. The bridge now provides a Datastore interface to be implemented by upstream providers. ([\#528](https://github.com/matrix-org/matrix-appservice-bridge/issues/528))
+
+## Internal Changes
+
+- Update matrix-appservice to `4.1.0`. ([\#524](https://github.com/matrix-org/matrix-appservice-bridge/issues/524))
+- Update matrix-bot-sdk to `0.10.0-element.0`. ([\#524](https://github.com/matrix-org/matrix-appservice-bridge/issues/524))
+
+
 # 11.2.0 (2026-01-19)
 
 ## Internal Changes

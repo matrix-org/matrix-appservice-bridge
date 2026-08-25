@@ -1,1 +1,0 @@
-NeDB is no longer supported as a storage mechanism. The bridge now provides a Datastore interface to be implemented by upstream providers.

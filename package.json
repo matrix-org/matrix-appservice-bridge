@@ -21,7 +21,7 @@
     "matrix-org"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "author": "Matrix.org",
   "license": "Apache-2.0",
@@ -31,32 +31,32 @@
   "homepage": "https://github.com/matrix-org/matrix-appservice-bridge#readme",
   "dependencies": {
     "@alloc/quick-lru": "^5.2.0",
-    "@vector-im/matrix-bot-sdk": "0.8.0-element.2",
-    "chalk": "^4.1.0",
-    "express": "^4.18.2",
+    "@vector-im/matrix-bot-sdk": "0.10.0-element.0",
+    "chalk": "4",
+    "express": "^4.22.2",
     "express-rate-limit": "^7.1.5",
     "extend": "^3.0.2",
     "ip-cidr": "^3.0.0",
     "is-my-json-valid": "^2.20.5",
-    "js-yaml": "^4.1.0",
-    "matrix-appservice": "^3.0.0",
+    "js-yaml": "^4.1.1",
+    "matrix-appservice": "^4.1.0",
     "nopt": "^5.0.0",
     "p-queue": "^6.6.2",
     "pkginfo": "^0.4.1",
-    "postgres": "^3.4.3",
+    "postgres": "^3.4.9",
     "prom-client": "^15.1.0",
     "winston": "^3.11.0",
     "winston-daily-rotate-file": "^4.5.1"
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22",
+    "@tsconfig/node24": "^24",
     "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
+    "@types/express": "^4.17.25",
     "@types/extend": "^3.0.4",
     "@types/jasmine": "^5.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/jsbn": "^1.2.33",
-    "@types/node": "^22",
+    "@types/node": "^24",
     "@types/nopt": "^3.0.32",
     "@types/pkginfo": "^0.4.3",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
@@ -67,7 +67,7 @@
     "nyc": "^15.1.0",
     "ts-node": "^10.9.2",
     "typedoc": "^0.28.9",
-    "typescript": "^5.9.2",
+    "typescript": "^5.9.3",
     "winston-transport": "^4.6.0"
   }
 }

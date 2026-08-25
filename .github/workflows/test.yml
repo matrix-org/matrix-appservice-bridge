@@ -10,7 +10,7 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-24.04
-    container: node:22
+    container: node:24
     steps:
       - uses: actions/checkout@v2
       - run: yarn --strict-semver --frozen-lockfile
@@ -19,7 +19,7 @@ jobs:
   test:
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: [24, 26]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v2
@@ -31,7 +31,7 @@ jobs:
       - run: yarn build && yarn test
   test-postgres:
     runs-on: ubuntu-24.04
-    container: node:22
+    container: node:24
     services:
       postgres:
         image: postgres:latest

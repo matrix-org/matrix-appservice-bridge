@@ -42,7 +42,7 @@ describe("Cli", () => {
         tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "bridge-test"));
     });
     afterEach(async () => {
-        await fs.rmdir(tempDir, {recursive: true});
+        await fs.rm(tempDir, {recursive: true});
     });
 
     it("should be able to start the bridge with just a registration file", async () => {

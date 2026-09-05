@@ -35,6 +35,12 @@ export interface MSC2346Content extends MappingInfo {
     bridgebot: string;
 }
 
+export interface InitialEvent {
+    type: string,
+    content: Record<string, unknown>,
+    state_key: string,
+}
+
 interface Opts<BridgeMappingInfo> {
     /**
      * The name of the bridge implementation, ideally in Java package naming format:
@@ -110,11 +116,11 @@ export class BridgeInfoStateSyncer<BridgeMappingInfo> {
         }
     }
 
-    public async createInitialState(roomId: string, bridgeMappingInfo: BridgeMappingInfo) {
+    public async createInitialState(roomId: string, bridgeMappingInfo: BridgeMappingInfo): Promise<InitialEvent> {
         const mapping = await this.opts.getMapping(roomId, bridgeMappingInfo);
         return {
             type: BridgeInfoStateSyncer.EventType,
-            content: this.createBridgeInfoContent(mapping),
+            content: this.createBridgeInfoContent(mapping) as unknown as Record<string, unknown>,
             state_key: this.createStateKey(mapping),
         };
     }

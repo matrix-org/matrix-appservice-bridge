@@ -35,6 +35,20 @@ export interface MSC2346Content extends MappingInfo {
     bridgebot: string;
 }
 
+/**
+ * Content shape for the finalized `m.bridge` event type, as specced after MSC2346 merged.
+ * Unlike the legacy `uk.half-shot.bridge` content, this only carries `bridgebot` and `protocol`.
+ */
+export interface BridgeContent {
+    bridgebot?: string;
+    protocol?: {
+        id?: string;
+        displayname?: string;
+        // eslint-disable-next-line camelcase
+        avatar_url?: `mxc://${string}`;
+    };
+}
+
 interface Opts<BridgeMappingInfo> {
     /**
      * The name of the bridge implementation, ideally in Java package naming format:
@@ -55,6 +69,12 @@ interface Opts<BridgeMappingInfo> {
  */
 export class BridgeInfoStateSyncer<BridgeMappingInfo> {
     public static readonly EventType = "uk.half-shot.bridge";
+    /**
+     * The finalized event type from the Matrix spec (post-MSC2346). Clients that only know about
+     * this identifier (and not the legacy `uk.half-shot.bridge` one used above) rely on this being
+     * sent too in order to detect bridged rooms.
+     */
+    public static readonly FinalEventType = "m.bridge";
     constructor(private bridge: Bridge, private opts: Opts<BridgeMappingInfo>) {
     }
 
@@ -107,6 +127,35 @@ export class BridgeInfoStateSyncer<BridgeMappingInfo> {
                     `Failed to update room with new state content: ${ex instanceof Error ? ex.message : ex}`
                 );
             }
+            await this.syncFinalEvent(roomId, key, realMapping);
+        }
+    }
+
+    private async syncFinalEvent(roomId: string, key: string, mapping: MappingInfo) {
+        const intent = this.bridge.getIntent();
+        const content = this.createFinalBridgeInfoContent(mapping);
+        try {
+            const eventData: BridgeContent|null = await intent.getStateEvent(
+                roomId, BridgeInfoStateSyncer.FinalEventType, key, true
+            );
+            if (eventData !== null && JSON.stringify(eventData) === JSON.stringify(content)) {
+                return;
+            }
+        }
+        catch (ex) {
+            log.warn(`Encountered error when trying to sync ${BridgeInfoStateSyncer.FinalEventType} for ${roomId}`, ex);
+            return; // To be on the safe side, do not retry this room.
+        }
+        try {
+            await intent.sendStateEvent(
+                roomId, BridgeInfoStateSyncer.FinalEventType, key, content as unknown as Record<string, unknown>
+            );
+        }
+        catch (ex) {
+            log.error(
+                `Failed to update room with new ${BridgeInfoStateSyncer.FinalEventType} state content: ` +
+                `${ex instanceof Error ? ex.message : ex}`
+            );
         }
     }
 
@@ -139,5 +188,16 @@ export class BridgeInfoStateSyncer<BridgeMappingInfo> {
             content.network = mapping.network;
         }
         return content;
+    }
+
+    public createFinalBridgeInfoContent(mapping: MappingInfo): BridgeContent {
+        return {
+            bridgebot: this.bridge.botUserId,
+            protocol: {
+                id: mapping.protocol.id,
+                displayname: mapping.protocol.displayname,
+                avatar_url: mapping.protocol.avatar_url,
+            },
+        };
     }
 }

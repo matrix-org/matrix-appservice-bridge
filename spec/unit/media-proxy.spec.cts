@@ -36,4 +36,47 @@ describe("MediaProxy", function() {
         expect(data.endDt).toBeGreaterThanOrEqual(now + 60 * 1000);
         expect(data.endDt).toBeLessThanOrEqual(now + 61 * 1000);
     });
+
+    it('can decode a media url containing the source room and event', async () => {
+        const mxc = 'mxc://example.com/some_media';
+        const url = await mediaProxy.generateMediaUrl(mxc, {
+            roomId: '!room:example.com',
+            eventId: '$event:example.com',
+        });
+        const token = url.pathname.slice('/my-cs-path/v1/media/download/'.length);
+        const data = await mediaProxy.verifyMediaToken(token);
+        expect('mxc://' + data.mxc).toBe(mxc);
+        expect(data.roomId).toBe('!room:example.com');
+        expect(data.eventId).toBe('$event:example.com');
+    });
+
+    it('refuses to serve media whose source event has been redacted', async () => {
+        const matrixClient = (mediaProxy as unknown as { matrixClient: MatrixClient }).matrixClient;
+        spyOn(matrixClient, 'getEvent').and.resolveTo({
+            unsigned: { redacted_because: { type: 'm.room.redaction' } },
+        } as never);
+        const mxc = 'mxc://example.com/some_media';
+        const url = await mediaProxy.generateMediaUrl(mxc, {
+            roomId: '!room:example.com',
+            eventId: '$event:example.com',
+        });
+        const token = url.pathname.slice('/my-cs-path/v1/media/download/'.length);
+        const req = { params: { mediaToken: token } } as unknown as Parameters<typeof mediaProxy.onMediaRequest>[0];
+        const res = {} as unknown as Parameters<typeof mediaProxy.onMediaRequest>[1];
+        await expectAsync(mediaProxy.onMediaRequest(req, res)).toBeRejectedWithError(/no longer available/);
+    });
+
+    it('refuses to serve media if the source event cannot be verified', async () => {
+        const matrixClient = (mediaProxy as unknown as { matrixClient: MatrixClient }).matrixClient;
+        spyOn(matrixClient, 'getEvent').and.rejectWith(new Error('M_NOT_FOUND'));
+        const mxc = 'mxc://example.com/some_media';
+        const url = await mediaProxy.generateMediaUrl(mxc, {
+            roomId: '!room:example.com',
+            eventId: '$event:example.com',
+        });
+        const token = url.pathname.slice('/my-cs-path/v1/media/download/'.length);
+        const req = { params: { mediaToken: token } } as unknown as Parameters<typeof mediaProxy.onMediaRequest>[0];
+        const res = {} as unknown as Parameters<typeof mediaProxy.onMediaRequest>[1];
+        await expectAsync(mediaProxy.onMediaRequest(req, res)).toBeRejectedWithError(/Could not verify/);
+    });
 });

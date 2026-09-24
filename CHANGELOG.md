@@ -1,3 +1,11 @@
+# 12.0.1 (2026-09-24)
+
+## Internal Changes
+
+- Assign a name to the publish workflow. ([\#526](https://github.com/matrix-org/matrix-appservice-bridge/issues/526))
+- Update matrix-bot-sdk to `0.10.1-element.0`. ([\#530](https://github.com/matrix-org/matrix-appservice-bridge/issues/530))
+
+
 # 12.0.0 (2026-08-25)
 
 ## Deprecations and Removals

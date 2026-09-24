@@ -31,7 +31,7 @@
   "homepage": "https://github.com/matrix-org/matrix-appservice-bridge#readme",
   "dependencies": {
     "@alloc/quick-lru": "^5.2.0",
-    "@vector-im/matrix-bot-sdk": "0.10.0-element.0",
+    "@vector-im/matrix-bot-sdk": "0.10.1-element.0",
     "chalk": "4",
     "express": "^4.22.2",
     "express-rate-limit": "^7.1.5",

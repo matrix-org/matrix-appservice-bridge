@@ -664,10 +664,10 @@
   resolved "https://registry.yarnpkg.com/@ungap/structured-clone/-/structured-clone-1.3.3.tgz#094041e1a4cb1987f038335421281ac8be390bcc"
   integrity sha512-60YRaenCQcVjYEKOcG824+DRGGIQ3VKErcBoAEDJZz5bKIs2ZG+X/H9Nk+Q6EVkwJk5QNApxbrc5QtBSwtrXAg==
 
-"@vector-im/matrix-bot-sdk@0.10.0-element.0":
-  version "0.10.0-element.0"
-  resolved "https://registry.yarnpkg.com/@vector-im/matrix-bot-sdk/-/matrix-bot-sdk-0.10.0-element.0.tgz#0381581b0c9674002194a5e44e275a001ee4859d"
-  integrity sha512-wVxmiiwEo6KNyfvhkWJulABJla7o99NVRkiJeBF3irCqr/mkY2V8fDh+aFE3TmaJT4CYq855cQjhvl+4QkkUeA==
+"@vector-im/matrix-bot-sdk@0.10.1-element.0":
+  version "0.10.1-element.0"
+  resolved "https://registry.yarnpkg.com/@vector-im/matrix-bot-sdk/-/matrix-bot-sdk-0.10.1-element.0.tgz#a6a9f994f97a10664fff994f206f3ab5b9ec7812"
+  integrity sha512-hwYXJh+eTHoiIqzbWXx236FSIOr3qLEAcvGd/hUnqzLY6GaBxO5nKKefXhc3uTPlmfQrgRvdtoUiqH4HfWolgA==
   dependencies:
     "@matrix-org/matrix-sdk-crypto-nodejs" "^0.6.6"
     another-json "^0.2.0"

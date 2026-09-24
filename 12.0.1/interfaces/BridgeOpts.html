@@ -1,0 +1,292 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>BridgeOpts | matrix-appservice-bridge</title><meta name="description" content="Documentation for matrix-appservice-bridge"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">matrix-appservice-bridge</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="" aria-current="page">BridgeOpts</a></li></ul>
+<h1>Interface BridgeOpts</h1></div>
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">BridgeOpts</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#bridgeencryption">bridgeEncryption</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span><br/>        <span class="tsd-kind-property">homeserverUrl</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>        <span class="tsd-kind-property">store</span><span class="tsd-signature-symbol">:</span> <a href="ClientEncryptionStore.html" class="tsd-signature-type tsd-kind-interface">ClientEncryptionStore</a><span class="tsd-signature-symbol">;</span><br/>    <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#controller">controller</a><span class="tsd-signature-symbol">:</span> <a href="BridgeController.html" class="tsd-signature-type tsd-kind-interface">BridgeController</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#disablecontext">disableContext</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#disablestores">disableStores</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#domain">domain</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#escapeuserids">escapeUserIds</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#eventstore">eventStore</a><span class="tsd-signature-symbol">?:</span> <a href="../classes/EventBridgeStore.html" class="tsd-signature-type tsd-kind-class">EventBridgeStore</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#eventvalidation">eventValidation</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span><br/>        <span class="tsd-kind-property">validateEditSender</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">allowEventOnLookupFail</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#homeserverurl">homeserverUrl</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#intentoptions">intentOptions</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">bot</span><span class="tsd-signature-symbol">?:</span> <a href="IntentOpts.html" class="tsd-signature-type tsd-kind-interface">IntentOpts</a><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">clients</span><span class="tsd-signature-symbol">?:</span> <a href="IntentOpts.html" class="tsd-signature-type tsd-kind-interface">IntentOpts</a> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#logrequestoutcome">logRequestOutcome</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#membershipcache">membershipCache</a><span class="tsd-signature-symbol">?:</span> <a href="../classes/MembershipCache.html" class="tsd-signature-type tsd-kind-class">MembershipCache</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#networkname">networkName</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#onintentcreate">onIntentCreate</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">userId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="../classes/Intent.html" class="tsd-signature-type tsd-kind-class">Intent</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#queue">queue</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">perRequest</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">type</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;none&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;single&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;per_room&quot;</span> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#registration">registration</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <a href="../classes/AppServiceRegistration.html" class="tsd-signature-type tsd-kind-class">AppServiceRegistration</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#roomlinkvalidation">roomLinkValidation</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">rules</span><span class="tsd-signature-symbol">:</span> <a href="Rules.html" class="tsd-signature-type tsd-kind-interface">Rules</a> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#roomstore">roomStore</a><span class="tsd-signature-symbol">?:</span> <a href="../classes/RoomBridgeStore.html" class="tsd-signature-type tsd-kind-class">RoomBridgeStore</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#roomupgradeopts">roomUpgradeOpts</a><span class="tsd-signature-symbol">?:</span> <a href="RoomUpgradeHandlerOpts.html" class="tsd-signature-type tsd-kind-interface">RoomUpgradeHandlerOpts</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#suppressecho">suppressEcho</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#trackuseractivity">trackUserActivity</a><span class="tsd-signature-symbol">?:</span> <a href="ActivityTrackerOpts.html" class="tsd-signature-type tsd-kind-interface">ActivityTrackerOpts</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#useractivitystore">userActivityStore</a><span class="tsd-signature-symbol">?:</span> <a href="../classes/UserActivityStore.html" class="tsd-signature-type tsd-kind-class">UserActivityStore</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#userstore">userStore</a><span class="tsd-signature-symbol">?:</span> <a href="../classes/UserBridgeStore.html" class="tsd-signature-type tsd-kind-class">UserBridgeStore</a><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:120</li></ul></aside>
+<section class="tsd-panel-group tsd-index-group">
+<section class="tsd-panel tsd-index-panel">
+<details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h5 class="tsd-index-heading uppercase">Index</h5></summary>
+<div class="tsd-accordion-details">
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="properties">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#bridgeencryption" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>bridge<wbr/>Encryption?</span></a>
+<a href="#controller" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>controller</span></a>
+<a href="#disablecontext" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>disable<wbr/>Context?</span></a>
+<a href="#disablestores" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>disable<wbr/>Stores?</span></a>
+<a href="#domain" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>domain</span></a>
+<a href="#escapeuserids" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>escape<wbr/>User<wbr/>Ids?</span></a>
+<a href="#eventstore" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>event<wbr/>Store?</span></a>
+<a href="#eventvalidation" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>event<wbr/>Validation?</span></a>
+<a href="#homeserverurl" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>homeserver<wbr/>Url</span></a>
+<a href="#intentoptions" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>intent<wbr/>Options?</span></a>
+<a href="#logrequestoutcome" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>log<wbr/>Request<wbr/>Outcome?</span></a>
+<a href="#membershipcache" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>membership<wbr/>Cache?</span></a>
+<a href="#networkname" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>network<wbr/>Name?</span></a>
+<a href="#onintentcreate" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>Intent<wbr/>Create?</span></a>
+<a href="#queue" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>queue?</span></a>
+<a href="#registration" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>registration</span></a>
+<a href="#roomlinkvalidation" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>room<wbr/>Link<wbr/>Validation?</span></a>
+<a href="#roomstore" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>room<wbr/>Store?</span></a>
+<a href="#roomupgradeopts" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>room<wbr/>Upgrade<wbr/>Opts?</span></a>
+<a href="#suppressecho" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>suppress<wbr/>Echo?</span></a>
+<a href="#trackuseractivity" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>track<wbr/>User<wbr/>Activity?</span></a>
+<a href="#useractivitystore" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>user<wbr/>Activity<wbr/>Store?</span></a>
+<a href="#userstore" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>user<wbr/>Store?</span></a>
+</div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="properties-1">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="bridgeencryption"><code class="tsd-tag">Optional</code><span>bridge<wbr/>Encryption</span><a href="#bridgeencryption" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">bridgeEncryption</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">homeserverUrl</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">store</span><span class="tsd-signature-symbol">:</span> <a href="ClientEncryptionStore.html" class="tsd-signature-type tsd-kind-interface">ClientEncryptionStore</a> <span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:252</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="controller"><span>controller</span><a href="#controller" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">controller</span><span class="tsd-signature-symbol">:</span> <a href="BridgeController.html" class="tsd-signature-type tsd-kind-interface">BridgeController</a></div>
+<div class="tsd-comment tsd-typography"><p>The controller logic for the bridge.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:141</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="disablecontext"><code class="tsd-tag">Optional</code><span>disable<wbr/>Context</span><a href="#disablecontext" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">disableContext</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p><code>true</code> to disable <a href="../classes/BridgeContext.html" class="tsd-kind-class">BridgeContext</a>
+parameters in Bridge.onEvent. Disabling the context makes the
+bridge do fewer database lookups, but prevents there from being a
+<code>context</code> parameter.</p>
+<p>Default: <code>false</code>.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:246</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="disablestores"><code class="tsd-tag">Optional</code><span>disable<wbr/>Stores</span><a href="#disablestores" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">disableStores</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>True to disable enabling of stores.
+This should be used by bridges that use their own database instances and
+do not need any of the included store objects. This implies setting
+disableContext to True. Default: false.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:148</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="domain"><span>domain</span><a href="#domain" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">domain</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+<div class="tsd-comment tsd-typography"><p>The domain part for user_ids and room aliases e.g. &quot;bar&quot; in &quot;@foo:bar&quot;.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:132</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="escapeuserids"><code class="tsd-tag">Optional</code><span>escape<wbr/>User<wbr/>Ids</span><a href="#escapeuserids" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">escapeUserIds</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>Escape userIds for non-bot intents with
+<a href="../classes/MatrixUser.html" class="tsd-kind-class">~escapeUserId</a>
+Default: true</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:189</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="eventstore"><code class="tsd-tag">Optional</code><span>event<wbr/>Store</span><a href="#eventstore" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">eventStore</span><span class="tsd-signature-symbol">?:</span> <a href="../classes/EventBridgeStore.html" class="tsd-signature-type tsd-kind-class">EventBridgeStore</a></div>
+<div class="tsd-comment tsd-typography"><p>The event store instance to use. If <code>disableStores</code> is set, or this is not
+specified, no event store will be used.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:168</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="eventvalidation"><code class="tsd-tag">Optional</code><span>event<wbr/>Validation</span><a href="#eventvalidation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">eventValidation</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">validateEditSender</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">allowEventOnLookupFail</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">}</span> <span class="tsd-signature-symbol">}</span></div>
+<div class="tsd-type-declaration">
+<h4>Type Declaration</h4>
+<ul class="tsd-parameters">
+<li class="tsd-parameter">
+<h5><code class="tsd-tag">Optional</code><span class="tsd-kind-property">validateEditSender</span><span class="tsd-signature-symbol">?: </span><span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">allowEventOnLookupFail</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">}</span></h5>
+<div class="tsd-comment tsd-typography"><p>Should we validate that the sender of an edit matches the parent event.</p>
+</div>
+<ul class="tsd-parameters">
+<li class="tsd-parameter">
+<h5><span class="tsd-kind-property">allowEventOnLookupFail</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></h5>
+<div class="tsd-comment tsd-typography"><p>If the parent edit event could not be found,
+should the event be rejected.</p>
+</div></li></ul></li></ul></div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:257</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="homeserverurl"><span>homeserver<wbr/>Url</span><a href="#homeserverurl" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">homeserverUrl</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+<div class="tsd-comment tsd-typography"><p>The base HS url</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:128</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="intentoptions"><code class="tsd-tag">Optional</code><span>intent<wbr/>Options</span><a href="#intentoptions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">intentOptions</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">bot</span><span class="tsd-signature-symbol">?:</span> <a href="IntentOpts.html" class="tsd-signature-type tsd-kind-interface">IntentOpts</a><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">clients</span><span class="tsd-signature-symbol">?:</span> <a href="IntentOpts.html" class="tsd-signature-type tsd-kind-interface">IntentOpts</a> <span class="tsd-signature-symbol">}</span></div>
+<div class="tsd-comment tsd-typography"><p>Options to supply to created Intent instances.</p>
+</div>
+<div class="tsd-type-declaration">
+<h4>Type Declaration</h4>
+<ul class="tsd-parameters">
+<li class="tsd-parameter">
+<h5><code class="tsd-tag">Optional</code><span class="tsd-kind-property">bot</span><span class="tsd-signature-symbol">?: </span><a href="IntentOpts.html" class="tsd-signature-type tsd-kind-interface">IntentOpts</a></h5>
+<div class="tsd-comment tsd-typography"><p>Options to supply to the bot intent.</p>
+</div></li>
+<li class="tsd-parameter">
+<h5><code class="tsd-tag">Optional</code><span class="tsd-kind-property">clients</span><span class="tsd-signature-symbol">?: </span><a href="IntentOpts.html" class="tsd-signature-type tsd-kind-interface">IntentOpts</a></h5>
+<div class="tsd-comment tsd-typography"><p>Options to supply to the client intents.</p>
+</div></li></ul></div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:193</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="logrequestoutcome"><code class="tsd-tag">Optional</code><span>log<wbr/>Request<wbr/>Outcome</span><a href="#logrequestoutcome" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">logRequestOutcome</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>True to enable SUCCESS/FAILED log lines to be sent to onLog. Default: true.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:183</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="membershipcache"><code class="tsd-tag">Optional</code><span>membership<wbr/>Cache</span><a href="#membershipcache" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">membershipCache</span><span class="tsd-signature-symbol">?:</span> <a href="../classes/MembershipCache.html" class="tsd-signature-type tsd-kind-class">MembershipCache</a></div>
+<div class="tsd-comment tsd-typography"><p>The membership cache instance
+to use, which can be manually created by a bridge for greater control over
+caching. By default a membership cache will be created internally.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:174</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="networkname"><code class="tsd-tag">Optional</code><span>network<wbr/>Name</span><a href="#networkname" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">networkName</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
+<div class="tsd-comment tsd-typography"><p>A human readable string that will be used when the bridge signals errors
+to the client. Will not include in error events if ommited.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:137</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="onintentcreate"><code class="tsd-tag">Optional</code><span>on<wbr/>Intent<wbr/>Create</span><a href="#onintentcreate" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">onIntentCreate</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">userId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="../classes/Intent.html" class="tsd-signature-type tsd-kind-class">Intent</a></div>
+<div class="tsd-comment tsd-typography"><p>The factory function used to create intents.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:206</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="queue"><code class="tsd-tag">Optional</code><span>queue</span><a href="#queue" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">queue</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">perRequest</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">type</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;none&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;single&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;per_room&quot;</span> <span class="tsd-signature-symbol">}</span></div>
+<div class="tsd-comment tsd-typography"><p>Options for the <code>onEvent</code> queue. When the bridge
+receives an incoming transaction, it needs to asyncly query the data store for
+contextual info before calling onEvent. A queue is used to keep the onEvent
+calls consistent with the arrival order from the incoming transactions.</p>
+</div>
+<div class="tsd-type-declaration">
+<h4>Type Declaration</h4>
+<ul class="tsd-parameters">
+<li class="tsd-parameter">
+<h5><code class="tsd-tag">Optional</code><span class="tsd-kind-property">perRequest</span><span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">boolean</span></h5>
+<div class="tsd-comment tsd-typography"><p><code>true</code> to only feed through the next event after the request object in the previous
+call succeeds or fails. It is <strong>vital</strong> that you consistently resolve/reject the
+request if this is 'true', else you will not get any further events from this queue.
+To aid debugging this, consider setting a delayed listener on the request factory.</p>
+<p>If <code>false</code>, the mere invocation of onEvent is enough to trigger the next event in the queue.
+You probably want to set this to <code>true</code> if your <a href="../classes/Bridge.html" class="tsd-kind-class">~onEvent</a> is
+performing async operations where ordering matters (e.g. messages).</p>
+<p>Default: false.</p>
+</div></li>
+<li class="tsd-parameter">
+<h5><code class="tsd-tag">Optional</code><span class="tsd-kind-property">type</span><span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">&quot;none&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;single&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;per_room&quot;</span></h5>
+<div class="tsd-comment tsd-typography"><p>The type of queue to use when feeding through to <a href="../classes/Bridge.html" class="tsd-kind-class">~onEvent</a>.</p>
+<ul>
+<li>If <code>none</code>, events are fed through as soon as contextual info is obtained, which may result
+in out of order events but stops HOL blocking.</li>
+<li>If <code>single</code>, onEvent calls will be in order but may be slower due to HOL blocking.</li>
+<li>If <code>per_room</code>, a queue per room ID is made which reduces the impact of HOL blocking to be scoped to a room.</li>
+</ul>
+<p>Default: <code>single</code>.</p>
+</div></li></ul></div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:213</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="registration"><span>registration</span><a href="#registration" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">registration</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <a href="../classes/AppServiceRegistration.html" class="tsd-signature-type tsd-kind-class">AppServiceRegistration</a></div>
+<div class="tsd-comment tsd-typography"><p>Application service registration object or path to the registration file.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:124</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="roomlinkvalidation"><code class="tsd-tag">Optional</code><span>room<wbr/>Link<wbr/>Validation</span><a href="#roomlinkvalidation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">roomLinkValidation</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">rules</span><span class="tsd-signature-symbol">:</span> <a href="Rules.html" class="tsd-signature-type tsd-kind-interface">Rules</a> <span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:247</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="roomstore"><code class="tsd-tag">Optional</code><span>room<wbr/>Store</span><a href="#roomstore" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">roomStore</span><span class="tsd-signature-symbol">?:</span> <a href="../classes/RoomBridgeStore.html" class="tsd-signature-type tsd-kind-class">RoomBridgeStore</a></div>
+<div class="tsd-comment tsd-typography"><p>The room store instance to use. If <code>disableStores</code> is set, or this is not
+specified, no room store will be used.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:153</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="roomupgradeopts"><code class="tsd-tag">Optional</code><span>room<wbr/>Upgrade<wbr/>Opts</span><a href="#roomupgradeopts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">roomUpgradeOpts</span><span class="tsd-signature-symbol">?:</span> <a href="RoomUpgradeHandlerOpts.html" class="tsd-signature-type tsd-kind-interface">RoomUpgradeHandlerOpts</a></div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:250</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="suppressecho"><code class="tsd-tag">Optional</code><span>suppress<wbr/>Echo</span><a href="#suppressecho" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">suppressEcho</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>True to stop receiving onEvent callbacks
+for events which were sent by a bridge user. Default: true.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:179</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="trackuseractivity"><code class="tsd-tag">Optional</code><span>track<wbr/>User<wbr/>Activity</span><a href="#trackuseractivity" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">trackUserActivity</span><span class="tsd-signature-symbol">?:</span> <a href="ActivityTrackerOpts.html" class="tsd-signature-type tsd-kind-interface">ActivityTrackerOpts</a></div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:270</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="useractivitystore"><code class="tsd-tag">Optional</code><span>user<wbr/>Activity<wbr/>Store</span><a href="#useractivitystore" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">userActivityStore</span><span class="tsd-signature-symbol">?:</span> <a href="../classes/UserActivityStore.html" class="tsd-signature-type tsd-kind-class">UserActivityStore</a></div>
+<div class="tsd-comment tsd-typography"><p>The user activity store instance to use. If <code>disableStores</code> is set, or this is not
+specified, no user activity store will be used.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:163</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="userstore"><code class="tsd-tag">Optional</code><span>user<wbr/>Store</span><a href="#userstore" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">userStore</span><span class="tsd-signature-symbol">?:</span> <a href="../classes/UserBridgeStore.html" class="tsd-signature-type tsd-kind-class">UserBridgeStore</a></div>
+<div class="tsd-comment tsd-typography"><p>The user store instance to use. If <code>disableStores</code> is set, or this is not
+specified, no user store will be used.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/bridge.ts:158</li></ul></aside></section></section></details></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
+<div><a href="#bridgeencryption"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>bridge<wbr/>Encryption</span></a><a href="#controller"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>controller</span></a><a href="#disablecontext"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>disable<wbr/>Context</span></a><a href="#disablestores"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>disable<wbr/>Stores</span></a><a href="#domain"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>domain</span></a><a href="#escapeuserids"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>escape<wbr/>User<wbr/>Ids</span></a><a href="#eventstore"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>event<wbr/>Store</span></a><a href="#eventvalidation"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>event<wbr/>Validation</span></a><a href="#homeserverurl"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>homeserver<wbr/>Url</span></a><a href="#intentoptions"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>intent<wbr/>Options</span></a><a href="#logrequestoutcome"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>log<wbr/>Request<wbr/>Outcome</span></a><a href="#membershipcache"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>membership<wbr/>Cache</span></a><a href="#networkname"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>network<wbr/>Name</span></a><a href="#onintentcreate"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>on<wbr/>Intent<wbr/>Create</span></a><a href="#queue"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>queue</span></a><a href="#registration"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>registration</span></a><a href="#roomlinkvalidation"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>room<wbr/>Link<wbr/>Validation</span></a><a href="#roomstore"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>room<wbr/>Store</span></a><a href="#roomupgradeopts"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>room<wbr/>Upgrade<wbr/>Opts</span></a><a href="#suppressecho"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>suppress<wbr/>Echo</span></a><a href="#trackuseractivity"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>track<wbr/>User<wbr/>Activity</span></a><a href="#useractivitystore"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>user<wbr/>Activity<wbr/>Store</span></a><a href="#userstore"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>user<wbr/>Store</span></a></div></details></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="../modules.html">matrix-appservice-bridge</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>
